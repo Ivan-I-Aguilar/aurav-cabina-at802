@@ -44,9 +44,10 @@ for ty,node,mi,vb,vo,vc,io_,ic,mr in parts:
     pos=np.c_[v[:,:3],np.ones(len(v))]@W; nrm=v[:,3:6]@W[:3,:3]
     g=groups.setdefault(mi,[[],[],[],[],0]); g[0].append(pos[:,:3]); g[1].append(nrm); g[2].append(v[:,6:8]); g[3].append(idx+g[4]); g[4]+=vc
 def texfile(i):
+    if tex[i].startswith('$') and len(sys.argv)>4: return os.path.join(sys.argv[4],tex[i][1:]+'.png')
     stem=os.path.splitext(tex[i])[0].lower()
     for f in os.listdir(texdir):
-        if os.path.splitext(f)[0].lower()==stem and f.lower().endswith(('.dds','.bmp')): return os.path.join(texdir,f)
+        if os.path.splitext(f)[0].lower()==stem and f.lower().endswith(('.dds','.bmp','.png')): return os.path.join(texdir,f)
 bin_=bytearray(); views=[]; accs=[]; meshes=[]; materials=[]; images=[]; textures=[]; imgcache={}
 def add(data,target=None):
     while len(bin_)%4: bin_.append(0)
