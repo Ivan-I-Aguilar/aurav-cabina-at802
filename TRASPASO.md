@@ -54,3 +54,5 @@ Es freeware. Revisar el readme antes de cualquier uso fuera de lo interno.
 - GPS (m13) oculto.
 - Soporte del GPS recortado en la conversión (`CUT="23:-0.2,0.88,-0.98,0.28,1.14,-0.70"` al correr mdl2glb.py; coords del modelo, z sin invertir).
 - `radios.js`: consola de radios derecha dibujada en canvas (GPS portátil, audio, GNS, COM/NAV, transponder). Posición/escala en main.js.
+- Bastón de mando móvil: en la conversión las partes 65,66,127,128,129 salen como mallas `palanca_*` (`PALANCA="65,66,127,128,129"`). En main.js cuelgan de un pivote en la base (0.004, 0.22, 0.969), enderezado con `INCL_NEUTRA = -0.25`. En VR: gatillo o grip a < 25 cm del puño lo agarra; sigue la mano con tope ±0.3 rad y vuelve al centro al soltar. En PC: flechas. No mueve superficies del exterior (no hay alerones en el modelo interior).
+- Comando completo de conversión: `PALANCA="65,66,127,128,129" CUT="23:-0.2,0.88,-0.98,0.28,1.14,-0.70" python3 -I herramientas/mdl2glb.py at802_intA.MDL texture cabina.glb relojes`
