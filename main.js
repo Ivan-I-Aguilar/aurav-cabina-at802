@@ -1,24 +1,33 @@
 // Cabina del AT-802 en VR (AURAV). Modelo: interior del Fire Boss freeware de FSX (Flight Sim Nation),
-// convertido con herramientas/mdl2glb.py. Uso interno de prueba.
+// convertido con herramientas/mdl2glb.py. Entorno: el aeródromo de AURAV (escenario.js de «Control del sector»).
+// Uso interno de prueba.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
+import { crearEscenario } from './escenario.js?v=20261016a';
 
-const OJO = new THREE.Vector3(0, 1.15, 1.6);   // vista del piloto (metros, marco del modelo)
+const OJO = new THREE.Vector3(0, 1.15, 1.6);   // vista del piloto en el marco del modelo (adelante = −z)
+const ALTURA_OJO = 2.7;                         // metros sobre la plataforma (la cabina del 802 queda alta)
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 renderer.xr.enabled = true; document.body.appendChild(renderer.domElement);
 
-const escena = new THREE.Scene(); escena.background = new THREE.Color(0xa8c8e0);
-escena.add(new THREE.HemisphereLight(0xffffff, 0x667788, 2.2));
-const sol = new THREE.DirectionalLight(0xffffff, 1.5); sol.position.set(3, 8, -4); escena.add(sol);
+const escena = new THREE.Scene();
+// niebla por distancia (no por profundidad): en Quest la bruma «saltaba» al girar la cabeza
+THREE.ShaderChunk.fog_vertex = '#ifdef USE_FOG\n\tvFogDepth = length( mvPosition.xyz );\n#endif';
+const ambiente = crearEscenario(escena);
 
-// en VR el piso del jugador queda debajo del ojo: se mueve el avión, no la cámara
-const avion = new THREE.Group(); escena.add(avion);
-const camara = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.02, 500);
-camara.position.copy(OJO); camara.rotation.order = 'YXZ';
+// el avión queda en la plataforma mirando a la pista (+x); el GLB mira a −z, se gira 90°
+const avion = new THREE.Group(); avion.rotation.y = -Math.PI / 2; avion.position.y = ALTURA_OJO - OJO.y; escena.add(avion);
+const ojoMundo = avion.localToWorld(OJO.clone());
 
-new GLTFLoader().load('./cabina.glb?v=20261016b', g => {
+// el jugador es un grupo que lleva la cámara: en VR el casco se mueve respecto de él
+const jugador = new THREE.Group(); escena.add(jugador);
+const camara = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.02, 1500); camara.rotation.order = 'YXZ';
+jugador.add(camara); jugador.position.copy(ojoMundo); jugador.rotation.y = -Math.PI / 2;
+
+new GLTFLoader().load('./cabina.glb?v=20261016c', g => {
   g.scene.traverse(o => { if (o.name === 'm13') o.visible = false; });   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
   avion.add(g.scene); document.getElementById('cargando').remove();
 });
@@ -34,11 +43,13 @@ if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { b
 bVR.onclick = async () => {
   const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
   renderer.xr.setReferenceSpaceType('local-floor'); await renderer.xr.setSession(s);
-  avion.position.set(-OJO.x, 1.2 - OJO.y, -OJO.z);   // ojo sentado ≈ 1,2 m sobre el piso real
-  s.addEventListener('end', () => avion.position.set(0, 0, 0));
+  jugador.position.set(ojoMundo.x, ojoMundo.y - 1.2, ojoMundo.z);   // ojo sentado ≈ 1,2 m sobre el piso real
+  s.addEventListener('end', () => jugador.position.copy(ojoMundo));
 };
 
+const relojT = new THREE.Clock();
 renderer.setAnimationLoop(() => {
+  const dt = Math.min(relojT.getDelta(), 0.1); ambiente.actualizar(dt);
   if (!renderer.xr.isPresenting) camara.rotation.set(pitch, yaw, 0);
   renderer.render(escena, camara);
 });
