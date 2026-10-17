@@ -18,7 +18,10 @@ const avion = new THREE.Group(); escena.add(avion);
 const camara = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.02, 500);
 camara.position.copy(OJO); camara.rotation.order = 'YXZ';
 
-new GLTFLoader().load('./cabina.glb?v=20261016b', g => { avion.add(g.scene); document.getElementById('cargando').remove(); });
+new GLTFLoader().load('./cabina.glb?v=20261016b', g => {
+  g.scene.traverse(o => { if (o.name === 'm13') o.visible = false; });   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
+  avion.add(g.scene); document.getElementById('cargando').remove();
+});
 
 let yaw = 0, pitch = -0.15, arr = null;
 addEventListener('pointerdown', e => arr = [e.clientX, e.clientY]);
