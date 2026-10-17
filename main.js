@@ -4,6 +4,7 @@
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
 import { crearEscenario } from './escenario.js?v=20261016a';
+import { crearRadios } from './radios.js?v=20261016a';
 
 const OJO = new THREE.Vector3(0, 1.15, 1.6);   // vista del piloto en el marco del modelo (adelante = −z)
 const ALTURA_OJO = 2.7;                         // metros sobre la plataforma (la cabina del 802 queda alta)
@@ -27,10 +28,12 @@ const jugador = new THREE.Group(); escena.add(jugador);
 const camara = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.02, 1500); camara.rotation.order = 'YXZ';
 jugador.add(camara); jugador.position.copy(ojoMundo); jugador.rotation.y = -Math.PI / 2;
 
-new GLTFLoader().load('./cabina.glb?v=20261016c', g => {
+new GLTFLoader().load('./cabina.glb?v=20261016d', g => {
   g.scene.traverse(o => { if (o.name === 'm13') o.visible = false; });   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
   avion.add(g.scene); document.getElementById('cargando').remove();
 });
+/* consola de radios a la derecha de la rodilla, inclinada hacia el piloto (el modelo no la trae) */
+const radios = crearRadios(); radios.position.set(0.55, 0.6, 1.04); radios.rotation.set(0.15, -0.45, 0); radios.scale.setScalar(1.35); avion.add(radios);
 
 let yaw = 0, pitch = -0.15, arr = null;
 addEventListener('pointerdown', e => arr = [e.clientX, e.clientY]);
