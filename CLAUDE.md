@@ -69,6 +69,11 @@ Masa vacía+piloto+combustible 3200 kg, tolva hasta 3100 kg; S 37,25 m², b 18 m
 potencia 1350 shp, empuje estático ≤ 19,5 kN; rota ~95–105 mph cargado, asciende ~1300 fpm, planea ~9:1 a 110 mph; Vne 220 mph;
 ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; hélice 1700 rpm. Fuego: se apaga 5 s después de ralentí + condición a corte + FIRE; a los 45 s es fatal.
 
+## Dónde quedamos (18/10)
+- Publicada v=20261018k. Falta que Iván la pruebe en el Quest: voz pregrabada, rayo para accionar controles, F PUMP con palanquita, panel inferior, caja del horizonte, pausa (placa roja / B-Y).
+- **Sin resolver:** Iván dice que «una palanca de la izquierda se rompe» al accionarla; en el navegador no se reproduce. Preguntarle cuál es (POWER blanca, perilla azul, gris o roja) y mirarla moviéndola.
+- `levCOND` (perilla gris) y `swAUX` sin confirmar con Iván.
+
 ## Pendientes (en el orden que pidió Iván)
 1. Probar en el Quest (el recentrado ya anda, 18/10): altura del ojo, distancia de agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
 2. Pedales que se muevan con el joystick (hoy sólo actúan, no se ven) y limpiaparabrisas manipulables (recortarlos de la malla grande con `EXTRAER`, como los switches).
