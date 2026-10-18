@@ -22,7 +22,7 @@ export class Controles {
       o.geometry.computeBoundingBox(); caja.copy(o.geometry.boundingBox); const c = caja.getCenter(new THREE.Vector3());
       const g = new THREE.Group(); g.name = 'piv_' + o.name;
       if (o.name.startsWith('sw')) {
-        const piv = new THREE.Vector3(c.x, c.y, caja.min.z);     // la palanquita nace en la cara del panel y asoma hacia +z
+        const piv = o.userData.pivBase ? new THREE.Vector3(c.x, caja.min.y, c.z) : new THREE.Vector3(c.x, c.y, caja.min.z);     // la palanquita nace en la cara del panel y asoma hacia +z (recortadas de consola: asoma hacia arriba)
         g.position.copy(piv); o.position.sub(piv); g.add(o); this.raiz.add(g);
         const s = { grupo: g, pivote: piv, estado: false, nombre: o.name, malla: o }; this.switches.push(s); this._aplicarSwitch(s);
       } else {
@@ -56,10 +56,19 @@ export class Controles {
     }
     return false;
   }
-  // ---- PC: clic ----
+  // ---- PC: clic (y en VR: apuntar con el rayo y gatillo) ----
+  impacto(raycaster) {
+    const h = raycaster.intersectObjects([...this.switches.map(s => s.malla), ...this.palancas.map(p => p.malla)], false)[0]; if (h) return h;
+    /* tolerante: el control cuyo centro pase a menos de 2,5 cm del rayo (las piezas chicas o con agujero, como F PUMP) */
+    let mejor = null, d0 = 0.025; const r = raycaster.ray;
+    for (const o of [...this.switches, ...this.palancas]) {
+      const g = o.malla.geometry; if (!g.boundingSphere) g.computeBoundingSphere(); o.malla.localToWorld(tmp.copy(g.boundingSphere.center));
+      const d = r.distanceToPoint(tmp), t = tmp.sub(r.origin).dot(r.direction); if (d < d0 && t > 0 && t < raycaster.far) { d0 = d; mejor = { object: o.malla, distance: t }; }
+    }
+    return mejor;
+  }
   clic(raycaster) {
-    const objs = [...this.switches.map(s => s.malla), ...this.palancas.map(p => p.malla)];
-    const h = raycaster.intersectObjects(objs, false)[0]; if (!h) return false;
+    const h = this.impacto(raycaster); if (!h) return false;
     const s = this.switches.find(x => x.malla === h.object); if (s) { this.alternar(s); return true; }
     const p = this.palancas.find(x => x.malla === h.object); if (p) { const med = (p.min + p.max) / 2; p.ang = p.ang > med ? p.min + 0.05 : p.max - 0.05; this._aplicarPalanca(p); this.alCambiar?.(p.nombre, p.ang); return true; }
     return false;

@@ -2,7 +2,7 @@
 export class Audio {
   constructor() { this.ctx = null; this.vozOn = true; }
   iniciar() {
-    if (this.ctx) return; const C = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (this.ctx) { if (this.ctx.state !== 'running') this.ctx.resume(); return; }   /* el Quest suspende el audio al entrar en VR: reanudar en cada gesto */ const C = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.master = C.createGain(); this.master.gain.value = 0.6; this.master.connect(C.destination);
     // turbina: ruido filtrado + tono agudo
     const buf = C.createBuffer(1, C.sampleRate * 2, C.sampleRate); const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -16,7 +16,7 @@ export class Audio {
     // alarmas
     this.gAlarma = C.createGain(); this.gAlarma.gain.value = 0; this.alarma = C.createOscillator(); this.alarma.type = 'square'; this.alarma.frequency.value = 880; this.alarma.connect(this.gAlarma).connect(this.master); this.alarma.start();
     this.gBocina = C.createGain(); this.gBocina.gain.value = 0; this.bocina = C.createOscillator(); this.bocina.type = 'sawtooth'; this.bocina.frequency.value = 420; this.bocina.connect(this.gBocina).connect(this.master); this.bocina.start();
-    this.t = 0;
+    this.t = 0; if (C.state !== 'running') C.resume();
   }
   // ng 0..100, rpm hélice, encendido, fuego, perdida (aviso), dt
   actualizar(dt, { ng = 0, rpm = 0, fuego = false, bocina = false, dentro = true }) {

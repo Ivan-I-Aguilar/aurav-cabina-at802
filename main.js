@@ -7,11 +7,11 @@ import { GLTFLoader } from './GLTFLoader.js';
 import { mergeGeometries } from './BufferGeometryUtils.js';
 import { crearEscenario } from './escenario.js?v=20261017a';
 import { crearRadios } from './radios.js?v=20261017a';
-import { Controles } from './controles.js?v=20261018a';
+import { Controles } from './controles.js?v=20261018d';
 import { Instrumentos } from './instrumentos.js?v=20261017a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
 import { Mision } from './mision.js?v=20261018c';
-import { Audio } from './audio.js?v=20261017a';
+import { Audio } from './audio.js?v=20261018a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
 const OJO = new THREE.Vector3(0, 1.15, 1.6);   // vista del piloto en el marco del modelo (adelante = −z)
@@ -69,13 +69,17 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
   g.scene.traverse(o => { if (o.isMesh) o.name = o.name.replace(/^lev(75|77|42)$/, 'varilla$1'); });
   const MANIJAS = [
-    { nombre: 'levPOT', pivY: 0.55, escala: 0.5, piezas: [['m16', [-0.48, 0.67, 1.23], [-0.43, 0.85, 1.37]]] },                                   /* POWER blanca */
+    { nombre: 'levPOT', pivY: 0.59, escala: 0.5, piezas: [['m16', [-0.48, 0.67, 1.23], [-0.43, 0.85, 1.37]], ['m26', [-0.47, 0.585, 1.28], [-0.445, 0.78, 1.415]]] },   /* POWER: manija blanca + cuerpo gris */
     { nombre: 'levHEL', pivY: 0.19, escala: 0.25, piezas: [['m16', [-0.37, 0.70, 1.27], [-0.31, 0.76, 1.33]], ['m23', [-0.39, 0.18, 1.21], [-0.33, 0.79, 1.31]]] },   /* perilla azul + varilla amarilla */
+    { nombre: 'swFLAPS', piezas: [['m34', [-0.605, 0.66, 1.40], [-0.575, 0.708, 1.423]]] },   /* consola izquierda: switch de FLAPS */
+    { nombre: 'swAUX', piezas: [['m34', [-0.53, 0.646, 1.40], [-0.515, 0.686, 1.423]]] },     /* consola izquierda: el de abajo (función a confirmar) */
     { nombre: 'levCOND', pivY: 0.63, escala: 0.6, piezas: [['m2'], ['m6']] },                                                                     /* perilla gris (a confirmar) */
   ];
-  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; g.scene.add(m); }
+  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = mj.nombre.startsWith('sw'); g.scene.add(m); }
   const partes = []; g.scene.traverse(o => { if (o.isMesh && o.name.startsWith('palanca_')) partes.push(o); });
   for (const o of partes) { o.position.sub(PIVOTE); palanca.add(o); }
+  /* las piezas sacadas con EXTRAER traen todo el buffer de vértices (caja de 2 m, pivote en cualquier lado): quedarse sólo con los usados */
+  g.scene.traverse(o => { if (o.isMesh && /^(sw|lev)\w+$/.test(o.name) && o.geometry.index) o.geometry = o.geometry.toNonIndexed(); });
   controles.armar(g.scene);
   const pd = controles.palancas.find(p => p.nombre === 'levDUMP'); if (pd) { pd.min = -0.05; pd.max = 0.9; }
   instrumentos = new Instrumentos(cabina, datosInst);
@@ -102,7 +106,7 @@ function aplicarControles() {
   if (m.encendido && controles.estado(SW.START)) { const s = controles.switches.find(x => x.nombre === SW.START); if (s) { s.estado = false; controles._aplicarSwitch(s); } }
 }
 let pedal = 0, frenos = 0, flaps = 0;
-controles.alCambiar = (nombre, valor) => { console.log('control', nombre, valor); };
+controles.alCambiar = (nombre, valor) => { console.log('control', nombre, valor); if (nombre === 'swFLAPS') flaps = flaps >= 1 ? 0 : flaps + 0.5; };   /* switch de flaps: 0° → 10° → 20° → 0° */
 
 // ---- bastón de mando ----
 const PIVOTE = new THREE.Vector3(0.004, 0.22, 0.969);          // base del bastón (marco del modelo)
@@ -121,6 +125,8 @@ function actualizarPalanca(dt) {
   palanca.rotation.x = mando.x; palanca.rotation.z = INCL_NEUTRA + mando.z;
 }
 // ---- manos VR ----
+const rayoMano = new THREE.Raycaster(), m4Mano = new THREE.Matrix4();
+function rayoDe(c) { m4Mano.identity().extractRotation(c.matrixWorld); rayoMano.ray.origin.setFromMatrixPosition(c.matrixWorld); rayoMano.ray.direction.set(0, 0, -1).applyMatrix4(m4Mano); rayoMano.far = 1.5; return rayoMano; }
 const manos = [];
 for (const i of [0, 1]) {
   const c = renderer.xr.getController(i); jugador.add(c);
@@ -128,11 +134,12 @@ for (const i of [0, 1]) {
   c.userData.apretado = 0;
   const rayo = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]), new THREE.LineBasicMaterial({ color: 0xc8e63a })); rayo.visible = false; c.add(rayo); c.userData.rayo = rayo;
   const agarrar = () => {
-    c.userData.apretado++;
+    c.userData.apretado++; audio.iniciar();
     if (panelVR.visible) { panelVR.gatillo(c); return; }
     if (botonSalir.apuntado(c) != null) { pausar(); return; }
     if (controles.manoVR(c, true, true)) return;
-    palanca.localToWorld(tmp.copy(PUNIO)); c.getWorldPosition(tmp2); if (tmp.distanceTo(tmp2) < 0.25) mando.agarre = c;
+    palanca.localToWorld(tmp.copy(PUNIO)); c.getWorldPosition(tmp2); if (tmp.distanceTo(tmp2) < 0.25) { mando.agarre = c; return; }
+    controles.clic(rayoDe(c));   /* lejos de todo: lo que apunte el rayo (switch o palanca) se acciona */
   };
   const soltar = () => { c.userData.apretado = Math.max(0, c.userData.apretado - 1); if (!c.userData.apretado && mando.agarre === c) mando.agarre = null; };
   c.addEventListener('selectstart', agarrar); c.addEventListener('squeezestart', agarrar);
@@ -181,6 +188,7 @@ addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; cam
 const bVR = document.getElementById('vr');
 if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { bVR.hidden = !ok; });
 bVR.onclick = async () => {
+  audio.iniciar();
   const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
   renderer.xr.setReferenceSpaceType('local-floor'); await renderer.xr.setSession(s);
   recentrarPendiente = 72;   /* recentra a los 12 y a los 72 cuadros */
@@ -315,7 +323,7 @@ renderer.setAnimationLoop(() => {
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt);
   botonSalir.malla.visible = renderer.xr.isPresenting;
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
-  for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : (renderer.xr.isPresenting ? botonSalir.apuntado(c) : null); c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
+  for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : (renderer.xr.isPresenting ? (botonSalir.apuntado(c) ?? controles.impacto(rayoDe(c))?.distance ?? null) : null); c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
   if (hud && !renderer.xr.isPresenting) { const L = vuelo.lecturas(), m = vuelo.motor; hud.textContent = `${L.asi.toFixed(0)} mph · ${L.alt.toFixed(0)} ft · ${L.vsi.toFixed(0)} fpm · TRQ ${m.torque.toFixed(0)}% · ITT ${m.itt.toFixed(0)} · Ng ${m.ng.toFixed(0)} · hél ${m.rpmHel.toFixed(0)} · flaps ${flaps * 20}° · agua ${vuelo.agua.toFixed(0)} kg${vuelo.perdida ? ' · PÉRDIDA' : ''}${vuelo.estrellado ? ' · ACCIDENTE' : ''}`; }
   if (renderer.xr.isPresenting) { if (recentrarPendiente > 0) { recentrarPendiente--; if (recentrarPendiente === 0 || recentrarPendiente === 60) recentrar(); } }
   else camara.rotation.set(pitch, yaw, 0);
