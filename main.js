@@ -7,10 +7,10 @@ import { GLTFLoader } from './GLTFLoader.js';
 import { mergeGeometries } from './BufferGeometryUtils.js';
 import { crearEscenario } from './escenario.js?v=20261017a';
 import { crearRadios } from './radios.js?v=20261017a';
-import { Controles } from './controles.js?v=20261017b';
+import { Controles } from './controles.js?v=20261018a';
 import { Instrumentos } from './instrumentos.js?v=20261017a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
-import { Mision } from './mision.js?v=20261018a';
+import { Mision } from './mision.js?v=20261018c';
 import { Audio } from './audio.js?v=20261017a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
@@ -39,6 +39,23 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
 let instrumentos = null;
+/* saca de las mallas los triángulos cuyo centro cae en la caja (sin caja: la malla entera) y los junta en una malla nueva con el material de la primera */
+function recortarManija(raiz, piezas) {
+  const geos = [], mats = []; const p = new THREE.Vector3(), c = new THREE.Vector3();
+  for (const [nombre, min, max] of piezas) {
+    let m = null; raiz.traverse(o => { if (o.isMesh && o.name === nombre) m = o; }); if (!m) continue;
+    if (!min) { geos.push(m.geometry.index ? m.geometry.toNonIndexed() : m.geometry); mats.push(m.material); m.removeFromParent(); continue; }
+    const g = m.geometry, pos = g.attributes.position, idx = g.index, caja = new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max));
+    const dentro = [], fuera = []; const T = idx ? idx.count / 3 : pos.count / 3; const vi = (t, k) => idx ? idx.getX(3 * t + k) : 3 * t + k;
+    for (let t = 0; t < T; t++) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, vi(t, k))); c.multiplyScalar(1 / 3); (caja.containsPoint(c) ? dentro : fuera).push(vi(t, 0), vi(t, 1), vi(t, 2)); }
+    if (!dentro.length) continue;
+    const sub = g.clone(); sub.setIndex(dentro); geos.push(sub.toNonIndexed()); g.setIndex(fuera); mats.push(m.material);
+  }
+  if (!geos.length) return null;
+  const comunes = ['position', 'normal', 'uv'].filter(k => geos.every(x => x.attributes[k]));
+  for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
+  return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
+}
 Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
   g.scene.traverse(o => {
     if (o.name === 'm13') o.visible = false;   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
@@ -48,6 +65,15 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   const gm = mergeGeometries([new THREE.BoxGeometry(0.03, 0.16, 0.03).translate(-0.33, 0.56, 1.12), new THREE.SphereGeometry(0.028, 14, 10).translate(-0.33, 0.645, 1.12)]);
   const manija = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xd42020, roughness: 0.5 })); manija.name = 'levDUMP'; g.scene.add(manija);
   cabina.add(g.scene);
+  // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
+  // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
+  g.scene.traverse(o => { if (o.isMesh) o.name = o.name.replace(/^lev(75|77|42)$/, 'varilla$1'); });
+  const MANIJAS = [
+    { nombre: 'levPOT', pivY: 0.55, escala: 0.5, piezas: [['m16', [-0.48, 0.67, 1.23], [-0.43, 0.85, 1.37]]] },                                   /* POWER blanca */
+    { nombre: 'levHEL', pivY: 0.19, escala: 0.25, piezas: [['m16', [-0.37, 0.70, 1.27], [-0.31, 0.76, 1.33]], ['m23', [-0.39, 0.18, 1.21], [-0.33, 0.79, 1.31]]] },   /* perilla azul + varilla amarilla */
+    { nombre: 'levCOND', pivY: 0.63, escala: 0.6, piezas: [['m2'], ['m6']] },                                                                     /* perilla gris (a confirmar) */
+  ];
+  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; g.scene.add(m); }
   const partes = []; g.scene.traverse(o => { if (o.isMesh && o.name.startsWith('palanca_')) partes.push(o); });
   for (const o of partes) { o.position.sub(PIVOTE); palanca.add(o); }
   controles.armar(g.scene);
@@ -67,7 +93,7 @@ function aplicarControles() {
   m.bateria = !!controles.estado(SW.BATT); m.generador = !!(controles.estado(SW.GEN) || controles.estado(SW.ALTN));
   m.ignicion = !!controles.estado(SW.IGNTR); m.arrancador = !!controles.estado(SW.START) && m.bateria; m.bombaCombustible = !!controles.estado(SW.FPUMP);
   m.extintor = !!controles.estado(SW.FIRE);
-  c.potencia = adelante('lev75'); c.helice = adelante('lev77'); c.condicion = adelante('lev42');
+  c.potencia = adelante('levPOT'); c.helice = adelante('levHEL'); c.condicion = adelante('levCOND');
   c.cabeceo = mando.x / LIMITE; c.alabeo = -mando.z / LIMITE;
 
   c.pedal = pedal; c.frenos = frenos; c.flaps = flaps;
@@ -223,11 +249,11 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
     v.pos.set(30, 305, -300); v.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); v.vel.set(0, 0, -67); v.enTierra = false; v.tiempoAire = 10;
     Object.assign(v.motor, { encendido: true, ng: 92, torque: 80, itt: 720, rpmHel: 1700, bateria: true, generador: true });
     for (const n of ['BATT', 'GEN', 'AVNC', 'FPUMP']) sw(n, true); for (const n of ['IGNTR', 'START', 'FIRE']) sw(n, false);
-    pon('lev75', -0.72); pon('lev77', -0.88); pon('lev42', -0.88); pon('levDUMP', 0);
+    pon('levPOT', -0.72); pon('levHEL', -0.88); pon('levCOND', -0.88); pon('levDUMP', 0);
   } else {
     v.pos.set(30, 0, 100); v.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); v.enTierra = true;
-    if (apagado) { Object.assign(v.motor, { encendido: false, ng: 0, torque: 0, itt: 15, rpmHel: 0, bateria: false, generador: false }); for (const n of ['BATT', 'GEN', 'ALTN', 'AVNC', 'FPUMP', 'IGNTR', 'START', 'FIRE']) sw(n, false); pon('lev75', 0.1); pon('lev77', 0.1); pon('lev42', 0.1); pon('levDUMP', 0); }
-    else { Object.assign(v.motor, { encendido: true, ng: 62, torque: 5, itt: 480, rpmHel: 1100, bateria: true, generador: true }); for (const n of ['BATT', 'GEN', 'AVNC', 'FPUMP']) sw(n, true); for (const n of ['IGNTR', 'START', 'FIRE']) sw(n, false); pon('lev75', 0.1); pon('lev77', -0.88); pon('lev42', -0.88); pon('levDUMP', 0); }
+    if (apagado) { Object.assign(v.motor, { encendido: false, ng: 0, torque: 0, itt: 15, rpmHel: 0, bateria: false, generador: false }); for (const n of ['BATT', 'GEN', 'ALTN', 'AVNC', 'FPUMP', 'IGNTR', 'START', 'FIRE']) sw(n, false); pon('levPOT', 0.1); pon('levHEL', 0.1); pon('levCOND', 0.1); pon('levDUMP', 0); }
+    else { Object.assign(v.motor, { encendido: true, ng: 62, torque: 5, itt: 480, rpmHel: 1100, bateria: true, generador: true }); for (const n of ['BATT', 'GEN', 'AVNC', 'FPUMP']) sw(n, true); for (const n of ['IGNTR', 'START', 'FIRE']) sw(n, false); pon('levPOT', 0.1); pon('levHEL', -0.88); pon('levCOND', -0.88); pon('levDUMP', 0); }
   }
   avion.position.copy(v.pos); avion.quaternion.copy(v.q);
 }

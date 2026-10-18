@@ -38,7 +38,7 @@ export class Mision {
     this.decir(this.titulo, p.texto, p.voz ?? p.texto);
     this.ui.marcar?.(this.marcaDe(p));
   }
-  /* control que hay que tocar en el paso: p.marca, o el primero que mire listo() (lev('lev77') o sw('BATT')) */
+  /* control que hay que tocar en el paso: p.marca, o el primero que mire listo() (lev('levHEL') o sw('BATT')) */
   marcaDe(p) {
     if (p.marca !== undefined) return p.marca && (this.SW[p.marca] ?? p.marca);
     const r = /(lev|sw)\('(\w+)'\)/.exec(p.listo.toString()); if (!r) return null;
@@ -89,35 +89,43 @@ export class Mision {
   // ------------- fases -------------
   faseArranque() {
     const m = this.vuelo.motor; this.arranqueCaliente = false;
-    this.definir('arranque', [
-      { id: 'pot', texto: 'Palanca de potencia: RALENTÍ (atrás)', listo: () => this.lev('lev75') < 0.1 },
-      { id: 'hel', texto: 'Hélice: MÁX RPM (adelante)', listo: () => this.lev('lev77') > 0.8 },
-      { id: 'cond', texto: 'Condición: CORTE (atrás)', listo: () => this.lev('lev42') < 0.1 },
-      { id: 'batt', texto: 'Batería: ON', listo: () => this.sw('BATT') },
-      { id: 'fpump', texto: 'Bomba de combustible: ON (mirá la presión)', listo: () => this.sw('FPUMP') },
-      { id: 'ign', texto: 'Ignición: ON', listo: () => this.sw('IGNTR') },
-      { id: 'start', texto: 'START: arrancador, y mirá el Ng', listo: () => this.sw('START') || m.ng > 5 },
-      { id: 'ng12', texto: 'Esperá Ng 12 % y recién ahí: Condición a MARCHA (adelante)', listo: () => m.encendido, marca: 'lev42', voz: 'Esperá doce por ciento de ene ge. Recién ahí, condición adelante.' },
-      { id: 'itt', texto: 'Encendió: vigilá la ITT, pico por debajo de 850 °C', listo: () => this.tPaso > 6 && m.ng > 50, voz: 'Encendió. Vigilá la i te te.' },
+    this.definir('arranque', [   /* checklist PARTIDA de AAXOD (CHECK LIST 802 NORM ed2 Rev01) */
+      { id: 'pot', texto: 'Palanca de potencia: RALENTÍ (atrás)', listo: () => this.lev('levPOT') < 0.1 },
+      { id: 'hel', texto: 'Hélice: BANDERA (perilla azul atrás)', listo: () => this.lev('levHEL') < 0.15 },
+      { id: 'cond', texto: 'Palanca de partida (condición): CORTADA (atrás)', listo: () => this.lev('levCOND') < 0.1 },
+      { id: 'batt', texto: 'Master: ON', listo: () => this.sw('BATT') },
+      { id: 'off', texto: 'Ignitor OFF · Generador OFF', listo: () => !this.sw('IGNTR') && !this.sw('GEN') && !this.sw('ALTN'), marca: null },
+      { id: 'boostOn', texto: 'Booster (F PUMP): ON · presión de combustible positiva', listo: () => this.sw('FPUMP') && this.tPaso > 1.5 },
+      { id: 'boostOff', texto: 'Booster: OFF', listo: () => !this.sw('FPUMP') },
+      { id: 'libre', texto: '¡Hélice LIBRE!', listo: () => this.tPaso > 2.5, voz: '¡Hélice libre!', marca: null },
+      { id: 'start', texto: 'Starter: ON (máximo 30 s) · Ng estabilizar mínimo 12 %', listo: () => this.sw('START') || m.ng > 5, voz: 'Starter. Esperá doce por ciento de ene ge.' },
+      { id: 'ign', texto: 'Ignitor: posición START', listo: () => this.sw('IGNTR') },
+      { id: 'run', texto: 'Con Ng ≥ 12 %: palanca de partida a RUN (adelante)', listo: () => m.encendido, marca: 'levCOND', voz: 'Con doce por ciento, palanca de partida a ran.' },
+      { id: 'acel', texto: 'Ng: verificá aceleración a 56–58 % · ITT sin pasar 1000 °C', listo: () => this.tPaso > 6 && m.ng > 50, voz: 'Verificá la aceleración y la i te te.', marca: null },
+      { id: 'soltar', texto: 'Starter: soltar al 56–58 %', listo: () => !this.sw('START') },
       { id: 'gen', texto: 'Generador: ON · Aviónica: ON', listo: () => (this.sw('GEN') || this.sw('ALTN')) && this.sw('AVNC') },
-      { id: 'chk', texto: 'Controlá: presión de aceite en verde, 28 V, Ng ~60 %', listo: () => this.tPaso > 4 },
+      { id: 'chk', texto: 'Presión y temperatura de aceite: check', listo: () => this.tPaso > 4, marca: null },
     ], 'Puesta en marcha');
     // vigilancia: condición adelante antes de Ng 12 → arranque caliente
     this.vigilar = () => {
-      if (!m.encendido && this.lev('lev42') > 0.3 && m.arrancador && m.ng < 12 && !this.arranqueCaliente) { this.arranqueCaliente = true; this.puntos -= 30; this.detalle.push('condición adelante antes de Ng 12 % (riesgo de arranque caliente)'); this.decir('Puesta en marcha', '¡Muy pronto! Condición a corte, dejá girar y esperá Ng 12 %.'); }
+      if (!m.encendido && this.lev('levCOND') > 0.3 && m.arrancador && m.ng < 12 && !this.arranqueCaliente) { this.arranqueCaliente = true; this.puntos -= 30; this.detalle.push('condición adelante antes de Ng 12 % (riesgo de arranque caliente)'); this.decir('Puesta en marcha', '¡Muy pronto! Condición a corte, dejá girar y esperá Ng 12 %.'); }
     };
     this.alTerminar = () => this.cerrarFase('Puesta en marcha', true, 'Motor en marcha y estabilizado. Bien.');
   }
   faseDespegue(conFalla = false) {
     const v = this.vuelo; this.conFalla = conFalla; this.fallaHecha = false; this.vRot = null; this.maxDesvio = 0;
+    const pesado = (3200 + v.agua) * 2.20462 > 12500;   /* checklist: despegue hasta / sobre 12.500 lb */
     this.definir(conFalla ? 'despegue2' : 'despegue', [
-      { id: 'flaps', texto: 'Flaps 10° para el despegue', listo: () => v.mando.flaps >= 0.5 && v.mando.flaps < 1 },
-      { id: 'pot', texto: 'Potencia: adelante hasta 100 % de torque. Pedales para mantener el eje', listo: () => v.motor.torque > 85 },
-      { id: 'rot', texto: 'A 90 mph: rotá suave', listo: () => !v.enTierra, voz: 'A noventa millas, rotá suave.' },
-      { id: 'asc', texto: 'Ascenso a 110 mph', listo: () => this.alt > 300, voz: 'Ascendé a ciento diez millas.' },
-      { id: 'flapsUp', texto: 'Flaps arriba', listo: () => v.mando.flaps === 0 },
+      { id: 'hel', texto: 'Hélice: TODA ADELANTE', listo: () => this.lev('levHEL') > 0.8 },
+      { id: 'cond', texto: 'Palanca de condición: FLIGHT (adelante)', listo: () => this.lev('levCOND') > 0.8 },
+      pesado ? { id: 'flaps', texto: 'Flaps 10° (más de 12.500 lb)', listo: () => v.mando.flaps >= 0.5 && v.mando.flaps < 1 }
+             : { id: 'flaps', texto: 'Flaps arriba (hasta 12.500 lb)', listo: () => v.mando.flaps === 0 },
+      { id: 'pot', texto: 'Potencia a 1.500 de torque, soltá frenos y seguí hasta máximo despegue. Pedales para el eje', listo: () => v.motor.torque > 85, marca: 'levPOT' },
+      { id: 'rot', texto: 'Dejá que levante la cola (2 puntos) y rotá suave', listo: () => !v.enTierra, voz: 'Dejá que levante la cola, y rotá suave.', marca: null },
+      { id: 'asc', texto: pesado ? 'Montada inicial 135 mph' : 'Montada inicial 122 mph', listo: () => this.alt > 300, voz: pesado ? 'Montada inicial, ciento treinta y cinco millas.' : 'Montada inicial, ciento veintidós millas.' },
+      pesado && { id: 'flapsUp', texto: 'Flaps arriba (sobre 123 mph)', listo: () => v.mando.flaps === 0 },
       { id: 'nivel', texto: 'Nivelá a 1000 ft y reducí a 80 % de torque', listo: () => this.alt > 950 && Math.abs(v.vs) < 300 && v.motor.torque < 88, voz: 'Nivelá a mil pies.' },
-    ], conFalla ? 'Despegue (tolva llena)' : 'Despegue');
+    ].filter(Boolean), conFalla ? 'Despegue (tolva llena)' : 'Despegue');
     this.vigilar = () => {
       if (v.enTierra) { const d = Math.abs(v.pos.x - 30); this.maxDesvio = Math.max(this.maxDesvio, d); if (d > 8 && v.vIAS > 20 && !this.salioPista) { this.salioPista = true; this.puntos -= 40; this.detalle.push('se salió de la pista'); this.decir(this.titulo, 'Te saliste del eje: pedales, suave.'); } }
       if (!v.enTierra && this.vRot == null) { this.vRot = v.vIAS; if (this.vRot < 78) { this.puntos -= 20; this.detalle.push(`rotó a ${this.vRot.toFixed(0)} mph (lento)`); } else if (this.vRot > 115) { this.puntos -= 10; this.detalle.push(`rotó a ${this.vRot.toFixed(0)} mph (tarde)`); } }
@@ -144,14 +152,14 @@ export class Mision {
     this.definir('falla', [
       { id: 'planeo', texto: '¡FALLA DE MOTOR! Nariz abajo: planeo a 110 mph', listo: () => v.vIAS > 100 && v.vIAS < 130 && v.vs < 0, tiempo: 8, penal: 20, voz: 'Falla de motor. Nariz abajo, planeo a ciento diez millas.' },
       { id: 'dump', texto: 'Largá la carga de emergencia (manija roja)', listo: () => v.agua < 100 || v.largando, tiempo: 10, penal: 20 },
-      { id: 'bandera', texto: 'Hélice a BANDERA (palanca atrás)', listo: () => this.lev('lev77') < 0.15, tiempo: 12, penal: 10 },
+      { id: 'bandera', texto: 'Hélice a BANDERA (palanca atrás)', listo: () => this.lev('levHEL') < 0.15, tiempo: 12, penal: 10 },
       { id: 'rearr', texto: 'Hay altura: intento de rearranque. Condición a CORTE, Ignición ON, START', listo: () => m.encendido || this.alt < 350, voz: 'Hay altura. Intento de rearranque: condición a corte, ignición, start.' },
-      { id: 'fin', texto: 'Motor en marcha: hélice adelante, potencia, nivelá y recuperá altura', listo: () => m.encendido && v.motor.torque > 50 && v.vs > -200 && this.lev('lev77') > 0.8 && this.alt > 500 },
+      { id: 'fin', texto: 'Motor en marcha: hélice adelante, potencia, nivelá y recuperá altura', listo: () => m.encendido && v.motor.torque > 50 && v.vs > -200 && this.lev('levHEL') > 0.8 && this.alt > 500 },
     ], 'Emergencia: falla de motor');
     this.rearrancado = false;
     this.vigilar = () => {
       // el motor se apagó por combustible: ciclar condición a corte y volver a arrancar lo recupera
-      if (m.falla && this.lev('lev42') < 0.1 && m.ng < 30) { m.falla = false; }
+      if (m.falla && this.lev('levCOND') < 0.1 && m.ng < 30) { m.falla = false; }
       if (!m.encendido && this.alt < 350 && this.fase === 'falla' && !this.forzoso) { this.forzoso = true; this.faseForzoso('Sin motor: aterrizaje forzoso'); }
       if (m.encendido && !this.rearrancado && this.i >= 3) { this.rearrancado = true; this.decir(this.titulo, 'Arrancó. Hélice adelante y potencia.'); }
     };
@@ -160,11 +168,11 @@ export class Mision {
   faseFuego() {
     const v = this.vuelo, m = v.motor; this.tFuego = 0;
     this.definir('fuego', [
-      { id: 'pot', texto: '¡FUEGO DE MOTOR! Potencia a RALENTÍ', listo: () => this.lev('lev75') < 0.15, tiempo: 6, penal: 15, voz: 'Fuego de motor. Potencia a ralentí.' },
-      { id: 'cond', texto: 'Condición a CORTE', listo: () => this.lev('lev42') < 0.1, tiempo: 8, penal: 20 },
+      { id: 'pot', texto: '¡FUEGO DE MOTOR! Potencia a RALENTÍ', listo: () => this.lev('levPOT') < 0.15, tiempo: 6, penal: 15, voz: 'Fuego de motor. Potencia a ralentí.' },
+      { id: 'cond', texto: 'Condición a CORTE', listo: () => this.lev('levCOND') < 0.1, tiempo: 8, penal: 20 },
       { id: 'fire', texto: 'Corte de combustible y extintor: switch FIRE', listo: () => this.sw('FIRE'), tiempo: 10, penal: 20 },
       { id: 'dump', texto: 'Largá la carga', listo: () => v.agua < 100 || v.largando, tiempo: 10, penal: 10 },
-      { id: 'bandera', texto: 'Hélice a BANDERA', listo: () => this.lev('lev77') < 0.15, tiempo: 10, penal: 10 },
+      { id: 'bandera', texto: 'Hélice a BANDERA', listo: () => this.lev('levHEL') < 0.15, tiempo: 10, penal: 10 },
     ], 'Emergencia: fuego de motor');
     this.vigilar = () => {};
     this.alTerminar = () => this.faseForzoso('Fuego: aterrizaje forzoso. Planeo 110 mph', 'Fuego de motor');
@@ -199,7 +207,7 @@ export class Mision {
     const v = this.vuelo; let texto;
     if (v.estrellado) { this.puntos = Math.min(this.puntos, 30); texto = `Toque muy fuerte (${d.vv.toFixed(1)} m/s de descenso). El avión no quedó entero.`; }
     else { if (d.vv > 2) { this.puntos -= 15; this.detalle.push(`toque fuerte (${d.vv.toFixed(1)} m/s)`); } texto = `Aterrizaste. Descenso ${d.vv.toFixed(1)} m/s a ${d.v.toFixed(0)} mph.`; }
-    if (this.lev('lev42') > 0.1) { this.puntos -= 10; this.detalle.push('condición no estaba en corte'); }
+    if (this.lev('levCOND') > 0.1) { this.puntos -= 10; this.detalle.push('condición no estaba en corte'); }
     if (this.sw('BATT')) { this.puntos -= 10; this.detalle.push('batería quedó ON'); }
     if (v.mando.flaps < 1) { this.puntos -= 5; this.detalle.push('sin flaps completos'); }
     this.alContacto = null; this.cerrarFase(nombre, !v.estrellado, texto);

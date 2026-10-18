@@ -58,7 +58,8 @@ Marco del GLB (= `cabina`): +x derecha del piloto, +y arriba, −z adelante; ojo
 
 ## Mapeo de la cabina
 - Switches del panel central (los únicos que son piezas): BATT `sw62`, ALTN `sw64`, GEN `sw56`, IGNTR `sw53`, START `sw47` (vuelve solo al encender), FIRE `sw60` (corte de combustible + extintor), F PUMP `swFPUMP`, HYD `sw54`, AVNC `sw63`, PITOT `sw50`, luces `sw52/49/61/51/48`, HOPR/FRDS/WIPER `swHOPR/swFRDS/swWIPER`, SPARE `sw38`.
-- Palancas: `lev75` potencia, `lev77` hélice (atrás = bandera), `lev42` condición (atrás = corte; en el modelo es una palanquita chica), `levDUMP` manija roja de largado (agregada, tirar hacia atrás). Adelante = ángulo negativo (`−0.9`), atrás `0.15`.
+- Palancas: se recortan **en tiempo de carga** de las mallas grandes (`MANIJAS` + `recortarManija` en main.js): `levPOT` manija POWER blanca (m16), `levHEL` perilla azul + varilla amarilla (m16+m23, atrás = bandera), `levCOND` perilla gris (m2+m6, atrás = corte; **a confirmar**). `levDUMP` manija roja de largado (agregada). Adelante = ángulo negativo (`−0.9`), atrás `0.15`; `escala` achica el recorrido visual y `pivY` fija el pivote. Las `lev75/77/42` de la conversión eran varillitas del mecanismo (quedan fijas como `varilla*`).
+- Procedimientos: puesta en marcha y despegue siguen el **checklist normal de AAXOD** (CHECK LIST 802 NORM ed2 Rev01, propiedad de Nueva Frontera SpA: no subirlo al repo público). El tutor marca con un aro amarillo el control de cada paso (`ui.marcar`, `marca` en el paso o inferido de `listo`).
 - Quest: joystick izquierdo X = pedales, atrás = frenos; derecho arriba/abajo = flaps; botón del joystick o A/X = recentrar al ojo del piloto.
 
 ## Números del avión (a validar con el POH y los pilotos de AAXOD)
@@ -67,12 +68,13 @@ potencia 1350 shp, empuje estático ≤ 19,5 kN; rota ~95–105 mph cargado, asc
 ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; hélice 1700 rpm. Fuego: se apaga 5 s después de ralentí + condición a corte + FIRE; a los 45 s es fatal.
 
 ## Pendientes (en el orden que pidió Iván)
-1. Probar en el Quest: altura del ojo, distancia de agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
+1. Probar en el Quest (el recentrado ya anda, 18/10): altura del ojo, distancia de agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
 2. Pedales y limpiaparabrisas manipulables (recortarlos de la malla grande con `EXTRAER`, como los switches).
 3. Perillas (knobs) del panel.
 4. Exterior con la librea AUR-AV (franja bordó y matrícula): generar las texturas `AT_01_T`/`AT_02_T` o conseguirlas de `texture.N6159F`. Encajar el `at802.glb` de aurav-sector no funcionó (proporciones distintas).
 5. Instrumentos con fotos reales del panel cuando Iván las saque en AAXOD (pegarlas por isla UV en `relojes.py`).
-6. Certificado final estilo AAXOD como en los otros juegos (`constancia.js` de aurav-senales).
+6. Voz guía más completa, sonido ambiente y radio con torre (pedido 18/10).
+7. Certificado final estilo AAXOD como en los otros juegos (`constancia.js` de aurav-senales).
 
 ## Trampas conocidas
 - Nunca meter un comentario `//` en medio de una línea al hacer reemplazos de texto: ya se tragó código tres veces. Usar `/* */`.

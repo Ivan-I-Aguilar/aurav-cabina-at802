@@ -26,9 +26,9 @@ export class Controles {
         g.position.copy(piv); o.position.sub(piv); g.add(o); this.raiz.add(g);
         const s = { grupo: g, pivote: piv, estado: false, nombre: o.name, malla: o }; this.switches.push(s); this._aplicarSwitch(s);
       } else {
-        const piv = new THREE.Vector3(c.x, caja.min.y, c.z);     // las palancas giran en su base
+        const piv = new THREE.Vector3(c.x, o.userData.pivY ?? caja.min.y, c.z);     // las palancas giran en su base (o en pivY si la manija está recortada)
         g.position.copy(piv); o.position.sub(piv); g.add(o); this.raiz.add(g);
-        this.palancas.push({ grupo: g, pivote: piv, ang: 0, min: -0.9, max: 0.15, agarre: null, nombre: o.name, malla: o, alto: caja.max.y - caja.min.y });
+        this.palancas.push({ grupo: g, pivote: piv, ang: 0, min: -0.9, max: 0.15, agarre: null, nombre: o.name, malla: o, alto: caja.max.y - piv.y, escala: o.userData.escala ?? 1 });
       }
     }
     return this;
@@ -64,12 +64,12 @@ export class Controles {
     const p = this.palancas.find(x => x.malla === h.object); if (p) { const med = (p.min + p.max) / 2; p.ang = p.ang > med ? p.min + 0.05 : p.max - 0.05; this._aplicarPalanca(p); this.alCambiar?.(p.nombre, p.ang); return true; }
     return false;
   }
-  _aplicarPalanca(p) { p.grupo.rotation.x = p.ang; }
+  _aplicarPalanca(p) { p.grupo.rotation.x = p.ang * p.escala; }   /* escala: recorrido visual menor para manijas largas; la lógica sigue en −0.9…0.15 */
   actualizar() {
     for (const p of this.palancas) {
       if (!p.agarre) continue;
       this.raiz.worldToLocal(p.agarre.getWorldPosition(tmp)); tmp.sub(p.pivote);
-      const a = THREE.MathUtils.clamp(Math.atan2(tmp.z, tmp.y), p.min, p.max);   // adelante (−z) = ángulo negativo
+      const a = THREE.MathUtils.clamp(Math.atan2(tmp.z, tmp.y) / p.escala, p.min, p.max);   // adelante (−z) = ángulo negativo
       if (Math.abs(a - p.ang) > 1e-3) { p.ang = a; this._aplicarPalanca(p); this.alCambiar?.(p.nombre, p.ang); }
     }
   }
