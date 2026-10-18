@@ -10,7 +10,7 @@ import { crearRadios } from './radios.js?v=20261017a';
 import { Controles } from './controles.js?v=20261017b';
 import { Instrumentos } from './instrumentos.js?v=20261017a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
-import { Mision } from './mision.js?v=20261017a';
+import { Mision } from './mision.js?v=20261018a';
 import { Audio } from './audio.js?v=20261017a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
@@ -188,7 +188,24 @@ const ui = {
   },
   ocultarPanel() { $('panel').hidden = true; panelVR.ocultar(); },
   decir(t) { audio.decir(t); },
+  marcar(nombre) { marca.objetivo = nombre ? (controles.palancas.find(p => p.nombre === nombre) || controles.switches.find(s => s.nombre === nombre) || null) : null; },
 };
+// marcador del control que pide el paso actual: aro amarillo que titila + flecha, visible a través de todo
+const marca = (() => {
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffd400, transparent: true, depthTest: false });
+  const g = new THREE.Group(); g.renderOrder = 10; g.visible = false; escena.add(g);
+  const aro = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.004, 8, 32), mat); aro.renderOrder = 10; g.add(aro);
+  const flecha = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.035, 12), mat); flecha.rotation.x = Math.PI; flecha.position.y = 0.075; flecha.renderOrder = 10; g.add(flecha);
+  return { g, aro, flecha, mat, objetivo: null, t: 0 };
+})();
+function actualizarMarca(dt) {
+  const o = marca.objetivo; marca.g.visible = !!o; if (!o) return;
+  if (o.alto != null) controles._puntaPalanca(o, marca.g.position); else controles._puntaSwitch(o, marca.g.position);
+  marca.t += dt; const k = 1 + 0.25 * Math.sin(marca.t * 6); marca.aro.scale.setScalar(k); marca.flecha.position.y = 0.075 + 0.012 * Math.sin(marca.t * 6);
+  marca.mat.opacity = 0.55 + 0.45 * Math.abs(Math.sin(marca.t * 3));
+  camara.getWorldPosition(tmp); marca.aro.lookAt(tmp);   /* el aro siempre de frente al piloto; la flecha apunta hacia abajo en el mundo */
+  marca.g.quaternion.identity();
+}
 // texto flotante en VR (tutor): tablilla a la derecha del panel, fija a la cabina
 const hudVR = (() => {
   const W = 768, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
@@ -242,7 +259,7 @@ renderer.setAnimationLoop(() => {
   avion.position.copy(vuelo.pos); avion.quaternion.copy(vuelo.q);
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
-  mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt);
+  mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt);
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
   for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : null; c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
   if (hud && !renderer.xr.isPresenting) { const L = vuelo.lecturas(), m = vuelo.motor; hud.textContent = `${L.asi.toFixed(0)} mph · ${L.alt.toFixed(0)} ft · ${L.vsi.toFixed(0)} fpm · TRQ ${m.torque.toFixed(0)}% · ITT ${m.itt.toFixed(0)} · Ng ${m.ng.toFixed(0)} · hél ${m.rpmHel.toFixed(0)} · flaps ${flaps * 20}° · agua ${vuelo.agua.toFixed(0)} kg${vuelo.perdida ? ' · PÉRDIDA' : ''}${vuelo.estrellado ? ' · ACCIDENTE' : ''}`; }

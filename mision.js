@@ -36,12 +36,19 @@ export class Mision {
     const p = this.pasos[this.i]; if (!p) return;
     this.ui.tareas(this.pasos.map((q, k) => ({ texto: q.texto, ok: k < this.i, actual: k === this.i })));
     this.decir(this.titulo, p.texto, p.voz ?? p.texto);
+    this.ui.marcar?.(this.marcaDe(p));
+  }
+  /* control que hay que tocar en el paso: p.marca, o el primero que mire listo() (lev('lev77') o sw('BATT')) */
+  marcaDe(p) {
+    if (p.marca !== undefined) return p.marca && (this.SW[p.marca] ?? p.marca);
+    const r = /(lev|sw)\('(\w+)'\)/.exec(p.listo.toString()); if (!r) return null;
+    return r[1] === 'lev' ? r[2] : this.SW[r[2]];
   }
   avanzarPaso() {
     const p = this.pasos[this.i];
     if (p.tiempo && this.tPaso > p.tiempo) { this.puntos -= p.penal ?? 10; this.detalle.push(`${p.texto}: tarde (${this.tPaso.toFixed(0)} s)`); }
     this.i++; this.tPaso = 0;
-    if (this.i < this.pasos.length) this.mostrarPaso(); else this.ui.tareas(this.pasos.map(q => ({ texto: q.texto, ok: true })));
+    if (this.i < this.pasos.length) this.mostrarPaso(); else { this.ui.tareas(this.pasos.map(q => ({ texto: q.texto, ok: true }))); this.ui.marcar?.(null); }
   }
   // ------------- flujo -------------
   empezar(desde = 'arranque') {
@@ -69,7 +76,7 @@ export class Mision {
     this.ui.decir(texto);
   }
   menu() {
-    this.fase = 'intro'; this.ui.tareas([]); this.ui.cartel('');
+    this.fase = 'intro'; this.ui.tareas([]); this.ui.cartel(''); this.ui.marcar?.(null);
     this.ui.panel({ titulo: 'Cabina AT-802 · AURAV', texto: 'Práctica de puesta en marcha, despegue y emergencias. Elegí por dónde empezar.',
       botones: [{ id: 'arranque', texto: 'Todo desde el arranque' }, { id: 'despegue', texto: 'Despegue' }, { id: 'falla', texto: 'Falla de motor en vuelo' }, { id: 'fuego', texto: 'Fuego de motor' }, { id: 'fallaDespegue', texto: 'Falla en el despegue' }, { id: 'libre', texto: 'Vuelo libre' }] },
       id => { this.ui.ocultarPanel(); if (id === 'libre') { this.fase = 'libre'; this.reiniciarAvion({ enPista: true, agua: 2400, apagado: false }); this.ui.tareas([]); this.decir('Vuelo libre', 'Volá tranquilo. Menú para volver.'); } else this.empezar(id); });
@@ -90,7 +97,7 @@ export class Mision {
       { id: 'fpump', texto: 'Bomba de combustible: ON (mirá la presión)', listo: () => this.sw('FPUMP') },
       { id: 'ign', texto: 'Ignición: ON', listo: () => this.sw('IGNTR') },
       { id: 'start', texto: 'START: arrancador, y mirá el Ng', listo: () => this.sw('START') || m.ng > 5 },
-      { id: 'ng12', texto: 'Esperá Ng 12 % y recién ahí: Condición a MARCHA (adelante)', listo: () => m.encendido, voz: 'Esperá doce por ciento de ene ge. Recién ahí, condición adelante.' },
+      { id: 'ng12', texto: 'Esperá Ng 12 % y recién ahí: Condición a MARCHA (adelante)', listo: () => m.encendido, marca: 'lev42', voz: 'Esperá doce por ciento de ene ge. Recién ahí, condición adelante.' },
       { id: 'itt', texto: 'Encendió: vigilá la ITT, pico por debajo de 850 °C', listo: () => this.tPaso > 6 && m.ng > 50, voz: 'Encendió. Vigilá la i te te.' },
       { id: 'gen', texto: 'Generador: ON · Aviónica: ON', listo: () => (this.sw('GEN') || this.sw('ALTN')) && this.sw('AVNC') },
       { id: 'chk', texto: 'Controlá: presión de aceite en verde, 28 V, Ng ~60 %', listo: () => this.tPaso > 4 },
