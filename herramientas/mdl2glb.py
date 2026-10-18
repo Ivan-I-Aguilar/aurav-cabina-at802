@@ -59,6 +59,17 @@ for pi,(ty,node,mi,vb,vo,vc,io_,ic,mr) in enumerate(parts):
             pre,lst=grp.split(':')
             if pi in [int(x) for x in lst.split(',') if x]: key=(pre+str(pi),mi)
     if _os.environ.get('PALANCA') and key!=mi: q=pos[:,:3]; print('palanca',pi,'base',q[q[:,1]<q[:,1].min()+0.02].mean(0).round(3),'top',q[q[:,1]>q[:,1].max()-0.02].mean(0).round(3))
+    # EXTRAER="nombre:mat:x0,y0,z0,x1,y1,z1;..." saca los triángulos de ese material dentro de la caja a una malla propia «nombre»
+    for ex in _os.environ.get('EXTRAER','').split(';'):
+        if ex.count(':')!=2: continue
+        nom,em,eb=ex.split(':'); eb=[float(x) for x in eb.split(',')]
+        if mi!=int(em): continue
+        tri=idx.reshape(-1,3); pv=v[:,:3]
+        dentro=np.all((pv[tri]>=eb[:3])&(pv[tri]<=eb[3:]),axis=(1,2))
+        if dentro.sum():
+            sub=tri[dentro].ravel(); gx=groups.setdefault((nom,mi),[[],[],[],[],0])
+            gx[0].append(pos[:,:3]); gx[1].append(nrm); gx[2].append(v[:,6:8]); gx[3].append(sub+gx[4]); gx[4]+=vc
+            idx=tri[~dentro].ravel(); print('extraer',nom,'tri',dentro.sum())
     g=groups.setdefault(key,[[],[],[],[],0]); g[0].append(pos[:,:3]); g[1].append(nrm); g[2].append(v[:,6:8]); g[3].append(idx+g[4]); g[4]+=vc
 def texfile(i):
     if tex[i].startswith('$') and len(sys.argv)>4: return os.path.join(sys.argv[4],tex[i][1:]+'.png')

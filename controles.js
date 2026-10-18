@@ -17,7 +17,7 @@ export class Controles {
   }
   // toma las mallas del GLB y las cuelga de pivotes
   armar(escenaGLB) {
-    const mallas = []; escenaGLB.traverse(o => { if (o.isMesh && /^(sw|lev)\d+$/.test(o.name)) mallas.push(o); });
+    const mallas = []; escenaGLB.traverse(o => { if (o.isMesh && /^(sw|lev)\w+$/.test(o.name)) mallas.push(o); });
     for (const o of mallas) {
       o.geometry.computeBoundingBox(); caja.copy(o.geometry.boundingBox); const c = caja.getCenter(new THREE.Vector3());
       const g = new THREE.Group(); g.name = 'piv_' + o.name;
@@ -61,7 +61,7 @@ export class Controles {
     const objs = [...this.switches.map(s => s.malla), ...this.palancas.map(p => p.malla)];
     const h = raycaster.intersectObjects(objs, false)[0]; if (!h) return false;
     const s = this.switches.find(x => x.malla === h.object); if (s) { this.alternar(s); return true; }
-    const p = this.palancas.find(x => x.malla === h.object); if (p) { p.ang = p.ang < -0.4 ? 0 : -0.85; this._aplicarPalanca(p); this.alCambiar?.(p.nombre, p.ang); return true; }
+    const p = this.palancas.find(x => x.malla === h.object); if (p) { const med = (p.min + p.max) / 2; p.ang = p.ang > med ? p.min + 0.05 : p.max - 0.05; this._aplicarPalanca(p); this.alCambiar?.(p.nombre, p.ang); return true; }
     return false;
   }
   _aplicarPalanca(p) { p.grupo.rotation.x = p.ang; }

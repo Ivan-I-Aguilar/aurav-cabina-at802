@@ -20,7 +20,7 @@ function texturaRuido(base, variacion, tam = 256, repetir = 40) {
 
 function cielo() {
   // Gradiente + nubes procedurales (fbm barato) + halo del sol. Sin texturas: apto para el Quest.
-  const g = new THREE.SphereGeometry(780, 40, 20);
+  const g = new THREE.SphereGeometry(1500, 40, 20);   /* (cabina: más grande, el avión vuela) */
   const m = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
     uniforms: { arriba: { value: new THREE.Color(0x3f7cc4) }, horizonte: { value: new THREE.Color(0xd3dfe0) }, sol: { value: new THREE.Vector3(-280, 150, -390).normalize() }, t: { value: 0 } },
@@ -64,12 +64,13 @@ export function crearZonas(radio = 11) {
   return g;
 }
 
+let alturaTerreno = () => 0;
 export function crearEscenario(escena) {
   // Plataforma, pista, hangares y paisaje portados de «La vuelta al avión» (aurav-prevuelo), para que
   // los dos juegos de AURAV compartan el mismo aeródromo. El avión queda estacionado en la plataforma
   // de hormigón, de frente a la pista.
-  const skyMesh = cielo(); escena.add(skyMesh);
-  escena.fog = new THREE.Fog(0xd3dfe0, 140, 800);
+  const skyMesh = cielo(); skyMesh.name = 'cielo'; escena.add(skyMesh);
+  escena.fog = new THREE.Fog(0xd3dfe0, 200, 1400);
   const M = (c, e = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.86, ...e });
   // Texturas CC0 de Poly Haven (1K, en ./tex): pasto con piedras, hormigón gastado, asfalto. Se cargan
   // de forma asíncrona; mientras tanto se ven los colores planos.
@@ -123,7 +124,10 @@ export function crearEscenario(escena) {
     const noise = (x, y) => { const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
       return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(ix, iy), hash(ix + 1, iy), u), THREE.MathUtils.lerp(hash(ix, iy + 1), hash(ix + 1, iy + 1), u), v); };
     const fbm = (x, y) => { let a = 0.5, f = 1, t = 0; for (let i = 0; i < 5; i++) { t += a * noise(x * f, y * f); a *= 0.5; f *= 2.1; } return t; };
-    const alt = (x, z) => { const r = Math.hypot(x, z - 60), lejos = THREE.MathUtils.smoothstep(r, 300, 650); const n = fbm(x * 0.0022 + 3.1, z * 0.0022 + 7.7); return lejos * (Math.pow(n, 1.6) * 150 + Math.max(0, n - 0.55) * 170); };
+    // (cabina) valle plano a lo largo de la pista y sus prolongaciones, para despegar, volar el circuito y hacer aterrizajes forzosos
+    const dRect = (x, z, x0, x1, z0, z1) => Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
+    const alt = (x, z) => { const r = Math.hypot(x, z - 60), lejos = THREE.MathUtils.smoothstep(r, 300, 650) * THREE.MathUtils.smoothstep(dRect(x, z, -250, 300, -2200, 500), 60, 320); const n = fbm(x * 0.0022 + 3.1, z * 0.0022 + 7.7); return lejos * (Math.pow(n, 1.6) * 150 + Math.max(0, n - 0.55) * 170); };
+    alturaTerreno = alt;
     for (let i = 0; i < pa.count; i++) { const x = pa.getX(i), z = -pa.getY(i); const h = alt(x, z); pa.setZ(i, h);
       const dh = Math.hypot(alt(x + 6, z) - alt(x - 6, z), alt(x, z + 6) - alt(x, z - 6)) / 12; const th = THREE.MathUtils.clamp(h / 170, 0, 1);
       const c = new THREE.Color('#7c8f60').lerp(new THREE.Color('#9aa070'), th).lerp(new THREE.Color('#8f958f'), THREE.MathUtils.clamp(dh * 1.6 - 0.25, 0, 1) * 0.7 + th * th * 0.45);
@@ -185,7 +189,7 @@ export function crearEscenario(escena) {
   sol.shadow.bias = -0.0005;
   escena.add(sol);
 
-  return { actualizar: dt => { humo.userData.actualizar(dt); skyMesh.userData.actualizar(dt); } };
+  return { actualizar: dt => { humo.userData.actualizar(dt); skyMesh.userData.actualizar(dt); }, alturaTerreno: (x, z) => alturaTerreno(x, z) };
 }
 
 function crearHumo() {

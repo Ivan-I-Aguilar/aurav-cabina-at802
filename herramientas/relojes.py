@@ -1,6 +1,7 @@
 # Caras de instrumentos del AT-802 para las texturas dinámicas $ATVC_01..04 (en FSX las pintaba el panel en vivo).
 # Las caras están dibujadas a mano (no son fotos) siguiendo la distribución del panel real (foto EC-LHI como guía).
-import json,struct,numpy as np,sys,math
+import json,struct,numpy as np,sys,math,os
+SIN_AGUJAS=bool(os.environ.get('SIN_AGUJAS'))   # las agujas se ponen en 3D en el juego (vivas)
 from PIL import Image,ImageDraw,ImageFont
 glb,outdir=sys.argv[1],sys.argv[2]
 b=open(glb,'rb').read(); jl=struct.unpack_from('<I',b,12)[0]; g=json.loads(b[20:20+jl]); bin0=20+jl+8
@@ -27,10 +28,12 @@ def dial(d,cx,cy,r,a0=135,sweep=270,vmin=0,vmax=10,paso=1,sub=5,etq=2,arcos=(),a
         v+=paso; k+=1
     if titulo and r>26: d.text((cx,cy+r*0.3),titulo,fill=BLANCO,font=F(r*0.12),anchor='mm')
     if unidad and r>26: d.text((cx,cy+r*0.44),unidad,fill=(190,190,190),font=F(r*0.09,False),anchor='mm')
+    if SIN_AGUJAS: agujas=()
     for i,val in enumerate(agujas): aguja(d,cx,cy,r*(0.8 if i==0 else 0.55),ang(val),r*(0.05 if i==0 else 0.08))
     d.ellipse([cx-r*0.08,cy-r*0.08,cx+r*0.08,cy+r*0.08],fill=(50,50,54))
 def horizonte(d,cx,cy,r):
     d.ellipse([cx-r,cy-r,cx+r,cy+r],fill=NEGRO)
+    if SIN_AGUJAS: d.ellipse([cx-r,cy-r,cx+r,cy+r],outline=(70,70,74),width=max(1,int(r*0.03))); return
     m=Image.new('L',(S,S),0); ImageDraw.Draw(m).ellipse([cx-r*0.9,cy-r*0.9,cx+r*0.9,cy+r*0.9],fill=255)
     cap=Image.new('RGB',(S,S),(14,14,16)); dc=ImageDraw.Draw(cap)
     dc.rectangle([cx-r,cy-r,cx+r,cy],fill=(60,130,210)); dc.rectangle([cx-r,cy,cx+r,cy+r],fill=(140,90,45))
@@ -51,6 +54,7 @@ def horizonte(d,cx,cy,r):
     d.polygon([pol(cx,cy,r*0.9,-90),pol(cx,cy,r*0.78,-84),pol(cx,cy,r*0.78,-96)],fill=(250,200,40))
     d.ellipse([cx-r,cy-r,cx+r,cy+r],outline=(70,70,74),width=max(1,int(r*0.03)))
 def reloj(d,cx,cy,r):
+    if SIN_AGUJAS: return dial(d,cx,cy,r,a0=-90,sweep=360,vmin=0,vmax=12,paso=1,sub=5,etq=1,agujas=(),fmt=lambda v:str(int(v) or 12),numR=0.72)
     dial(d,cx,cy,r,a0=-90,sweep=360,vmin=0,vmax=12,paso=1,sub=5,etq=1,agujas=(),fmt=lambda v:str(int(v) or 12),numR=0.72)
     aguja(d,cx,cy,r*0.55,-90+30*10.2,r*0.07); aguja(d,cx,cy,r*0.8,-90+6*12,r*0.045); aguja(d,cx,cy,r*0.85,-90+6*40,r*0.02,col=ROJO)
 def display(d,x0,y0,x1,y1,txt,col=(255,150,40)):
