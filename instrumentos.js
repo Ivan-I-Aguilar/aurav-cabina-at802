@@ -60,6 +60,7 @@ export class Instrumentos {
     // la textura muestra ±40° de cabeceo en todo el alto; se usa repeat para que el disco vea sólo ±25°
     tex.repeat.set(1, 0.375); tex.offset.set(0, 0.3125);   /* la textura cubre ±80°; el disco muestra ±30° */
     base.add(disco); this.horDisco = disco;
+    const caja = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.02, r * 1.02, 0.035, 40, 1, true).rotateX(Math.PI / 2).translate(0, 0, -0.0175), new THREE.MeshBasicMaterial({ color: 0x0b0b0c, side: THREE.DoubleSide })); base.add(caja);   /* caja del instrumento: que no parezca flotar */
     const anillo = new THREE.Mesh(new THREE.RingGeometry(r * 0.88, r * 1.02, 48), new THREE.MeshBasicMaterial({ color: 0x0e0e10 })); anillo.position.z = 0.001; base.add(anillo);
     const amarillo = new THREE.MeshBasicMaterial({ color: 0xf2c200 });
     for (const s of [-1, 1]) { const ala = new THREE.Mesh(new THREE.PlaneGeometry(r * 0.34, r * 0.05), amarillo); ala.position.set(s * r * 0.29, 0, 0.0015); base.add(ala); }

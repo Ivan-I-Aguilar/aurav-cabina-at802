@@ -1,4 +1,6 @@
 // Sonido sintetizado (sin archivos): motor PT6 (silbido de turbina + hélice), alarma de fuego, bocina de pérdida y voz.
+let FRASES = null; fetch('./voz/frases.json').then(r => r.json()).then(d => { FRASES = d; }).catch(() => {});
+export function claveVoz(t) { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0'); }   /* FNV-1a, igual que voces.py */
 export class Audio {
   constructor() { this.ctx = null; this.vozOn = true; }
   iniciar() {
@@ -30,10 +32,23 @@ export class Audio {
     this.gBocina.gain.setTargetAtTime(bocina ? (Math.floor(this.t * 3) % 2 ? 0.15 : 0.05) : 0, now, 0.02);
   }
   golpe() { if (!this.ctx) return; const C = this.ctx; const o = C.createOscillator(); const g = C.createGain(); o.type = 'triangle'; o.frequency.value = 90; g.gain.setValueAtTime(0.8, C.currentTime); g.gain.exponentialRampToValueAtTime(0.001, C.currentTime + 0.6); o.connect(g).connect(this.master); o.start(); o.stop(C.currentTime + 0.6); }
+  /* voz pregrabada (voz/<clave>.wav, ver herramientas/voces.py): el navegador del Quest no trae voces. Si la frase no está, speechSynthesis. */
   decir(texto) {
-    if (!this.vozOn || !('speechSynthesis' in window)) return;
+    if (!this.vozOn || !texto) return;
+    const k = claveVoz(texto);
+    if (this.ctx && FRASES?.[k]) { this._sonarVoz(k); return; }
+    if (!('speechSynthesis' in window)) return;
     speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(texto); u.lang = 'es-AR'; u.rate = 1.05;
     const v = speechSynthesis.getVoices().find(v => /es[-_](AR|MX|US|419)/i.test(v.lang)) || speechSynthesis.getVoices().find(v => v.lang.startsWith('es')); if (v) u.voice = v;
     speechSynthesis.speak(u);
+  }
+  async _sonarVoz(k) {
+    const C = this.ctx; this._vozId = k; this._buf ??= new Map();
+    let b = this._buf.get(k);
+    if (!b) { try { b = await C.decodeAudioData(await (await fetch(`./voz/${k}.wav`)).arrayBuffer()); this._buf.set(k, b); } catch { return; } }
+    if (this._vozId !== k) return;   /* llegó otra frase mientras se bajaba esta */
+    try { this._voz?.stop(); } catch {}
+    if (!this.gVoz) { this.gVoz = C.createGain(); this.gVoz.gain.value = 1.6; this.gVoz.connect(C.destination); }
+    const s = C.createBufferSource(); s.buffer = b; s.connect(this.gVoz); s.start(); this._voz = s;
   }
 }
