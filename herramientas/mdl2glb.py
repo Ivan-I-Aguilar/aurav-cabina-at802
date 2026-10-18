@@ -37,12 +37,29 @@ p0,s0=best; parts=[]
 for t,p,s in chunks(p0+4,p0+s0):
     if t=='PART': parts.append(struct.unpack_from('<9i',b,p))
 groups={}
-for ty,node,mi,vb,vo,vc,io_,ic,mr in parts:
+import os as _os; EXCL=set(int(x) for x in _os.environ.get('EXCL','').split(',') if x)
+for pi,(ty,node,mi,vb,vo,vc,io_,ic,mr) in enumerate(parts):
+    if pi in EXCL: continue
     v=verts[vb][vo:vo+vc]; idx=inde[io_:io_+ic].astype(np.int64)
     if idx.max()>=vc: idx=idx-vo   # por si los índices son absolutos
+    CUT=_os.environ.get('CUT')   # "mat:x0,y0,z0,x1,y1,z1" quita los triángulos de ese material enteramente dentro de la caja (coords del modelo, z sin invertir)
+    if CUT:
+        cm,cb=CUT.split(':'); cb=[float(x) for x in cb.split(',')]
+        if mi in [int(x) for x in cm.split(',')]:
+            tri=idx.reshape(-1,3); pv=v[:,:3]
+            dentro=np.all((pv[tri]>=cb[:3])&(pv[tri]<=cb[3:]),axis=(1,2)); idx=tri[~dentro].ravel()
+            if dentro.sum(): print('corte',pi,'tri',dentro.sum())
     W=world[node] if world[node] is not None else np.eye(4)
     pos=np.c_[v[:,:3],np.ones(len(v))]@W; nrm=v[:,3:6]@W[:3,:3]
-    g=groups.setdefault(mi,[[],[],[],[],0]); g[0].append(pos[:,:3]); g[1].append(nrm); g[2].append(v[:,6:8]); g[3].append(idx+g[4]); g[4]+=vc
+    if _os.environ.get('LISTA'): q=pos[:,:3].copy(); q[:,2]*=-1; print('PART',pi,'mat',mi,'n',vc,q.min(0).round(2),q.max(0).round(2))
+    key=('palanca',mi) if pi in [int(x) for x in _os.environ.get('PALANCA','').split(',') if x] else mi
+    # MOVIL="sw:38,47,...;lev:75,77" -> cada parte sale como malla propia «<prefijo><parte>» (para animarla en el juego)
+    for grp in _os.environ.get('MOVIL','').split(';'):
+        if ':' in grp:
+            pre,lst=grp.split(':')
+            if pi in [int(x) for x in lst.split(',') if x]: key=(pre+str(pi),mi)
+    if _os.environ.get('PALANCA') and key!=mi: q=pos[:,:3]; print('palanca',pi,'base',q[q[:,1]<q[:,1].min()+0.02].mean(0).round(3),'top',q[q[:,1]>q[:,1].max()-0.02].mean(0).round(3))
+    g=groups.setdefault(key,[[],[],[],[],0]); g[0].append(pos[:,:3]); g[1].append(nrm); g[2].append(v[:,6:8]); g[3].append(idx+g[4]); g[4]+=vc
 def texfile(i):
     if tex[i].startswith('$') and len(sys.argv)>4: return os.path.join(sys.argv[4],tex[i][1:]+'.png')
     stem=os.path.splitext(tex[i])[0].lower()
@@ -61,7 +78,8 @@ def image(path):
     images.append({'bufferView':add(buf.getvalue()),'mimeType':'image/png' if alpha else 'image/jpeg'}); textures.append({'source':len(images)-1,'sampler':0})
     imgcache[path]=(len(textures)-1,alpha); return imgcache[path]
 faltan=set()
-for mi,(P,N,T,I,_) in sorted(groups.items()):
+for key,(P,N,T,I,_) in sorted(groups.items(),key=lambda kv:str(kv[0])):
+    mi=key[1] if isinstance(key,tuple) else key; nombre=(f'palanca_m{mi}' if key[0]=='palanca' else key[0]) if isinstance(key,tuple) else f'm{mi}'
     P=np.vstack(P).astype('f4'); N=np.vstack(N).astype('f4'); T=np.vstack(T).astype('f4'); I=np.concatenate(I).astype('u4')
     P[:,2]*=-1; N[:,2]*=-1; nl=np.linalg.norm(N,axis=1,keepdims=True); N/=np.where(nl==0,1,nl)  # izq→der
     I=I.reshape(-1,3)[:,[0,2,1]].ravel()
@@ -71,7 +89,7 @@ for mi,(P,N,T,I,_) in sorted(groups.items()):
         if typ=='VEC3' and arr is P: acc['min']=P.min(0).tolist(); acc['max']=P.max(0).tolist()
         accs.append(acc); a.append(len(accs)-1)
     accs.append({'bufferView':add(I.tobytes(),34963),'componentType':5125,'count':len(I),'type':'SCALAR'})
-    m=mats[mi]; flags=m[0]; diff=list(m[9:13]); mat={'name':f'm{mi}','pbrMetallicRoughness':{'baseColorFactor':[1,1,1,diff[3]] if flags&2 else diff,'metallicFactor':0,'roughnessFactor':0.8},'doubleSided':True}
+    m=mats[mi]; flags=m[0]; diff=list(m[9:13]); mat={'name':nombre,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,diff[3]] if flags&2 else diff,'metallicFactor':0,'roughnessFactor':0.8},'doubleSided':True}
     if flags&2:
         f=texfile(m[2])
         if f: ti,al=image(f); mat['pbrMetallicRoughness']['baseColorTexture']={'index':ti}; 
@@ -79,7 +97,7 @@ for mi,(P,N,T,I,_) in sorted(groups.items()):
         if f and al: mat['alphaMode']='MASK'; mat['alphaCutoff']=0.5
     if diff[3]<0.99: mat['alphaMode']='BLEND'
     materials.append(mat)
-    meshes.append({'name':f'm{mi}','primitives':[{'attributes':{'POSITION':a[0],'NORMAL':a[1],'TEXCOORD_0':a[2]},'indices':len(accs)-1,'material':len(materials)-1}]})
+    meshes.append({'name':nombre,'primitives':[{'attributes':{'POSITION':a[0],'NORMAL':a[1],'TEXCOORD_0':a[2]},'indices':len(accs)-1,'material':len(materials)-1}]})
 g={'asset':{'version':'2.0','generator':'mdl2glb AURAV'},'scene':0,'scenes':[{'nodes':list(range(len(meshes)))}],'nodes':[{'mesh':i,'name':meshes[i]['name']} for i in range(len(meshes))],
    'meshes':meshes,'materials':materials,'accessors':accs,'bufferViews':views,'buffers':[{'byteLength':len(bin_)}],'samplers':[{'magFilter':9729,'minFilter':9987}]}
 if images: g['images']=images; g['textures']=textures
