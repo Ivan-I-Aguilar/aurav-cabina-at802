@@ -154,14 +154,14 @@ if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { b
 bVR.onclick = async () => {
   const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
   renderer.xr.setReferenceSpaceType('local-floor'); await renderer.xr.setSession(s);
-  recentrarPendiente = 12;
+  recentrarPendiente = 72;   /* recentra a los 12 y a los 72 cuadros */
   setTimeout(() => { if (!$('panel').hidden && ui._ultimo) panelVR.mostrar(ui._ultimo[0], ui._ultimo[1], renderer.xr.getCamera()); }, 800);
   s.addEventListener('end', () => jugador.position.copy(OJO_AVION));
 };
 let recentrarPendiente = 0, botonPrevio = false;
 const cabezaW = new THREE.Vector3(), ojoW = new THREE.Vector3();
 function recentrar() {   // lleva el casco al ojo del piloto (en el marco del avión)
-  renderer.xr.getCamera().getWorldPosition(cabezaW); avion.localToWorld(ojoW.copy(OJO_AVION));
+  camara.getWorldPosition(cabezaW); avion.localToWorld(ojoW.copy(OJO_AVION));   /* la cámara XR interna no cuelga de la escena: usar la nuestra */
   tmp.copy(ojoW).sub(cabezaW).applyQuaternion(avion.getWorldQuaternion(new THREE.Quaternion()).invert()); jugador.position.add(tmp);
 }
 
@@ -246,7 +246,7 @@ renderer.setAnimationLoop(() => {
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
   for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : null; c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
   if (hud && !renderer.xr.isPresenting) { const L = vuelo.lecturas(), m = vuelo.motor; hud.textContent = `${L.asi.toFixed(0)} mph · ${L.alt.toFixed(0)} ft · ${L.vsi.toFixed(0)} fpm · TRQ ${m.torque.toFixed(0)}% · ITT ${m.itt.toFixed(0)} · Ng ${m.ng.toFixed(0)} · hél ${m.rpmHel.toFixed(0)} · flaps ${flaps * 20}° · agua ${vuelo.agua.toFixed(0)} kg${vuelo.perdida ? ' · PÉRDIDA' : ''}${vuelo.estrellado ? ' · ACCIDENTE' : ''}`; }
-  if (renderer.xr.isPresenting) { if (recentrarPendiente > 0 && --recentrarPendiente === 0) recentrar(); }
+  if (renderer.xr.isPresenting) { if (recentrarPendiente > 0) { recentrarPendiente--; if (recentrarPendiente === 0 || recentrarPendiente === 60) recentrar(); } }
   else camara.rotation.set(pitch, yaw, 0);
   renderer.render(escena, camara);
 });
