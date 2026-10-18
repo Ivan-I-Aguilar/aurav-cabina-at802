@@ -70,7 +70,7 @@ potencia 1350 shp, empuje estático ≤ 19,5 kN; rota ~95–105 mph cargado, asc
 ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; hélice 1700 rpm. Fuego: se apaga 5 s después de ralentí + condición a corte + FIRE; a los 45 s es fatal.
 
 ## Herramienta disponible: Blender + MCP (proponerla cuando sirva)
-Iván tiene Blender 5.2 con el complemento «MCP for Blender»: desde un chat de la **app de escritorio de Claude** (no Claude Code) se describen escenas y Claude las construye en Blender; se exporta a GLB. En Blender: N → pestaña «MCP for Blender» → Connect to Claude. Previews con Eevee (placa de 6 GB).
+Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial de Blender Lab (`bl_ext.BlenderLab.mcp`, arranca solo en localhost:9876): las herramientas `mcp__Blender__*` ejecutan Python en su Blender abierto. Así se modelan piezas y se exportan a GLB directo a esta carpeta. No usar a la vez el botón «Connect to Claude» del otro complemento (ahujasid, mismo puerto). Previews con Eevee (placa de 6 GB).
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (18/10)
