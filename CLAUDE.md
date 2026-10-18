@@ -69,6 +69,10 @@ Masa vacía+piloto+combustible 3200 kg, tolva hasta 3100 kg; S 37,25 m², b 18 m
 potencia 1350 shp, empuje estático ≤ 19,5 kN; rota ~95–105 mph cargado, asciende ~1300 fpm, planea ~9:1 a 110 mph; Vne 220 mph;
 ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; hélice 1700 rpm. Fuego: se apaga 5 s después de ralentí + condición a corte + FIRE; a los 45 s es fatal.
 
+## Herramienta disponible: Blender + MCP (proponerla cuando sirva)
+Iván tiene Blender 5.2 con el complemento «MCP for Blender»: desde un chat de la **app de escritorio de Claude** (no Claude Code) se describen escenas y Claude las construye en Blender; se exporta a GLB. En Blender: N → pestaña «MCP for Blender» → Connect to Claude. Previews con Eevee (placa de 6 GB).
+**Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
+
 ## Dónde quedamos (18/10)
 - Publicada v=20261018k. Falta que Iván la pruebe en el Quest: voz pregrabada, rayo para accionar controles, F PUMP con palanquita, panel inferior, caja del horizonte, pausa (placa roja / B-Y).
 - **Sin resolver:** Iván dice que «una palanca de la izquierda se rompe» al accionarla; en el navegador no se reproduce. Preguntarle cuál es (POWER blanca, perilla azul, gris o roja) y mirarla moviéndola.
