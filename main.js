@@ -130,6 +130,7 @@ for (const i of [0, 1]) {
   const agarrar = () => {
     c.userData.apretado++;
     if (panelVR.visible) { panelVR.gatillo(c); return; }
+    if (botonSalir.apuntado(c) != null) { pausar(); return; }
     if (controles.manoVR(c, true, true)) return;
     palanca.localToWorld(tmp.copy(PUNIO)); c.getWorldPosition(tmp2); if (tmp.distanceTo(tmp2) < 0.25) mando.agarre = c;
   };
@@ -139,22 +140,24 @@ for (const i of [0, 1]) {
   c.addEventListener('connected', e => { c.userData.mano = e.data.handedness; });
 }
 // joysticks: izquierdo X = pedales, izquierdo atrás = frenos; derecho arriba/abajo = flaps; botón joystick o A/X = recentrar
-let flapsPrevio = 0;
+let flapsPrevio = 0, pausaPrevio = false;
 function leerJoysticks() {
-  const ses = renderer.xr.getSession(); if (!ses) return; let boton = false; pedal = 0; frenos = 0;
+  const ses = renderer.xr.getSession(); if (!ses) return; let boton = false, botonPausa = false; pedal = 0; frenos = 0;
   for (const src of ses.inputSources) {
     const gp = src.gamepad; if (!gp) continue;
     if (gp.buttons[3]?.pressed || gp.buttons[4]?.pressed) boton = true;
+    if (gp.buttons[5]?.pressed) botonPausa = true;   /* B / Y: pausa con opción de salir */
     const x = gp.axes[2] || 0, y = gp.axes[3] || 0;
     if (src.handedness === 'left') { pedal = Math.abs(x) > 0.15 ? x : 0; frenos = y > 0.5 ? (y - 0.5) * 2 : 0; }
     if (src.handedness === 'right') { if (y > 0.7 && flapsPrevio <= 0.7) flaps = Math.min(1, flaps + 0.5); if (y < -0.7 && flapsPrevio >= -0.7) flaps = Math.max(0, flaps - 0.5); flapsPrevio = y; }
   }
   if (boton && !botonPrevio) recentrarPendiente = 1; botonPrevio = boton;
+  if (botonPausa && !pausaPrevio && !panelVR.visible) pausar(); pausaPrevio = botonPausa;
 }
 // ---- teclado (PC): flechas bastón, A/D pedales, B frenos, F flaps, E largado ----
 const teclas = {}; addEventListener('keydown', e => { teclas[e.key.toLowerCase()] = true; if (e.key === 'f') flaps = flaps >= 1 ? 0 : flaps + 0.5; if (e.key === 'e') { vuelo.largarCarga(true); vuelo.evento('largado'); } });
 addEventListener('keyup', e => teclas[e.key.toLowerCase()] = false);
-addEventListener('keydown', e => { if (e.key === 'Escape') mision.menu(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') pausar(); });
 const teclado = new THREE.Object3D(); cabina.add(teclado);
 function actualizarTeclado() {
   const ax = (teclas.arrowdown ? 1 : 0) - (teclas.arrowup ? 1 : 0), az = (teclas.arrowright ? 1 : 0) - (teclas.arrowleft ? 1 : 0);
@@ -258,7 +261,31 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
   avion.position.copy(v.pos); avion.quaternion.copy(v.q);
 }
 const mision = new Mision({ vuelo, controles, SW, ui, obtener: { terreno: (x, z) => ambiente.alturaTerreno(x, z) }, reiniciarAvion }); window.__mision = mision;
-$('menu').onclick = () => { audio.iniciar(); mision.menu(); };
+$('menu').onclick = () => { audio.iniciar(); pausar(); };
+// ---- pausa / salir: siempre a mano (botón fijo en la cabina, B/Y, Esc o «Menú») ----
+let pausado = false;
+function pausar() {
+  if (pausado) return; pausado = true; const previo = $('panel').hidden ? null : ui._ultimo;
+  const botones = [{ id: 'seguir', texto: 'Seguir' }, { id: 'menu', texto: 'Menú principal' }];
+  if (renderer.xr.isPresenting) botones.push({ id: 'salirVR', texto: 'Salir de VR' });
+  ui.panel({ titulo: 'Pausa', texto: 'El avión está detenido. Seguí donde estabas, volvé al menú o salí.', botones }, id => {
+    pausado = false; ui.ocultarPanel();
+    if (id === 'seguir') { if (previo) ui.panel(previo[0], previo[1]); }
+    else if (id === 'menu') mision.menu();
+    else if (id === 'salirVR') { renderer.xr.getSession()?.end(); if (previo) ui.panel(previo[0], previo[1]); }
+  });
+}
+const botonSalir = (() => {   /* placa «MENÚ · SALIR» debajo de la tablilla del tutor */
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 80; const c = cv.getContext('2d');
+  c.fillStyle = 'rgba(160,30,30,0.92)'; c.beginPath(); c.roundRect(0, 0, 256, 80, 18); c.fill(); c.fillStyle = '#fff'; c.font = 'bold 34px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('MENÚ · SALIR', 128, 42);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.0375), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false })); m.renderOrder = 9;
+  m.position.set(0.44, 1.245, 0.80); m.rotation.set(-0.15, -0.25, 0); cabina.add(m);
+  const ray = new THREE.Raycaster(), m4 = new THREE.Matrix4();
+  return { malla: m, apuntado(control) {   /* distancia del rayo del control a la placa, o null */
+    m4.identity().extractRotation(control.matrixWorld); ray.ray.origin.setFromMatrixPosition(control.matrixWorld); ray.ray.direction.set(0, 0, -1).applyMatrix4(m4);
+    const h = ray.intersectObject(m)[0]; return h ? h.distance : null; } };
+})();
 $('voz').onclick = () => { audio.vozOn = !audio.vozOn; $('voz').textContent = 'Voz: ' + (audio.vozOn ? 'sí' : 'no'); };
 addEventListener('pointerdown', () => audio.iniciar(), { once: true });
 
@@ -273,7 +300,7 @@ renderer.setAnimationLoop(() => {
   if (renderer.xr.isPresenting) { leerJoysticks(); for (const c of manos) controles.manoVR(c, c.userData.apretado > 0, false); }
   controles.actualizar(); aplicarControles();
   // física a paso fijo
-  const vel = window.__vel || 1; acumSim += dt * vel; const h = 1 / 120; let n = 0;
+  const vel = pausado ? 0 : (window.__vel || 1); acumSim += dt * vel; const h = 1 / 120; let n = 0;
   while (acumSim >= h && n < 400) {
     if (window.__auto) {   /* piloto automático de prueba (headless): mantiene cabeceo y alabeo pedidos en grados */
       const e = vuelo.euler, a = window.__auto, c = vuelo.mando;
@@ -286,8 +313,9 @@ renderer.setAnimationLoop(() => {
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt);
+  botonSalir.malla.visible = renderer.xr.isPresenting;
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
-  for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : null; c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
+  for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : (renderer.xr.isPresenting ? botonSalir.apuntado(c) : null); c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
   if (hud && !renderer.xr.isPresenting) { const L = vuelo.lecturas(), m = vuelo.motor; hud.textContent = `${L.asi.toFixed(0)} mph · ${L.alt.toFixed(0)} ft · ${L.vsi.toFixed(0)} fpm · TRQ ${m.torque.toFixed(0)}% · ITT ${m.itt.toFixed(0)} · Ng ${m.ng.toFixed(0)} · hél ${m.rpmHel.toFixed(0)} · flaps ${flaps * 20}° · agua ${vuelo.agua.toFixed(0)} kg${vuelo.perdida ? ' · PÉRDIDA' : ''}${vuelo.estrellado ? ' · ACCIDENTE' : ''}`; }
   if (renderer.xr.isPresenting) { if (recentrarPendiente > 0) { recentrarPendiente--; if (recentrarPendiente === 0 || recentrarPendiente === 60) recentrar(); } }
   else camara.rotation.set(pitch, yaw, 0);
