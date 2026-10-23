@@ -53,6 +53,12 @@ n3 = borrar_caras(centro_cabina)
 # 3b) cola: sacar las aletas verticales que el Fire Boss lleva sobre el estabilizador (a ±1,5 m); el terrestre no las tiene
 n4 = borrar_caras(lambda o, f, mw: all(1.44 < abs((mw @ v.co).x) < 1.57 and -6.12 < (mw @ v.co).y < -5.1 and 0.14 < (mw @ v.co).z < 0.96 for v in f.verts))
 
+# 3c) aleta ventral bajo la cola (también es del Fire Boss) y su placa trasera; el terrestre termina el cono liso (como el r5 de AAXOD)
+n5 = borrar_caras(lambda o, f, mw: all(abs((mw @ v.co).x) < 0.04 and -6.95 < (mw @ v.co).y < -4.8 and (mw @ v.co).z < -0.02 for v in f.verts))
+n5 += borrar_caras(lambda o, f, mw: all(abs((mw @ v.co).x) < 0.025 for v in f.verts) and abs((mw.to_3x3() @ f.normal).normalized().x) > 0.9
+                   and min(-(mw @ v.co).y for v in f.verts) > 5.2 and min((mw @ v.co).z for v in f.verts) < -0.3 and f.calc_area() > 0.1)
+n5 += borrar_caras(lambda o, f, mw: all(abs((mw @ v.co).x) < 0.07 and 6.55 < -(mw @ v.co).y < 6.95 and -0.56 < (mw @ v.co).z < -0.36 for v in f.verts))
+
 # 4) librea AURAV (texturas horneadas sobre las mismas UV)
 for n, img in LIBREA.items():
     o = bpy.data.objects.get(n)
@@ -66,10 +72,21 @@ with bpy.data.libraries.load(os.path.join(SAL, 'at802_terrestre_trabajo.blend'),
 for c in a.collections:
     if c: bpy.context.scene.collection.children.link(c)
 
+# 6) rueda de cola: sin aleta ventral, la pata va del fondo del cono (y≈−0,08 en z≈5,85) a la horquilla, inclinada hacia atrás como en el r5
+import bmesh as _bm
+from mathutils import Matrix as _M
+def _b(x, y, z): return Vector((x, -z, y))
+pc = bpy.data.objects.get('pata_cola')
+if pc:
+    a_, c_ = _b(0, -0.08, 5.85), _b(0, -0.6, 6.28); d = c_ - a_; bm = _bm.new(); _bm.ops.create_cube(bm, size=1)
+    _bm.ops.scale(bm, vec=(0.03, 0.08, d.length), verts=bm.verts)
+    _bm.ops.transform(bm, matrix=_M.Translation((a_ + c_) / 2) @ d.normalized().to_track_quat('Z', 'Y').to_matrix().to_4x4(), verts=bm.verts)
+    bm.to_mesh(pc.data); bm.free(); pc.matrix_world = _M.Identity(4)
+
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SAL, 'at802_terrestre_v2.blend'))
 for i in bpy.data.images:
     if i.size[0] > 1024: i.scale(1024, 1024)
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.export_scene.gltf(filepath=os.path.join(PROYECTO, 'exterior.glb'), export_format='GLB', use_selection=True, export_yup=True, export_apply=True,
                           export_animations=False, export_materials='EXPORT', export_image_format='AUTO', export_jpeg_quality=85)
-print('LISTO', {'aletas_cola': n4, 'flotadores': n1, 'soportes': n2, 'centro_cabina': n3, 'kb': round(os.path.getsize(os.path.join(PROYECTO, 'exterior.glb')) / 1024)})
+print('LISTO', {'aletas_cola': n4, 'ventral': n5, 'flotadores': n1, 'soportes': n2, 'centro_cabina': n3, 'kb': round(os.path.getsize(os.path.join(PROYECTO, 'exterior.glb')) / 1024)})
