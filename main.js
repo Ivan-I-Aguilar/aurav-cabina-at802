@@ -15,7 +15,7 @@ import { Audio } from './audio.js?v=20261018b';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
 const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
-const ALTURA_CABINA = 1.55;                     // el marco de la cabina sobre el del avión: tren apoyado en la pista (no depende del ojo)
+const ALTURA_CABINA = 2.0;                      // el marco de la cabina sobre el del avión: con el tren terrestre (exterior.glb) las ruedas apoyan 2 m debajo
 const V = '20261017a';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -38,7 +38,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null;
+let instrumentos = null, exterior = null; const V_EXT = '20261022d';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -67,6 +67,12 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     if (o.isMesh && (o.name === 'm14' || o.name === 'm15')) { o.material.color.set(0xe6e6df); o.material.roughness = 0.55; }   /* exterior blanco */
   });
   cabina.add(g.scene);
+  /* exterior completo (Lichi: FSX terrestre con librea AURAV, mismo marco que la cabina); reemplaza la cáscara gris que traía la cabina */
+  new GLTFLoader().loadAsync(`./exterior.glb?v=${V_EXT}`).then(e => {
+    e.scene.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) o.renderOrder = 2; } });
+    cabina.add(e.scene); exterior = e.scene;
+    g.scene.traverse(o => { if (o.isMesh && ['m14', 'm15', 'm9'].includes(o.name)) o.visible = false; });   /* m9: disco de hélice de la cabina */
+  });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
   g.scene.traverse(o => { if (o.isMesh) o.name = o.name.replace(/^lev(75|77|42)$/, 'varilla$1'); });

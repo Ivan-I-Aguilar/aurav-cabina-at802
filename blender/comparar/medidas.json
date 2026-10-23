@@ -1,0 +1,38 @@
+{
+ "aaxod_r5": {
+  "x": 11.16,
+  "y": 18.06,
+  "z": 4.05,
+  "mallas": 20,
+  "tris": 11332,
+  "materiales": 18,
+  "imagenes": 7
+ },
+ "aaxod": {
+  "x": 1.0,
+  "y": 0.77,
+  "z": 0.27,
+  "mallas": 18,
+  "tris": 146044,
+  "materiales": 1,
+  "imagenes": 1
+ },
+ "sector": {
+  "x": 10.53,
+  "y": 18.04,
+  "z": 4.06,
+  "mallas": 20,
+  "tris": 45060,
+  "materiales": 16,
+  "imagenes": 9
+ },
+ "cabina_fsx": {
+  "x": 18.04,
+  "y": 6.89,
+  "z": 3.08,
+  "mallas": 61,
+  "tris": 99931,
+  "materiales": 61,
+  "imagenes": 16
+ }
+}
