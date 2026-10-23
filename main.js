@@ -165,7 +165,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         const tri = [idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)]; if (dentro.containsPoint(c)) quedan.push(...tri); else if (CUPULA.containsPoint(c)) techo.push(...tri); }
       if (techo.length) {   /* chapa exterior de la cúpula: blanca lisa (la textura de la cabina pinta manchas rojas/doradas ahí) */
         const gt = geo.clone(); gt.setIndex(techo);
-        const mt = new THREE.Mesh(gt, new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.55, side: THREE.DoubleSide })); mt.name = o.name + '_techo'; o.parent.add(mt); mt.position.copy(o.position); mt.quaternion.copy(o.quaternion); mt.scale.copy(o.scale);
+        const mt = new THREE.Mesh(gt, new THREE.MeshStandardMaterial({ color: 0xbabbba, roughness: 0.8, metalness: 0, side: THREE.DoubleSide })   /* mismo tono y brillo que la textura del fuselaje (blanco gris 186) */); mt.name = o.name + '_techo'; o.parent.add(mt); mt.position.copy(o.position); mt.quaternion.copy(o.quaternion); mt.scale.copy(o.scale);
       }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
