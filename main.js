@@ -14,8 +14,8 @@ import { Mision } from './mision.js?v=20261018c';
 import { Audio } from './audio.js?v=20261018b';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
-const OJO = new THREE.Vector3(0, 1.15, 1.6);   // vista del piloto en el marco del modelo (adelante = −z)
-const ALTURA_OJO = 2.7;                         // metros sobre la pista con el tren en el piso
+const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
+const ALTURA_CABINA = 1.55;                     // el marco de la cabina sobre el del avión: tren apoyado en la pista (no depende del ojo)
 const V = '20261017a';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -30,7 +30,7 @@ const ambiente = crearEscenario(escena);
 // Jerarquía: avion (cuerpo que vuela, +x adelante) → cabina (el GLB mira a −z: se gira 90°, tren en el piso) + jugador (cámara)
 const vuelo = new Vuelo(); window.__vuelo = vuelo; vuelo.suelo = (x, z) => ambiente.alturaTerreno(x, z);
 const avion = new THREE.Group(); escena.add(avion);
-const cabina = new THREE.Group(); cabina.rotation.y = -Math.PI / 2; cabina.position.y = ALTURA_OJO - OJO.y; avion.add(cabina);
+const cabina = new THREE.Group(); cabina.rotation.y = -Math.PI / 2; cabina.position.y = ALTURA_CABINA; avion.add(cabina);
 const jugador = new THREE.Group(); avion.add(jugador);
 const camara = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.02, 3000); camara.rotation.order = 'YXZ';
 const OJO_AVION = cabina.localToWorld(OJO.clone()); avion.worldToLocal(OJO_AVION);

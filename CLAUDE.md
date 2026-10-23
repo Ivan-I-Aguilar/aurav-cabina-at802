@@ -50,7 +50,7 @@ CUT="23:-0.2,0.88,-0.98,0.28,1.14,-0.70" python3 -I herramientas/mdl2glb.py at80
 python3 -I herramientas/instrumentos.py cabina.glb instrumentos.json
 ```
 Coordenadas de CUT/EXTRAER en el marco del MDL (z sin invertir: el GLB tiene z = −z_mdl). Partes y materiales: `LISTA=1` imprime el bbox de cada PART.
-Marco del GLB (= `cabina`): +x derecha del piloto, +y arriba, −z adelante; ojo del piloto en (0, 1.15, 1.6).
+Marco del GLB (= `cabina`): +x derecha del piloto, +y arriba, −z adelante; ojo del piloto en (0, 1.38, 1.64) — subido el 22/10: con 1,15 el tablero tapaba el horizonte.
 
 ## Probar sin casco
 - Servidor local: `python -m http.server 8765` en la carpeta del repo y abrir `http://localhost:8765/`.
