@@ -54,9 +54,14 @@ function crearPuerta(raices) {
   const esVertice = (x, y, z) => VIDRIO.some(p => Math.abs(p.x - x) < 0.003 && Math.abs(p.y - y) < 0.003 && Math.abs(p.z - z) < 0.003);
   for (const raiz of raices) raiz.traverse(o => {   /* el exterior también trae vidrio de cúpula (m28): sacarle el tramo de la puerta */
     if (!o.isMesh || o.name !== 'm28' || raiz !== raices[1] || !o.geometry.index) return;
+    /* sólo lo que cae sobre el paño de la puerta: cerca de su plano y dentro de su contorno (no tocar el parabrisas de adelante) */
+    const n = new THREE.Vector3().subVectors(VIDRIO[1], VIDRIO[0]).cross(new THREE.Vector3().subVectors(VIDRIO[2], VIDRIO[0])).normalize();
+    const u = new THREE.Vector3().subVectors(VIDRIO[3], VIDRIO[5]).normalize(), w = new THREE.Vector3().crossVectors(n, u);
+    const poli = VIDRIO.map(q => [q.clone().sub(VIDRIO[0]).dot(u), q.clone().sub(VIDRIO[0]).dot(w)]);
+    const adentro = (x, y) => { let s = false; for (let i = 0, j = poli.length - 1; i < poli.length; j = i++) { const [xi, yi] = poli[i], [xj, yj] = poli[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) s = !s; } return s; };
     const geo = o.geometry, pos = geo.attributes.position, idx = geo.index, fuera = [], c = new THREE.Vector3(), p = new THREE.Vector3();
     for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
-      if (!(c.x < -0.3 && c.y > 1.0 && c.y < 1.6 && c.z > 0.8 && c.z < 1.86)) fuera.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+      const d = c.clone().sub(VIDRIO[0]); if (!(Math.abs(d.dot(n)) < 0.08 && adentro(d.dot(u), d.dot(w)))) fuera.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
     geo.setIndex(fuera);
   });
   for (const raiz of raices) raiz.traverse(o => {
@@ -110,7 +115,31 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   new GLTFLoader().loadAsync(`./exterior.glb?v=${V_EXT}`).then(e => {
     e.scene.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) o.renderOrder = 2; } });
     cabina.add(e.scene); exterior = e.scene;
-    g.scene.traverse(o => { if (o.isMesh && ['m14', 'm15', 'm9'].includes(o.name)) o.visible = false; });   /* m9: disco de hélice de la cabina */
+    /* de la cáscara de la cabina (m14/m15) se queda sólo lo de adentro del habitáculo (butaca, paredes interiores); el resto lo pone el exterior */
+    const dentro = new THREE.Box3(new THREE.Vector3(-0.62, 0.12, 0.75), new THREE.Vector3(0.62, 1.62, 2.45)), c = new THREE.Vector3(), p = new THREE.Vector3();
+    const CUPULA = new THREE.Box3(new THREE.Vector3(-0.8, 1.0, 0.65), new THREE.Vector3(0.8, 2.1, 2.15));   /* la cúpula la pone la cabina (más fiel); al exterior se le saca */
+    e.scene.traverse(o => {
+      if (!o.isMesh || !o.geometry.index) return; const g2 = o.geometry, ps = g2.attributes.position, ix = g2.index, q = [];
+      for (let t = 0; t < ix.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(ps, ix.getX(t + k))); c.multiplyScalar(1 / 3); if (!CUPULA.containsPoint(c)) q.push(ix.getX(t), ix.getX(t + 1), ix.getX(t + 2)); }
+      g2.setIndex(q);
+    });
+    g.scene.traverse(o => {
+      if (!o.isMesh) return;
+      if (o.name === 'm9') { o.visible = false; return; }   /* disco de hélice de la cabina */
+      if (o.name !== 'm14' && o.name !== 'm15') return;
+      const geo = o.geometry, pos = geo.attributes.position, idx = geo.index; if (!idx) { o.visible = false; return; }
+      const quedan = [], techo = [];
+      for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
+        const tri = [idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)]; if (dentro.containsPoint(c)) quedan.push(...tri); else if (CUPULA.containsPoint(c)) techo.push(...tri); }
+      if (techo.length) {   /* chapa exterior de la cúpula: blanca lisa (la textura de la cabina pinta manchas rojas/doradas ahí) */
+        const gt = geo.clone(); gt.setIndex(techo);
+        const mt = new THREE.Mesh(gt, new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.55, side: THREE.DoubleSide })); mt.name = o.name + '_techo'; o.parent.add(mt); mt.position.copy(o.position); mt.quaternion.copy(o.quaternion); mt.scale.copy(o.scale);
+      }
+      geo.setIndex(quedan); o.visible = quedan.length > 0;
+    });
+    /* la cabina convertida no tenía AT_01_T (salía blanca): usar la textura del exterior (mismo atlas, misma UV) */
+    let texAt01 = null; e.scene.traverse(o => { if (o.isMesh && o.name === 'm15' && o.material?.map) texAt01 = o.material.map; });
+    if (texAt01) g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = texAt01; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
     crearPuerta([g.scene, e.scene]);
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
