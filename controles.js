@@ -24,7 +24,7 @@ export class Controles {
       if (o.name.startsWith('sw')) {
         const piv = o.userData.piv ? new THREE.Vector3(...o.userData.piv) : o.userData.pivBase ? new THREE.Vector3(c.x, caja.min.y, c.z) : new THREE.Vector3(c.x, c.y, caja.min.z);     // la palanquita nace en la cara del panel y asoma hacia +z (recortadas de consola: asoma hacia arriba)
         g.position.copy(piv); o.position.sub(piv); g.add(o); this.raiz.add(g);
-        const s = { grupo: g, pivote: piv, estado: false, nombre: o.name, malla: o, eje: o.userData.eje || 'x', ang: o.userData.ang || null, pos: o.userData.pos || null, perilla: o.userData.perilla || 0 };
+        const s = { grupo: g, pivote: piv, estado: false, nombre: o.name, malla: o, eje: o.userData.eje || 'x', ang: o.userData.ang || null, pos: o.userData.pos || null, perilla: o.userData.perilla || 0, suave: !!o.userData.suave };
         if (s.pos) s.estado = o.userData.inicial ?? 0; else if (s.perilla) s.estado = 0;   /* ang: [apagado, encendido] en rad sobre el eje (manijas que giran distinto) */ this.switches.push(s); this._aplicarSwitch(s);
       } else {
         const piv = new THREE.Vector3(c.x, o.userData.pivY ?? caja.min.y, c.z);     // las palancas giran en su base (o en pivY si la manija está recortada)
@@ -37,7 +37,7 @@ export class Controles {
   /* switches de 2 posiciones: estado true (arriba) / false (abajo).
      de 3 posiciones (s.tres = true): estado 1 arriba · 0 medio · −1 abajo; cada toque avanza y rebota en los extremos (arriba → medio → abajo → medio → …) */
   _aplicarSwitch(s) {
-    if (s.pos) { s.grupo.rotation[s.eje] = s.pos[s.estado]; return; }          /* varias posiciones: estado = índice */
+    if (s.pos) { if (s.suave) s.objetivo = s.pos[s.estado]; else s.grupo.rotation[s.eje] = s.pos[s.estado]; return; }   /* varias posiciones: estado = índice; suave = se mueve de a poco (ventana) */
     if (s.perilla) { s.grupo.rotation[s.eje] = s.estado * s.perilla; return; }   /* perilla giratoria: estado = pasos girados */
     if (s.ang) { s.grupo.rotation[s.eje] = s.estado ? s.ang[1] : s.ang[0]; return; }
     if (!s.tres) { s.grupo.rotation.x = s.estado ? -SW_ANG : SW_ANG; return; }
@@ -92,6 +92,7 @@ export class Controles {
   }
   _aplicarPalanca(p) { p.grupo.rotation.x = p.ang * p.escala; }   /* escala: recorrido visual menor para manijas largas; la lógica sigue en −0.9…0.15 */
   actualizar() {
+    for (const s of this.switches) if (s.suave && s.objetivo != null) { const r = s.grupo.rotation; r[s.eje] += (s.objetivo - r[s.eje]) * 0.08; }
     for (const p of this.palancas) {
       if (!p.agarre) continue;
       this.raiz.worldToLocal(p.agarre.getWorldPosition(tmp)); tmp.sub(p.pivote);
