@@ -33,8 +33,19 @@ export class Controles {
     }
     return this;
   }
-  _aplicarSwitch(s) { s.grupo.rotation.x = s.estado ? -SW_ANG : SW_ANG; }
-  alternar(s) { s.estado = !s.estado; this._aplicarSwitch(s); this.alCambiar?.(s.nombre, s.estado); }
+  /* switches de 2 posiciones: estado true (arriba) / false (abajo).
+     de 3 posiciones (s.tres = true): estado 1 arriba · 0 medio · −1 abajo; cada toque avanza y rebota en los extremos (arriba → medio → abajo → medio → …) */
+  _aplicarSwitch(s) {
+    if (!s.tres) { s.grupo.rotation.x = s.estado ? -SW_ANG : SW_ANG; return; }
+    if (typeof s.estado === 'boolean') s.estado = s.estado ? 1 : 0;
+    s.grupo.rotation.x = -SW_ANG * s.estado;
+  }
+  alternar(s) {
+    if (s.tres) { s.paso ??= 1; if (s.estado + s.paso > 1 || s.estado + s.paso < -1) s.paso = -s.paso; s.estado += s.paso; }
+    else s.estado = !s.estado;
+    this._aplicarSwitch(s); this.alCambiar?.(s.nombre, s.estado);
+  }
+  hacerTresPosiciones(nombre, inicial = 0) { const s = this.switches.find(x => x.nombre === nombre); if (s) { s.tres = true; s.estado = inicial; this._aplicarSwitch(s); } return s; }
   // punto de agarre de una palanca (su extremo) en coordenadas del mundo
   _puntaPalanca(p, out) { return p.grupo.localToWorld(out.set(0, p.alto, 0)); }
   _puntaSwitch(s, out) { return s.grupo.localToWorld(out.set(0, 0, 0.03)); }
