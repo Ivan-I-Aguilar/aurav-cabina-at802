@@ -87,8 +87,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     { nombre: 'swFRDS_D', piezas: [['m18', [-0.491, 0.781, 0.901], [-0.477, 0.794, 0.925]]] },
     /* consola izquierda: perilla del compensador de timón (RUDDER TRIM), 7 posiciones de izquierda a derecha */
     { nombre: 'swK_TRIMTIMON', piv: [-0.5125, 0.663, 1.5885], eje: 'y', pos: [-1, -2 / 3, -1 / 3, 0, 1 / 3, 2 / 3, 1].map(k => k * Math.PI / 3), inicial: 3, piezas: [['m16', [-0.526, 0.66, 1.575], [-0.499, 0.667, 1.602]]] },
-    /* ventana izquierda: el vidrio (con el herraje de la traba) se articula en el caño de arriba y abre hacia afuera; la traba roja está en el borde fijo de abajo */
-    { nombre: 'swVENTANA', piv: [-0.39, 1.575, 1.5], eje: 'z', pos: [0, -1.0], suave: true, piezas: [['m27', [-0.622, 1.036, 0.806], [-0.388, 1.578, 1.834]], ['m14', [-0.594, 1.015, 1.322], [-0.541, 1.077, 1.443]]] },
+    /* traba roja de la puerta izquierda (la ventana es un paño fijo; la puerta se hará con el avión completo) */
     { nombre: 'swTRABA', piv: [-0.609, 0.9385, 1.308], eje: 'x', pos: [0, 1.2], piezas: [['m23', [-0.638, 0.899, 1.211], [-0.618, 0.956, 1.322]], ['m23', [-0.647, 0.906, 1.229], [-0.629, 0.926, 1.246]], ['m23', [-0.628, 0.915, 1.285], [-0.590, 0.962, 1.331]]] },
     { nombre: 'levCOND', pivY: 0.63, escala: 0.6, piezas: [['m2'], ['m6']] },                                                                     /* perilla gris (a confirmar) */
   ];
@@ -141,9 +140,7 @@ function aplicarControles() {
   if (m.encendido && controles.estado(SW.START)) { const s = controles.switches.find(x => x.nombre === SW.START); if (s) { s.estado = false; controles._aplicarSwitch(s); } }
 }
 let pedal = 0, frenos = 0, flaps = 0;
-controles.alCambiar = (nombre, valor) => { console.log('control', nombre, valor);
-  if (nombre === 'swVENTANA' && valor === 1 && controles.estado('swTRABA') !== 1) { const v = controles.switches.find(x => x.nombre === 'swVENTANA'); v.estado = 0; v.paso = 1; controles._aplicarSwitch(v); ui.tutor('Ventana', 'Primero levantá la traba roja.'); return; }   /* trabada: no abre */
-  if (nombre === 'swTRABA' && valor === 0 && controles.estado('swVENTANA') === 1) { const t = controles.switches.find(x => x.nombre === 'swTRABA'); t.estado = 1; t.paso = -1; controles._aplicarSwitch(t); return; }   /* no se traba con la ventana abierta */ if (nombre === 'swFLAPS') flaps = flaps >= 1 ? 0 : flaps + 0.5; };   /* switch de flaps: 0° → 10° → 20° → 0° */
+controles.alCambiar = (nombre, valor) => { console.log('control', nombre, valor); if (nombre === 'swFLAPS') flaps = flaps >= 1 ? 0 : flaps + 0.5; };   /* switch de flaps: 0° → 10° → 20° → 0° */
 
 // ---- bastón de mando ----
 const PIVOTE = new THREE.Vector3(0.004, 0.22, 0.969);          // base del bastón (marco del modelo)
