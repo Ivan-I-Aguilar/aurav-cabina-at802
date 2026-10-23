@@ -83,6 +83,7 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 - `levCOND` (perilla gris) y `swAUX` sin confirmar con Iván.
 
 ## Próximo gran paso: el avión completo (decidido 22/10)
+- **Fuente completa conseguida (22/10):** `OneDrive\Desktop\AURAVir_tractor_43YXO.zip` (FSN AT802 empaquetado para MSFS) extraído en `Documentsurav-cabinasxir_tractor\SimObjects\AIRPLANES\Air Tractor Amphib\`: `model/at802_amp.MDL` (exterior anfibio), `at802_intA.MDL` (cabina), `texture/` + `texture.bare/` (sin pintar) + N6159F/EC-KRF/FSN, `sound/` (36 sonidos reales), `panel/Panel.cfg`, docs. Exterior convertido: `fsx/salida/exterior_bare.glb` (160 partes, 18,2 × 10,8 m). Requiere `pip install --user numpy pillow` para `mdl2glb.py`.
 - Exterior = **modelo FSX original del Fire Boss** (mismo autor que la cabina: encaja perfecto y es fiel al AT-802). `Documentsurav-cabinaireboss.zip` está **incompleto** (111 de 203 MB; rikoooo cortó por límite de descargas): Iván lo vuelve a bajar a mano.
 - Con el paquete completo: extraer el MDL exterior y las texturas (`texture.N6159F`), además de **panel.cfg, gauges XML y las definiciones de animación**, que dicen qué hace cada perilla y switch (para darles función).
 - Lichi (Blender): unir exterior + cabina, librea AURAV (franja bordó, matrícula), **puerta** que abre con la traba roja (la ventana es fija), **estribos** para subir, tren. En el juego: caminar alrededor, subir y entrar a la cabina.
