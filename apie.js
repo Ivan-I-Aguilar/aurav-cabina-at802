@@ -14,7 +14,7 @@ const RECORRIDO_SUBIDA = [                                  // ojos: piso → es
 ];
 
 export function crearAPie({ escena, avion, cabina, jugador, camara, renderer, ojoCabina, terreno, alPedirSubir }) {
-  const estado = { modo: 'cabina', anim: null, vel: new THREE.Vector2(), turnoPrevio: 0, cerca: false };
+  const estado = { modo: 'cabina', anim: null, vel: new THREE.Vector2(), turnoPrevio: 0, cerca: false, alturaXR: 0 };   /* alturaXR: compensación si el XR no da el piso (modo cámara con espacio «local») */
   const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), q = new THREE.Quaternion();
 
   // cartel «SUBIR» junto al estribo (se apunta, se toca o se clickea)
@@ -28,7 +28,7 @@ export function crearAPie({ escena, avion, cabina, jugador, camara, renderer, oj
   // joystick en pantalla (celular), sólo a pie
   const tactil = matchMedia('(pointer: coarse)').matches;
   const base = document.createElement('div'); base.id = 'joy';
-  base.style.cssText = 'position:fixed;left:24px;bottom:190px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);touch-action:none;display:none;z-index:20';
+  base.style.cssText = 'position:fixed;right:24px;bottom:190px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);touch-action:none;display:none;z-index:20';
   const perilla = document.createElement('div');
   perilla.style.cssText = 'position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(200,230,58,.85)';
   base.appendChild(perilla); document.body.appendChild(base);
@@ -49,7 +49,7 @@ export function crearAPie({ escena, avion, cabina, jugador, camara, renderer, oj
     escena.attach(jugador); aMundo(pCabinaPies, tmp); tmp.y = terreno(tmp.x, tmp.z);
     jugador.position.copy(tmp); jugador.quaternion.identity();
     aMundo(mirarA, tmp2); const yaw = Math.atan2(-(tmp2.x - tmp.x), -(tmp2.z - tmp.z)); jugador.rotation.set(0, yaw, 0);
-    camara.position.set(0, enVR() ? 0 : ALTURA_OJOS, 0);
+    camara.position.set(0, enVR() ? 0 : ALTURA_OJOS, 0); if (enVR()) jugador.position.y += estado.alturaXR;
   }
   function ponerJugadorEnElAsiento() {
     avion.attach(jugador); jugador.position.copy(ojoCabina()); jugador.rotation.set(0, -Math.PI / 2, 0); camara.position.set(0, 0, 0);
@@ -94,7 +94,7 @@ export function crearAPie({ escena, avion, cabina, jugador, camara, renderer, oj
 
   return {
     get modo() { return estado.modo; }, get animando() { return !!estado.anim; }, cartel, bajar, subir,
-    get cerca() { return estado.cerca; },
+    get cerca() { return estado.cerca; }, set alturaXR(v) { estado.alturaXR = v; },
     /* teclas: objeto de teclas apretadas (PC); joysticks: { mover: [x, y], girar: -1|0|1 } en VR */
     actualizar(dt, teclas, joysticksVR) {
       base.style.display = estado.modo === 'pie' && tactil && !enVR() ? 'block' : 'none';
@@ -120,8 +120,8 @@ export function crearAPie({ escena, avion, cabina, jugador, camara, renderer, oj
         y = (teclas.s || teclas.arrowdown ? 1 : 0) - (teclas.w || teclas.arrowup ? 1 : 0);
         if (joy.id != null) { x = joy.x; y = joy.y; }
       }
-      mover(dt, x, y, giro);
-      jugador.getWorldPosition(tmp); const l = cabina.worldToLocal(tmp);
+      mover(dt, x, y, giro); jugador.position.y = terreno(jugador.position.x, jugador.position.z) + (enVR() ? estado.alturaXR : 0);
+      camara.getWorldPosition(tmp); const l = cabina.worldToLocal(tmp);   /* la cabeza / el teléfono: en VR y en modo cámara uno camina de verdad */
       estado.cerca = Math.hypot(l.x - ESTRIBO.x, l.z - ESTRIBO.z) < 1.4;
       cartel.material.color.setHex(estado.cerca ? 0xffffff : 0x9a9a9a);
     },
