@@ -39,34 +39,31 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-/* puerta izquierda: el vidrio lateral (m27 de la cabina, pieza limpia) más un marco nuevo de caño por su contorno; bisagra en el borde de arriba.
-   Abre hacia arriba y afuera al levantar la traba roja (swTRABA). No se recorta chapa: así no quedan astillas. */
+/* puerta izquierda (Lichi, blender/puerta.glb): marco, vidrio de 6 mm, bisagras y manija; clip «puerta_abrir» (0 = cerrada, fin = abierta).
+   Se saca el vidrio lateral original de la cabina (triángulos de m27 con las 6 esquinas VIDRIO) y se maneja con la traba roja (swTRABA). */
 const VIDRIO = [[-0.619, 1.137, 0.809], [-0.609, 1.077, 0.919], [-0.569, 1.039, 1.699], [-0.391, 1.549, 1.831], [-0.4, 1.562, 1.535], [-0.404, 1.575, 1.287]].map(p => new THREE.Vector3(...p));
-const PUERTA = { abierta: -1.05 };
-const puerta = { grupo: null, ang: 0, eje: null };
+const puerta = { mixer: null, accion: null, dur: 1, k: 0 };
 function crearPuerta(raices) {
-  const F = VIDRIO[5], D = VIDRIO[3]; puerta.eje = D.clone().sub(F).normalize();
-  const g = new THREE.Group(); g.position.copy(F); g.name = 'puerta';
   const esVertice = (x, y, z) => VIDRIO.some(p => Math.abs(p.x - x) < 0.003 && Math.abs(p.y - y) < 0.003 && Math.abs(p.z - z) < 0.003);
-  for (const raiz of raices) raiz.traverse(o => {   /* triángulos cuyos tres vértices son esquinas del vidrio lateral */
+  for (const raiz of raices) raiz.traverse(o => {
     if (!o.isMesh || o.name !== 'm27' || !o.geometry.index) return;
-    const geo = o.geometry, pos = geo.attributes.position, idx = geo.index, dentro = [], fuera = [];
-    for (let t = 0; t < idx.count; t += 3) { const ids = [idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)]; (ids.every(i => esVertice(pos.getX(i), pos.getY(i), pos.getZ(i))) ? dentro : fuera).push(...ids); }
-    if (!dentro.length) return;
-    const sub = geo.clone(); sub.setIndex(dentro); geo.setIndex(fuera);
-    const v = new THREE.Mesh(sub.toNonIndexed().translate(-F.x, -F.y, -F.z), o.material); v.renderOrder = o.renderOrder; g.add(v);
+    const geo = o.geometry, pos = geo.attributes.position, idx = geo.index, fuera = [];
+    for (let t = 0; t < idx.count; t += 3) { const ids = [idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)]; if (!ids.every(i => esVertice(pos.getX(i), pos.getY(i), pos.getZ(i)))) fuera.push(...ids); }
+    geo.setIndex(fuera);
   });
-  const camino = new THREE.CurvePath(); const pts = VIDRIO.map(p => p.clone().sub(F).add(new THREE.Vector3(-0.004, 0, 0)));
-  for (let i = 0; i < pts.length; i++) camino.add(new THREE.LineCurve3(pts[i], pts[(i + 1) % pts.length]));
-  const marco = new THREE.Mesh(new THREE.TubeGeometry(camino, 96, 0.013, 8, true), new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.5, metalness: 0.1 }));
-  g.add(marco); cabina.add(g); puerta.grupo = g;
+  new GLTFLoader().loadAsync(`./blender/puerta.glb?v=${V_EXT}`).then(p => {
+    p.scene.traverse(o => { if (o.isMesh && o.material?.transparent) { o.renderOrder = 3; o.material.depthWrite = false; } });
+    cabina.add(p.scene); puerta.mixer = new THREE.AnimationMixer(p.scene);
+    const clip = THREE.AnimationClip.findByName(p.animations, 'puerta_abrir');
+    if (clip) { puerta.accion = puerta.mixer.clipAction(clip); puerta.accion.play(); puerta.accion.paused = true; puerta.dur = clip.duration; }
+  });
 }
 function actualizarPuerta(dt) {
-  if (!puerta.grupo) return;
-  const obj = controles.estado('swTRABA') === 1 ? PUERTA.abierta : 0;
-  puerta.ang += (obj - puerta.ang) * Math.min(1, dt * 2.5); puerta.grupo.quaternion.setFromAxisAngle(puerta.eje, puerta.ang);
+  if (!puerta.accion) return;
+  const obj = controles.estado('swTRABA') === 1 ? 1 : 0;
+  puerta.k += (obj - puerta.k) * Math.min(1, dt * 2.5); puerta.accion.time = puerta.k * puerta.dur; puerta.mixer.update(0);
 }
-let instrumentos = null, exterior = null; const V_EXT = '20261022f';
+let instrumentos = null, exterior = null; const V_EXT = '20261022g';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
