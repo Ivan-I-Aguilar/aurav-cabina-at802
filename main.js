@@ -7,7 +7,7 @@ import { GLTFLoader } from './GLTFLoader.js';
 import { mergeGeometries } from './BufferGeometryUtils.js';
 import { crearEscenario } from './escenario.js?v=20261017a';
 import { crearRadios } from './radios.js?v=20261017a';
-import { Controles } from './controles.js?v=20261022c';
+import { Controles } from './controles.js?v=20261022d';
 import { Instrumentos } from './instrumentos.js?v=20261018a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
 import { Mision } from './mision.js?v=20261022a';
@@ -73,13 +73,23 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   const MANIJAS = [
     { nombre: 'levPOT', pivY: 0.59, escala: 0.5, piezas: [['m16', [-0.48, 0.67, 1.23], [-0.43, 0.85, 1.37]], ['m26', [-0.47, 0.585, 1.28], [-0.445, 0.78, 1.415]]] },   /* POWER: manija blanca + cuerpo gris */
     { nombre: 'levHEL', pivY: 0.19, escala: 0.25, piezas: [['m16', [-0.37, 0.70, 1.27], [-0.31, 0.76, 1.33]], ['m23', [-0.39, 0.18, 1.21], [-0.33, 0.79, 1.31]], ['m23', [-0.395, 0.685, 1.195], [-0.31, 0.82, 1.285]], ['m34', [-0.352, 0.795, 1.195], [-0.31, 0.842, 1.237]]] },   /* + mango negro y punta gris de arriba */   /* perilla azul + varilla amarilla */
-    { nombre: 'swFLAPS', piezas: [['m34', [-0.605, 0.66, 1.40], [-0.575, 0.708, 1.423]]] },   /* consola izquierda: switch de FLAPS */
-    { nombre: 'swAUX', piezas: [['m34', [-0.53, 0.646, 1.40], [-0.515, 0.686, 1.423]]] },     /* consola izquierda: el de abajo (función a confirmar) */
-    { nombre: 'swFUEL', piv: [-0.617, 0.703, 0.947], eje: 'y', ang: [Math.PI / 2, 0], piezas: [['m23', [-0.628, 0.689, 0.935], [-0.606, 0.717, 0.959]], ['m23', [-0.622, 0.69, 0.882], [-0.612, 0.719, 0.976]], ['m26', [-0.628, 0.68, 0.932], [-0.605, 0.689, 0.959]]] },   /* manija roja de combustible: OFF ↔ FUEL (gira en el plano de la consola) */
-    { nombre: 'swWRUD', piezas: [['m23', [-0.518, 0.765, 1.349], [-0.482, 0.819, 1.403]]] },   /* perilla negra: timón de agua (WATER RUDDER) */
+    { nombre: 'swFLAPS', pivBase: true, piezas: [['m34', [-0.605, 0.66, 1.40], [-0.575, 0.708, 1.423]]] },   /* consola izquierda: switch de FLAPS */
+    { nombre: 'swAUX', pivBase: true, piezas: [['m34', [-0.53, 0.646, 1.40], [-0.515, 0.686, 1.423]]] },     /* consola izquierda: el de abajo (función a confirmar) */
+    { nombre: 'swFUEL', piv: [-0.617, 0.703, 0.947], eje: 'y', pos: [Math.PI / 2, Math.PI / 4, 0], inicial: 2, piezas: [['m23', [-0.628, 0.689, 0.935], [-0.606, 0.717, 0.959]], ['m23', [-0.622, 0.69, 0.882], [-0.612, 0.719, 0.976]], ['m26', [-0.628, 0.68, 0.932], [-0.605, 0.689, 0.959]]] },   /* selector de combustible: OFF · medio · BOTH (3 posiciones según Bruno; función a definir con el manual) */
+    { nombre: 'swWRUD', pivBase: true, piezas: [['m23', [-0.518, 0.765, 1.349], [-0.482, 0.819, 1.403]]] },   /* perilla negra: timón de agua (WATER RUDDER) */
+    /* panel FRDS (sistema de descarga): perillas giratorias y palanquitas; funciones a definir con el manual */
+    { nombre: 'swK_FRDS1', piv: [-0.604, 0.864, 0.914], eje: 'z', perilla: Math.PI / 6, piezas: [['m18', [-0.616, 0.852, 0.914], [-0.592, 0.876, 0.931]]] },
+    { nombre: 'swK_FRDS2', piv: [-0.557, 0.864, 0.908], eje: 'z', perilla: Math.PI / 6, piezas: [['m18', [-0.569, 0.852, 0.908], [-0.545, 0.876, 0.925]]] },
+    { nombre: 'swK_FRDS3', piv: [-0.557, 0.822, 0.908], eje: 'z', perilla: Math.PI / 6, piezas: [['m18', [-0.569, 0.810, 0.908], [-0.545, 0.834, 0.925]]] },
+    { nombre: 'swFRDS_A', piezas: [['m18', [-0.553, 0.944, 0.908], [-0.540, 0.956, 0.929]]] },
+    { nombre: 'swFRDS_B', piezas: [['m18', [-0.508, 0.944, 0.903], [-0.495, 0.956, 0.924]]] },
+    { nombre: 'swFRDS_C', piezas: [['m18', [-0.557, 0.781, 0.908], [-0.543, 0.794, 0.933]]] },
+    { nombre: 'swFRDS_D', piezas: [['m18', [-0.491, 0.781, 0.901], [-0.477, 0.794, 0.925]]] },
+    /* consola izquierda: perilla del compensador de timón (RUDDER TRIM), 7 posiciones de izquierda a derecha */
+    { nombre: 'swK_TRIMTIMON', piv: [-0.5125, 0.663, 1.5885], eje: 'y', pos: [-1, -2 / 3, -1 / 3, 0, 1 / 3, 2 / 3, 1].map(k => k * Math.PI / 3), inicial: 3, piezas: [['m16', [-0.526, 0.66, 1.575], [-0.499, 0.667, 1.602]]] },
     { nombre: 'levCOND', pivY: 0.63, escala: 0.6, piezas: [['m2'], ['m6']] },                                                                     /* perilla gris (a confirmar) */
   ];
-  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = mj.nombre.startsWith('sw'); if (mj.piv) m.userData.piv = mj.piv; if (mj.eje) m.userData.eje = mj.eje; if (mj.ang) m.userData.ang = mj.ang; g.scene.add(m); }
+  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = !!mj.pivBase; if (mj.piv) m.userData.piv = mj.piv; if (mj.eje) m.userData.eje = mj.eje; for (const k of ['ang', 'pos', 'inicial', 'perilla']) if (mj[k] != null) m.userData[k] = mj[k]; g.scene.add(m); }
   const partes = []; g.scene.traverse(o => { if (o.isMesh && o.name.startsWith('palanca_')) partes.push(o); });
   for (const o of partes) { o.position.sub(PIVOTE); palanca.add(o); }
   /* panel inferior: tapa el recuadro donde estaba el soporte del GPS (se veían los cables y el parallamas) */
@@ -94,7 +104,6 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   /* switches de 3 posiciones (arriba · medio · abajo). Qué hace cada posición: a confirmar con Bruno (AAXOD).
      Para la simulación, arriba y abajo cuentan como encendido y el medio como apagado. */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);
-  const fuel = controles.switches.find(x => x.nombre === 'swFUEL'); if (fuel) { fuel.estado = true; controles._aplicarSwitch(fuel); }   /* válvula de combustible abierta */
   /* pedales: los del modelo venían congelados a mitad de recorrido; se sacan y se cargan los de Lichi (blender/pedales.glb, clip «pedales_timon») */
   const PEDAL_VIEJO = [['m16', [-0.255, 0.263, 0.467], [-0.122, 0.499, 0.577]], ['m23', [-0.29, 0.292, 0.524], [-0.099, 0.329, 0.56]], ['m23', [-0.29, 0.28, 0.52], [-0.258, 0.601, 0.637]], ['m23', [-0.302, 0.289, 0.51], [-0.285, 0.333, 0.675]],
     ['m16', [0.12, 0.264, 0.619], [0.252, 0.5, 0.727]], ['m23', [0.097, 0.292, 0.674], [0.288, 0.329, 0.71]], ['m23', [0.256, 0.28, 0.596], [0.288, 0.601, 0.714]], ['m23', [0.282, 0.288, 0.66], [0.299, 0.333, 0.825]]];
@@ -112,7 +121,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
 // ---- controles de cabina → modelo de vuelo ----
 const controles = new Controles(cabina); window.__controles = controles;
 const SW = { BATT: 'sw62', ALTN: 'sw64', GEN: 'sw56', IGNTR: 'sw53', START: 'sw47', FIRE: 'sw60', FPUMP: 'swFPUMP', HYD: 'sw54', AVNC: 'sw63', PITOT: 'sw50', HOPR: 'swHOPR', FRDS: 'swFRDS', WIPER: 'swWIPER', LDG: 'sw52', DOME: 'sw49', BCN: 'sw61', NAV: 'sw51', STRB: 'sw48', SPARE: 'sw38' };
-const SW3 = ['swFPUMP'];   /* nombres de los switches de 3 posiciones */
+const SW3 = ['swFPUMP', 'swFRDS_D'];   /* swFRDS_D: AUTO / MAN / OFF del panel FRDS */   /* nombres de los switches de 3 posiciones */
 const levAng = n => { const p = controles.palancas.find(x => x.nombre === n); return p ? p.ang : 0; };
 const adelante = n => THREE.MathUtils.clamp(-levAng(n) / 0.9, 0, 1);   // palancas: adelante = ángulo negativo
 function aplicarControles() {
@@ -120,7 +129,6 @@ function aplicarControles() {
   m.bateria = !!controles.estado(SW.BATT); m.generador = !!(controles.estado(SW.GEN) || controles.estado(SW.ALTN));
   m.ignicion = !!controles.estado(SW.IGNTR); m.arrancador = !!controles.estado(SW.START) && m.bateria; m.bombaCombustible = !!controles.estado(SW.FPUMP);
   m.extintor = !!controles.estado(SW.FIRE);
-  m.combustible = controles.estado('swFUEL') !== false;   /* manija roja de combustible: OFF corta el combustible */
   c.potencia = adelante('levPOT'); c.helice = adelante('levHEL'); c.condicion = adelante('levCOND');
   c.cabeceo = mando.x / LIMITE; c.alabeo = -mando.z / LIMITE;
 

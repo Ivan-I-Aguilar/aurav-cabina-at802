@@ -24,7 +24,8 @@ export class Controles {
       if (o.name.startsWith('sw')) {
         const piv = o.userData.piv ? new THREE.Vector3(...o.userData.piv) : o.userData.pivBase ? new THREE.Vector3(c.x, caja.min.y, c.z) : new THREE.Vector3(c.x, c.y, caja.min.z);     // la palanquita nace en la cara del panel y asoma hacia +z (recortadas de consola: asoma hacia arriba)
         g.position.copy(piv); o.position.sub(piv); g.add(o); this.raiz.add(g);
-        const s = { grupo: g, pivote: piv, estado: false, nombre: o.name, malla: o, eje: o.userData.eje || 'x', ang: o.userData.ang || null };   /* ang: [apagado, encendido] en rad sobre el eje (manijas que giran distinto) */ this.switches.push(s); this._aplicarSwitch(s);
+        const s = { grupo: g, pivote: piv, estado: false, nombre: o.name, malla: o, eje: o.userData.eje || 'x', ang: o.userData.ang || null, pos: o.userData.pos || null, perilla: o.userData.perilla || 0 };
+        if (s.pos) s.estado = o.userData.inicial ?? 0; else if (s.perilla) s.estado = 0;   /* ang: [apagado, encendido] en rad sobre el eje (manijas que giran distinto) */ this.switches.push(s); this._aplicarSwitch(s);
       } else {
         const piv = new THREE.Vector3(c.x, o.userData.pivY ?? caja.min.y, c.z);     // las palancas giran en su base (o en pivY si la manija está recortada)
         g.position.copy(piv); o.position.sub(piv); g.add(o); this.raiz.add(g);
@@ -36,13 +37,17 @@ export class Controles {
   /* switches de 2 posiciones: estado true (arriba) / false (abajo).
      de 3 posiciones (s.tres = true): estado 1 arriba · 0 medio · −1 abajo; cada toque avanza y rebota en los extremos (arriba → medio → abajo → medio → …) */
   _aplicarSwitch(s) {
+    if (s.pos) { s.grupo.rotation[s.eje] = s.pos[s.estado]; return; }          /* varias posiciones: estado = índice */
+    if (s.perilla) { s.grupo.rotation[s.eje] = s.estado * s.perilla; return; }   /* perilla giratoria: estado = pasos girados */
     if (s.ang) { s.grupo.rotation[s.eje] = s.estado ? s.ang[1] : s.ang[0]; return; }
     if (!s.tres) { s.grupo.rotation.x = s.estado ? -SW_ANG : SW_ANG; return; }
     if (typeof s.estado === 'boolean') s.estado = s.estado ? 1 : 0;
     s.grupo.rotation.x = -SW_ANG * s.estado;
   }
   alternar(s) {
-    if (s.tres) { s.paso ??= 1; if (s.estado + s.paso > 1 || s.estado + s.paso < -1) s.paso = -s.paso; s.estado += s.paso; }
+    if (s.pos) { s.paso ??= 1; if (s.estado + s.paso >= s.pos.length || s.estado + s.paso < 0) s.paso = -s.paso; s.estado += s.paso; }
+    else if (s.perilla) s.estado++;
+    else if (s.tres) { s.paso ??= 1; if (s.estado + s.paso > 1 || s.estado + s.paso < -1) s.paso = -s.paso; s.estado += s.paso; }
     else s.estado = !s.estado;
     this._aplicarSwitch(s); this.alCambiar?.(s.nombre, s.estado);
   }
