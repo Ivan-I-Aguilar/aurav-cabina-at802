@@ -39,7 +39,27 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null; const V_EXT = '20261022e';
+/* puerta izquierda: todo lo que cae en el contorno de la ventana (chapa, marco, vidrio y tapizado, de la cabina y del exterior)
+   se junta en una pieza con bisagra en el caño de arriba; abre al levantar la traba roja (swTRABA) */
+const PUERTA = { min: new THREE.Vector3(-0.80, 0.985, 0.95), max: new THREE.Vector3(-0.40, 1.60, 1.88), bisagra: new THREE.Vector3(-0.39, 1.575, 1.4), abierta: -1.05 };
+const puerta = { grupo: null, ang: 0, objetivo: 0 };
+function crearPuerta(raices) {
+  const g = new THREE.Group(); g.position.copy(PUERTA.bisagra); g.name = 'puerta';
+  for (const raiz of raices) {
+    const nombres = []; raiz.traverse(o => { if (o.isMesh && (o.visible || o.name === 'm14') && !/^(sw|lev|pedal|rueda|pata|estribo|varilla)/.test(o.name)) nombres.push(o.name); });   /* m14 oculta: trae los caños del marco de la puerta */
+    for (const n of new Set(nombres)) {
+      const m = recortarManija(raiz, [[n, PUERTA.min.toArray(), PUERTA.max.toArray()]]); if (!m) continue;
+      m.geometry.translate(-PUERTA.bisagra.x, -PUERTA.bisagra.y, -PUERTA.bisagra.z); m.visible = true; g.add(m);
+    }
+  }
+  cabina.add(g); puerta.grupo = g;
+}
+function actualizarPuerta(dt) {
+  if (!puerta.grupo) return;
+  puerta.objetivo = controles.estado('swTRABA') === 1 ? PUERTA.abierta : 0;
+  puerta.ang += (puerta.objetivo - puerta.ang) * Math.min(1, dt * 2.5); puerta.grupo.rotation.z = puerta.ang;
+}
+let instrumentos = null, exterior = null; const V_EXT = '20261022f';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -73,6 +93,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     e.scene.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) o.renderOrder = 2; } });
     cabina.add(e.scene); exterior = e.scene;
     g.scene.traverse(o => { if (o.isMesh && ['m14', 'm15', 'm9'].includes(o.name)) o.visible = false; });   /* m9: disco de hélice de la cabina */
+    crearPuerta([g.scene, e.scene]);
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -323,6 +344,8 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
 const aPie = crearAPie({ escena, avion, cabina, jugador, camara, renderer, ojoCabina: () => OJO_AVION, terreno: (x, z) => ambiente.alturaTerreno(x, z),
   alPedirSubir: tipo => { if (tipo === 'vr') recentrarPendiente = 1; yaw = 0; pitch = -0.15; } });
 window.__aPie = aPie;
+function ponerTraba(v) { const s = controles.switches.find(x => x.nombre === 'swTRABA'); if (s) { s.estado = v; controles._aplicarSwitch(s); } }
+{ const subir = aPie.subir, bajar = aPie.bajar; aPie.subir = (...a) => { ponerTraba(1); subir(...a); }; aPie.bajar = (...a) => { ponerTraba(1); bajar(...a); }; }   /* la puerta se abre para pasar */
 let modoPrevio = 'cabina';
 ui.aPie = () => { mision.fase = 'libre'; reiniciarAvion({ enPista: true, agua: 2400, apagado: true }); mision.ui.tareas([]); aPie.bajar(false);
   mision.decir('Recorrido a pie', 'Caminá alrededor del avión. Para subir, acercate al estribo debajo del ala izquierda.'); };
@@ -382,9 +405,9 @@ renderer.setAnimationLoop(() => {
   avion.position.copy(vuelo.pos); avion.quaternion.copy(vuelo.q);
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
-  mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
+  mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt); actualizarPuerta(dt);
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;
-  if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
+  if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; ponerTraba(0); if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
   botonSalir.malla.visible = renderer.xr.isPresenting;
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
   for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : (renderer.xr.isPresenting ? (botonSalir.apuntado(c) ?? controles.impacto(rayoDe(c))?.distance ?? null) : null); c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
