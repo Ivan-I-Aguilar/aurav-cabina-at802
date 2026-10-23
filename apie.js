@@ -122,7 +122,7 @@ export function crearAPie({ escena, avion, cabina, jugador, camara, renderer, oj
       }
       mover(dt, x, y, giro); jugador.position.y = terreno(jugador.position.x, jugador.position.z) + (enVR() ? estado.alturaXR : 0);
       camara.getWorldPosition(tmp); const l = cabina.worldToLocal(tmp);   /* la cabeza / el teléfono: en VR y en modo cámara uno camina de verdad */
-      estado.cerca = Math.hypot(l.x - ESTRIBO.x, l.z - ESTRIBO.z) < 1.4;
+      estado.cerca = Math.hypot(l.x - ESTRIBO.x, l.z - ESTRIBO.z) < 1.4 * jugador.scale.x;   /* a escala de maqueta, el radio crece con el jugador */
       cartel.material.color.setHex(estado.cerca ? 0xffffff : 0x9a9a9a);
     },
   };

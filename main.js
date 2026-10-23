@@ -12,7 +12,7 @@ import { Instrumentos } from './instrumentos.js?v=20261018a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
 import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
-import { crearAPie } from './apie.js?v=20261022e';
+import { crearAPie } from './apie.js?v=20261023a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
 const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
@@ -29,13 +29,24 @@ THREE.ShaderChunk.fog_vertex = '#ifdef USE_FOG\n\tvFogDepth = length( mvPosition
 const antesDelEntorno = new Set(escena.children);
 const ambiente = crearEscenario(escena);
 const entorno = escena.children.filter(o => !antesDelEntorno.has(o) && !o.isLight); const nieblaEntorno = escena.fog;
-let lugarReal = false; const maqueta = { pos: new THREE.Vector3(), yaw: 0, escala: 0.1 };
+let lugarReal = false;
+/* modo cámara a escala: el jugador se agranda k veces (tus pasos rinden k veces) → el avión se ve como maqueta 1:k a la altura de una mesa */
+const ESCALAS = [10, 20, 5, 1]; let iEscala = 0, pisoXR = true;
+function aplicarEscalaCamara(reubicar) {
+  const k = ESCALAS[iEscala]; jugador.scale.setScalar(k);
+  aPie.alturaXR = k === 1 ? (pisoXR ? 0 : 1.4) : (pisoXR ? -0.8 * k : 0.6 * k);   /* el piso real queda 0,8 m (a escala) debajo del avión */
+  document.getElementById('escala').textContent = k === 1 ? 'Escala real' : 'Escala 1:' + k;
+  if (reubicar) {   /* pararte a 1,5 m (reales) del costado izquierdo del avión, mirándolo */
+    const centro = cabina.localToWorld(new THREE.Vector3(0, -1.2, 1.5)), lado = new THREE.Vector3(-1, 0, 0).applyQuaternion(cabina.getWorldQuaternion(new THREE.Quaternion())); lado.y = 0; lado.normalize();
+    const pos = centro.clone().addScaledVector(lado, 1.5 * k + 2.5);
+    escena.attach(jugador); jugador.position.set(pos.x, ambiente.alturaTerreno(pos.x, pos.z) + aPie.alturaXR, pos.z);
+    jugador.rotation.set(0, Math.atan2(lado.x, lado.z), 0);
+  }
+}
+document.getElementById('escala').onclick = () => { iEscala = (iEscala + 1) % ESCALAS.length; aplicarEscalaCamara(true); };
 function verLugarReal(si) {   /* modo cámara: true = el avión sobre lo que filma el teléfono; false = la pista virtual */
   lugarReal = si; for (const o of entorno) o.visible = !si;
-  if (si) {   /* maqueta 1:10 a 1,5 m delante del teléfono, a la altura de una mesa */
-    const p = new THREE.Vector3(), d = new THREE.Vector3(); renderer.xr.getCamera().getWorldPosition(p); renderer.xr.getCamera().getWorldDirection(d); d.y = 0; d.normalize();
-    maqueta.pos.copy(p).addScaledVector(d, 1.5); maqueta.pos.y = p.y - 0.6; maqueta.yaw = Math.atan2(d.x, d.z) + Math.PI / 2;
-  } escena.fog = si ? null : nieblaEntorno;
+ escena.fog = si ? null : nieblaEntorno;
   renderer.setClearAlpha(si ? 0 : 1); document.getElementById('entorno').textContent = si ? 'Ver pista virtual' : 'Ver lugar real';
 }
 
@@ -326,12 +337,13 @@ bAR.onclick = async () => {
   audio.iniciar();
   const s = await navigator.xr.requestSession('immersive-ar', { optionalFeatures: ['local-floor', 'dom-overlay'], domOverlay: { root: document.body } });
   const piso = !s.enabledFeatures || s.enabledFeatures.includes('local-floor');
-  renderer.xr.setReferenceSpaceType(piso ? 'local-floor' : 'local'); aPie.alturaXR = piso ? 0 : 1.4;
+  renderer.xr.setReferenceSpaceType(piso ? 'local-floor' : 'local'); pisoXR = piso;
   for (const c of manos) c.children.forEach(h => h.visible = false);   /* sin esferas ni rayos de mano en el teléfono */
   await renderer.xr.setSession(s); modoCamara = true;
   if (aPie.modo === 'cabina') ui.aPie();
-  document.getElementById('entorno').hidden = false;
-  s.addEventListener('end', () => { modoCamara = false; verLugarReal(false); document.getElementById('entorno').hidden = true; aPie.alturaXR = 0; for (const c of manos) c.children[0].visible = true; if (aPie.modo === 'pie') camara.position.y = 1.65; });
+  setTimeout(() => aplicarEscalaCamara(true), 1200);   /* después del fundido de bajada */
+  document.getElementById('entorno').hidden = false; document.getElementById('escala').hidden = false;
+  s.addEventListener('end', () => { modoCamara = false; verLugarReal(false); document.getElementById('entorno').hidden = true; document.getElementById('escala').hidden = true; jugador.scale.setScalar(1); aPie.alturaXR = 0; for (const c of manos) c.children[0].visible = true; if (aPie.modo === 'pie') camara.position.y = 1.65; });
 };
 let modoCamara = false;
 document.getElementById('entorno').onclick = () => verLugarReal(!lugarReal);
@@ -431,7 +443,7 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
   avion.position.copy(v.pos); avion.quaternion.copy(v.q);
 }
 const aPie = crearAPie({ escena, avion, cabina, jugador, camara, renderer, ojoCabina: () => OJO_AVION, terreno: (x, z) => ambiente.alturaTerreno(x, z),
-  alPedirSubir: tipo => { if (tipo === 'vr') recentrarPendiente = 1; yaw = 0; pitch = -0.15; } });
+  alPedirSubir: tipo => { jugador.scale.setScalar(1); if (tipo === 'vr') recentrarPendiente = 1; yaw = 0; pitch = -0.15; } });
 window.__aPie = aPie;
 function ponerTraba(v) { const s = controles.switches.find(x => x.nombre === 'swTRABA'); if (s) { s.estado = v; controles._aplicarSwitch(s); } }
 { const subir = aPie.subir, bajar = aPie.bajar; aPie.subir = (...a) => { ponerTraba(1); subir(...a); }; aPie.bajar = (...a) => { ponerTraba(1); bajar(...a); }; }   /* la puerta se abre para pasar */
@@ -452,7 +464,7 @@ function pausar() {
     pausado = false; ui.ocultarPanel();
     if (id === 'seguir') { if (previo) ui.panel(previo[0], previo[1]); }
     else if (id === 'menu') mision.menu();
-    else if (id === 'bajar') aPie.bajar();
+    else if (id === 'bajar') { aPie.bajar(); if (modoCamara) setTimeout(() => aplicarEscalaCamara(true), 1200); }
     else if (id === 'subir') aPie.subir(true);
     else if (id === 'salirVR') { renderer.xr.getSession()?.end(); if (previo) ui.panel(previo[0], previo[1]); }
   });
@@ -491,8 +503,7 @@ renderer.setAnimationLoop(() => {
     }
     vuelo.paso(h); acumSim -= h; n++;
   }
-  avion.position.copy(vuelo.pos); avion.quaternion.copy(vuelo.q); avion.scale.setScalar(1);
-  if (lugarReal) { avion.position.copy(maqueta.pos); avion.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), maqueta.yaw); avion.scale.setScalar(maqueta.escala); }
+  avion.position.copy(vuelo.pos); avion.quaternion.copy(vuelo.q);
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt); actualizarPuerta(dt);
