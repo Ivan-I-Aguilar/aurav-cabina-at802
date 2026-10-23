@@ -36,7 +36,8 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `panelvr.js` | Panel de botones para VR (igual que en aurav-senales). |
 | `escenario.js`, `tex/`, `autobomba.glb` | Aeródromo de AURAV copiado de aurav-sector, con valle plano a lo largo de la pista (`dRect`) y `alturaTerreno`. |
 | `cabina.glb` | Interior del Fire Boss convertido (6,8 MB). **No editar a mano: se regenera.** |
-| `herramientas/` | Conversor y utilidades (ver abajo). |
+| `herramientas/` | Conversor y utilidades (ver abajo). `pedales_blender.py` regenera `blender/pedales.glb` (Blender en segundo plano). |
+| `blender/` | Piezas animadas hechas en Blender (Lichi): `pedales.glb` + `.blend` + vistas previas. Los pedales originales se recortan de la cabina al cargar (`PEDAL_VIEJO` en main.js) y el clip `pedales_timon` (0 = timón izquierda, 1 s = derecha) sigue a la variable `pedal`. Recorrido ±0,2 rad, a validar con AAXOD. |
 | `TRASPASO.md` | Historia detallada de decisiones y números. Leerlo antes de tocar la conversión. |
 
 ## Regenerar `cabina.glb` (sólo si hace falta tocar la geometría)
@@ -80,7 +81,7 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 
 ## Pendientes (en el orden que pidió Iván)
 1. Probar en el Quest (el recentrado ya anda, 18/10): altura del ojo, distancia de agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
-2. Pedales que se muevan con el joystick (hoy sólo actúan, no se ven) y limpiaparabrisas manipulables (recortarlos de la malla grande con `EXTRAER`, como los switches).
+2. Limpiaparabrisas manipulable (los pedales ya se mueven, 22/10; falta probarlos en el Quest) (recortarlos de la malla grande con `EXTRAER`, como los switches).
 3. Perillas (knobs) del panel.
 4. Exterior con la librea AUR-AV (franja bordó y matrícula): generar las texturas `AT_01_T`/`AT_02_T` o conseguirlas de `texture.N6159F`. Encajar el `at802.glb` de aurav-sector no funcionó (proporciones distintas).
 5. Instrumentos con fotos reales del panel cuando Iván las saque en AAXOD (pegarlas por isla UV en `relojes.py`).
