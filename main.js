@@ -10,8 +10,9 @@ import { crearRadios } from './radios.js?v=20261017a';
 import { Controles } from './controles.js?v=20261022e';
 import { Instrumentos } from './instrumentos.js?v=20261018a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
-import { Mision } from './mision.js?v=20261022a';
+import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
+import { crearAPie } from './apie.js?v=20261022d';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
 const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
@@ -38,7 +39,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null; const V_EXT = '20261022d';
+let instrumentos = null, exterior = null; const V_EXT = '20261022e';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -178,6 +179,7 @@ for (const i of [0, 1]) {
     if (mando.agarre === c && c.userData.apretado > 1) { largarCarga(); return; }   /* con el bastón agarrado, el otro botón = descarga (botón del mango) */
     if (panelVR.visible) { panelVR.gatillo(c); return; }
     if (botonSalir.apuntado(c) != null) { pausar(); return; }
+    if (aPie.modo === 'pie') { if (aPie.cerca || rayoDe(c).intersectObject(aPie.cartel).length) aPie.subir(); return; }
     if (controles.manoVR(c, true, true)) return;
     palanca.localToWorld(tmp.copy(PUNIO)); c.getWorldPosition(tmp2); if (tmp.distanceTo(tmp2) < 0.25) { mando.agarre = c; return; }
     controles.clic(rayoDe(c));   /* lejos de todo: lo que apunte el rayo (switch o palanca) se acciona */
@@ -188,7 +190,7 @@ for (const i of [0, 1]) {
   c.addEventListener('connected', e => { c.userData.mano = e.data.handedness; });
 }
 // joysticks: izquierdo X = pedales, izquierdo atrás = frenos; derecho arriba/abajo = flaps; botón joystick o A/X = recentrar
-let flapsPrevio = 0, pausaPrevio = false;
+let flapsPrevio = 0, pausaPrevio = false, giroPrevio = 0; const ejesPie = { mover: [0, 0], girar: 0 };
 function leerJoysticks() {
   const ses = renderer.xr.getSession(); if (!ses) return; let boton = false, botonPausa = false; pedal = 0; frenos = 0;
   for (const src of ses.inputSources) {
@@ -196,19 +198,25 @@ function leerJoysticks() {
     if (gp.buttons[3]?.pressed || gp.buttons[4]?.pressed) boton = true;
     if (gp.buttons[5]?.pressed) botonPausa = true;   /* B / Y: pausa con opción de salir */
     const x = gp.axes[2] || 0, y = gp.axes[3] || 0;
+    if (aPie.modo === 'pie') {   /* a pie: izquierdo camina, derecho gira de a 30° */
+      if (src.handedness === 'left') ejesPie.mover = [Math.abs(x) > 0.15 ? x : 0, Math.abs(y) > 0.15 ? y : 0];
+      if (src.handedness === 'right') { const g = x > 0.7 ? 1 : x < -0.7 ? -1 : 0; ejesPie.girar = g !== giroPrevio ? -g : 0; giroPrevio = g; }
+      continue;
+    }
     if (src.handedness === 'left') { pedal = Math.abs(x) > 0.15 ? x : 0; frenos = y > 0.5 ? (y - 0.5) * 2 : 0; }
     if (src.handedness === 'right') { if (y > 0.7 && flapsPrevio <= 0.7) flaps = Math.min(1, flaps + 0.5); if (y < -0.7 && flapsPrevio >= -0.7) flaps = Math.max(0, flaps - 0.5); flapsPrevio = y; }
   }
-  if (boton && !botonPrevio) recentrarPendiente = 1; botonPrevio = boton;
+  if (boton && !botonPrevio && aPie.modo === 'cabina') recentrarPendiente = 1; botonPrevio = boton;
   if (botonPausa && !pausaPrevio && !panelVR.visible) pausar(); pausaPrevio = botonPausa;
 }
 // ---- teclado (PC): flechas bastón, A/D pedales, B frenos, F flaps, E largado ----
 function largarCarga() { if (vuelo.largando == null && vuelo.agua > 0) { vuelo.largarCarga(true); vuelo.evento('largado'); } }
 const teclas = {}; addEventListener('keydown', e => { teclas[e.key.toLowerCase()] = true; if (e.key === 'f') flaps = flaps >= 1 ? 0 : flaps + 0.5; if (e.key === 'e') largarCarga(); });
 addEventListener('keyup', e => teclas[e.key.toLowerCase()] = false);
-addEventListener('keydown', e => { if (e.key === 'Escape') pausar(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') pausar(); if (e.key === 'Enter' && aPie.modo === 'pie' && aPie.cerca) aPie.subir(); });
 const teclado = new THREE.Object3D(); cabina.add(teclado);
 function actualizarTeclado() {
+  if (aPie.modo !== 'cabina') { pedal = 0; frenos = 0; return; }   /* a pie, las teclas caminan */
   const ax = (teclas.arrowdown ? 1 : 0) - (teclas.arrowup ? 1 : 0), az = (teclas.arrowright ? 1 : 0) - (teclas.arrowleft ? 1 : 0);
   if (ax || az) { teclado.position.set(PIVOTE.x + Math.sin(az * LIMITE) * 0.6, PIVOTE.y + 0.55, PIVOTE.z + Math.sin(ax * LIMITE) * 0.6); mando.agarre = teclado; }
   else if (mando.agarre === teclado) mando.agarre = null;
@@ -221,7 +229,9 @@ let yaw = 0, pitch = -0.15, arr = null, arrIni = null;
 addEventListener('pointerdown', e => { arr = [e.clientX, e.clientY]; arrIni = [e.clientX, e.clientY]; });
 addEventListener('pointerup', e => {
   arr = null;
-  if (arrIni && Math.hypot(e.clientX - arrIni[0], e.clientY - arrIni[1]) < 4) { const r = new THREE.Raycaster(); r.setFromCamera(new THREE.Vector2(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camara); controles.clic(r); }
+  if (arrIni && Math.hypot(e.clientX - arrIni[0], e.clientY - arrIni[1]) < 8) { const r = new THREE.Raycaster(); r.setFromCamera(new THREE.Vector2(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camara);
+    if (aPie.modo === 'pie') { const h = r.intersectObject(aPie.cartel)[0]; if (h && h.distance < 4) { aPie.subir(); return; } }
+    controles.clic(r); }
 });
 addEventListener('pointermove', e => { if (!arr) return; yaw += (e.clientX - arr[0]) * 0.004; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - arr[1]) * 0.004, -1.4, 1.4); arr = [e.clientX, e.clientY]; });
 addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
@@ -235,7 +245,7 @@ bVR.onclick = async () => {
   renderer.xr.setReferenceSpaceType('local-floor'); await renderer.xr.setSession(s);
   recentrarPendiente = 72;   /* recentra a los 12 y a los 72 cuadros */
   setTimeout(() => { if (!$('panel').hidden && ui._ultimo) panelVR.mostrar(ui._ultimo[0], ui._ultimo[1], renderer.xr.getCamera()); }, 800);
-  s.addEventListener('end', () => jugador.position.copy(OJO_AVION));
+  s.addEventListener('end', () => { if (aPie.modo === 'cabina') jugador.position.copy(OJO_AVION); else camara.position.y = 1.65; });
 };
 let recentrarPendiente = 0, botonPrevio = false;
 const cabezaW = new THREE.Vector3(), ojoW = new THREE.Vector3();
@@ -310,6 +320,12 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
   }
   avion.position.copy(v.pos); avion.quaternion.copy(v.q);
 }
+const aPie = crearAPie({ escena, avion, cabina, jugador, camara, renderer, ojoCabina: () => OJO_AVION, terreno: (x, z) => ambiente.alturaTerreno(x, z),
+  alPedirSubir: tipo => { if (tipo === 'vr') recentrarPendiente = 1; yaw = 0; pitch = -0.15; } });
+window.__aPie = aPie;
+let modoPrevio = 'cabina';
+ui.aPie = () => { mision.fase = 'libre'; reiniciarAvion({ enPista: true, agua: 2400, apagado: true }); mision.ui.tareas([]); aPie.bajar(false);
+  mision.decir('Recorrido a pie', 'Caminá alrededor del avión. Para subir, acercate al estribo debajo del ala izquierda.'); };
 const mision = new Mision({ vuelo, controles, SW, ui, obtener: { terreno: (x, z) => ambiente.alturaTerreno(x, z) }, reiniciarAvion }); window.__mision = mision;
 $('menu').onclick = () => { audio.iniciar(); pausar(); };
 // ---- pausa / salir: siempre a mano (botón fijo en la cabina, B/Y, Esc o «Menú») ----
@@ -317,11 +333,15 @@ let pausado = false;
 function pausar() {
   if (pausado) return; pausado = true; const previo = $('panel').hidden ? null : ui._ultimo;
   const botones = [{ id: 'seguir', texto: 'Seguir' }, { id: 'menu', texto: 'Menú principal' }];
+  if (aPie.modo === 'cabina' && vuelo.enTierra && vuelo.vel.length() < 1) botones.splice(1, 0, { id: 'bajar', texto: 'Bajar del avión' });
+  if (aPie.modo === 'pie') botones.splice(1, 0, { id: 'subir', texto: 'Volver a la cabina' });
   if (renderer.xr.isPresenting) botones.push({ id: 'salirVR', texto: 'Salir de VR' });
   ui.panel({ titulo: 'Pausa', texto: 'El avión está detenido. Seguí donde estabas, volvé al menú o salí.', botones }, id => {
     pausado = false; ui.ocultarPanel();
     if (id === 'seguir') { if (previo) ui.panel(previo[0], previo[1]); }
     else if (id === 'menu') mision.menu();
+    else if (id === 'bajar') aPie.bajar();
+    else if (id === 'subir') aPie.subir(true);
     else if (id === 'salirVR') { renderer.xr.getSession()?.end(); if (previo) ui.panel(previo[0], previo[1]); }
   });
 }
@@ -363,11 +383,13 @@ renderer.setAnimationLoop(() => {
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
+  aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;
+  if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
   botonSalir.malla.visible = renderer.xr.isPresenting;
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
   for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : (renderer.xr.isPresenting ? (botonSalir.apuntado(c) ?? controles.impacto(rayoDe(c))?.distance ?? null) : null); c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
   if (hud && !renderer.xr.isPresenting) { const L = vuelo.lecturas(), m = vuelo.motor; hud.textContent = `${L.asi.toFixed(0)} mph · ${L.alt.toFixed(0)} ft · ${L.vsi.toFixed(0)} fpm · TRQ ${m.torque.toFixed(0)}% · ITT ${m.itt.toFixed(0)} · Ng ${m.ng.toFixed(0)} · hél ${m.rpmHel.toFixed(0)} · flaps ${flaps * 20}° · agua ${vuelo.agua.toFixed(0)} kg${vuelo.perdida ? ' · PÉRDIDA' : ''}${vuelo.estrellado ? ' · ACCIDENTE' : ''}`; }
-  if (renderer.xr.isPresenting) { if (recentrarPendiente > 0) { recentrarPendiente--; if (recentrarPendiente === 0 || recentrarPendiente === 60) recentrar(); } }
+  if (renderer.xr.isPresenting) { if (aPie.modo === 'cabina' && recentrarPendiente > 0) { recentrarPendiente--; if (recentrarPendiente === 0 || recentrarPendiente === 60) recentrar(); } }
   else camara.rotation.set(pitch, yaw, 0);
   renderer.render(escena, camara);
 });

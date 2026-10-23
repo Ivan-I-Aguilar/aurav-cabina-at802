@@ -78,8 +78,8 @@ export class Mision {
   menu() {
     this.fase = 'intro'; this.ui.tareas([]); this.ui.cartel(''); this.ui.marcar?.(null);
     this.ui.panel({ titulo: 'Cabina AT-802 · AURAV', texto: 'Práctica de puesta en marcha, despegue y emergencias. Elegí por dónde empezar.',
-      botones: [{ id: 'arranque', texto: 'Todo desde el arranque' }, { id: 'despegue', texto: 'Despegue' }, { id: 'falla', texto: 'Falla de motor en vuelo' }, { id: 'fuego', texto: 'Fuego de motor' }, { id: 'fallaDespegue', texto: 'Falla en el despegue' }, { id: 'libre', texto: 'Vuelo libre' }] },
-      id => { this.ui.ocultarPanel(); if (id === 'libre') { this.fase = 'libre'; this.reiniciarAvion({ enPista: true, agua: 2400, apagado: false }); this.ui.tareas([]); this.decir('Vuelo libre', 'Volá tranquilo. Menú para volver.'); } else this.empezar(id); });
+      botones: [{ id: 'arranque', texto: 'Todo desde el arranque' }, { id: 'despegue', texto: 'Despegue' }, { id: 'falla', texto: 'Falla de motor en vuelo' }, { id: 'fuego', texto: 'Fuego de motor' }, { id: 'fallaDespegue', texto: 'Falla en el despegue' }, { id: 'libre', texto: 'Vuelo libre' }, { id: 'apie', texto: 'Recorrer el avión (a pie)' }] },
+      id => { this.ui.ocultarPanel(); if (id === 'apie') { this.ui.aPie?.(); return; } if (id === 'libre') { this.fase = 'libre'; this.reiniciarAvion({ enPista: true, agua: 2400, apagado: false }); this.ui.tareas([]); this.decir('Vuelo libre', 'Volá tranquilo. Menú para volver.'); } else this.empezar(id); });
   }
   resultado() {
     const prom = this.resultados.length ? Math.round(this.resultados.reduce((a, r) => a + r.nota, 0) / this.resultados.length) : 0;
