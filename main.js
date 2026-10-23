@@ -29,9 +29,13 @@ THREE.ShaderChunk.fog_vertex = '#ifdef USE_FOG\n\tvFogDepth = length( mvPosition
 const antesDelEntorno = new Set(escena.children);
 const ambiente = crearEscenario(escena);
 const entorno = escena.children.filter(o => !antesDelEntorno.has(o) && !o.isLight); const nieblaEntorno = escena.fog;
-let lugarReal = false;
+let lugarReal = false; const maqueta = { pos: new THREE.Vector3(), yaw: 0, escala: 0.1 };
 function verLugarReal(si) {   /* modo cámara: true = el avión sobre lo que filma el teléfono; false = la pista virtual */
-  lugarReal = si; for (const o of entorno) o.visible = !si; escena.fog = si ? null : nieblaEntorno;
+  lugarReal = si; for (const o of entorno) o.visible = !si;
+  if (si) {   /* maqueta 1:10 a 1,5 m delante del teléfono, a la altura de una mesa */
+    const p = new THREE.Vector3(), d = new THREE.Vector3(); renderer.xr.getCamera().getWorldPosition(p); renderer.xr.getCamera().getWorldDirection(d); d.y = 0; d.normalize();
+    maqueta.pos.copy(p).addScaledVector(d, 1.5); maqueta.pos.y = p.y - 0.6; maqueta.yaw = Math.atan2(d.x, d.z) + Math.PI / 2;
+  } escena.fog = si ? null : nieblaEntorno;
   renderer.setClearAlpha(si ? 0 : 1); document.getElementById('entorno').textContent = si ? 'Ver pista virtual' : 'Ver lugar real';
 }
 
@@ -487,7 +491,8 @@ renderer.setAnimationLoop(() => {
     }
     vuelo.paso(h); acumSim -= h; n++;
   }
-  avion.position.copy(vuelo.pos); avion.quaternion.copy(vuelo.q);
+  avion.position.copy(vuelo.pos); avion.quaternion.copy(vuelo.q); avion.scale.setScalar(1);
+  if (lugarReal) { avion.position.copy(maqueta.pos); avion.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), maqueta.yaw); avion.scale.setScalar(maqueta.escala); }
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt); actualizarPuerta(dt);
