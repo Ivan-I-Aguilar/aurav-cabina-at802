@@ -151,7 +151,7 @@ export class Mision {
     const v = this.vuelo, m = v.motor; this.ui.decir('');
     this.definir('falla', [
       { id: 'planeo', texto: '¡FALLA DE MOTOR! Nariz abajo: planeo a 110 mph', listo: () => v.vIAS > 100 && v.vIAS < 130 && v.vs < 0, tiempo: 8, penal: 20, voz: 'Falla de motor. Nariz abajo, planeo a ciento diez millas.' },
-      { id: 'dump', texto: 'Largá la carga de emergencia (manija roja)', listo: () => v.agua < 100 || v.largando, tiempo: 10, penal: 20 },
+      { id: 'dump', texto: 'Largá la carga de emergencia (botón del bastón)', listo: () => v.agua < 100 || v.largando, tiempo: 10, penal: 20 },
       { id: 'bandera', texto: 'Hélice a BANDERA (palanca atrás)', listo: () => this.lev('levHEL') < 0.15, tiempo: 12, penal: 10 },
       { id: 'rearr', texto: 'Hay altura: intento de rearranque. Condición a CORTE, Ignición ON, START', listo: () => m.encendido || this.alt < 350, voz: 'Hay altura. Intento de rearranque: condición a corte, ignición, start.' },
       { id: 'fin', texto: 'Motor en marcha: hélice adelante, potencia, nivelá y recuperá altura', listo: () => m.encendido && v.motor.torque > 50 && v.vs > -200 && this.lev('levHEL') > 0.8 && this.alt > 500 },

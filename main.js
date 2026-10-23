@@ -7,10 +7,10 @@ import { GLTFLoader } from './GLTFLoader.js';
 import { mergeGeometries } from './BufferGeometryUtils.js';
 import { crearEscenario } from './escenario.js?v=20261017a';
 import { crearRadios } from './radios.js?v=20261017a';
-import { Controles } from './controles.js?v=20261022b';
+import { Controles } from './controles.js?v=20261022c';
 import { Instrumentos } from './instrumentos.js?v=20261018a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
-import { Mision } from './mision.js?v=20261018c';
+import { Mision } from './mision.js?v=20261022a';
 import { Audio } from './audio.js?v=20261018b';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
@@ -66,21 +66,20 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     if (o.name === 'm13') o.visible = false;   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
     if (o.isMesh && (o.name === 'm14' || o.name === 'm15')) { o.material.color.set(0xe6e6df); o.material.roughness = 0.55; }   /* exterior blanco */
   });
-  // manija roja de largado de emergencia (el modelo no la trae): a la izquierda del asiento, se tira hacia atrás
-  const gm = mergeGeometries([new THREE.BoxGeometry(0.03, 0.16, 0.03).translate(-0.33, 0.56, 1.12), new THREE.SphereGeometry(0.028, 14, 10).translate(-0.33, 0.645, 1.12)]);
-  const manija = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xd42020, roughness: 0.5 })); manija.name = 'levDUMP'; g.scene.add(manija);
   cabina.add(g.scene);
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
   g.scene.traverse(o => { if (o.isMesh) o.name = o.name.replace(/^lev(75|77|42)$/, 'varilla$1'); });
   const MANIJAS = [
     { nombre: 'levPOT', pivY: 0.59, escala: 0.5, piezas: [['m16', [-0.48, 0.67, 1.23], [-0.43, 0.85, 1.37]], ['m26', [-0.47, 0.585, 1.28], [-0.445, 0.78, 1.415]]] },   /* POWER: manija blanca + cuerpo gris */
-    { nombre: 'levHEL', pivY: 0.19, escala: 0.25, piezas: [['m16', [-0.37, 0.70, 1.27], [-0.31, 0.76, 1.33]], ['m23', [-0.39, 0.18, 1.21], [-0.33, 0.79, 1.31]]] },   /* perilla azul + varilla amarilla */
+    { nombre: 'levHEL', pivY: 0.19, escala: 0.25, piezas: [['m16', [-0.37, 0.70, 1.27], [-0.31, 0.76, 1.33]], ['m23', [-0.39, 0.18, 1.21], [-0.33, 0.79, 1.31]], ['m23', [-0.395, 0.685, 1.195], [-0.31, 0.82, 1.285]], ['m34', [-0.352, 0.795, 1.195], [-0.31, 0.842, 1.237]]] },   /* + mango negro y punta gris de arriba */   /* perilla azul + varilla amarilla */
     { nombre: 'swFLAPS', piezas: [['m34', [-0.605, 0.66, 1.40], [-0.575, 0.708, 1.423]]] },   /* consola izquierda: switch de FLAPS */
     { nombre: 'swAUX', piezas: [['m34', [-0.53, 0.646, 1.40], [-0.515, 0.686, 1.423]]] },     /* consola izquierda: el de abajo (función a confirmar) */
+    { nombre: 'swFUEL', piv: [-0.617, 0.703, 0.947], eje: 'y', ang: [Math.PI / 2, 0], piezas: [['m23', [-0.628, 0.689, 0.935], [-0.606, 0.717, 0.959]], ['m23', [-0.622, 0.69, 0.882], [-0.612, 0.719, 0.976]], ['m26', [-0.628, 0.68, 0.932], [-0.605, 0.689, 0.959]]] },   /* manija roja de combustible: OFF ↔ FUEL (gira en el plano de la consola) */
+    { nombre: 'swWRUD', piezas: [['m23', [-0.518, 0.765, 1.349], [-0.482, 0.819, 1.403]]] },   /* perilla negra: timón de agua (WATER RUDDER) */
     { nombre: 'levCOND', pivY: 0.63, escala: 0.6, piezas: [['m2'], ['m6']] },                                                                     /* perilla gris (a confirmar) */
   ];
-  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = mj.nombre.startsWith('sw'); g.scene.add(m); }
+  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = mj.nombre.startsWith('sw'); if (mj.piv) m.userData.piv = mj.piv; if (mj.eje) m.userData.eje = mj.eje; if (mj.ang) m.userData.ang = mj.ang; g.scene.add(m); }
   const partes = []; g.scene.traverse(o => { if (o.isMesh && o.name.startsWith('palanca_')) partes.push(o); });
   for (const o of partes) { o.position.sub(PIVOTE); palanca.add(o); }
   /* panel inferior: tapa el recuadro donde estaba el soporte del GPS (se veían los cables y el parallamas) */
@@ -95,7 +94,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   /* switches de 3 posiciones (arriba · medio · abajo). Qué hace cada posición: a confirmar con Bruno (AAXOD).
      Para la simulación, arriba y abajo cuentan como encendido y el medio como apagado. */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);
-  const pd = controles.palancas.find(p => p.nombre === 'levDUMP'); if (pd) { pd.min = -0.05; pd.max = 0.9; }
+  const fuel = controles.switches.find(x => x.nombre === 'swFUEL'); if (fuel) { fuel.estado = true; controles._aplicarSwitch(fuel); }   /* válvula de combustible abierta */
   /* pedales: los del modelo venían congelados a mitad de recorrido; se sacan y se cargan los de Lichi (blender/pedales.glb, clip «pedales_timon») */
   const PEDAL_VIEJO = [['m16', [-0.255, 0.263, 0.467], [-0.122, 0.499, 0.577]], ['m23', [-0.29, 0.292, 0.524], [-0.099, 0.329, 0.56]], ['m23', [-0.29, 0.28, 0.52], [-0.258, 0.601, 0.637]], ['m23', [-0.302, 0.289, 0.51], [-0.285, 0.333, 0.675]],
     ['m16', [0.12, 0.264, 0.619], [0.252, 0.5, 0.727]], ['m23', [0.097, 0.292, 0.674], [0.288, 0.329, 0.71]], ['m23', [0.256, 0.28, 0.596], [0.288, 0.601, 0.714]], ['m23', [0.282, 0.288, 0.66], [0.299, 0.333, 0.825]]];
@@ -121,11 +120,12 @@ function aplicarControles() {
   m.bateria = !!controles.estado(SW.BATT); m.generador = !!(controles.estado(SW.GEN) || controles.estado(SW.ALTN));
   m.ignicion = !!controles.estado(SW.IGNTR); m.arrancador = !!controles.estado(SW.START) && m.bateria; m.bombaCombustible = !!controles.estado(SW.FPUMP);
   m.extintor = !!controles.estado(SW.FIRE);
+  m.combustible = controles.estado('swFUEL') !== false;   /* manija roja de combustible: OFF corta el combustible */
   c.potencia = adelante('levPOT'); c.helice = adelante('levHEL'); c.condicion = adelante('levCOND');
   c.cabeceo = mando.x / LIMITE; c.alabeo = -mando.z / LIMITE;
 
   c.pedal = pedal; c.frenos = frenos; c.flaps = flaps;
-  if (levAng('levDUMP') > 0.6 && vuelo.largando == null) { vuelo.largarCarga(true); vuelo.evento('largado'); }
+  /* largado de emergencia: tecla E (la manija roja agregada se sacó; falta definir el control real con AAXOD) */
   // el arrancador vuelve solo cuando el motor enciende (en el avión es con resorte)
   if (m.encendido && controles.estado(SW.START)) { const s = controles.switches.find(x => x.nombre === SW.START); if (s) { s.estado = false; controles._aplicarSwitch(s); } }
 }
@@ -159,6 +159,7 @@ for (const i of [0, 1]) {
   const rayo = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]), new THREE.LineBasicMaterial({ color: 0xc8e63a })); rayo.visible = false; c.add(rayo); c.userData.rayo = rayo;
   const agarrar = () => {
     c.userData.apretado++; audio.iniciar();
+    if (mando.agarre === c && c.userData.apretado > 1) { largarCarga(); return; }   /* con el bastón agarrado, el otro botón = descarga (botón del mango) */
     if (panelVR.visible) { panelVR.gatillo(c); return; }
     if (botonSalir.apuntado(c) != null) { pausar(); return; }
     if (controles.manoVR(c, true, true)) return;
@@ -186,7 +187,8 @@ function leerJoysticks() {
   if (botonPausa && !pausaPrevio && !panelVR.visible) pausar(); pausaPrevio = botonPausa;
 }
 // ---- teclado (PC): flechas bastón, A/D pedales, B frenos, F flaps, E largado ----
-const teclas = {}; addEventListener('keydown', e => { teclas[e.key.toLowerCase()] = true; if (e.key === 'f') flaps = flaps >= 1 ? 0 : flaps + 0.5; if (e.key === 'e') { vuelo.largarCarga(true); vuelo.evento('largado'); } });
+function largarCarga() { if (vuelo.largando == null && vuelo.agua > 0) { vuelo.largarCarga(true); vuelo.evento('largado'); } }
+const teclas = {}; addEventListener('keydown', e => { teclas[e.key.toLowerCase()] = true; if (e.key === 'f') flaps = flaps >= 1 ? 0 : flaps + 0.5; if (e.key === 'e') largarCarga(); });
 addEventListener('keyup', e => teclas[e.key.toLowerCase()] = false);
 addEventListener('keydown', e => { if (e.key === 'Escape') pausar(); });
 const teclado = new THREE.Object3D(); cabina.add(teclado);
@@ -284,11 +286,11 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
     v.pos.set(30, 305, -300); v.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); v.vel.set(0, 0, -67); v.enTierra = false; v.tiempoAire = 10;
     Object.assign(v.motor, { encendido: true, ng: 92, torque: 80, itt: 720, rpmHel: 1700, bateria: true, generador: true });
     for (const n of ['BATT', 'GEN', 'AVNC', 'FPUMP']) sw(n, true); for (const n of ['IGNTR', 'START', 'FIRE']) sw(n, false);
-    pon('levPOT', -0.72); pon('levHEL', -0.88); pon('levCOND', -0.88); pon('levDUMP', 0);
+    pon('levPOT', -0.72); pon('levHEL', -0.88); pon('levCOND', -0.88);
   } else {
     v.pos.set(30, 0, 100); v.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); v.enTierra = true;
-    if (apagado) { Object.assign(v.motor, { encendido: false, ng: 0, torque: 0, itt: 15, rpmHel: 0, bateria: false, generador: false }); for (const n of ['BATT', 'GEN', 'ALTN', 'AVNC', 'FPUMP', 'IGNTR', 'START', 'FIRE']) sw(n, false); pon('levPOT', 0.1); pon('levHEL', 0.1); pon('levCOND', 0.1); pon('levDUMP', 0); }
-    else { Object.assign(v.motor, { encendido: true, ng: 62, torque: 5, itt: 480, rpmHel: 1100, bateria: true, generador: true }); for (const n of ['BATT', 'GEN', 'AVNC', 'FPUMP']) sw(n, true); for (const n of ['IGNTR', 'START', 'FIRE']) sw(n, false); pon('levPOT', 0.1); pon('levHEL', -0.88); pon('levCOND', -0.88); pon('levDUMP', 0); }
+    if (apagado) { Object.assign(v.motor, { encendido: false, ng: 0, torque: 0, itt: 15, rpmHel: 0, bateria: false, generador: false }); for (const n of ['BATT', 'GEN', 'ALTN', 'AVNC', 'FPUMP', 'IGNTR', 'START', 'FIRE']) sw(n, false); pon('levPOT', 0.1); pon('levHEL', 0.1); pon('levCOND', 0.1); }
+    else { Object.assign(v.motor, { encendido: true, ng: 62, torque: 5, itt: 480, rpmHel: 1100, bateria: true, generador: true }); for (const n of ['BATT', 'GEN', 'AVNC', 'FPUMP']) sw(n, true); for (const n of ['IGNTR', 'START', 'FIRE']) sw(n, false); pon('levPOT', 0.1); pon('levHEL', -0.88); pon('levCOND', -0.88); }
   }
   avion.position.copy(v.pos); avion.quaternion.copy(v.q);
 }
