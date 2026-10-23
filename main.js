@@ -52,6 +52,13 @@ const VIDRIO = [[-0.619, 1.137, 0.809], [-0.609, 1.077, 0.919], [-0.569, 1.039, 
 const puerta = { mixer: null, accion: null, dur: 1, k: 0 };
 function crearPuerta(raices) {
   const esVertice = (x, y, z) => VIDRIO.some(p => Math.abs(p.x - x) < 0.003 && Math.abs(p.y - y) < 0.003 && Math.abs(p.z - z) < 0.003);
+  for (const raiz of raices) raiz.traverse(o => {   /* el exterior también trae vidrio de cúpula (m28): sacarle el tramo de la puerta */
+    if (!o.isMesh || o.name !== 'm28' || raiz !== raices[1] || !o.geometry.index) return;
+    const geo = o.geometry, pos = geo.attributes.position, idx = geo.index, fuera = [], c = new THREE.Vector3(), p = new THREE.Vector3();
+    for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
+      if (!(c.x < -0.3 && c.y > 1.0 && c.y < 1.6 && c.z > 0.8 && c.z < 1.86)) fuera.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+    geo.setIndex(fuera);
+  });
   for (const raiz of raices) raiz.traverse(o => {
     if (!o.isMesh || o.name !== 'm27' || !o.geometry.index) return;
     const geo = o.geometry, pos = geo.attributes.position, idx = geo.index, fuera = [];
@@ -70,7 +77,7 @@ function actualizarPuerta(dt) {
   const obj = controles.estado('swTRABA') === 1 ? 1 : 0;
   puerta.k += (obj - puerta.k) * Math.min(1, dt * 2.5); puerta.accion.time = puerta.k * puerta.dur; puerta.mixer.update(0);
 }
-let instrumentos = null, exterior = null; const V_EXT = '20261022g';
+let instrumentos = null, exterior = null; const V_EXT = '20261023c';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
