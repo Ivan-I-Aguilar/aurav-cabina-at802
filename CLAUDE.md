@@ -82,6 +82,11 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 - **Sin resolver:** Iván dice que «una palanca de la izquierda se rompe» al accionarla; en el navegador no se reproduce. Preguntarle cuál es (POWER blanca, perilla azul, gris o roja) y mirarla moviéndola.
 - `levCOND` (perilla gris) y `swAUX` sin confirmar con Iván.
 
+## Próximo gran paso: el avión completo (decidido 22/10)
+- Exterior = **modelo FSX original del Fire Boss** (mismo autor que la cabina: encaja perfecto y es fiel al AT-802). `Documentsurav-cabinaireboss.zip` está **incompleto** (111 de 203 MB; rikoooo cortó por límite de descargas): Iván lo vuelve a bajar a mano.
+- Con el paquete completo: extraer el MDL exterior y las texturas (`texture.N6159F`), además de **panel.cfg, gauges XML y las definiciones de animación**, que dicen qué hace cada perilla y switch (para darles función).
+- Lichi (Blender): unir exterior + cabina, librea AURAV (franja bordó, matrícula), **puerta** que abre con la traba roja (la ventana es fija), **estribos** para subir, tren. En el juego: caminar alrededor, subir y entrar a la cabina.
+
 ## Pendientes (en el orden que pidió Iván)
 1. Probar en el Quest (el recentrado ya anda, 18/10): altura del ojo, distancia de agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
 2. Limpiaparabrisas manipulable (los pedales ya se mueven, 22/10; falta probarlos en el Quest) (recortarlos de la malla grande con `EXTRAER`, como los switches).
