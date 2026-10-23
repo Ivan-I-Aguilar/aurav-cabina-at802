@@ -8,7 +8,7 @@ from mathutils import Vector, Matrix
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SALIDA = os.path.join(RAIZ, 'blender')
-RECORRIDO = 0.2          # rad a cada lado (~11°): lo que trae el modelo FSX congelado; a validar con AAXOD
+RECORRIDO = 0.2          # rad a cada lado (~11°), confirmado por Iván (22/10)
 PIV_Y, PIV_Z = 0.598, 0.617   # eje de los pedales colgantes (arriba del brazo amarillo)
 FPS, CUADROS = 30, 30
 
