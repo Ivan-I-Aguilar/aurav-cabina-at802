@@ -31,7 +31,7 @@ const ambiente = crearEscenario(escena);
 const entorno = escena.children.filter(o => !antesDelEntorno.has(o) && !o.isLight); const nieblaEntorno = escena.fog;
 let lugarReal = false;
 /* modo cámara a escala: el jugador se agranda k veces (tus pasos rinden k veces) → el avión se ve como maqueta 1:k a la altura de una mesa */
-const ESCALAS = [10, 20, 5, 1]; let iEscala = 0, pisoXR = true;
+const ESCALAS = [5, 10, 20, 1];   /* 1:5 de entrada: a más escala, más se amplifica el temblor del seguimiento */ let iEscala = 0, pisoXR = true;
 function aplicarEscalaCamara(reubicar) {
   const k = ESCALAS[iEscala]; jugador.scale.setScalar(k);
   aPie.alturaXR = k === 1 ? (pisoXR ? 0 : 1.4) : (pisoXR ? -0.8 * k : 0.6 * k);   /* el piso real queda 0,8 m (a escala) debajo del avión */
@@ -42,6 +42,23 @@ function aplicarEscalaCamara(reubicar) {
     escena.attach(jugador); jugador.position.set(pos.x, ambiente.alturaTerreno(pos.x, pos.z) + aPie.alturaXR, pos.z);
     jugador.rotation.set(0, Math.atan2(lado.x, lado.z), 0);
   }
+}
+/* seguimiento del celular: compensar saltos bruscos y avisar cuando se pierde */
+const segui = { previo: null, perdido: 0, aviso: null };
+function cuidarSeguimiento() {
+  const frame = renderer.xr.getFrame(), ref = renderer.xr.getReferenceSpace(); if (!frame || !ref) return;
+  const pose = frame.getViewerPose(ref); if (!pose) return;
+  const p = pose.transform.position, ahora = new THREE.Vector3(p.x, p.y, p.z);
+  if (segui.previo) {
+    const d = ahora.clone().sub(segui.previo);
+    if (d.length() > 0.12 && aPie.modo === 'pie' && !aPie.animando) {   /* más de 12 cm en un cuadro: es un error de seguimiento, no un paso */
+      d.y = 0; d.applyQuaternion(jugador.quaternion).multiplyScalar(jugador.scale.x); jugador.position.sub(d);
+    }
+  }
+  segui.previo = ahora;
+  segui.perdido = pose.emulatedPosition ? segui.perdido + 1 : 0;
+  if (!segui.aviso) { segui.aviso = document.createElement('div'); segui.aviso.textContent = 'Mové el celular más despacio, apuntando a algo con textura'; segui.aviso.style.cssText = 'position:fixed;left:50%;top:60px;transform:translateX(-50%);background:rgba(160,30,30,.9);color:#fff;padding:8px 14px;border-radius:10px;font:600 15px Arial;z-index:30;display:none;text-align:center;max-width:85vw'; document.body.appendChild(segui.aviso); }
+  segui.aviso.style.display = segui.perdido > 10 ? 'block' : 'none';
 }
 document.getElementById('escala').onclick = () => { iEscala = (iEscala + 1) % ESCALAS.length; aplicarEscalaCamara(true); };
 function verLugarReal(si) {   /* modo cámara: true = el avión sobre lo que filma el teléfono; false = la pista virtual */
@@ -343,7 +360,7 @@ bAR.onclick = async () => {
   if (aPie.modo === 'cabina') ui.aPie();
   setTimeout(() => aplicarEscalaCamara(true), 1200);   /* después del fundido de bajada */
   document.getElementById('entorno').hidden = false; document.getElementById('escala').hidden = false;
-  s.addEventListener('end', () => { modoCamara = false; verLugarReal(false); document.getElementById('entorno').hidden = true; document.getElementById('escala').hidden = true; jugador.scale.setScalar(1); aPie.alturaXR = 0; for (const c of manos) c.children[0].visible = true; if (aPie.modo === 'pie') camara.position.y = 1.65; });
+  s.addEventListener('end', () => { modoCamara = false; verLugarReal(false); document.getElementById('entorno').hidden = true; document.getElementById('escala').hidden = true; jugador.scale.setScalar(1); segui.previo = null; if (segui.aviso) segui.aviso.style.display = 'none'; aPie.alturaXR = 0; for (const c of manos) c.children[0].visible = true; if (aPie.modo === 'pie') camara.position.y = 1.65; });
 };
 let modoCamara = false;
 document.getElementById('entorno').onclick = () => verLugarReal(!lugarReal);
@@ -504,6 +521,7 @@ renderer.setAnimationLoop(() => {
     vuelo.paso(h); acumSim -= h; n++;
   }
   avion.position.copy(vuelo.pos); avion.quaternion.copy(vuelo.q);
+  if (modoCamara) cuidarSeguimiento();
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt); actualizarPuerta(dt);
