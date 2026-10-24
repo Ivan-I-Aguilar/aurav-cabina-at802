@@ -114,7 +114,7 @@ function actualizarPuerta(dt) {
   const obj = controles.estado('swTRABA') === 1 ? 1 : 0;
   puerta.k += (obj - puerta.k) * Math.min(1, dt * 2.5); puerta.accion.time = puerta.k * puerta.dur; puerta.mixer.update(0);
 }
-let instrumentos = null, exterior = null; const V_EXT = '20261023d';
+let instrumentos = null, exterior = null; const V_EXT = '20261024b';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -143,34 +143,29 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     if (o.isMesh && (o.name === 'm14' || o.name === 'm15')) { o.material.color.set(0xe6e6df); o.material.roughness = 0.55; }   /* exterior blanco */
   });
   cabina.add(g.scene);
-  /* exterior completo (Lichi: FSX terrestre con librea AURAV, mismo marco que la cabina); reemplaza la cáscara gris que traía la cabina */
+  /* exterior completo (Lichi: AT-802 TERRESTRE real —OBJ de la familia FSN— con tren de ballesta, hélice de 5 palas,
+     cúpula y vidrios propios, librea AURAV por geometría). De la cáscara de la cabina queda sólo el interior (butaca). */
   new GLTFLoader().loadAsync(`./exterior.glb?v=${V_EXT}`).then(e => {
-    e.scene.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) o.renderOrder = 2; } });
+    e.scene.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) { o.renderOrder = 2; o.material.depthWrite = false; } } });
     cabina.add(e.scene); exterior = e.scene;
-    /* de la cáscara de la cabina (m14/m15) se queda sólo lo de adentro del habitáculo (butaca, paredes interiores); el resto lo pone el exterior */
     const dentro = new THREE.Box3(new THREE.Vector3(-0.62, 0.12, 0.75), new THREE.Vector3(0.62, 1.62, 2.45)), c = new THREE.Vector3(), p = new THREE.Vector3();
-    const CUPULA = new THREE.Box3(new THREE.Vector3(-0.8, 1.0, 0.65), new THREE.Vector3(0.8, 2.1, 2.15));   /* la cúpula la pone la cabina (más fiel); al exterior se le saca */
-    e.scene.traverse(o => {
-      if (!o.isMesh || !o.geometry.index) return; const g2 = o.geometry, ps = g2.attributes.position, ix = g2.index, q = [];
-      for (let t = 0; t < ix.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(ps, ix.getX(t + k))); c.multiplyScalar(1 / 3); if (!CUPULA.containsPoint(c)) q.push(ix.getX(t), ix.getX(t + 1), ix.getX(t + 2)); }
-      g2.setIndex(q);
-    });
     g.scene.traverse(o => {
       if (!o.isMesh) return;
       if (o.name === 'm9') { o.visible = false; return; }   /* disco de hélice de la cabina */
       if (o.name !== 'm14' && o.name !== 'm15') return;
       const geo = o.geometry, pos = geo.attributes.position, idx = geo.index; if (!idx) { o.visible = false; return; }
+      const CUPULA = new THREE.Box3(new THREE.Vector3(-0.8, 1.0, 0.65), new THREE.Vector3(0.8, 2.1, 2.15));   /* la cúpula la pone la cabina */
       const quedan = [], techo = [];
       for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
         const tri = [idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)]; if (dentro.containsPoint(c)) quedan.push(...tri); else if (CUPULA.containsPoint(c)) techo.push(...tri); }
-      if (techo.length) {   /* chapa exterior de la cúpula: blanca lisa (la textura de la cabina pinta manchas rojas/doradas ahí) */
+      if (techo.length) {   /* chapa exterior de la cúpula: blanca lisa, mismo tono que el fuselaje */
         const gt = geo.clone(); gt.setIndex(techo);
-        const mt = new THREE.Mesh(gt, new THREE.MeshStandardMaterial({ color: 0xbabbba, roughness: 0.8, metalness: 0, side: THREE.DoubleSide })   /* mismo tono y brillo que la textura del fuselaje (blanco gris 186) */); mt.name = o.name + '_techo'; o.parent.add(mt); mt.position.copy(o.position); mt.quaternion.copy(o.quaternion); mt.scale.copy(o.scale);
+        const mt = new THREE.Mesh(gt, new THREE.MeshStandardMaterial({ color: 0xbabbba, roughness: 0.8, metalness: 0, side: THREE.DoubleSide })); mt.name = o.name + '_techo'; o.parent.add(mt); mt.position.copy(o.position); mt.quaternion.copy(o.quaternion); mt.scale.copy(o.scale);
       }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
-    /* la cabina convertida no tenía AT_01_T (salía blanca): usar la textura del exterior (mismo atlas, misma UV) */
-    let texAt01 = null; e.scene.traverse(o => { if (o.isMesh && o.name === 'm15' && o.material?.map) texAt01 = o.material.map; });
+    /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
+    let texAt01 = null; e.scene.traverse(o => { if (o.isMesh && !texAt01 && o.material?.map && o.material.name === 'mat02') texAt01 = o.material.map; });
     if (texAt01) g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = texAt01; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
     crearPuerta([g.scene, e.scene]);
   });
