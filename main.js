@@ -8,15 +8,15 @@ import { mergeGeometries } from './BufferGeometryUtils.js';
 import { crearEscenario } from './escenario.js?v=20261017a';
 import { crearRadios } from './radios.js?v=20261017a';
 import { Controles } from './controles.js?v=20261022e';
-import { Instrumentos } from './instrumentos.js?v=20261018a';
-import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
+import { Instrumentos } from './instrumentos.js?v=20261025e';
+import { Vuelo, MPH, FT } from './vuelo.js?v=20261024s';
 import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
 const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
-const ALTURA_CABINA = 2.0;                      // el marco de la cabina sobre el del avión: con el tren terrestre (exterior.glb) las ruedas apoyan 2 m debajo
+const ALTURA_CABINA = 1.9;                      // el marco de la cabina sobre el del avión: a 7,2° de 3 puntos las ruedas (y_cab −2 / −1,12) apoyan justo (24/10)
 const V = '20261017a';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });   /* alpha: en modo cámara «lugar real» se ve la cámara detrás del avión */
@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null; const V_EXT = '20261024j';
+let instrumentos = null, exterior = null; const V_EXT = '20261026a';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -116,16 +116,35 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     g.scene.traverse(o => {
       if (!o.isMesh) return;
       if (o.name === 'm9') { o.visible = false; return; }   /* disco de hélice de la cabina */
-      if (/^(sw|lev|pedal|palanca|varilla|puerta)/.test(o.name)) return;   /* controles e interior armado: no tocar */
+      /* TABLERO RECONSTRUIDO (25/10, pedido de Iván; foto LV-GRP de referencia): el panel viejo del FSX
+         (chapa m1, vidrios m22, biseles m29, carátulas m25/m28/m30/m31/m4/m8, tapitas m10/m11) y las
+         varillas del mecanismo se OCULTAN; la placa nueva la arma crearTablero y las carátulas instrumentos.js */
+      if (/^(m22|m29|m25|m28|m30|m31|m4|m8|m10|m11)$/.test(o.name) || /^varilla/.test(o.name)) { o.visible = false; return; }
+      if (/^(sw|lev|pedal|palanca|puerta)/.test(o.name)) return;   /* controles e interior armado: no tocar */
       const geo = o.geometry, pos = geo.attributes.position, idx = geo.index; if (!idx) { o.visible = false; return; }
+      /* de m1 (chapa del panel viejo) y m18 (panel FRDS) queda SOLO la franja baja: ahí montan las perillas
+         FPUMP/WIPER/HOPR/FRDS. Se APLASTAN los vértices al cajón (cortar caras grandes dejaba lenguas sueltas),
+         y va ANTES del atajo de «pieza interior entera», que si no se los traga. */
+      if (o.name === 'm1' || o.name === 'm18') {
+        for (let i = 0; i < pos.count; i++) {
+          let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+          const tope = Math.abs(x) > 0.5 ? 0.94 : 0.97;
+          if (Math.abs(x) > 0.615) x = Math.sign(x) * 0.615;
+          if (y > tope) y = tope;
+          if (z < 0.84) z = 0.84;
+          pos.setXYZ(i, x, y, z);
+        }
+        pos.needsUpdate = true; geo.computeVertexNormals(); return;
+      }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
-      if (bb.min.x >= dentro.min.x - 0.2 && bb.max.x <= dentro.max.x + 0.2 && bb.min.z >= 0.4 && bb.max.z <= 2.6 && bb.max.y <= 2.3) return;   /* ya es pieza interior: queda entera */
-      /* por fuera la cúpula es la del exterior (una sola cara: desde adentro no se ve); por dentro queda la de la cabina, con su jaula amarilla y sus vidrios */
-      const CUPULA = new THREE.Box3(new THREE.Vector3(-0.8, 1.0, 0.65), new THREE.Vector3(0.8, 2.1, 2.15));
+      if (!/^(m20|m27)$/.test(o.name) && bb.min.x >= dentro.min.x - 0.2 && bb.max.x <= dentro.max.x + 0.2 && bb.min.z >= 0.4 && bb.max.z <= 2.6 && bb.max.y <= 2.3) return;   /* ya es pieza interior: queda entera */
+      /* UNA sola estructura de cúpula (la del exterior de fábrica): de la cabina vieja queda sólo lo que está
+         bajo la línea de ventanas (consolas, butaca, piso); nada de jaulas ni vidrios duplicados */
       const quedan = [];
       for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
-        if (dentro.containsPoint(c) || CUPULA.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        const anchoMax = c.y > 0.85 ? 0.5 : (c.z > 1.6 ? 0.6 : 0.615);   /* el fuselaje se angosta arriba y atrás; a 0,63 la consola (m16) y la butaca (m14) asomaban por la puerta */
+        if (c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
@@ -180,10 +199,129 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     const clip = THREE.AnimationClip.findByName(p.animations, 'pedales_timon');
     if (clip) { pedales.accion = pedales.mixer.clipAction(clip); pedales.accion.play(); pedales.accion.paused = true; pedales.dur = clip.duration; }
   });
+  /* el panel del FSX quedaba DELANTE del parabrisas de fábrica: los parantes lo atravesaban y asomaba por el capó.
+     Tablero y relojes se corren 15 cm hacia el piloto (detrás de los parantes); el reloj de hora y el suction
+     (consola) no se tocan. Las perillas FRDS acompañan (abajo). */
+  for (const d of datosInst) if (d.c[1] > 1.0) d.c[2] += 0.08;
+  crearTablero(datosInst);
   instrumentos = new Instrumentos(cabina, datosInst);
+  /* las perillas FRDS quedan en su lugar: su chapa (franja baja de m18) volvió */
   document.getElementById('cargando').remove();
   mision.menu();
 });
+
+/* Tablero reconstruido (25/10, CALCADO de la foto real LV-GRP de AAXOD): placa oscura con hombros curvos en
+   tres facetas; fila central ASI · horizonte · ALT con GPS tipo Garmin abajo; motor en grilla a la derecha,
+   sistemas a la izquierda; tornillos y placards dibujados. Los relojes se REUBICAN según este plano (la
+   distribución del FSX quedaba desparramada); las agujas siguen andando porque instrumentos.json se pisa acá. */
+function crearTablero(datos) {
+  const LAYOUT = {   /* [x, y] marco cabina, según la foto */
+    asi: [-0.18, 1.185], horizonte: [0, 1.185], alt: [0.18, 1.185],
+    vsi: [-0.18, 1.045], reloj: [0.18, 1.045],
+    torque: [0.30, 1.16], itt: [0.41, 1.16], prop: [0.30, 1.055], ng: [0.41, 1.055], ff: [0.355, 0.95],
+    fuelL: [-0.28, 1.16], fuelR: [-0.375, 1.16],
+    oilp: [-0.28, 1.055], oilt: [-0.375, 1.055], hyd: [-0.44, 1.055],
+    fuelp: [-0.44, 0.95],
+    volt: [-0.28, 0.95], amp: [-0.375, 0.95],
+  };
+  /* FrontSide: el tablero se ve SOLO desde adentro; desde afuera se descarta y no asoma sobre el capo */
+  const FACETAS = [   /* rI/rD: cuánto se angosta arriba (la cúpula se cierra; las esquinas perforaban el vidrio) */
+    { lado: -1, cx: -0.375, cy: 1.01, w: 0.30, h: 0.40, rI: 0.10, rc: 0.04 },   /* ala izquierda corta: por la esquina del vidrio se veia negro sobre la nariz */
+    { lado: 0, cx: 0, cy: 1.078, w: 0.52, h: 0.33, rI: 0.07, rD: 0.07, rc: 0.06 }, /* centro: joroba más baja (resaltaba sobre la nariz) */
+    { lado: 1, cx: 0.36, cy: 1.04, w: 0.32, h: 0.34, rD: 0.10, rc: 0.04 },    /* ala derecha (motor): termina antes de la radio */
+  ];
+  /* lados VERTICALES y bisel sólo en la esquina de arriba (el borde en diagonal dejaba relojes en el aire) */
+  const forma = (w, h, rI, rD, rc, m = 0) => { const sh = new THREE.Shape(); const a = w / 2 + m, b = h / 2 + m, t = 0.16;
+    sh.moveTo(-a + rc, -b);
+    sh.lineTo(a - rc, -b); sh.quadraticCurveTo(a, -b, a, -b + rc);
+    if (rD) { sh.lineTo(a, b - t); sh.quadraticCurveTo(a, b - t * 0.4, a - rD, b); }
+    else { sh.lineTo(a, b - rc); sh.quadraticCurveTo(a, b, a - rc, b); }
+    sh.lineTo(-a + (rI || rc), b);
+    if (rI) { sh.quadraticCurveTo(-a, b - t * 0.4, -a, b - t); }
+    else { sh.quadraticCurveTo(-a, b, -a, b - rc); }
+    sh.lineTo(-a, -b + rc); sh.quadraticCurveTo(-a, -b, -a + rc, -b);
+    sh.closePath(); return new THREE.ShapeGeometry(sh, 6); };
+  const texFaceta = f => {   /* chapa oscura con tornillos, uniones y (centro) placards FLIGHT/GRD */
+    const E = 640, cv = document.createElement('canvas'); cv.width = E; cv.height = Math.round(E * f.h / f.w);
+    const c = cv.getContext('2d'), W = cv.width, H = cv.height, px = E / f.w;
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2b2d33'); g.addColorStop(1, '#222428');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(255,255,255,0.03)'; for (let i = 0; i < 60; i++) c.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+    c.strokeStyle = '#1b1d21'; c.lineWidth = 2; c.strokeRect(5, 5, W - 10, H - 10);
+    const paso = 0.055 * px; c.fillStyle = '#404550';
+    for (let x = paso; x < W; x += paso) for (const y of [0.016 * px, H - 0.016 * px]) { c.beginPath(); c.arc(x, y, 0.004 * px, 0, 7); c.fill(); c.fillStyle = '#404550'; }
+    for (let y = paso; y < H; y += paso) for (const x of [0.016 * px, W - 0.016 * px]) { c.beginPath(); c.arc(x, y, 0.004 * px, 0, 7); c.fill(); }
+    if (f.lado === 0) {   /* placards verdosos FLIGHT / GRD como los de la foto, ABAJO de los relojes (encima parecían flotar) */
+      c.fillStyle = '#b9c27a';
+      for (const [x0, tit, fila] of [[0.075 * W, 'FLIGHT', '750 725 700'], [0.755 * W, 'GRD', '725 700']]) {
+        c.fillRect(x0, H * 0.80, W * 0.17, H * 0.17); c.fillStyle = '#20231d'; c.textAlign = 'center';
+        c.font = `bold ${H * 0.055}px Arial`; c.fillText(tit, x0 + W * 0.085, H * 0.865);
+        c.font = `bold ${H * 0.048}px Arial`; c.fillText(fila, x0 + W * 0.085, H * 0.93);
+        c.fillStyle = '#b9c27a';
+      }
+    }
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    tex.repeat.set(1 / f.w, 1 / f.h); tex.offset.set(0.5, 0.5); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    return tex;
+  };
+  /* las alas BARREN hacia atrás 17° (como el panel real): así sus bordes externos quedan DETRÁS de los
+     parantes del parabrisas y no asoman por el vidrio (capturas de Iván 24/10) */
+  const matBorde = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.7 });
+  const n0 = new THREE.Vector3(0, -0.0175, 0.9998).normalize();
+  const centros = datos.filter(d => d.c[1] > 1.0 && Math.abs(d.n[0]) <= 0.05);
+  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) - 0.006;   /* plano de la placa central */
+  const zAncla = x => (d0 + 0.0175 * 1.05) / 0.9998 - 0.004;   /* z del borde interno de las alas (4 mm delante del centro: tapa la costura) */
+  const planos = {};
+  for (const f of FACETAS) {
+    const th = f.lado * -0.24;   /* barrido: izquierda +14°, derecha −14° */
+    const n = new THREE.Vector3(Math.sin(th), -0.0175, Math.cos(th)).normalize();
+    const ex = new THREE.Vector3(Math.cos(th), 0, -Math.sin(th));
+    const ey = new THREE.Vector3().crossVectors(n, ex);
+    const dPlaca = f.lado === 0 ? d0 : n.dot(new THREE.Vector3(f.lado * 0.20, 1.05, zAncla()));
+    planos[f.lado] = { n, ex, ey, d: dPlaca + 0.006 };
+    const z = (dPlaca - n.x * f.cx - n.y * f.cy) / n.z;
+    const matPanel = new THREE.MeshStandardMaterial({ map: texFaceta(f), roughness: 0.85, metalness: 0.1 });
+    const placa = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc), matPanel);
+    placa.position.set(f.cx, f.cy, z);
+    placa.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, ey, n));
+    placa.name = 'tablero_' + f.lado; cabina.add(placa);
+    const marco = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc, 0.008), matBorde);
+    marco.position.copy(placa.position).addScaledVector(n, -0.003); marco.quaternion.copy(placa.quaternion); cabina.add(marco);
+    /* repisa: cierra el escalón entre el tablero corrido y el panel de llaves de abajo */
+    const repisa = new THREE.Mesh(new THREE.PlaneGeometry(f.w + 0.016, 0.12), new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.9 }));
+    repisa.position.set(f.cx, f.cy - f.h / 2 + 0.004, z - 0.06);
+    repisa.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, n.clone().negate(), ey)); cabina.add(repisa);
+  }
+  /* reubicar los relojes según el plano de la foto: 6 mm por delante de su faceta, con la base de la faceta */
+  for (const d of datos) {
+    const p = LAYOUT[d.tipo]; if (!p) continue;
+    const lado = p[0] < -0.26 ? -1 : p[0] > 0.26 ? 1 : 0;
+    const pl = planos[lado];
+    const z = (pl.d - pl.n.x * p[0] - pl.n.y * p[1]) / pl.n.z;
+    d.c = [p[0], p[1], z]; d.n = pl.n.toArray(); d.ex = pl.ex.toArray(); d.ey = pl.ey.toArray();
+    if (d.r < 0.027) d.r = 0.027;   /* los relojitos chicos, un toque más legibles */
+  }
+  for (const d of datos) {
+    if (d.tipo === 'suction') d.r = 0.034;   /* en la consola quedaba gigante con el bisel nuevo */
+    if (d.tipo === 'horizonte') d.r = 0.054;   /* para que entre en la joroba baja */
+  }
+  /* GPS tipo Garmin al centro (como la foto), llenando el hueco bajo el horizonte */
+  const pl = planos[0]; const gx = 0, gy = 1.038, gz = (pl.d + 0.012 - pl.n.y * gy) / pl.n.z;
+  const gps = new THREE.Group(); gps.position.set(gx, gy, gz);
+  gps.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl.ex, pl.ey, pl.n)); gps.name = 'gps';
+  const bisel = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.125, 0.03), new THREE.MeshStandardMaterial({ color: 0x191a1e, roughness: 0.6 }));
+  bisel.position.z = -0.015; gps.add(bisel);
+  const cvg = document.createElement('canvas'); cvg.width = 256; cvg.height = 160; const cg = cvg.getContext('2d');
+  cg.fillStyle = '#0a1410'; cg.fillRect(0, 0, 256, 160);
+  cg.strokeStyle = '#1e4433'; for (let i = 0; i < 7; i++) { cg.beginPath(); cg.moveTo(0, 20 + i * 20); cg.lineTo(256, 14 + i * 22); cg.stroke(); }
+  cg.strokeStyle = '#c845c8'; cg.lineWidth = 3; cg.beginPath(); cg.moveTo(128, 150); cg.lineTo(128, 60); cg.lineTo(170, 20); cg.stroke();
+  cg.fillStyle = '#e8e8e8'; cg.font = 'bold 15px Arial'; cg.fillText('GPS', 10, 20); cg.fillText('AURAV', 196, 20);
+  const texg = new THREE.CanvasTexture(cvg); texg.colorSpace = THREE.SRGBColorSpace;
+  const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.155, 0.095), new THREE.MeshBasicMaterial({ map: texg }));
+  pant.position.set(0, 0.005, 0.002); gps.add(pant);
+  for (const s of [-1, 1]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.012, 16).rotateX(Math.PI / 2), matBorde); k.position.set(s * 0.078, -0.047, 0.004); gps.add(k); }
+  cabina.add(gps);
+}
 
 // ---- controles de cabina → modelo de vuelo ----
 const controles = new Controles(cabina); window.__controles = controles;
@@ -280,7 +418,7 @@ function actualizarTeclado() {
   else if (mando.agarre === teclado) mando.agarre = null;
   if (!renderer.xr.isPresenting) { pedal = (teclas.d ? 1 : 0) - (teclas.a ? 1 : 0); frenos = teclas.b ? 1 : 0; }
 }
-const radios = crearRadios(); radios.position.set(0.57, 0.86, 0.97); radios.rotation.set(0.08, -0.42, 0); radios.scale.setScalar(1.2); cabina.add(radios);
+const radios = crearRadios(); radios.position.set(0.53, 0.80, 1.05); radios.rotation.set(0.08, -0.42, 0); radios.scale.setScalar(1.05); cabina.add(radios);   /* mas adentro y mas chico: el GPS perforaba el vidrio (24/10) */
 
 // ---- cámara PC ----
 let yaw = 0, pitch = -0.15, arr = null, arrIni = null;
@@ -395,7 +533,7 @@ function actualizarMarca(dt) {
 // texto flotante en VR (tutor): tablilla a la derecha del panel, fija a la cabina
 const hudVR = (() => {
   const W = 768, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.14), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false })); m.renderOrder = 9; m.position.set(0.32, 1.34, 0.78); m.rotation.set(-0.15, -0.25, 0); cabina.add(m);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.14), new THREE.MeshBasicMaterial({ map: tex, transparent: true })); m.renderOrder = 3; m.position.set(0.33, 1.30, 1.09);   /* con depthTest: ya no se dibuja a traves de la chapa (24/10) */ m.rotation.set(-0.12, -0.22, 0); cabina.add(m);   /* adentro del vidrio: a 0,78 atravesaba la cupula (24/10) */
   return { texto(titulo, texto) { c.clearRect(0, 0, W, H); if (!texto) { tex.needsUpdate = true; return; } c.fillStyle = 'rgba(8,36,64,0.85)'; c.beginPath(); c.roundRect(0, 0, W, H, 28); c.fill(); c.fillStyle = '#c8e63a'; c.font = 'bold 30px Arial'; c.fillText(titulo || '', 28, 48);
     c.fillStyle = '#fff'; c.font = '34px Arial'; let y = 100, l = ''; for (const p of texto.split(' ')) { const t = l ? l + ' ' + p : p; if (c.measureText(t).width > W - 56) { c.fillText(l, 28, y); y += 42; l = p; } else l = t; } c.fillText(l, 28, y); tex.needsUpdate = true; } };
 })();
@@ -446,8 +584,8 @@ const botonSalir = (() => {   /* placa «MENÚ · SALIR» debajo de la tablilla 
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 80; const c = cv.getContext('2d');
   c.fillStyle = 'rgba(160,30,30,0.92)'; c.beginPath(); c.roundRect(0, 0, 256, 80, 18); c.fill(); c.fillStyle = '#fff'; c.font = 'bold 34px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('MENÚ · SALIR', 128, 42);
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.0375), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false })); m.renderOrder = 9;
-  m.position.set(0.44, 1.245, 0.80); m.rotation.set(-0.15, -0.25, 0); cabina.add(m);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.0375), new THREE.MeshBasicMaterial({ map: tex, transparent: true })); m.renderOrder = 3;
+  m.position.set(0.42, 1.10, 1.07); m.rotation.set(-0.12, -0.22, 0); cabina.add(m);   /* acompana a la tablilla, adentro del vidrio */
   const ray = new THREE.Raycaster(), m4 = new THREE.Matrix4();
   return { malla: m, apuntado(control) {   /* distancia del rayo del control a la placa, o null */
     m4.identity().extractRotation(control.matrixWorld); ray.ray.origin.setFromMatrixPosition(control.matrixWorld); ray.ray.direction.set(0, 0, -1).applyMatrix4(m4);

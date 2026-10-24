@@ -40,6 +40,10 @@ assert abs(co0[:, 0].max() - 9.03) < 0.3, f'envergadura mal: {co0[:, 0].max():.2
 assert np.median(fin[:, 1]) < -3, f'la deriva no quedó en la cola: y={np.median(fin[:, 1]):.2f}'
 print('MARCO OK: deriva en y', round(float(np.median(fin[:, 1])), 2), 'envergadura ±', round(float(co0[:, 0].max()), 2))
 
+# el OBJ trae COLORES DE VÉRTICE (pintura vieja): three.js los multiplica sobre la textura (Blender los ignora) → fuera
+for ca in list(o.data.color_attributes):
+    o.data.color_attributes.remove(ca)
+
 # UVs del OBJ vienen corridas a V 1..2 (Metasequoia): bajarlas a 0..1 o el horneado cae fuera del lienzo
 uvl = o.data.uv_layers[0].data
 uva = np.empty(len(uvl) * 2); uvl.foreach_get('uv', uva); uva = uva.reshape(-1, 2)
@@ -64,28 +68,75 @@ print('ALINEADO: canopy_obj_y', round(y_canopy, 2), 'piso corregido', round(z_mi
 
 # borrar: interior propio (paneles $atvc), vidrios de cúpula y estructura de cúpula (la pone nuestra cabina + puerta de Lichi)
 me = o.data
-mats_borrar = {i for i, s in enumerate(o.material_slots) if s.material and any(k in (s.material.name or '') for k in ('mat00', 'mat01'))}
+mats_borrar = {i for i, s in enumerate(o.material_slots) if s.material and any(k in (s.material.name or '') for k in ('mat00', 'mat01', 'mat11'))}   # mat11: revestimiento interior oscuro del OBJ, asomaba por el vidrio (24/10); el interior lo pone la cabina
 bm = bmesh.new(); bm.from_mesh(me)
-INT_MIN, INT_MAX = Vector((-0.5, -2.4, 0.15)), Vector((0.5, -0.7, 1.25))     # restos interiores (el habitáculo lo pone nuestra cabina)
+INT_MIN, INT_MAX = Vector((-0.5, -2.02, 0.15)), Vector((0.5, -0.7, 1.25))    # restos interiores (el habitáculo lo pone nuestra cabina); el mamparo de atrás (y<-2.02) queda: cierra la chapa detrás de la ventana
 # la cúpula del OBJ queda ENTERA, vidrios incluidos (sin puerta que abre: el modelo lo más fiel posible)
+gi = {i for i, sl in enumerate(o.material_slots) if sl.material and sl.material.name == 'mat22'}
 quitar = []
 for f in bm.faces:
     c = f.calc_center_median()
     en_int = all(INT_MIN[i] <= c[i] <= INT_MAX[i] for i in range(3))
-    if f.material_index in mats_borrar or en_int: quitar.append(f)
+    # vidrios de la cúpula duplicados (paño interno + externo superpuestos pelean entre sí): queda sólo la cara que mira hacia afuera
+    vidrio_int = False
+    if f.material_index in gi and -2.6 < c.y < -0.3 and c.z > 0.85:
+        d = Vector((c.x, 0, c.z - 1.0)).normalized()
+        vidrio_int = f.normal.dot(d) < 0
+    if f.material_index in mats_borrar or en_int or vidrio_int: quitar.append(f)
 bmesh.ops.delete(bm, geom=quitar, context='FACES')
 bm.to_mesh(me); bm.free(); me.update()
 print('BORRADAS', len(quitar))
 
-# librea AURAV por GEOMETRÍA (este atlas comparte texels entre partes: hornear por posición lo mancha).
-# 1) base blanca: las texturas at_01/02/04 se pasan a blanco conservando remaches (luminancia reescalada);
-# 2) franja bordó + línea fina y puntas rojas: se bisecta la malla por los planos de la librea y se asignan materiales planos.
+# Librea (24/10, pedido de Iván): respetar la PINTURA ORIGINAL del modelo —franjas y deriva azules de fábrica—
+# sobre base blanca: el amarillo se blanquea (conservando remaches), lo azul y lo oscuro (gomas, antideslizante,
+# antirreflejo) queda tal cual, sin el «493» de la cola ni el «RESTRICTED» (espejado de un lado).
+# Nada de dibujo por geometría: sólo las ruedas de goma y las palas (negras con banda roja) se pintan aparte.
+BORRAR = {'b_at_04': ('azul', [(0.07, 0.17, 0.27, 0.33), (0.62, 0.17, 0.82, 0.33)]),    # «493»: se rellena con el azul de la deriva (u0, v0, u1, v1; v desde abajo)
+          'b_at_01': ('blanco', [(0.42, 0.79, 0.51, 0.835), (0.49, 0.50, 0.57, 0.54)])}  # «RESTRICTED»: chapa blanca lisa
+PALA = (0.645, 0.0, 0.70, 0.245)      # tira de la pala Hartzell en at_01 (punta arriba)
+PALA_BANDA = (0.196, 0.236)           # banda roja de la punta (franja de v dentro de la tira)
 def blanquear(img, nombre):
-    px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, 4)
-    lum = px[:, 0] * 0.3 + px[:, 1] * 0.59 + px[:, 2] * 0.11
-    v = np.clip(0.42 + 0.75 * lum, 0, 0.86)
-    out = bpy.data.images.new(nombre, img.size[0], img.size[1])
-    px[:, 0] = v; px[:, 1] = v; px[:, 2] = v * 0.985
+    W, H = img.size
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(H, W, 4)
+    lum = px[..., 0] * 0.3 + px[..., 1] * 0.59 + px[..., 2] * 0.11
+    r = max(4, W // 256)
+    c = np.cumsum(np.cumsum(np.pad(lum, ((1, 0), (1, 0))), 0), 1)
+    yy0 = np.clip(np.arange(H) - r, 0, H); yy1 = np.clip(np.arange(H) + r + 1, 0, H)
+    xx0 = np.clip(np.arange(W) - r, 0, W); xx1 = np.clip(np.arange(W) + r + 1, 0, W)
+    area = (yy1 - yy0)[:, None] * (xx1 - xx0)[None, :]
+    blur = (c[yy1][:, xx1] - c[yy1][:, xx0] - c[yy0][:, xx1] + c[yy0][:, xx0]) / area
+    detalle = np.clip(lum - blur, -0.35, 0.1)
+    azul = px[..., 2] > np.maximum(px[..., 0], px[..., 1]) + 0.015   # pintura azul de fábrica (valores lineales)
+    oscuro = lum < 0.045                                             # gomas, antideslizante, rejillas (~sRGB 0,23)
+    modo_cajas = BORRAR.get(next((k for k in BORRAR if nombre.lower().startswith(k)), ''), None)
+    if modo_cajas:
+        modo, cajas = modo_cajas
+        for u0, v0, u1, v1 in cajas:
+            reg = (slice(int(v0 * H), int(v1 * H)), slice(int(u0 * W), int(u1 * W)))
+            detalle[reg] = 0
+            if modo == 'azul':
+                sel = azul[reg]
+                if sel.any():
+                    med = np.median(px[reg][sel], axis=0)
+                    px[reg] = med; azul[reg] = True
+            else:
+                azul[reg] = False; oscuro[reg] = False
+    if nombre.lower().startswith('b_at_01'):   # pala: negra con banda roja en la punta (pedido 24/10)
+        u0, v0, u1, v1 = PALA
+        reg = (slice(int(v0 * H), int(v1 * H)), slice(int(u0 * W), int(u1 * W)))
+        hoja = (~azul[reg]) & (lum[reg] > 0.08)
+        sub = px[reg]; sub[hoja] = (0.02, 0.02, 0.022, 1); px[reg] = sub
+        b0, b1 = (slice(int(PALA_BANDA[0] * H), int(PALA_BANDA[1] * H)), reg[1])
+        hoja_b = (~azul[b0, b1]) & (lum[b0, b1] > 0.08)
+        sub = px[b0, b1]; sub[hoja_b] = (0.35, 0.012, 0.012, 1); px[b0, b1] = sub
+        azul[reg] |= hoja
+    gris = oscuro & ~azul   # lo oscuro conservado va a GRIS neutro (los parches de amarillo sombreado quedaban amarillos)
+    for i in range(3): px[..., i] = np.where(gris, lum, px[..., i])
+    conservar = azul | oscuro
+    v = np.clip(0.78 + detalle * 0.9, 0, 0.9)
+    out = bpy.data.images.new(nombre, W, H)
+    for i, esc in enumerate((1, 1, 0.985)):
+        px[..., i] = np.where(conservar, px[..., i], v * esc)
     out.pixels.foreach_set(px.ravel())
     out.filepath_raw = os.path.join(SAL, 'tex', nombre + '.png'); out.file_format = 'PNG'; out.save()
     return out
@@ -117,32 +168,36 @@ def mat_plano(nombre, color):
     m = bpy.data.materials.get(nombre) or bpy.data.materials.new(nombre); m.use_nodes = True
     p = m.node_tree.nodes['Principled BSDF']; p.inputs['Base Color'].default_value = (*color, 1); p.inputs['Roughness'].default_value = 0.8
     return m
-m_bordo = mat_plano('librea_bordo', (0.30, 0.025, 0.06)); m_rojo = mat_plano('librea_rojo', (0.62, 0.02, 0.04))
-o.data.materials.append(m_bordo); o.data.materials.append(m_rojo)
-i_bordo = len(o.data.materials) - 2; i_rojo = len(o.data.materials) - 1
-i_piel = {i for i, sl in enumerate(o.material_slots) if sl.material and sl.material.name in PIEL}
+m_goma = mat_plano('goma', (0.015, 0.015, 0.016)); m_goma.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.95
+o.data.materials.append(m_goma)
+i_goma = len(o.data.materials) - 1
 
+m_pedana = mat_plano('pedana', (0.05, 0.05, 0.052)); m_pedana.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 1.0   # gris oscuro: negra parecia un bulto en escorzo
+o.data.materials.append(m_pedana)
+i_pedana = len(o.data.materials) - 1
+
+# por geometría: GOMA negra en las ruedas, y la PEDANA (antideslizante) PINTADA en la raíz del ala izquierda
+# (24/10, pedido de Iván: la placa flotante pisada_ala se reemplaza por pintura sobre la chapa)
 bm = bmesh.new(); bm.from_mesh(o.data)
-# planos de corte (coords Blender: y hacia la nariz, z arriba): franja z = 0.08 + 0.03*y ± 0.08; línea z = 0.08 + 0.03*y − 0.135 ± 0.013
-PLANOS = [((0, 0, -0.09), (0, -0.02, 1)), ((0, 0, -0.27), (0, -0.02, 1)), ((0, 0, -0.315), (0, -0.02, 1)), ((0, 0, -0.345), (0, -0.02, 1)),
-          ((8.42, 0, 0), (1, 0, 0)), ((-8.42, 0, 0), (1, 0, 0)), ((2.4, 0, 0), (1, 0, 0)), ((-2.4, 0, 0), (1, 0, 0)),
-          ((0, 0, 1.85), (0, 0, 1)), ((0, -4.4, 0), (0, 1, 0))]
-for co, no in PLANOS:
+# cortes para que la pedana tenga bordes netos (marco Blender: x, y=-largo, z arriba; ala izq. x<0, z_cab 0.63..1.1 → y -1.1..-0.63)
+for co, no in [((-1.10, 0, 0), (1, 0, 0)), ((-0.80, 0, 0), (1, 0, 0)), ((0, -1.02, 0), (0, 1, 0)), ((0, -0.68, 0), (0, 1, 0))]:
     bmesh.ops.bisect_plane(bm, geom=list(bm.verts) + list(bm.edges) + list(bm.faces), plane_co=co, plane_no=no)
-nb = nr = 0
+ng = np_ = 0
 for f in bm.faces:
-    if f.material_index not in i_piel: continue
-    c = f.calc_center_median(); g = c.z + 0.18 - 0.02 * c.y
-    if (abs(g) < 0.09 or abs(g + 0.15) < 0.015) and abs(c.x) < 0.82 and c.y > -4.6: f.material_index = i_bordo; nb += 1
-    elif abs(c.x) > 8.42 or (c.y < -4.4 and c.z > 1.85) or (c.y < -4.4 and abs(c.x) > 2.4 and abs(c.x) < 3.2): f.material_index = i_rojo; nr += 1
+    c = f.calc_center_median()
+    if (1.26 < abs(c.x) < 1.66 and -2.05 < c.z < -1.05 and 0.3 < c.y < 1.35) or (-6.45 < c.y < -5.9 and c.z < -0.75 and abs(c.x) < 0.12): f.material_index = i_goma; ng += 1
+    if -1.10 < c.x < -0.80 and -1.02 < c.y < -0.68 and -0.45 < c.z < 0.15 and f.normal.z > 0.3: f.material_index = i_pedana; np_ += 1
 bm.to_mesh(o.data); bm.free(); o.data.update()
-print('LIBREA bordo', nb, 'rojo', nr)
+print('GOMA', ng, 'PEDANA', np_)
 
-# estribo del trabajo anterior (el tren ya viene en el OBJ: el nuestro no hace falta)
+# estribo del trabajo anterior (el tren ya viene en el OBJ: el nuestro no hace falta);
+# pisada_ala queda afuera: flotaba sobre el ala del OBJ (la pedana ahora va pintada, arriba)
 with bpy.data.libraries.load(os.path.join(SAL, 'at802_terrestre_trabajo.blend'), link=False) as (de, a):
     a.collections = [c for c in de.collections if c == 'estribo']
 for c in a.collections:
     if c: bpy.context.scene.collection.children.link(c)
+pa = bpy.data.objects.get('pisada_ala')
+if pa: bpy.data.objects.remove(pa, do_unlink=True)
 
 # todo a DOBLE cara: ninguna chapa puede desaparecer según el ángulo (las normales del OBJ vienen mezcladas)
 for sl in o.material_slots:
@@ -153,8 +208,11 @@ if mv and mv.use_nodes:
     nt = mv.node_tree; b = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
     for lk in list(nt.links):
         if lk.to_node is b and lk.to_socket.name in ('Base Color', 'Alpha'): nt.links.remove(lk)
-    b.inputs['Base Color'].default_value = (0.45, 0.54, 0.60, 1); b.inputs['Alpha'].default_value = 0.25; b.inputs['Roughness'].default_value = 0.05
+    b.inputs['Base Color'].default_value = (0.45, 0.52, 0.58, 1); b.inputs['Alpha'].default_value = 0.34; b.inputs['Roughness'].default_value = 0.04   # un poco mas lechoso: el tablero negro resaltaba a traves de los vidrios
     mv.surface_render_method = 'BLENDED'
+# sombreado suave (38°): sin facetas en fuselaje ni carenados
+bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+bpy.ops.object.shade_smooth_by_angle(angle=math.radians(38))
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SAL, 'at802_terrestre_v3.blend'))
 for i in bpy.data.images:
     if i.size[0] > 1024: i.scale(1024, 1024)

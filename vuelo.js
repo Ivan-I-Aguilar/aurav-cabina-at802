@@ -122,7 +122,7 @@ export class Vuelo {
       if (aMundo.y < 0) aMundo.y = 0;
       const vh = Math.hypot(this.vel.x, this.vel.z);
       const fren = (0.03 + 0.45 * c.frenos) * G; if (vh > 0.1) { const k = Math.min(fren * dt, vh) / vh; this.vel.x -= this.vel.x * k; this.vel.z -= this.vel.z * k; }
-      const cabTierra = THREE.MathUtils.degToRad(11) * THREE.MathUtils.clamp(1 - (vh - 20) / 15, 0, 1);   // levanta la cola al acelerar
+      const cabTierra = THREE.MathUtils.degToRad(7.2) * THREE.MathUtils.clamp(1 - (vh - 20) / 15, 0, 1);   // actitud de 3 puntos del tren de fábrica (24/10); levanta la cola al acelerar
       const obj = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, eu.rumbo, cabTierra, 'YZX'));
       const rotando = c.cabeceo > 0.1 && vh > 28 && eu.cabeceo < THREE.MathUtils.degToRad(13);   // con velocidad, el timón de profundidad levanta la nariz
       if (!rotando && !(L > this.masa * G * 0.95)) { this.q.slerp(obj, Math.min(1, dt * 3)); this.w.set(0, 0, 0); }

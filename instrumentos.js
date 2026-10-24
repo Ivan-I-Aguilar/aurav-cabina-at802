@@ -22,6 +22,31 @@ const matAguja = new THREE.MeshBasicMaterial({ color: 0xf4f4f4 });
 const matAgujaCorta = new THREE.MeshBasicMaterial({ color: 0xe0e0e0 });
 const matEje = new THREE.MeshBasicMaterial({ color: 0x303034 });
 
+/* Carátulas dibujadas en vivo (25/10, tablero reconstruido): mismas escalas que las agujas, definiciones
+   portadas de herramientas/relojes.py. El canvas usa la MISMA convención de ángulos que PIL (y hacia abajo,
+   horario), así que las marcas calzan exactas con rotation.z = −(a0 + sweep·t) de las agujas. */
+const VERDE = '#3cb446', AMAR = '#e6c828', ROJO = '#dc2828', BLANCO = '#f0f0f0';
+const CARAS = {
+  asi:   { paso: 20, sub: 4, etq: 1, arcos: [[60, 100, BLANCO], [70, 210, VERDE], [210, 235, AMAR], [235, 240, ROJO]], titulo: 'AIRSPEED', unidad: 'MPH', numR: 0.6 },
+  alt:   { paso: 1, sub: 5, etq: 1, titulo: 'ALT', unidad: 'FEET', fmt: v => String(Math.round(v) % 10), numR: 0.7 },
+  vsi:   { paso: 0.5, sub: 5, etq: 2, titulo: 'VERT SPEED', unidad: '1000 FT/MIN', fmt: v => String(Math.abs(Math.round(v))) },
+  torque: { paso: 10, sub: 2, etq: 2, arcos: [[0, 85, VERDE], [85, 100, ROJO]], titulo: 'TORQUE', unidad: '%' },
+  itt:   { paso: 100, sub: 2, etq: 2, arcos: [[400, 800, VERDE], [800, 850, AMAR], [850, 1000, ROJO]], titulo: 'ITT', unidad: '°C x100', fmt: v => String(Math.floor(v / 100)) },
+  prop:  { paso: 5, sub: 5, etq: 1, arcos: [[10, 17, VERDE], [17, 25, ROJO]], titulo: 'PROP RPM', unidad: 'x100' },
+  ng:    { paso: 10, sub: 2, etq: 2, arcos: [[60, 101, VERDE], [101, 110, ROJO]], titulo: 'Ng', unidad: '% RPM' },
+  ff:    { paso: 100, sub: 2, etq: 1, arcos: [[100, 500, VERDE]], titulo: 'FUEL FLOW', unidad: 'PPH' },
+  fuelL: { paso: 1, sub: 2, etq: 2, arcos: [[0, 0.5, ROJO]], titulo: 'FUEL L', fmt: v => ['E', '', '1/2', '', 'F'][Math.round(v)], numR: 0.7 },
+  fuelR: { paso: 1, sub: 2, etq: 2, arcos: [[0, 0.5, ROJO]], titulo: 'FUEL R', fmt: v => ['E', '', '1/2', '', 'F'][Math.round(v)], numR: 0.7 },
+  oilp:  { paso: 50, sub: 5, etq: 1, arcos: [[85, 105, VERDE], [0, 60, ROJO]], titulo: 'OIL PRESS', unidad: 'PSI' },
+  oilt:  { paso: 20, sub: 2, etq: 2, arcos: [[10, 99, VERDE], [99, 120, ROJO]], titulo: 'OIL TEMP', unidad: '°C' },
+  volt:  { paso: 5, sub: 2, etq: 1, arcos: [[24, 29, VERDE]], titulo: 'VOLT' },
+  amp:   { paso: 50, sub: 2, etq: 2, titulo: 'AMP' },
+  hyd:   { paso: 1000, sub: 4, etq: 1, arcos: [[1000, 2200, VERDE]], titulo: 'HYD', unidad: 'x1000 PSI', fmt: v => String(Math.round(v / 1000)) },
+  fuelp: { paso: 10, sub: 2, etq: 2, arcos: [[15, 50, VERDE]], titulo: 'FUEL PRESS', unidad: 'PSI' },
+  suction: { paso: 2, sub: 2, etq: 1, arcos: [[4, 6, VERDE]], titulo: 'SUCTION' },
+  reloj: { paso: 1, sub: 5, etq: 1, numR: 0.72, fmt: v => String(Math.round(v) % 12 || 12), esc: { a0: -90, sweep: 360, vmin: 0, vmax: 12 } },
+};
+
 export class Instrumentos {
   constructor(raiz, datos) {
     this.raiz = raiz; this.agujas = {}; this.valores = {};
@@ -30,7 +55,8 @@ export class Instrumentos {
       // marco local: ex (derecha del reloj), ey (arriba), n (hacia el piloto)
       const ex = new THREE.Vector3().fromArray(d.ex), ey = new THREE.Vector3().fromArray(d.ey), n = new THREE.Vector3().fromArray(d.n);
       base.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, ey, n)); raiz.add(base);
-      if (d.tipo === 'horizonte') { this._horizonte(base, d.r); continue; }
+      if (d.tipo === 'horizonte') { this._horizonte(base, d.r); this._bisel(base, d.r); continue; }
+      this._cara(base, d); this._bisel(base, d.r);
       if (d.tipo === 'reloj') { this._reloj(base, d.r); continue; }
       const larga = this._aguja(base, d.r * 0.8, d.r * 0.055, matAguja);
       const ag = { larga, esc: ESCALAS[d.tipo], r: d.r };
@@ -38,6 +64,34 @@ export class Instrumentos {
       const eje = new THREE.Mesh(new THREE.CircleGeometry(d.r * 0.08, 12), matEje); eje.position.z = 0.0012; base.add(eje);
       this.agujas[d.tipo] = ag;
     }
+  }
+  _cara(base, d) {
+    const cfg = CARAS[d.tipo] || {}; const esc = cfg.esc || ESCALAS[d.tipo];
+    const S = 256, cx = 128, cy = 128, R = 122;
+    const cv = document.createElement('canvas'); cv.width = cv.height = S; const c = cv.getContext('2d');
+    c.fillStyle = '#101113'; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill();
+    const pol = (r, a) => { a *= Math.PI / 180; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
+    if (esc && cfg.paso) {
+      const ang = v => esc.a0 + esc.sweep * (v - esc.vmin) / (esc.vmax - esc.vmin);
+      for (const [v0, v1, col] of cfg.arcos || []) { c.strokeStyle = col; c.lineWidth = R * 0.07; c.beginPath(); c.arc(cx, cy, R * 0.86, ang(v0) * Math.PI / 180, ang(v1) * Math.PI / 180); c.stroke(); }
+      c.strokeStyle = BLANCO; c.fillStyle = BLANCO; c.textAlign = 'center'; c.textBaseline = 'middle';
+      let k = 0;
+      for (let v = esc.vmin; v <= esc.vmax + 1e-6; v += cfg.paso, k++) {
+        for (let s = 0; s < (v < esc.vmax - 1e-6 ? cfg.sub : 1); s++) {
+          const a = ang(v + cfg.paso * s / cfg.sub), big = s === 0;
+          c.lineWidth = Math.max(1.5, R * (big ? 0.04 : 0.015)); c.beginPath(); c.moveTo(...pol(R * (big ? 0.76 : 0.84), a)); c.lineTo(...pol(R * 0.92, a)); c.stroke();
+        }
+        if (k % (cfg.etq || 1) === 0) { c.font = `bold ${Math.round(R * 0.19)}px Arial`; const f = cfg.fmt || (x => String(Math.round(x))); c.fillText(f(v), ...pol(R * (cfg.numR || 0.6), ang(v))); }
+      }
+      if (cfg.titulo) { c.font = `bold ${Math.round(R * 0.12)}px Arial`; c.fillText(cfg.titulo, cx, cy + R * 0.3); }
+      if (cfg.unidad) { c.fillStyle = '#bebebe'; c.font = `${Math.round(R * 0.1)}px Arial`; c.fillText(cfg.unidad, cx, cy + R * 0.45); }
+    }
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    base.add(new THREE.Mesh(new THREE.CircleGeometry(d.r, 40), new THREE.MeshBasicMaterial({ map: tex })));
+  }
+  _bisel(base, r) {   /* aro embutido alrededor de cada reloj, por delante de las agujas */
+    const b = new THREE.Mesh(new THREE.RingGeometry(r * 0.97, r * 1.16, 40), new THREE.MeshStandardMaterial({ color: 0x1a1b1e, roughness: 0.55, metalness: 0.3 }));
+    b.position.z = 0.004; base.add(b);
   }
   _aguja(base, largo, ancho, mat) {
     const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.PlaneGeometry(largo * 1.15, ancho), mat);
