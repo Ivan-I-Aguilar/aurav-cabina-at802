@@ -114,7 +114,7 @@ function actualizarPuerta(dt) {
   const obj = controles.estado('swTRABA') === 1 ? 1 : 0;
   puerta.k += (obj - puerta.k) * Math.min(1, dt * 2.5); puerta.accion.time = puerta.k * puerta.dur; puerta.mixer.update(0);
 }
-let instrumentos = null, exterior = null; const V_EXT = '20261024d';
+let instrumentos = null, exterior = null; const V_EXT = '20261024g';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -157,14 +157,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
       if (bb.min.x >= dentro.min.x - 0.2 && bb.max.x <= dentro.max.x + 0.2 && bb.min.z >= 0.4 && bb.max.z <= 2.6 && bb.max.y <= 2.3) return;   /* ya es pieza interior: queda entera */
-      const CUPULA = new THREE.Box3(new THREE.Vector3(-0.8, 1.0, 0.65), new THREE.Vector3(0.8, 2.1, 2.15));   /* la cúpula la pone la cabina */
-      const quedan = [], techo = [];
+      /* por fuera la cúpula es la del exterior (una sola cara: desde adentro no se ve); por dentro queda la de la cabina, con su jaula amarilla y sus vidrios */
+      const CUPULA = new THREE.Box3(new THREE.Vector3(-0.8, 1.0, 0.65), new THREE.Vector3(0.8, 2.1, 2.15));
+      const quedan = [];
       for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
-        const tri = [idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)]; if (dentro.containsPoint(c)) quedan.push(...tri); else if (CUPULA.containsPoint(c)) { if (o.name === 'm14' || o.name === 'm15') techo.push(...tri); else quedan.push(...tri); } }
-      if (techo.length) {   /* chapa exterior de la cúpula: blanca lisa, mismo tono que el fuselaje */
-        const gt = geo.clone(); gt.setIndex(techo);
-        const mt = new THREE.Mesh(gt, new THREE.MeshStandardMaterial({ color: 0xbabbba, roughness: 0.8, metalness: 0, side: THREE.DoubleSide })); mt.name = o.name + '_techo'; o.parent.add(mt); mt.position.copy(o.position); mt.quaternion.copy(o.quaternion); mt.scale.copy(o.scale);
-      }
+        if (dentro.containsPoint(c) || CUPULA.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */

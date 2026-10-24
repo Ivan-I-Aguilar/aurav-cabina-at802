@@ -67,14 +67,18 @@ me = o.data
 mats_borrar = {i for i, s in enumerate(o.material_slots) if s.material and any(k in (s.material.name or '') for k in ('mat00', 'mat01'))}
 bm = bmesh.new(); bm.from_mesh(me)
 INT_MIN, INT_MAX = Vector((-0.5, -2.4, 0.15)), Vector((0.5, -0.7, 1.25))     # restos interiores (el habitáculo lo pone nuestra cabina)
-CUP_MIN, CUP_MAX = Vector((-0.80, -2.10, 1.02)), Vector((0.80, -0.70, 2.2))   # cúpula del OBJ: desde adentro se ve negra; la pone nuestra cabina (vidrios + jaula + techo)
+# la cúpula del OBJ queda ENTERA (una sola, lisa): sólo se abre el hueco de la puerta (vidrio + marco interior en el contorno)
+PTA_MIN, PTA_MAX = Vector((-0.95, -1.93, 0.93)), Vector((-0.34, -0.74, 1.68))
+gi = {i for i, sl in enumerate(o.material_slots) if sl.material and sl.material.name == 'mat22'}
 quitar = []
 for f in bm.faces:
     c = f.calc_center_median()
     en_int = all(INT_MIN[i] <= c[i] <= INT_MAX[i] for i in range(3))
-    en_cup = all(CUP_MIN[i] <= c[i] <= CUP_MAX[i] for i in range(3))
-    if f.material_index in mats_borrar or en_int or en_cup: quitar.append(f)
-bmesh.ops.delete(bm, geom=quitar, context='FACES'); bm.to_mesh(me); bm.free(); me.update()
+    en_pta = f.material_index in gi and all(PTA_MIN[i] <= c[i] <= PTA_MAX[i] for i in range(3))
+    if f.material_index in mats_borrar or en_int or en_pta: quitar.append(f)
+bmesh.ops.delete(bm, geom=quitar, context='FACES')
+bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))   # normales hacia afuera: con una sola cara, desde adentro la cúpula desaparece
+bm.to_mesh(me); bm.free(); me.update()
 print('BORRADAS', len(quitar))
 
 # librea AURAV por GEOMETRÍA (este atlas comparte texels entre partes: hornear por posición lo mancha).
@@ -144,6 +148,9 @@ with bpy.data.libraries.load(os.path.join(SAL, 'at802_terrestre_trabajo.blend'),
 for c in a.collections:
     if c: bpy.context.scene.collection.children.link(c)
 
+# piel y vidrio a UNA cara: desde adentro la cúpula del OBJ no se ve (la vista interior la da la cabina)
+for sl in o.material_slots:
+    if sl.material: sl.material.use_backface_culling = True
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SAL, 'at802_terrestre_v3.blend'))
 for i in bpy.data.images:
     if i.size[0] > 1024: i.scale(1024, 1024)
