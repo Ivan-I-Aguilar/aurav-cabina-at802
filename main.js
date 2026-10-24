@@ -12,7 +12,7 @@ import { Instrumentos } from './instrumentos.js?v=20261018a';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261017a';
 import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
-import { crearAPie } from './apie.js?v=20261023a';
+import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
 
 const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
@@ -78,43 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-/* puerta izquierda (Lichi, blender/puerta.glb): marco, vidrio de 6 mm, bisagras y manija; clip «puerta_abrir» (0 = cerrada, fin = abierta).
-   Se saca el vidrio lateral original de la cabina (triángulos de m27 con las 6 esquinas VIDRIO) y se maneja con la traba roja (swTRABA). */
-const VIDRIO = [[-0.619, 1.137, 0.809], [-0.609, 1.077, 0.919], [-0.569, 1.039, 1.699], [-0.391, 1.549, 1.831], [-0.4, 1.562, 1.535], [-0.404, 1.575, 1.287]].map(p => new THREE.Vector3(...p));
-const puerta = { mixer: null, accion: null, dur: 1, k: 0 };
-function crearPuerta(raices) {
-  const esVertice = (x, y, z) => VIDRIO.some(p => Math.abs(p.x - x) < 0.003 && Math.abs(p.y - y) < 0.003 && Math.abs(p.z - z) < 0.003);
-  for (const raiz of raices) raiz.traverse(o => {   /* el exterior también trae vidrio de cúpula (m28): sacarle el tramo de la puerta */
-    if (!o.isMesh || o.name !== 'm28' || raiz !== raices[1] || !o.geometry.index) return;
-    /* sólo lo que cae sobre el paño de la puerta: cerca de su plano y dentro de su contorno (no tocar el parabrisas de adelante) */
-    const n = new THREE.Vector3().subVectors(VIDRIO[1], VIDRIO[0]).cross(new THREE.Vector3().subVectors(VIDRIO[2], VIDRIO[0])).normalize();
-    const u = new THREE.Vector3().subVectors(VIDRIO[3], VIDRIO[5]).normalize(), w = new THREE.Vector3().crossVectors(n, u);
-    const poli = VIDRIO.map(q => [q.clone().sub(VIDRIO[0]).dot(u), q.clone().sub(VIDRIO[0]).dot(w)]);
-    const adentro = (x, y) => { let s = false; for (let i = 0, j = poli.length - 1; i < poli.length; j = i++) { const [xi, yi] = poli[i], [xj, yj] = poli[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) s = !s; } return s; };
-    const geo = o.geometry, pos = geo.attributes.position, idx = geo.index, fuera = [], c = new THREE.Vector3(), p = new THREE.Vector3();
-    for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
-      const d = c.clone().sub(VIDRIO[0]); if (!(Math.abs(d.dot(n)) < 0.08 && adentro(d.dot(u), d.dot(w)))) fuera.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
-    geo.setIndex(fuera);
-  });
-  for (const raiz of raices) raiz.traverse(o => {
-    if (!o.isMesh || o.name !== 'm27' || !o.geometry.index) return;
-    const geo = o.geometry, pos = geo.attributes.position, idx = geo.index, fuera = [];
-    for (let t = 0; t < idx.count; t += 3) { const ids = [idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)]; if (!ids.every(i => esVertice(pos.getX(i), pos.getY(i), pos.getZ(i)))) fuera.push(...ids); }
-    geo.setIndex(fuera);
-  });
-  new GLTFLoader().loadAsync(`./blender/puerta.glb?v=${V_EXT}`).then(p => {
-    p.scene.traverse(o => { if (o.isMesh && o.material?.transparent) { o.renderOrder = 3; o.material.depthWrite = false; } });
-    cabina.add(p.scene); puerta.mixer = new THREE.AnimationMixer(p.scene);
-    const clip = THREE.AnimationClip.findByName(p.animations, 'puerta_abrir');
-    if (clip) { puerta.accion = puerta.mixer.clipAction(clip); puerta.accion.play(); puerta.accion.paused = true; puerta.dur = clip.duration; }
-  });
-}
-function actualizarPuerta(dt) {
-  if (!puerta.accion) return;
-  const obj = controles.estado('swTRABA') === 1 ? 1 : 0;
-  puerta.k += (obj - puerta.k) * Math.min(1, dt * 2.5); puerta.accion.time = puerta.k * puerta.dur; puerta.mixer.update(0);
-}
-let instrumentos = null, exterior = null; const V_EXT = '20261024h';
+let instrumentos = null, exterior = null; const V_EXT = '20261024j';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -167,7 +131,6 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
     let texAt01 = null; e.scene.traverse(o => { if (o.isMesh && !texAt01 && o.material?.map && o.material.name === 'mat02') texAt01 = o.material.map; });
     if (texAt01) g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = texAt01; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
-    crearPuerta([g.scene, e.scene]);
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -457,8 +420,6 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
 const aPie = crearAPie({ escena, avion, cabina, jugador, camara, renderer, ojoCabina: () => OJO_AVION, terreno: (x, z) => ambiente.alturaTerreno(x, z),
   alPedirSubir: tipo => { jugador.scale.setScalar(1); if (tipo === 'vr') recentrarPendiente = 1; yaw = 0; pitch = -0.15; } });
 window.__aPie = aPie;
-function ponerTraba(v) { const s = controles.switches.find(x => x.nombre === 'swTRABA'); if (s) { s.estado = v; controles._aplicarSwitch(s); } }
-{ const subir = aPie.subir, bajar = aPie.bajar; aPie.subir = (...a) => { ponerTraba(1); subir(...a); }; aPie.bajar = (...a) => { ponerTraba(1); bajar(...a); }; }   /* la puerta se abre para pasar */
 let modoPrevio = 'cabina';
 ui.aPie = () => { mision.fase = 'libre'; reiniciarAvion({ enPista: true, agua: 2400, apagado: true }); mision.ui.tareas([]); aPie.bajar(false);
   mision.decir('Recorrido a pie', 'Caminá alrededor del avión. Para subir, acercate al estribo debajo del ala izquierda.'); };
@@ -519,9 +480,9 @@ renderer.setAnimationLoop(() => {
   if (modoCamara) cuidarSeguimiento();
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
-  mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt); actualizarPuerta(dt);
+  mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;
-  if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; ponerTraba(0); if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
+  if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
   botonSalir.malla.visible = renderer.xr.isPresenting;
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
   for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : (renderer.xr.isPresenting ? (botonSalir.apuntado(c) ?? controles.impacto(rayoDe(c))?.distance ?? null) : null); c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }

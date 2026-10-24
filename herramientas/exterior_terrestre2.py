@@ -67,15 +67,12 @@ me = o.data
 mats_borrar = {i for i, s in enumerate(o.material_slots) if s.material and any(k in (s.material.name or '') for k in ('mat00', 'mat01'))}
 bm = bmesh.new(); bm.from_mesh(me)
 INT_MIN, INT_MAX = Vector((-0.5, -2.4, 0.15)), Vector((0.5, -0.7, 1.25))     # restos interiores (el habitáculo lo pone nuestra cabina)
-# la cúpula del OBJ queda ENTERA como estructura, pero SIN sus vidrios en la zona de la cabina:
-# los vidrios (parabrisas, ventanas, puerta) y la vista interior los pone nuestra cabina
-gi = {i for i, sl in enumerate(o.material_slots) if sl.material and sl.material.name == 'mat22'}
+# la cúpula del OBJ queda ENTERA, vidrios incluidos (sin puerta que abre: el modelo lo más fiel posible)
 quitar = []
 for f in bm.faces:
     c = f.calc_center_median()
     en_int = all(INT_MIN[i] <= c[i] <= INT_MAX[i] for i in range(3))
-    vidrio_cupula = f.material_index in gi and -2.5 < c.y < -0.3 and c.z > 0.85
-    if f.material_index in mats_borrar or en_int or vidrio_cupula: quitar.append(f)
+    if f.material_index in mats_borrar or en_int: quitar.append(f)
 bmesh.ops.delete(bm, geom=quitar, context='FACES')
 bm.to_mesh(me); bm.free(); me.update()
 print('BORRADAS', len(quitar))
@@ -150,6 +147,14 @@ for c in a.collections:
 # todo a DOBLE cara: ninguna chapa puede desaparecer según el ángulo (las normales del OBJ vienen mezcladas)
 for sl in o.material_slots:
     if sl.material: sl.material.use_backface_culling = False
+# vidrio real: tinte suave y 25 % de opacidad (el glass.dds del OBJ era casi opaco y desde adentro tapaba todo)
+mv = bpy.data.materials.get('mat22')
+if mv and mv.use_nodes:
+    nt = mv.node_tree; b = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    for lk in list(nt.links):
+        if lk.to_node is b and lk.to_socket.name in ('Base Color', 'Alpha'): nt.links.remove(lk)
+    b.inputs['Base Color'].default_value = (0.45, 0.54, 0.60, 1); b.inputs['Alpha'].default_value = 0.25; b.inputs['Roughness'].default_value = 0.05
+    mv.surface_render_method = 'BLENDED'
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SAL, 'at802_terrestre_v3.blend'))
 for i in bpy.data.images:
     if i.size[0] > 1024: i.scale(1024, 1024)

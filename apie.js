@@ -55,16 +55,16 @@ export function crearAPie({ escena, avion, cabina, jugador, camara, renderer, oj
     avion.attach(jugador); jugador.position.copy(ojoCabina()); jugador.rotation.set(0, -Math.PI / 2, 0); camara.position.set(0, 0, 0);
   }
 
-  function bajar(conAnimacion = true) {
+  function bajar(conAnimacion = true) {   /* siempre con fundido: no se atraviesa la chapa (la puerta no se abre: decisión 24/10) */
     if (estado.modo !== 'cabina' || estado.anim) return;
-    if (enVR() || !conAnimacion) { estado.anim = { tipo: 'fundido', t: 0, dur: 0.9, accion: () => { ponerJugadorEnElPiso(PIE_BAJADA, new THREE.Vector3(-0.7, 0, 1.3)); estado.modo = 'pie'; } }; return; }
+    { estado.anim = { tipo: 'fundido', t: 0, dur: 0.9, accion: () => { ponerJugadorEnElPiso(PIE_BAJADA, new THREE.Vector3(-0.7, 0, 1.3)); estado.modo = 'pie'; } }; return; }
     const pts = [...RECORRIDO_SUBIDA].reverse(); pts.unshift(new THREE.Vector3().copy(ojoCabinaCabina())); pts.push(new THREE.Vector3(PIE_BAJADA.x, PISO + ALTURA_OJOS, PIE_BAJADA.z));
     estado.anim = { tipo: 'camino', t: 0, dur: 3.2, curva: new THREE.CatmullRomCurve3(pts), fin: () => { ponerJugadorEnElPiso(PIE_BAJADA, new THREE.Vector3(-0.7, 0, 1.3)); estado.modo = 'pie'; } };
     escena.attach(jugador); jugador.quaternion.identity(); camara.position.set(0, 0, 0);
   }
   function subir() {
     if (estado.modo !== 'pie' || estado.anim) return;
-    if (enVR()) { estado.anim = { tipo: 'fundido', t: 0, dur: 0.9, accion: () => { ponerJugadorEnElAsiento(); estado.modo = 'cabina'; alPedirSubir?.('vr'); } }; return; }
+    { estado.anim = { tipo: 'fundido', t: 0, dur: 0.9, accion: () => { ponerJugadorEnElAsiento(); estado.modo = 'cabina'; alPedirSubir?.(enVR() ? 'vr' : 'pc'); } }; return; }
     jugador.getWorldPosition(tmp); const desde = cabina.worldToLocal(tmp.clone()); desde.y = PISO + ALTURA_OJOS;
     const pts = [desde, ...RECORRIDO_SUBIDA, ojoCabinaCabina()];
     escena.attach(jugador); jugador.quaternion.identity(); camara.position.set(0, 0, 0);
