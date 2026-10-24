@@ -67,7 +67,7 @@ me = o.data
 mats_borrar = {i for i, s in enumerate(o.material_slots) if s.material and any(k in (s.material.name or '') for k in ('mat00', 'mat01'))}
 bm = bmesh.new(); bm.from_mesh(me)
 INT_MIN, INT_MAX = Vector((-0.5, -2.4, 0.15)), Vector((0.5, -0.7, 1.25))     # restos interiores (el habitáculo lo pone nuestra cabina)
-CUP_MIN, CUP_MAX = Vector((-0.80, -2.30, 0.95)), Vector((0.80, -0.50, 2.2))   # cúpula del OBJ: desde adentro se ve negra; la pone nuestra cabina (vidrios + jaula + techo)
+CUP_MIN, CUP_MAX = Vector((-0.80, -2.10, 1.02)), Vector((0.80, -0.70, 2.2))   # cúpula del OBJ: desde adentro se ve negra; la pone nuestra cabina (vidrios + jaula + techo)
 quitar = []
 for f in bm.faces:
     c = f.calc_center_median()

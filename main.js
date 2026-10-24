@@ -114,7 +114,7 @@ function actualizarPuerta(dt) {
   const obj = controles.estado('swTRABA') === 1 ? 1 : 0;
   puerta.k += (obj - puerta.k) * Math.min(1, dt * 2.5); puerta.accion.time = puerta.k * puerta.dur; puerta.mixer.update(0);
 }
-let instrumentos = null, exterior = null; const V_EXT = '20261024c';
+let instrumentos = null, exterior = null; const V_EXT = '20261024d';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
