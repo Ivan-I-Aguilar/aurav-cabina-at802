@@ -85,6 +85,16 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **Tanda «sigue mal» (27/10, noche 2, v=20261027t): cuatro culpables reales encontrados.** (1) La BRÚJULA
+  flotaba en el aire sobre el cubretablero (geométricamente adentro, pero sin soporte): ahora va MONTADA al
+  parante central del parabrisas con un soporte (caja 1,33/1,085 + bracket en 1,046; tarjeta 1,304/1,118).
+  (2) La MEJILLA a doble cara se veía como PLACA NEGRA flotante por el vano de la puerta → FrontSide chica
+  (0,20×0,30). (3) El fallback de m14 (butaca) en cuerina oscura pintaba TODAS las chapas de m14 y se veían
+  placas negras por vano y vidrio → m14 va chapa clara 0xc6c6c0. (4) El MAMPARO asomaba como cresta por el
+  lomo: el perfil estaba medido en banda ancha; perfil FINO a z 2,24-2,36 MENOS 2 cm, mamparo a z 2,33
+  (tope 1,69). También: mat21 pierde TODOS sus nodos de textura (exhaust.dds quedaba en otro canal y el tubo
+  se veía BRONCE; V_EXT 20261027r). MÉTODO que destrabó todo: medir vértices world→cabina por caja en el
+  navegador e identificar la malla por nombre/material/color, en vez de adivinar por captura.
 - **«Sigue sobresaliendo» (27/10, noche, v=20261027o): RESUELTO con medición en vivo.** Un chequeo por
   vértices contra el plano del parabrisas (z = 0,74 + 0,93·(y−1,02)) encontró 4 piezas AFUERA: la esquina
   del paño central 6 mm (el d0 calculado de los relojes era menor al supuesto → ahora `d0 =

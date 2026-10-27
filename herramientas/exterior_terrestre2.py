@@ -182,10 +182,10 @@ for sl in o.material_slots:
             nt.nodes.remove(n)
 
 m21 = bpy.data.materials.get('mat21')
-if m21 and m21.use_nodes:   # escapes: metal oscuro parejo (se teñían de blanco con el blanqueado)
+if m21 and m21.use_nodes:   # escapes: metal oscuro parejo; FUERA todos los nodos de textura
     nt21 = m21.node_tree; b21 = next(n for n in nt21.nodes if n.type == 'BSDF_PRINCIPLED')
-    for lk in list(nt21.links):
-        if lk.to_node is b21 and lk.to_socket.name == 'Base Color': nt21.links.remove(lk)
+    for n2 in [x for x in nt21.nodes if x.type == 'TEX_IMAGE']:
+        nt21.nodes.remove(n2)   # 27/10: exhaust.dds quedaba enchufada en otro canal y el tubo se veia BRONCE
     b21.inputs['Base Color'].default_value = (0.03, 0.03, 0.032, 1)
     b21.inputs['Metallic'].default_value = 0.2; b21.inputs['Roughness'].default_value = 0.6   # 27/10: con metallic 0.6 el tubo reflejaba el sol DORADO; Ivan lo quiere negro
 
