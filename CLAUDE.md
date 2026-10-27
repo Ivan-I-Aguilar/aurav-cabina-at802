@@ -85,6 +85,13 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **«Pelos» del capó (capturas 36-37 de Iván, v=20261028c):** varillas del mecanismo del motor (m5/m34/
+  m23/m26, cabina FSX) con triángulos tan largos que su CENTRO cae dentro del recorte y la punta asoma
+  sobre el capó. Fix: bajar SOLO esas puntas (vértices y>1,07 con z<0,58 y |x|<0,6 → y 1,07). OJO: el primer
+  intento (clamp global z<0,62→0,62) APLASTÓ TODO el interior delantero contra un plano («se rompió peor»,
+  acordeón amarillo visible): los clamps van por caja CHICA y dirigida, jamás una condición global.
+  La barra del juego ahora muestra la VERSIÓN (v20261028c) junto al título: pedirle siempre a Iván qué
+  versión ve antes de diagnosticar.
 - **La caja oscura sobre el hombro izquierdo (captura 35 de Iván, v=20261027z): era el RESTO DEL PANEL
   VIEJO (m23, y 1,06-1,25 × z 0,72-0,90) que quedó DESTAPADO al eliminar la «tapa»** — la tapa negra
   ocultaba esos bultos de fábrica. Se resuelve DESCARTANDO sus triángulos en el recorte general

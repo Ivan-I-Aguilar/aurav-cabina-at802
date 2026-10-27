@@ -152,7 +152,10 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
           if ((vx > 0.58 && vx < 0.66 && vy > 0.62 && vy < 0.80 && vz > 1.33 && vz < 1.58)
             || (vx > 0.54 && vx < 0.62 && vy > 0.69 && vy < 0.76 && vz > 1.00 && vz < 1.08)
             || (/^(m23|m12|m16|m21)$/.test(o.name) && Math.abs(vx) > 0.40 && Math.abs(vx) < 0.68 && vy > 0.90 && vy < 1.30 && vz > 0.85 && vz < 1.20)
-            || (o.name === 'm23' && vx > -0.28 && vx < 0.38 && vy > 0.76 && vz > 1.46 && vz < 1.90)) { pos.setY(i, 0.60); toco = true; } }   /* correas sueltas del asiento (m23) hundidas */
+            || (o.name === 'm23' && vx > -0.28 && vx < 0.38 && vy > 0.76 && vz > 1.46 && vz < 1.90)) { pos.setY(i, 0.60); toco = true; }
+          /* «pelos» de la trompa (27/10): varillas del motor que asomaban por ENCIMA del capó:
+             sólo se BAJAN las puntas bajo la línea del capó (aplastar en z rompía todo el interior) */
+          if (vy > 1.07 && vz < 0.58 && Math.abs(vx) < 0.6) { pos.setY(i, 1.07); toco = true; } }
         if (toco) pos.needsUpdate = true; }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
