@@ -85,6 +85,15 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **Tanda «sigue mal» 3 (27/10, noche, v=20261027x):** vistos desde afuera-arriba replicando la captura de
+  Iván: (1) la «tapa» del panel inferior ELIMINADA (plano negro 1,0×0,31 delante del tablero: tapaba el panel
+  VIEJO m1, hoy oculto); (2) m14 con fallback claro + DoubleSide + emisivo 0x191917 y APLASTADO de dientes
+  del recorte (y>1,02→1,02 en |x|<0,68 z 0,55-1,95; |x|>0,50→0,50 en y>0,84 z 0,55-2,0); (3) las CORREAS
+  SUELTAS del asiento (¡m23, no m14!: m23 superaba el límite de verts del scan y no aparecía) hundidas a
+  y 0,60 en caja (−0,28..0,38 × y>0,76 × z 1,46..1,90); los cinturones azules del respaldo (z>2) quedan.
+  La franja negra ancha tras el capó es el GLARESHIELD (negro como el real: no es defecto). OJO estado del
+  juego entre recargas del pane: el click a «Recorrer» puede no entrar si el menú no cargó (poll hasta 10 s)
+  y el modo puede quedar en cabina: verificar `__aPie.modo` antes de teletransportar.
 - **Tanda «sigue mal» (27/10, noche 2, v=20261027t): cuatro culpables reales encontrados.** (1) La BRÚJULA
   flotaba en el aire sobre el cubretablero (geométricamente adentro, pero sin soporte): ahora va MONTADA al
   parante central del parabrisas con un soporte (caja 1,33/1,085 + bracket en 1,046; tarjeta 1,304/1,118).

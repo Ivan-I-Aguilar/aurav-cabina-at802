@@ -137,12 +137,22 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         }
         if (nesp) pos.needsUpdate = true;
       }
+      /* m14 (chapa interior): el recorte dejaba TRIÁNGULOS DENTADOS en el borde del cockpit que se
+         veían como picos negros desde afuera (27/10): se APLASTAN a y 1,02 como se hizo con m1 */
+      if (o.name === 'm14') {
+        let toco14 = false;
+        for (let i = 0; i < pos.count; i++) { const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+          if (vy > 1.02 && Math.abs(vx) < 0.68 && vz > 0.55 && vz < 1.95) { pos.setY(i, 1.02); toco14 = true; }
+          if (vy > 0.84 && Math.abs(vx) > 0.50 && Math.abs(vx) < 0.70 && vz > 0.55 && vz < 2.0) { pos.setX(i, Math.sign(vx) * 0.50); toco14 = true; }   /* dientes del corte lateral del vano */ }
+        if (toco14) pos.needsUpdate = true;
+      }
       /* piecitas de fábrica que asomaban por las tapas de las consolas nuevas (26/10): se hunden adentro */
       { let toco = false;
         for (let i = 0; i < pos.count; i++) { const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
           if ((vx > 0.58 && vx < 0.66 && vy > 0.62 && vy < 0.80 && vz > 1.33 && vz < 1.58)
             || (vx > 0.54 && vx < 0.62 && vy > 0.69 && vy < 0.76 && vz > 1.00 && vz < 1.08)
-            || (/^(m23|m12|m16|m21)$/.test(o.name) && Math.abs(vx) > 0.40 && Math.abs(vx) < 0.68 && vy > 0.90 && vy < 1.30 && vz > 0.85 && vz < 1.20)) { pos.setY(i, 0.60); toco = true; } }
+            || (/^(m23|m12|m16|m21)$/.test(o.name) && Math.abs(vx) > 0.40 && Math.abs(vx) < 0.68 && vy > 0.90 && vy < 1.30 && vz > 0.85 && vz < 1.20)
+            || (o.name === 'm23' && vx > -0.28 && vx < 0.38 && vy > 0.76 && vz > 1.46 && vz < 1.90)) { pos.setY(i, 0.60); toco = true; } }   /* correas sueltas del asiento (m23): picos negros vistos desde afuera (27/10) */
         if (toco) pos.needsUpdate = true; }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
@@ -160,7 +170,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     if (texAt01) g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = texAt01; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
     /* con el exterior LISO (27/10) ya no hay atlas: m14 va de chapa CLARA (m14 no es sólo la
        butaca: sus chapas con cuerina oscura se veían como PLACAS NEGRAS por el vano y el vidrio) */
-    else g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0xc6c6c0); o.material.roughness = 0.85; o.material.needsUpdate = true; } });
+    else g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0xc6c6c0); o.material.roughness = 0.85; o.material.side = THREE.DoubleSide; o.material.emissive = new THREE.Color(0x191917); o.material.needsUpdate = true; } });   /* doble cara + emisivo: las correas del asiento tienen normales invertidas y se veian como PICOS NEGROS */
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -201,8 +211,8 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   fMam.lineTo(-0.58, 0.1); fMam.closePath();   /* perfil FINO medido a z 2,24-2,36 MENOS 2 cm (el anterior asomaba como cresta por el lomo y los flancos) */
   const mamparo = new THREE.Mesh(new THREE.ShapeGeometry(fMam), new THREE.MeshStandardMaterial({ color: 0xd6d6d0, roughness: 0.85 }));
   mamparo.name = 'mamparo'; mamparo.position.set(0, 0, 2.33); mamparo.rotation.y = Math.PI; g.scene.add(mamparo);   /* con nombre: el recorte general lo ocultaba (usa coords locales y el plano tiene transform) */
-  /* panel inferior: tapa el recuadro donde estaba el soporte del GPS (se veían los cables y el parallamas) */
-  const tapa = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.31), new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.85 })); tapa.position.set(0, 1.0, 0.86); g.scene.add(tapa);
+  /* (la «tapa» del panel inferior se eliminó el 27/10: tapaba el recuadro del panel VIEJO m1, hoy
+     oculto, y quedaba como plano negro flotante delante del tablero visto desde afuera) */
   /* palanquita para los switches que en el modelo son sólo la tuerca (F PUMP, HOPR, FRDS, WIPER) */
   const bate = mergeGeometries([new THREE.CylinderGeometry(0.0022, 0.003, 0.024, 10).rotateX(Math.PI / 2).translate(0, 0, 0.014), new THREE.SphereGeometry(0.0035, 10, 8).translate(0, 0, 0.026)]);
   /* las piezas sacadas con EXTRAER traen todo el buffer de vértices (caja de 2 m, pivote en cualquier lado): quedarse sólo con los usados */
