@@ -128,7 +128,7 @@ export class Vuelo {
       if (!rotando && !(L > this.masa * G * 0.95)) { this.q.slerp(obj, Math.min(1, dt * 3)); this.w.set(0, 0, 0); }
       else { this.w.x = 0; this.w.y = 0; }
       // dirección: pedales giran el rumbo; la velocidad sigue al morro
-      const dRumbo = -c.pedal * 1.2 * THREE.MathUtils.clamp(vh / 8, 0, 1) * dt; if (dRumbo) this.q.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dRumbo));
+      const dRumbo = -c.pedal * (this.colaLibre ? 2.6 : 1.2) * THREE.MathUtils.clamp(vh / 8, 0, 1) * dt;   /* rueda de cola destrabada: giros cerrados (manual 26/10) */ if (dRumbo) this.q.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dRumbo));
       const fw = new THREE.Vector3(1, 0, 0).applyQuaternion(this.q); fw.y = 0; fw.normalize(); const vhv = new THREE.Vector3(this.vel.x, 0, this.vel.z); const vmag = vhv.length();
       vhv.lerp(fw.multiplyScalar(vmag), Math.min(1, dt * 4)); this.vel.x = vhv.x; this.vel.z = vhv.z;
       if (L > this.masa * G * 1.03 && c.cabeceo > 0.05) { this.enTierra = false; this.tiempoAire = 0; this.pos.y = 0.02; this.vel.y = Math.max(this.vel.y, 0.3); this.evento('despegue', { v: this.vIAS }); }
