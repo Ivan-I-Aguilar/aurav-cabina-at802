@@ -389,6 +389,38 @@ function crearExtrasManual() {
     new THREE.MeshStandardMaterial({ map: texT, roughness: 0.6 }));
   boton.name = 'swTEST'; boton.userData.piv = [0.117, 0.947, zB - 0.006]; boton.userData.eje = 'x'; boton.userData.ang = [0, 0.001];   /* casi no se mueve: es un botón */
   grupoPalanca.add(boton);
+  // --- PANEL DE LLAVES (26/10): el tablero nuevo quedaba flotando delante del panel viejo de switches.
+  // Placa al MISMO plano (apenas detrás de las facetas), con rótulos dibujados, y las palanquitas se
+  // corren al frente para asentarse en ella. El panel viejo queda tapado detrás. ---
+  const ROTULOS = { sw62: 'BATT', sw64: 'ALTN', sw56: 'GEN', sw53: 'IGNTR', sw47: 'START', sw60: 'FIRE', swFPUMP: 'F PUMP', sw54: 'HYD', sw63: 'AVNC', sw50: 'PITOT', swHOPR: 'HOPPER', swFRDS: 'FRDS', swWIPER: 'WIPER', sw52: 'LDG LT', sw49: 'DOME', sw61: 'BCN', sw51: 'NAV', sw48: 'STRB', sw38: 'SPARE' };
+  const esDeAbajo = sw => sw.pivote.z > 0.80 && sw.pivote.z < 0.99 && sw.pivote.y > 0.73 && sw.pivote.y < 0.97 && sw.pivote.x > -0.465 && sw.pivote.x < 0.57;
+  const X0 = -0.46, X1 = 0.57, Y0 = 0.742, Y1 = 0.915;
+  const zLl = y => (d0 - 0.004 + 0.0175 * y) / 0.9998;
+  const cvL = document.createElement('canvas'); cvL.width = 1030; cvL.height = 173; const cL = cvL.getContext('2d');
+  const g2 = cL.createLinearGradient(0, 0, 0, 173); g2.addColorStop(0, '#26282d'); g2.addColorStop(1, '#1f2126');
+  cL.fillStyle = g2; cL.fillRect(0, 0, 1030, 173);
+  cL.strokeStyle = '#1b1d21'; cL.lineWidth = 2; cL.strokeRect(4, 4, 1022, 165);
+  const aPx = (x, y) => [(x - X0) / (X1 - X0) * 1030, (Y1 - y) / (Y1 - Y0) * 173];
+  const placaLl = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Y1 - Y0), new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.1 }));
+  const cxL = (X0 + X1) / 2, cyL = (Y0 + Y1) / 2;
+  placaLl.position.set(cxL, cyL, zLl(cyL));
+  placaLl.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0.9998, 0.0175), new THREE.Vector3(0, -0.0175, 0.9998)));
+  g.add(placaLl);
+  // correr las palanquitas al frente y rotularlas sobre la placa
+  cL.textAlign = 'center'; cL.textBaseline = 'middle';
+  const deAbajo = controles.switches.filter(esDeAbajo).sort((a, b) => a.pivote.x - b.pivote.x);
+  deAbajo.forEach((sw, i) => {
+    const p = sw.pivote;
+    sw.grupo.position.z = zLl(p.y) + 0.002;
+    const [px, py] = aPx(p.x, p.y);
+    cL.fillStyle = '#d8d8d8'; cL.font = 'bold 11px Arial';
+    cL.fillText(ROTULOS[sw.nombre] || '', px, Math.min(164, py + (i % 2 ? 44 : 30)));   /* escalonados: pegados chocaban */
+  });
+  // tornillos
+  cL.fillStyle = '#404550';
+  for (let x = 30; x < 1030; x += 90) for (const y of [12, 161]) { cL.beginPath(); cL.arc(x, y, 3.5, 0, 7); cL.fill(); }
+  const texL = new THREE.CanvasTexture(cvL); texL.colorSpace = THREE.SRGBColorSpace; texL.anisotropy = 4;
+  placaLl.material.map = texL; placaLl.material.needsUpdate = true;
   return { grupo: g, grupoPalanca, actualizar() {
     tarjeta.rotation.y = vuelo.euler.rumbo;   /* tarjeta fija a la tierra (signo a validar en vuelo) */
     const m = vuelo.motor, bat = !!m.bateria;
