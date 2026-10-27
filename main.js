@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026u';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026v';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -119,9 +119,15 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       /* TABLERO RECONSTRUIDO (25/10, pedido de Iván; foto LV-GRP de referencia): el panel viejo del FSX
          (chapa m1, vidrios m22, biseles m29, carátulas m25/m28/m30/m31/m4/m8, tapitas m10/m11) y las
          varillas del mecanismo se OCULTAN; la placa nueva la arma crearTablero y las carátulas instrumentos.js */
-      if (/^(m1|m18|m22|m29|m25|m28|m30|m31|m4|m8|m10|m11)$/.test(o.name) || /^varilla/.test(o.name)) { o.visible = false; return; }   /* m1 y m18: panel viejo entero afuera (el tablero único lo reemplaza, 26/10) */
+      if (/^(m1|m18|m20|m22|m29|m25|m28|m30|m31|m4|m8|m10|m11)$/.test(o.name) || /^varilla/.test(o.name)) { o.visible = false; return; }   /* m1 y m18: panel viejo entero afuera (el tablero único lo reemplaza, 26/10) */
       if (/^(sw|lev|pedal|palanca|puerta)/.test(o.name)) return;   /* controles e interior armado: no tocar */
       const geo = o.geometry, pos = geo.attributes.position, idx = geo.index; if (!idx) { o.visible = false; return; }
+      /* piecitas de fábrica que asomaban por las tapas de las consolas nuevas (26/10): se hunden adentro */
+      { let toco = false;
+        for (let i = 0; i < pos.count; i++) { const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+          if ((vx > 0.58 && vx < 0.66 && vy > 0.62 && vy < 0.80 && vz > 1.33 && vz < 1.58)
+            || (vx > 0.54 && vx < 0.62 && vy > 0.69 && vy < 0.76 && vz > 1.00 && vz < 1.08)) { pos.setY(i, 0.60); toco = true; } }
+        if (toco) pos.needsUpdate = true; }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
       if (!/^(m20|m27)$/.test(o.name) && bb.min.x >= dentro.min.x - 0.2 && bb.max.x <= dentro.max.x + 0.2 && bb.min.z >= 0.4 && bb.max.z <= 2.6 && bb.max.y <= 2.3) return;   /* ya es pieza interior: queda entera */
@@ -192,6 +198,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   for (const d of datosInst) if (d.c[1] > 1.0) d.c[2] += 0.08;
   crearTablero(datosInst);
   extras = crearExtrasManual(); controles.armar(extras.grupoPalanca);   /* después del tablero: usa sus planos; arma la manija E-DUMP y el botón TEST */
+  crearConsolas(datosInst);   /* consolas laterales nuevas: mueven pivotes ya armados y reubican el suction ANTES de crear instrumentos */
   instrumentos = new Instrumentos(cabina, datosInst);
   /* las perillas FRDS quedan en su lugar: su chapa (franja baja de m18) volvió */
   document.getElementById('cargando').remove();
@@ -354,6 +361,80 @@ function crearTablero(datos) {
   crearTablero.dCentro = d0; crearTablero.planos = planos;
 }
 
+/* Consolas laterales reconstruidas (26/10, video de Iván: a la izquierda la estructura tapaba el
+   cuadrante y a la derecha una «baulerita» (m20, ahora oculta) tapaba las radios): cajas oscuras de
+   pared a muslo como el tablero, con pedestal de cuadrante ROTULADO (ranuras POWER·PROP·CONDITION,
+   las palancas se suben a su tapa), llaves traseras con rótulos, breakers dibujados a la derecha y
+   el pedestal de radios abrazado por la consola. El suction pasa empotrado a la tapa trasera. */
+function crearConsolas(datos) {
+  const matCaja = new THREE.MeshStandardMaterial({ color: 0x1c1d21, roughness: 0.95 });
+  const Y_TAPA = 0.70, Y_PED = 0.76, Z0 = 0.96, Z1 = 1.63, ZP = 1.33;
+  const caja = (x0, x1, y0, y1, z0, z1) => { const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), matCaja);
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); cabina.add(m); return m; };
+  const base = c => { const g = c.createLinearGradient(0, 0, 0, c.canvas.height);
+    g.addColorStop(0, '#2b2d33'); g.addColorStop(1, '#222428'); c.fillStyle = g; c.fillRect(0, 0, c.canvas.width, c.canvas.height);
+    c.fillStyle = 'rgba(255,255,255,0.03)'; for (let i = 0; i < 60; i++) c.fillRect(Math.random() * c.canvas.width, Math.random() * c.canvas.height, 2, 2);
+    c.strokeStyle = '#1b1d21'; c.lineWidth = 2; c.strokeRect(4, 4, c.canvas.width - 8, c.canvas.height - 8);
+    c.fillStyle = '#404550'; for (const par of [[12, 12], [c.canvas.width - 12, 12], [12, c.canvas.height - 12], [c.canvas.width - 12, c.canvas.height - 12]]) { c.beginPath(); c.arc(par[0], par[1], 5, 0, 7); c.fill(); }
+    c.textAlign = 'center'; c.textBaseline = 'middle'; };
+  const tapaCanvas = (x0, x1, z0, z1, y, dib) => {   /* tapa horizontal con textura: canvas arriba = frente (z0) */
+    const W = 420, H = Math.round(W * (z1 - z0) / (x1 - x0));
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+    const aPx = (x, z) => [(x - x0) / (x1 - x0) * W, (z - z0) / (z1 - z0) * H];
+    base(c); dib(c, aPx);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, metalness: 0.1 }));
+    m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); cabina.add(m); return m; };
+  const rotulo = (c, aPx, x, z, txt, tam, col) => { c.fillStyle = col || '#d8d8d8'; c.font = 'bold ' + (tam || 15) + 'px Arial';
+    const p = aPx(x, z); c.fillText(txt, p[0], p[1]); };
+  const ranura = (c, aPx, x, z0r, z1r, w) => { const a = aPx(x - w / 2, z0r), b = aPx(x + w / 2, z1r);
+    c.fillStyle = '#07080a'; c.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+    c.strokeStyle = '#43474f'; c.lineWidth = 2; c.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); };
+  /* ---- IZQUIERDA: cuerpo + pedestal del cuadrante ---- */
+  caja(-0.615, -0.37, 0.56, Y_TAPA, Z0, Z1);
+  caja(-0.615, -0.37, Y_TAPA, Y_PED, Z0, ZP);
+  tapaCanvas(-0.615, -0.37, Z0, ZP, Y_PED + 0.0008, (c, aPx) => {
+    ranura(c, aPx, -0.515, 1.05, 1.21, 0.022); rotulo(c, aPx, -0.515, 1.025, 'CONDITION', 12);
+    rotulo(c, aPx, -0.549, 1.07, 'FLT', 10, '#9aa48c'); rotulo(c, aPx, -0.549, 1.13, 'GRD', 10, '#9aa48c'); rotulo(c, aPx, -0.549, 1.19, 'CUT', 10, '#c77');
+    ranura(c, aPx, -0.45, 1.14, 1.33, 0.024); rotulo(c, aPx, -0.45, 1.115, 'POWER', 12);
+    rotulo(c, aPx, -0.413, 1.17, 'MAX', 10, '#9aa48c'); rotulo(c, aPx, -0.413, 1.26, 'IDLE', 10, '#9aa48c'); rotulo(c, aPx, -0.413, 1.315, 'REV', 10, '#c77');
+    ranura(c, aPx, -0.35, 1.13, 1.30, 0.02); rotulo(c, aPx, -0.35, 1.105, 'PROP', 12);
+    rotulo(c, aPx, -0.385, 1.17, 'MAX', 10, '#9aa48c'); rotulo(c, aPx, -0.385, 1.27, 'FTHR', 10, '#c77');
+    rotulo(c, aPx, -0.575, 1.115, 'E-DUMP', 12, '#e05555'); rotulo(c, aPx, -0.575, 1.15, 'PUSH', 10, '#e05555');
+  });
+  tapaCanvas(-0.615, -0.37, ZP, Z1, Y_TAPA + 0.0008, (c, aPx) => {
+    rotulo(c, aPx, -0.59, 1.455, 'FLAPS', 13); rotulo(c, aPx, -0.59, 1.49, '0 · 10 · 20', 11, '#9aa48c');
+    rotulo(c, aPx, -0.5225, 1.455, 'PROP O/S', 11); rotulo(c, aPx, -0.5225, 1.478, 'TEST', 11);
+    rotulo(c, aPx, -0.44, 1.355, 'T/W', 11); rotulo(c, aPx, -0.44, 1.378, 'LOCK', 11);
+    rotulo(c, aPx, -0.5125, 1.545, 'RUD TRIM', 12);
+    rotulo(c, aPx, -0.565, 1.59, 'L', 11, '#9aa48c'); rotulo(c, aPx, -0.46, 1.59, 'R', 11, '#9aa48c');
+  });
+  /* ---- DERECHA: consola portaequipos (abraza el pedestal de radios) con breakers ---- */
+  caja(0.37, 0.615, 0.56, Y_TAPA, Z0, Z1);
+  tapaCanvas(0.37, 0.615, Z0, Z1, Y_TAPA + 0.0008, (c, aPx) => {
+    rotulo(c, aPx, 0.4925, 1.28, 'CIRCUIT BREAKERS', 12);
+    const nombres = ['BATT', 'GEN', 'FUEL', 'PITOT', 'LTS', 'AVNC', 'FRDS', 'HYD', 'SPRY', 'TRIM', 'FLAP', 'SPARE'];
+    nombres.forEach((nm, i) => { const bx = 0.405 + (i % 4) * 0.058, bz = 1.345 + Math.floor(i / 4) * 0.085;
+      const p = aPx(bx, bz); c.fillStyle = '#0d0e10'; c.beginPath(); c.arc(p[0], p[1], 10, 0, 7); c.fill();
+      c.fillStyle = '#c8c8cc'; c.beginPath(); c.arc(p[0], p[1], 6, 0, 7); c.fill();
+      rotulo(c, aPx, bx, bz + 0.03, nm, 9, '#b8b8bc'); });
+  });
+  /* placa de la válvula de combustible (queda en la pared, delante del cuadrante, como el real) */
+  { const cv = document.createElement('canvas'); cv.width = 128; cv.height = 96; const c = cv.getContext('2d');
+    base(c); c.fillStyle = '#d8d8d8'; c.font = 'bold 20px Arial'; c.fillText('FUEL', 64, 28);
+    c.fillStyle = '#9aa48c'; c.font = 'bold 15px Arial'; c.fillText('MAIN ↓', 64, 56);
+    c.fillStyle = '#c77'; c.fillText('OFF →', 64, 78);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const placa = new THREE.Mesh(new THREE.PlaneGeometry(0.055, 0.042), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+    placa.position.set(-0.612, 0.745, 0.947); placa.rotation.y = Math.PI / 2; cabina.add(placa); }
+  /* palancas y llaves armadas: subirlas a las tapas nuevas (mover el grupo pivote traslada el control entero) */
+  const mover = (n, dx, dy, dz) => { const p = cabina.getObjectByName('piv_' + n); if (p) { p.position.x += dx; p.position.y += dy; p.position.z += dz; } };
+  mover('levPOT', 0, 0.04, 0); mover('levHEL', 0, 0.08, 0); mover('levCOND', 0, 0.06, 0.18);   /* la condición se junta con sus hermanas en el pedestal */
+  mover('swFLAPS', 0, 0.045, 0); mover('swAUX', 0, 0.045, 0); mover('swK_TRIMTIMON', 0, 0.04, 0); mover('swWRUD', 0, -0.05, 0);
+  /* el suction vivía en la consola de fábrica (y 0,62): pasa empotrado a la tapa trasera, mirando arriba */
+  for (const d of datos) if (d.tipo === 'suction') { d.c = [-0.44, Y_TAPA + 0.001, 1.52]; d.n = [0, 1, 0]; d.ex = [1, 0, 0]; d.ey = [0, 0, -1]; }
+}
+
 /* Extras del manual (26/10, mapa_cabina.md): brújula sobre el panel inferior, anunciador con luces
    (LOW VOLT · GEN OUT · FUEL FILT · AIR FILT · BETA) y manija roja E-DUMP que vacía la tolva de una.
    La tarjeta de la brújula gira con el rumbo; BETA queda apagada hasta que se modele la reversa. */
@@ -399,12 +480,12 @@ function crearExtrasManual() {
   });
   // --- manija E-DUMP (roja, consola izquierda): empujar ADELANTE = salvo total ---
   const baseE = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.012, 0.062), oscuro);
-  baseE.position.set(-0.505, 0.716, 1.07); g.add(baseE);
-  const geoVara = new THREE.CylinderGeometry(0.0055, 0.0055, 0.095, 10).translate(-0.505, 0.769, 1.07);
-  const geoBola = new THREE.SphereGeometry(0.0155, 16, 12).translate(-0.505, 0.822, 1.07);
+  baseE.position.set(-0.575, 0.762, 1.04); g.add(baseE);   /* sobre el pedestal del cuadrante, pegado a la pared (manual: junto al acelerador) */
+  const geoVara = new THREE.CylinderGeometry(0.0055, 0.0055, 0.095, 10).translate(-0.575, 0.815, 1.04);
+  const geoBola = new THREE.SphereGeometry(0.0155, 16, 12).translate(-0.575, 0.868, 1.04);
   const manija = new THREE.Mesh(mergeGeometries([geoVara.toNonIndexed(), geoBola.toNonIndexed()], false),
     new THREE.MeshStandardMaterial({ color: 0xc01212, roughness: 0.5 }));
-  manija.name = 'levEDUMP'; manija.userData.pivY = 0.716; manija.userData.escala = 1;
+  manija.name = 'levEDUMP'; manija.userData.pivY = 0.762; manija.userData.escala = 1;
   const grupoPalanca = new THREE.Group(); grupoPalanca.add(manija);
   // botón TEST del anunciador (a la derecha de la fila): se arma como switch, prende todas las luces
   const zB = zC(0.947) + 0.004;

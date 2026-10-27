@@ -84,6 +84,23 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial de Blender Lab (`bl_ext.BlenderLab.mcp`, arranca solo en localhost:9876): las herramientas `mcp__Blender__*` ejecutan Python en su Blender abierto. Así se modelan piezas y se exportan a GLB directo a esta carpeta. No usar a la vez el botón «Connect to Claude» del otro complemento (ahujasid, mismo puerto). Previews con Eevee (placa de 6 GB).
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
+## Dónde quedamos (27/10)
+- **CONSOLAS LATERALES RECONSTRUIDAS** (pedido de Iván 26/10, hecho 27/10, local SIN publicar, v=20261026w):
+  `crearConsolas()` en main.js (corre tras crearTablero/extras y ANTES de `new Instrumentos`): cajas oscuras
+  de pared (±0,615) a muslo (±0,37), y 0,56–0,70 (tapa), z 0,96–1,63. Izquierda: PEDESTAL del cuadrante
+  (z 0,96–1,33, tapa y 0,76) con 3 ranuras dibujadas y rotuladas (CONDITION·POWER·PROP con CUT/GRD/FLT,
+  REV/IDLE/MAX, FTHR/MAX) + E-DUMP encima (movido a −0,575/0,762/1,04); tapa trasera y 0,70 con FLAPS,
+  PROP O/S TEST, T/W LOCK, RUD TRIM rotulados y el **suction empotrado mirando arriba** (reubicado: la tapa
+  lo tragaba). Derecha: consola portaequipos que ABRAZA el pedestal de radios + placa CIRCUIT BREAKERS
+  dibujada; la «baulerita» (m20) se oculta (verificado: no abre huecos). Los pivotes armados se TRASLADAN
+  (`mover('piv_…')`): levPOT +0,04 y, levHEL +0,08 y, levCOND +0,06/+0,18 (se junta con sus hermanas),
+  FLAPS/AUX +0,045, TRIM +0,04, WRUD −0,05 (flotaba). Piecitas de fábrica que asomaban por las tapas se
+  hunden por clamp de vértices en la carga (dos cajitas, lado derecho). Ronda hecha (picadas, frente,
+  exterior ambos lados): limpio. Falta que Iván lo pruebe en el Quest. OJO para rondas futuras: si el panel
+  del navegador queda de fondo, el juego corre a ~1 fps y los screenshots salen congelados (frontear el tab).
+- Pendiente charla con Iván: pedales que «se ven lejos» (¿acercar asiento u ojo?); orden real de las palancas
+  del cuadrante en x (el FSX trae COND afuera · POWER medio · PROP adentro; validar con Bruno/manual).
+
 ## Dónde quedamos (26/10, tarde)
 - **Local SIN publicar, v=20261026u** (Pages sigue en 20261026r). Del video de Iván 26/10 quedaron resueltos y
   verificados con ronda de vistas en el navegador: paños laterales del tablero afinados con la altura (bisel
