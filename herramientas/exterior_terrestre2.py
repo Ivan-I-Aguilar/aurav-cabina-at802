@@ -115,19 +115,18 @@ def blanquear(img, nombre):
             reg = (slice(int(v0 * H), int(v1 * H)), slice(int(u0 * W), int(u1 * W)))
             detalle[reg] = 0
             if modo == 'azul':
-                sel = azul[reg]
-                if sel.any():
-                    med = np.median(px[reg][sel], axis=0)
-                    px[reg] = med; azul[reg] = True
+                alto = int(v1 * H) - int(v0 * H)   # clonar la franja de arriba de la caja (misma chapa azul): sin parche plano
+                src = (slice(int(v0 * H) + alto, int(v1 * H) + alto), reg[1])
+                px[reg] = px[src]; azul[reg] = azul[src]; detalle[reg] = detalle[src]
             else:
                 azul[reg] = False; oscuro[reg] = False
     if nombre.lower().startswith('b_at_01'):   # pala: negra con banda roja en la punta (pedido 24/10)
         u0, v0, u1, v1 = PALA
         reg = (slice(int(v0 * H), int(v1 * H)), slice(int(u0 * W), int(u1 * W)))
-        hoja = (~azul[reg]) & (lum[reg] > 0.08)
+        hoja = ~azul[reg]   # toda la tira negra pareja (con sombreado quedaba «gastada»)
         sub = px[reg]; sub[hoja] = (0.02, 0.02, 0.022, 1); px[reg] = sub
         b0, b1 = (slice(int(PALA_BANDA[0] * H), int(PALA_BANDA[1] * H)), reg[1])
-        hoja_b = (~azul[b0, b1]) & (lum[b0, b1] > 0.08)
+        hoja_b = ~azul[b0, b1]
         sub = px[b0, b1]; sub[hoja_b] = (0.35, 0.012, 0.012, 1); px[b0, b1] = sub
         azul[reg] |= hoja
     gris = oscuro & ~azul   # lo oscuro conservado va a GRIS neutro (los parches de amarillo sombreado quedaban amarillos)
@@ -164,6 +163,14 @@ for sl in o.material_slots:
             if b: b.inputs['Base Color'].default_value = (0.5, 0.5, 0.52, 1)
             nt.nodes.remove(n)
 
+m21 = bpy.data.materials.get('mat21')
+if m21 and m21.use_nodes:   # escapes: metal oscuro parejo (se teñían de blanco con el blanqueado)
+    nt21 = m21.node_tree; b21 = next(n for n in nt21.nodes if n.type == 'BSDF_PRINCIPLED')
+    for lk in list(nt21.links):
+        if lk.to_node is b21 and lk.to_socket.name == 'Base Color': nt21.links.remove(lk)
+    b21.inputs['Base Color'].default_value = (0.055, 0.055, 0.06, 1)
+    b21.inputs['Metallic'].default_value = 0.6; b21.inputs['Roughness'].default_value = 0.45
+
 def mat_plano(nombre, color):
     m = bpy.data.materials.get(nombre) or bpy.data.materials.new(nombre); m.use_nodes = True
     p = m.node_tree.nodes['Principled BSDF']; p.inputs['Base Color'].default_value = (*color, 1); p.inputs['Roughness'].default_value = 0.8
@@ -172,6 +179,9 @@ m_goma = mat_plano('goma', (0.015, 0.015, 0.016)); m_goma.node_tree.nodes['Princ
 o.data.materials.append(m_goma)
 i_goma = len(o.data.materials) - 1
 
+m_compuerta = mat_plano('compuerta', (0.40, 0.015, 0.02)); m_compuerta.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.55   # compuerta ROJA (reglamentación, 26/10)
+o.data.materials.append(m_compuerta)
+i_compuerta = len(o.data.materials) - 1
 m_pedana = mat_plano('pedana', (0.05, 0.05, 0.052)); m_pedana.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 1.0   # gris oscuro: negra parecia un bulto en escorzo
 o.data.materials.append(m_pedana)
 i_pedana = len(o.data.materials) - 1
@@ -187,6 +197,7 @@ for f in bm.faces:
     c = f.calc_center_median()
     if (1.26 < abs(c.x) < 1.66 and -2.05 < c.z < -1.05 and 0.3 < c.y < 1.35) or (-6.45 < c.y < -5.9 and c.z < -0.75 and abs(c.x) < 0.12): f.material_index = i_goma; ng += 1
     if -1.10 < c.x < -0.80 and -1.02 < c.y < -0.68 and -0.45 < c.z < 0.15 and f.normal.z > 0.3: f.material_index = i_pedana; np_ += 1
+    if f.normal.z < -0.5 and abs(c.x) < 0.40 and -1.2 < c.y < 0.2 and c.z < -0.82: f.material_index = i_compuerta
 bm.to_mesh(o.data); bm.free(); o.data.update()
 print('GOMA', ng, 'PEDANA', np_)
 

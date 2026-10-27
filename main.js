@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026a';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026q';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -119,23 +119,9 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       /* TABLERO RECONSTRUIDO (25/10, pedido de Iván; foto LV-GRP de referencia): el panel viejo del FSX
          (chapa m1, vidrios m22, biseles m29, carátulas m25/m28/m30/m31/m4/m8, tapitas m10/m11) y las
          varillas del mecanismo se OCULTAN; la placa nueva la arma crearTablero y las carátulas instrumentos.js */
-      if (/^(m22|m29|m25|m28|m30|m31|m4|m8|m10|m11)$/.test(o.name) || /^varilla/.test(o.name)) { o.visible = false; return; }
+      if (/^(m1|m18|m22|m29|m25|m28|m30|m31|m4|m8|m10|m11)$/.test(o.name) || /^varilla/.test(o.name)) { o.visible = false; return; }   /* m1 y m18: panel viejo entero afuera (el tablero único lo reemplaza, 26/10) */
       if (/^(sw|lev|pedal|palanca|puerta)/.test(o.name)) return;   /* controles e interior armado: no tocar */
       const geo = o.geometry, pos = geo.attributes.position, idx = geo.index; if (!idx) { o.visible = false; return; }
-      /* de m1 (chapa del panel viejo) y m18 (panel FRDS) queda SOLO la franja baja: ahí montan las perillas
-         FPUMP/WIPER/HOPR/FRDS. Se APLASTAN los vértices al cajón (cortar caras grandes dejaba lenguas sueltas),
-         y va ANTES del atajo de «pieza interior entera», que si no se los traga. */
-      if (o.name === 'm1' || o.name === 'm18') {
-        for (let i = 0; i < pos.count; i++) {
-          let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-          const tope = Math.abs(x) > 0.5 ? 0.94 : 0.97;
-          if (Math.abs(x) > 0.615) x = Math.sign(x) * 0.615;
-          if (y > tope) y = tope;
-          if (z < 0.84) z = 0.84;
-          pos.setXYZ(i, x, y, z);
-        }
-        pos.needsUpdate = true; geo.computeVertexNormals(); return;
-      }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
       if (!/^(m20|m27)$/.test(o.name) && bb.min.x >= dentro.min.x - 0.2 && bb.max.x <= dentro.max.x + 0.2 && bb.min.z >= 0.4 && bb.max.z <= 2.6 && bb.max.y <= 2.3) return;   /* ya es pieza interior: queda entera */
@@ -217,7 +203,10 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
    sistemas a la izquierda; tornillos y placards dibujados. Los relojes se REUBICAN según este plano (la
    distribución del FSX quedaba desparramada); las agujas siguen andando porque instrumentos.json se pisa acá. */
 function crearTablero(datos) {
-  const LAYOUT = {   /* [x, y] marco cabina, según la foto */
+  /* TABLERO ÚNICO (26/10, pedido de Iván: «el tablero es una sola cosa»): tres paños ALTOS que van del
+     cubretablero a la base (relojes arriba, llaves abajo, FRDS en el paño izquierdo), con tapa superior
+     (glareshield), mejillas laterales y repisa: una sola estructura. Las llaves se corren a su paño. */
+  const LAYOUT = {   /* [x, y] marco cabina, según la foto LV-GRP */
     asi: [-0.18, 1.185], horizonte: [0, 1.185], alt: [0.18, 1.185],
     vsi: [-0.18, 1.045], reloj: [0.18, 1.045],
     torque: [0.30, 1.16], itt: [0.41, 1.16], prop: [0.30, 1.055], ng: [0.41, 1.055], ff: [0.355, 0.95],
@@ -226,13 +215,13 @@ function crearTablero(datos) {
     fuelp: [-0.44, 0.95],
     volt: [-0.28, 0.95], amp: [-0.375, 0.95],
   };
-  /* FrontSide: el tablero se ve SOLO desde adentro; desde afuera se descarta y no asoma sobre el capo */
-  const FACETAS = [   /* rI/rD: cuánto se angosta arriba (la cúpula se cierra; las esquinas perforaban el vidrio) */
-    { lado: -1, cx: -0.375, cy: 1.01, w: 0.30, h: 0.40, rI: 0.10, rc: 0.04 },   /* ala izquierda corta: por la esquina del vidrio se veia negro sobre la nariz */
-    { lado: 0, cx: 0, cy: 1.078, w: 0.52, h: 0.33, rI: 0.07, rD: 0.07, rc: 0.06 }, /* centro: joroba más baja (resaltaba sobre la nariz) */
-    { lado: 1, cx: 0.36, cy: 1.04, w: 0.32, h: 0.34, rD: 0.10, rc: 0.04 },    /* ala derecha (motor): termina antes de la radio */
+  const ROTULOS = { sw62: 'BATT', sw64: 'ALTN', sw56: 'GEN', sw53: 'IGNTR', sw47: 'START', sw60: 'FIRE', swFPUMP: 'F PUMP', sw54: 'HYD', sw63: 'AVNC', sw50: 'PITOT', swHOPR: 'HOPPER', swFRDS: 'FRDS', swWIPER: 'WIPER', sw52: 'LDG LT', sw49: 'DOME', sw61: 'BCN', sw51: 'NAV', sw48: 'STRB', sw38: 'SPARE',
+    swK_FRDS1: '', swK_FRDS2: '', swK_FRDS3: '', swFRDS_A: 'ARM', swFRDS_B: 'MODE', swFRDS_C: 'FOAM', swFRDS_D: 'GATE' };
+  const FACETAS = [   /* paños: izq (con FRDS), centro (joroba) y der (motor + radios adosadas) */
+    { lado: -1, cx: -0.4225, cy: 0.955, w: 0.397, h: 0.51, rI: 0.10, rc: 0.04, frds: true },   /* hasta x -0,615: a -0,645 asomaba por la chapa */
+    { lado: 0, cx: 0, cy: 0.9775, w: 0.52, h: 0.555, rI: 0.07, rD: 0.07, rc: 0.06, placards: true },
+    { lado: 1, cx: 0.405, cy: 0.955, w: 0.402, h: 0.51, rD: 0.10, rc: 0.04 },
   ];
-  /* lados VERTICALES y bisel sólo en la esquina de arriba (el borde en diagonal dejaba relojes en el aire) */
   const forma = (w, h, rI, rD, rc, m = 0) => { const sh = new THREE.Shape(); const a = w / 2 + m, b = h / 2 + m, t = 0.16;
     sh.moveTo(-a + rc, -b);
     sh.lineTo(a - rc, -b); sh.quadraticCurveTo(a, -b, a, -b + rc);
@@ -243,73 +232,112 @@ function crearTablero(datos) {
     else { sh.quadraticCurveTo(-a, b, -a, b - rc); }
     sh.lineTo(-a, -b + rc); sh.quadraticCurveTo(-a, -b, -a + rc, -b);
     sh.closePath(); return new THREE.ShapeGeometry(sh, 6); };
-  const texFaceta = f => {   /* chapa oscura con tornillos, uniones y (centro) placards FLIGHT/GRD */
-    const E = 640, cv = document.createElement('canvas'); cv.width = E; cv.height = Math.round(E * f.h / f.w);
-    const c = cv.getContext('2d'), W = cv.width, H = cv.height, px = E / f.w;
-    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2b2d33'); g.addColorStop(1, '#222428');
-    c.fillStyle = g; c.fillRect(0, 0, W, H);
-    c.fillStyle = 'rgba(255,255,255,0.03)'; for (let i = 0; i < 60; i++) c.fillRect(Math.random() * W, Math.random() * H, 2, 2);
-    c.strokeStyle = '#1b1d21'; c.lineWidth = 2; c.strokeRect(5, 5, W - 10, H - 10);
-    const paso = 0.055 * px; c.fillStyle = '#404550';
-    for (let x = paso; x < W; x += paso) for (const y of [0.016 * px, H - 0.016 * px]) { c.beginPath(); c.arc(x, y, 0.004 * px, 0, 7); c.fill(); c.fillStyle = '#404550'; }
-    for (let y = paso; y < H; y += paso) for (const x of [0.016 * px, W - 0.016 * px]) { c.beginPath(); c.arc(x, y, 0.004 * px, 0, 7); c.fill(); }
-    if (f.lado === 0) {   /* placards verdosos FLIGHT / GRD como los de la foto, ABAJO de los relojes (encima parecían flotar) */
-      c.fillStyle = '#b9c27a';
-      for (const [x0, tit, fila] of [[0.075 * W, 'FLIGHT', '750 725 700'], [0.755 * W, 'GRD', '725 700']]) {
-        c.fillRect(x0, H * 0.80, W * 0.17, H * 0.17); c.fillStyle = '#20231d'; c.textAlign = 'center';
-        c.font = `bold ${H * 0.055}px Arial`; c.fillText(tit, x0 + W * 0.085, H * 0.865);
-        c.font = `bold ${H * 0.048}px Arial`; c.fillText(fila, x0 + W * 0.085, H * 0.93);
-        c.fillStyle = '#b9c27a';
-      }
-    }
-    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
-    tex.repeat.set(1 / f.w, 1 / f.h); tex.offset.set(0.5, 0.5); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-    return tex;
-  };
-  /* las alas BARREN hacia atrás 17° (como el panel real): así sus bordes externos quedan DETRÁS de los
-     parantes del parabrisas y no asoman por el vidrio (capturas de Iván 24/10) */
-  const matBorde = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.7 });
+  /* planos de los tres paños (barrido ±14°; las alas anclan al plano central en x ±0,20) */
   const n0 = new THREE.Vector3(0, -0.0175, 0.9998).normalize();
   const centros = datos.filter(d => d.c[1] > 1.0 && Math.abs(d.n[0]) <= 0.05);
-  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) - 0.006;   /* plano de la placa central */
-  const zAncla = x => (d0 + 0.0175 * 1.05) / 0.9998 - 0.004;   /* z del borde interno de las alas (4 mm delante del centro: tapa la costura) */
+  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) - 0.006;
+  const zAncla = () => (d0 + 0.0175 * 1.05) / 0.9998 - 0.004;
   const planos = {};
   for (const f of FACETAS) {
-    const th = f.lado * -0.24;   /* barrido: izquierda +14°, derecha −14° */
+    const th = f.lado * -0.24;
     const n = new THREE.Vector3(Math.sin(th), -0.0175, Math.cos(th)).normalize();
     const ex = new THREE.Vector3(Math.cos(th), 0, -Math.sin(th));
     const ey = new THREE.Vector3().crossVectors(n, ex);
     const dPlaca = f.lado === 0 ? d0 : n.dot(new THREE.Vector3(f.lado * 0.20, 1.05, zAncla()));
-    planos[f.lado] = { n, ex, ey, d: dPlaca + 0.006 };
-    const z = (dPlaca - n.x * f.cx - n.y * f.cy) / n.z;
+    planos[f.lado] = { n, ex, ey, d: dPlaca + 0.006, dPlaca, f };
+  }
+  const ladoDe = x => x < -0.23 ? -1 : x > 0.235 ? 1 : 0;
+  const zEn = (lado, x, y) => { const p = planos[lado]; return (p.dPlaca - p.n.x * x - p.n.y * y) / p.n.z; };
+  /* llaves del panel: se corren a su paño y se juntan sus rótulos para dibujarlos */
+  const rot = { '-1': [], '0': [], '1': [] };
+  for (const sw of controles.switches) {
+    const p = sw.pivote;
+    if (p.y < 0.73 || p.y > 0.97 || p.z < 0.80 || p.z > 0.99 || Math.abs(p.x) > 0.63) continue;
+    const lado = ladoDe(p.x);
+    sw.grupo.position.z = zEn(lado, p.x, p.y) + 0.002;
+    rot[String(lado)].push([p.x, p.y, ROTULOS[sw.nombre] ?? '']);
+  }
+  const texFaceta = f => {   /* chapa oscura con tornillos; FRDS en el paño izq., placards en el centro, rótulos de llaves */
+    const E = 760, cv = document.createElement('canvas'); cv.width = E; cv.height = Math.round(E * f.h / f.w);
+    const c = cv.getContext('2d'), W = cv.width, H = cv.height;
+    const aPx = (x, y) => [(x - (f.cx - f.w / 2)) / f.w * W, ((f.cy + f.h / 2) - y) / f.h * H];   /* mundo-textura (el barrido se desprecia) */
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2b2d33'); g.addColorStop(1, '#222428');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(255,255,255,0.03)'; for (let i = 0; i < 70; i++) c.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+    c.strokeStyle = '#1b1d21'; c.lineWidth = 2; c.strokeRect(5, 5, W - 10, H - 10);
+    const paso = 0.055 / f.w * E; c.fillStyle = '#404550';
+    for (let x = paso; x < W; x += paso) for (const y of [10, H - 10]) { c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); }
+    for (let y = paso; y < H; y += paso) for (const x of [10, W - 10]) { c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); }
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    if (f.placards) {
+      c.fillStyle = '#b9c27a';
+      for (const par of [[-0.19, 'FLIGHT', '750 725 700'], [0.19, 'GRD', '725 700']]) {
+        const pxy = aPx(par[0], 0.955);
+        c.fillRect(pxy[0] - 60, pxy[1] - 28, 120, 56); c.fillStyle = '#20231d';
+        c.font = 'bold 22px Arial'; c.fillText(par[1], pxy[0], pxy[1] - 12);
+        c.font = 'bold 19px Arial'; c.fillText(par[2], pxy[0], pxy[1] + 14);
+        c.fillStyle = '#b9c27a';
+      }
+    }
+    if (f.frds) {
+      const pxy = aPx(-0.55, 0.9);
+      c.fillStyle = '#d8d8d8'; c.font = 'bold 22px Arial'; c.fillText('FRDS GEN II', pxy[0], pxy[1] - 72);
+      c.fillStyle = '#0a140e'; c.fillRect(pxy[0] - 72, pxy[1] - 56, 144, 70);
+      c.fillStyle = '#58c878'; c.font = 'bold 15px Arial'; c.textAlign = 'left';
+      c.fillText('COV 3   GAL 820', pxy[0] - 62, pxy[1] - 32); c.fillText('PRES 3000  OK', pxy[0] - 62, pxy[1] - 8);
+      c.textAlign = 'center';
+    }
+    c.fillStyle = '#d8d8d8'; c.font = 'bold 15px Arial';
+    rot[String(f.lado)].forEach((r, i) => { if (!r[2]) return; const pxy = aPx(r[0], r[1]); c.fillText(r[2], pxy[0], Math.min(H - 8, pxy[1] + 34 + (i % 2 ? 14 : 0))); });
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    tex.repeat.set(1 / f.w, 1 / f.h); tex.offset.set(0.5, 0.5); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    return tex;
+  };
+  const matBorde = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.7 });
+  const matTapa = new THREE.MeshStandardMaterial({ color: 0x1c1d21, roughness: 0.95 });
+  for (const f of FACETAS) {
+    const pl2 = planos[f.lado];
+    const z = (pl2.dPlaca - pl2.n.x * f.cx - pl2.n.y * f.cy) / pl2.n.z;
     const matPanel = new THREE.MeshStandardMaterial({ map: texFaceta(f), roughness: 0.85, metalness: 0.1 });
     const placa = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc), matPanel);
     placa.position.set(f.cx, f.cy, z);
-    placa.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, ey, n));
+    placa.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl2.ex, pl2.ey, pl2.n));
     placa.name = 'tablero_' + f.lado; cabina.add(placa);
     const marco = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc, 0.008), matBorde);
-    marco.position.copy(placa.position).addScaledVector(n, -0.003); marco.quaternion.copy(placa.quaternion); cabina.add(marco);
-    /* repisa: cierra el escalón entre el tablero corrido y el panel de llaves de abajo */
-    const repisa = new THREE.Mesh(new THREE.PlaneGeometry(f.w + 0.016, 0.12), new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.9 }));
-    repisa.position.set(f.cx, f.cy - f.h / 2 + 0.004, z - 0.06);
-    repisa.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, n.clone().negate(), ey)); cabina.add(repisa);
+    marco.position.copy(placa.position).addScaledVector(pl2.n, -0.003); marco.quaternion.copy(placa.quaternion); cabina.add(marco);
+    /* TAPA superior (glareshield): cierra la vista cenital entre el paño y el parabrisas */
+    const tapaF = new THREE.Mesh(new THREE.PlaneGeometry(f.w - (f.rI || 0) - (f.rD || 0), 0.22), matTapa);
+    tapaF.position.set(f.cx + ((f.rI || 0) - (f.rD || 0)) / 2, f.cy + f.h / 2 - 0.004, z - 0.11);
+    tapaF.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl2.ex, pl2.n.clone().negate(), pl2.ey)); cabina.add(tapaF);
+    /* repisa inferior: cierra contra las consolas */
+    const repisa = new THREE.Mesh(new THREE.PlaneGeometry(f.w + 0.016, 0.14), matTapa);
+    repisa.position.set(f.cx, f.cy - f.h / 2 + 0.004, z - 0.07);
+    repisa.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl2.ex, pl2.n.clone().negate(), pl2.ey)); cabina.add(repisa);
   }
-  /* reubicar los relojes según el plano de la foto: 6 mm por delante de su faceta, con la base de la faceta */
+  /* mejillas laterales: le dan profundidad a la caja del tablero */
+  for (const lado of [-1, 1]) {
+    const xB = lado * 0.605;
+    const zB = zEn(lado, xB, 0.955);
+    const mejilla = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.49), matTapa);
+    mejilla.position.set(xB, 0.955, zB - 0.08);
+    mejilla.rotation.y = -lado * Math.PI / 2; cabina.add(mejilla);   /* mira hacia ADENTRO (FrontSide): desde afuera no existe */
+  }
+  /* reubicar los relojes según el plano de la foto, sobre el paño que les toca */
   for (const d of datos) {
     const p = LAYOUT[d.tipo]; if (!p) continue;
-    const lado = p[0] < -0.26 ? -1 : p[0] > 0.26 ? 1 : 0;
-    const pl = planos[lado];
-    const z = (pl.d - pl.n.x * p[0] - pl.n.y * p[1]) / pl.n.z;
-    d.c = [p[0], p[1], z]; d.n = pl.n.toArray(); d.ex = pl.ex.toArray(); d.ey = pl.ey.toArray();
-    if (d.r < 0.027) d.r = 0.027;   /* los relojitos chicos, un toque más legibles */
+    const lado = ladoDe(p[0]);
+    const pl3 = planos[lado];
+    const z = (pl3.d - pl3.n.x * p[0] - pl3.n.y * p[1]) / pl3.n.z;
+    d.c = [p[0], p[1], z]; d.n = pl3.n.toArray(); d.ex = pl3.ex.toArray(); d.ey = pl3.ey.toArray();
+    if (d.r < 0.027) d.r = 0.027;
   }
   for (const d of datos) {
-    if (d.tipo === 'suction') d.r = 0.034;   /* en la consola quedaba gigante con el bisel nuevo */
-    if (d.tipo === 'horizonte') d.r = 0.054;   /* para que entre en la joroba baja */
+    if (d.tipo === 'suction') d.r = 0.034;
+    if (d.tipo === 'horizonte') d.r = 0.054;
   }
-  /* GPS tipo Garmin al centro (como la foto), llenando el hueco bajo el horizonte */
-  const pl = planos[0]; const gx = 0, gy = 1.038, gz = (pl.d + 0.012 - pl.n.y * gy) / pl.n.z;
-  const gps = new THREE.Group(); gps.position.set(gx, gy, gz);
+  /* GPS tipo Garmin al centro */
+  const pl = planos[0]; const gy = 1.038, gz = (pl.d + 0.012 - pl.n.y * gy) / pl.n.z;
+  const gps = new THREE.Group(); gps.position.set(0, gy, gz);
   gps.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl.ex, pl.ey, pl.n)); gps.name = 'gps';
   const bisel = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.125, 0.03), new THREE.MeshStandardMaterial({ color: 0x191a1e, roughness: 0.6 }));
   bisel.position.z = -0.015; gps.add(bisel);
@@ -321,9 +349,9 @@ function crearTablero(datos) {
   const texg = new THREE.CanvasTexture(cvg); texg.colorSpace = THREE.SRGBColorSpace;
   const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.155, 0.095), new THREE.MeshBasicMaterial({ map: texg }));
   pant.position.set(0, 0.005, 0.002); gps.add(pant);
-  for (const s of [-1, 1]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.012, 16).rotateX(Math.PI / 2), matBorde); k.position.set(s * 0.078, -0.047, 0.004); gps.add(k); }
+  for (const sk of [-1, 1]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.012, 16).rotateX(Math.PI / 2), matBorde); k.position.set(sk * 0.078, -0.047, 0.004); gps.add(k); }
   cabina.add(gps);
-  crearTablero.dCentro = d0; crearTablero.planos = planos;   /* los usan los extras del manual para apoyarse en las facetas */
+  crearTablero.dCentro = d0; crearTablero.planos = planos;
 }
 
 /* Extras del manual (26/10, mapa_cabina.md): brújula sobre el panel inferior, anunciador con luces
@@ -389,72 +417,12 @@ function crearExtrasManual() {
     new THREE.MeshStandardMaterial({ map: texT, roughness: 0.6 }));
   boton.name = 'swTEST'; boton.userData.piv = [0.117, 0.947, zB - 0.006]; boton.userData.eje = 'x'; boton.userData.ang = [0, 0.001];   /* casi no se mueve: es un botón */
   grupoPalanca.add(boton);
-  // --- PANEL DE LLAVES (26/10): el tablero nuevo quedaba flotando delante del panel viejo de switches.
-  // Placa al MISMO plano (apenas detrás de las facetas), con rótulos dibujados, y las palanquitas se
-  // corren al frente para asentarse en ella. El panel viejo queda tapado detrás. ---
-  const ROTULOS = { sw62: 'BATT', sw64: 'ALTN', sw56: 'GEN', sw53: 'IGNTR', sw47: 'START', sw60: 'FIRE', swFPUMP: 'F PUMP', sw54: 'HYD', sw63: 'AVNC', sw50: 'PITOT', swHOPR: 'HOPPER', swFRDS: 'FRDS', swWIPER: 'WIPER', sw52: 'LDG LT', sw49: 'DOME', sw61: 'BCN', sw51: 'NAV', sw48: 'STRB', sw38: 'SPARE' };
-  const esDeAbajo = sw => sw.pivote.z > 0.80 && sw.pivote.z < 0.99 && sw.pivote.y > 0.73 && sw.pivote.y < 0.97 && sw.pivote.x > -0.465 && sw.pivote.x < 0.50;
-  const X0 = -0.46, X1 = 0.50, Y0 = 0.715, Y1 = 0.915;   /* termina antes del pedestal de radios y baja a tapar el panel viejo */
-  const zLl = y => (d0 - 0.004 + 0.0175 * y) / 0.9998;
-  const cvL = document.createElement('canvas'); cvL.width = 960; cvL.height = 200; const cL = cvL.getContext('2d');
-  const g2 = cL.createLinearGradient(0, 0, 0, 200); g2.addColorStop(0, '#26282d'); g2.addColorStop(1, '#1f2126');
-  cL.fillStyle = g2; cL.fillRect(0, 0, 960, 200);
-  cL.strokeStyle = '#1b1d21'; cL.lineWidth = 2; cL.strokeRect(4, 4, 952, 192);
-  const aPx = (x, y) => [(x - X0) / (X1 - X0) * 960, (Y1 - y) / (Y1 - Y0) * 200];
-  const placaLl = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Y1 - Y0), new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.1 }));
-  const cxL = (X0 + X1) / 2, cyL = (Y0 + Y1) / 2;
-  placaLl.position.set(cxL, cyL, zLl(cyL));
-  placaLl.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0.9998, 0.0175), new THREE.Vector3(0, -0.0175, 0.9998)));
-  g.add(placaLl);
-  // correr las palanquitas al frente y rotularlas sobre la placa
-  cL.textAlign = 'center'; cL.textBaseline = 'middle';
-  const deAbajo = controles.switches.filter(esDeAbajo).sort((a, b) => a.pivote.x - b.pivote.x);
-  deAbajo.forEach((sw, i) => {
-    const p = sw.pivote;
-    sw.grupo.position.z = zLl(p.y) + 0.002;
-    const [px, py] = aPx(p.x, p.y);
-    cL.fillStyle = '#d8d8d8'; cL.font = 'bold 11px Arial';
-    cL.fillText(ROTULOS[sw.nombre] || '', px, Math.min(190, py + (i % 2 ? 46 : 32)));   /* escalonados: pegados chocaban */
-  });
-  // tornillos
-  cL.fillStyle = '#404550';
-  for (let x = 30; x < 960; x += 90) for (const y of [12, 188]) { cL.beginPath(); cL.arc(x, y, 3.5, 0, 7); cL.fill(); }
-  const texL = new THREE.CanvasTexture(cvL); texL.colorSpace = THREE.SRGBColorSpace; texL.anisotropy = 4;
-  placaLl.material.map = texL; placaLl.material.needsUpdate = true;
   { // el swWIPER vino con un pedazo de panel (5,5 cm de fondo): se recorta a 3 cm
     const w = controles.switches.find(x => x.nombre === 'swWIPER');
     if (w) { const gw = w.malla.geometry, pw = gw.attributes.position; gw.computeBoundingBox();
       const zMax = gw.boundingBox.min.z + 0.03;
       for (let i = 0; i < pw.count; i++) if (pw.getZ(i) > zMax) pw.setZ(i, zMax);
       pw.needsUpdate = true; gw.computeVertexNormals(); }
-  }
-  // --- SUBPANEL FRDS: el ala izquierda del tablero tapaba el panel y las palanquitas FRDS;
-  // placa propia en el plano del ala (apenas atrás) y las perillas FRDS corridas al frente ---
-  const plI = crearTablero.planos && crearTablero.planos[-1];
-  if (plI) {
-    const dF = plI.d - 0.006 - 0.003;
-    const zF = (x, y) => (dF - plI.n.x * x - plI.n.y * y) / plI.n.z;
-    const FX0 = -0.645, FX1 = -0.462, FY0 = 0.715, FY1 = 0.968;
-    const cvF = document.createElement('canvas'); cvF.width = 256; cvF.height = 354; const cF = cvF.getContext('2d');
-    const gF = cF.createLinearGradient(0, 0, 0, 354); gF.addColorStop(0, '#26282d'); gF.addColorStop(1, '#1f2126');
-    cF.fillStyle = gF; cF.fillRect(0, 0, 256, 354);
-    cF.strokeStyle = '#1b1d21'; cF.lineWidth = 2; cF.strokeRect(4, 4, 248, 346);
-    cF.fillStyle = '#d8d8d8'; cF.font = 'bold 20px Arial'; cF.textAlign = 'center'; cF.fillText('FRDS GEN II', 128, 30);
-    cF.fillStyle = '#0a140e'; cF.fillRect(28, 44, 200, 96);   /* pantallita */
-    cF.fillStyle = '#58c878'; cF.font = 'bold 16px Arial'; cF.textAlign = 'left';
-    cF.fillText('COV  3    GAL  820', 40, 80); cF.fillText('PRES 3000  OK', 40, 106);
-    cF.fillStyle = '#404550'; for (const [sx, sy] of [[14, 14], [242, 14], [14, 340], [242, 340]]) { cF.beginPath(); cF.arc(sx, sy, 4, 0, 7); cF.fill(); }
-    const texF = new THREE.CanvasTexture(cvF); texF.colorSpace = THREE.SRGBColorSpace;
-    const placaF = new THREE.Mesh(new THREE.PlaneGeometry(FX1 - FX0, FY1 - FY0), new THREE.MeshStandardMaterial({ map: texF, roughness: 0.85, metalness: 0.1 }));
-    const fcx = (FX0 + FX1) / 2, fcy = (FY0 + FY1) / 2;
-    placaF.position.set(fcx, fcy, zF(fcx, fcy));
-    placaF.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(plI.ex, plI.ey, plI.n));
-    g.add(placaF);
-    for (const sw of controles.switches) {
-      const p = sw.pivote;
-      if (p.x > -0.645 && p.x < -0.462 && p.y > 0.76 && p.y < 0.97 && p.z > 0.85 && p.z < 0.95)
-        sw.grupo.position.z = zF(p.x, p.y) + 0.004;   /* perillas y palanquitas FRDS al frente */
-    }
   }
   return { grupo: g, grupoPalanca, actualizar() {
     tarjeta.rotation.y = vuelo.euler.rumbo;   /* tarjeta fija a la tierra (signo a validar en vuelo) */
@@ -709,7 +677,7 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
   avion.position.copy(v.pos); avion.quaternion.copy(v.q);
 }
 const aPie = crearAPie({ escena, avion, cabina, jugador, camara, renderer, ojoCabina: () => OJO_AVION, terreno: (x, z) => ambiente.alturaTerreno(x, z),
-  alPedirSubir: tipo => { jugador.scale.setScalar(1); if (tipo === 'vr') recentrarPendiente = 1; yaw = 0; pitch = -0.15; } });
+  alPedirSubir: tipo => { jugador.scale.setScalar(1); if (tipo === 'vr') recentrarPendiente = 72;   /* recentra a los 12 y 72 cuadros: al subir se caia arriba del techo */ yaw = 0; pitch = -0.15; } });
 window.__aPie = aPie;
 let modoPrevio = 'cabina';
 ui.aPie = () => { mision.fase = 'libre'; reiniciarAvion({ enPista: true, agua: 2400, apagado: true }); mision.ui.tareas([]); aPie.bajar(false);
