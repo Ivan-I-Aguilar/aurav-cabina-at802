@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026v';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261027a';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -242,7 +242,7 @@ function crearTablero(datos) {
   /* planos de los tres paños (barrido ±14°; las alas anclan al plano central en x ±0,20) */
   const n0 = new THREE.Vector3(0, -0.0175, 0.9998).normalize();
   const centros = datos.filter(d => d.c[1] > 1.0 && Math.abs(d.n[0]) <= 0.05);
-  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) - 0.006;
+  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) + 0.019;   /* 27/10: +2,5 cm atrás; a −0.006 el tope del paño quedaba 8 mm DELANTE del parabrisas y asomaba afuera */
   const zAncla = () => (d0 + 0.0175 * 1.05) / 0.9998 - 0.004;
   const planos = {};
   for (const f of FACETAS) {
@@ -312,10 +312,17 @@ function crearTablero(datos) {
     placa.name = 'tablero_' + f.lado; cabina.add(placa);
     const marco = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc, 0.008, f.t || 0.16), matBorde);
     marco.position.copy(placa.position).addScaledVector(pl2.n, -0.003); marco.quaternion.copy(placa.quaternion); cabina.add(marco);
-    /* TAPA superior (glareshield): cierra la vista cenital entre el paño y el parabrisas */
-    const tapaF = new THREE.Mesh(new THREE.PlaneGeometry(f.w - (f.rI || 0) - (f.rD || 0), 0.22), matTapa);
-    tapaF.position.set(f.cx + ((f.rI || 0) - (f.rD || 0)) / 2, f.cy + f.h / 2 - 0.004, z - 0.11);
-    tapaF.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl2.ex, pl2.n.clone().negate(), pl2.ey)); cabina.add(tapaF);
+    /* TAPA superior (glareshield) INCLINADA: del tope del paño baja al pie del parabrisas y muere
+       en la línea del capó (27/10: la tapa horizontal de 22 cm ATRAVESABA el vidrio y se veía desde
+       afuera negra sobre la trompa; el parabrisas es z = 0,74 + 0,93·(y − 1,02)) */
+    const yTop = f.cy + f.h / 2 - 0.004;
+    const zTop = (pl2.dPlaca - pl2.n.x * f.cx - pl2.n.y * yTop) / pl2.n.z;
+    const yPie = 1.12, zPie = 0.74 + 0.93 * (yPie - 1.02) + 0.012;
+    const dirT = new THREE.Vector3(0, yPie - yTop, zPie - zTop); const LT = dirT.length(); dirT.normalize();
+    const nT = new THREE.Vector3().crossVectors(pl2.ex, dirT).normalize();
+    const tapaF = new THREE.Mesh(new THREE.PlaneGeometry(f.w - (f.rI || 0) - (f.rD || 0), LT), matTapa);
+    tapaF.position.set(f.cx + ((f.rI || 0) - (f.rD || 0)) / 2, (yTop + yPie) / 2, (zTop + zPie) / 2);
+    tapaF.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl2.ex, dirT, nT)); cabina.add(tapaF);
     /* repisa inferior: cierra contra las consolas */
     const repisa = new THREE.Mesh(new THREE.PlaneGeometry(f.w + 0.016, 0.14), matTapa);
     repisa.position.set(f.cx, f.cy - f.h / 2 + 0.004, z - 0.07);

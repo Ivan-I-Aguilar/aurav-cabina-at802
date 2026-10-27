@@ -108,6 +108,15 @@ def blanquear(img, nombre):
     detalle = np.clip(lum - blur, -0.35, 0.1)
     azul = px[..., 2] > np.maximum(px[..., 0], px[..., 1]) + 0.015   # pintura azul de fábrica (valores lineales)
     oscuro = lum < 0.045                                             # gomas, antideslizante, rejillas (~sRGB 0,23)
+    # limpieza del moteado (Quest 27/10): el umbral dejaba HUECOS blanqueados dentro de las franjas
+    # azules y motas azules sueltas en la chapa → apertura (mata motas ≤2 px) + cierre (rellena
+    # huecos ≤4 px), con desplazamientos de numpy (sin scipy)
+    def _d1(a):
+        r = a.copy(); r[1:, :] |= a[:-1, :]; r[:-1, :] |= a[1:, :]; r[:, 1:] |= a[:, :-1]; r[:, :-1] |= a[:, 1:]; return r
+    def _e1(a):
+        r = a.copy(); r[1:, :] &= a[:-1, :]; r[:-1, :] &= a[1:, :]; r[:, 1:] &= a[:, :-1]; r[:, :-1] &= a[:, 1:]; return r
+    azul = _d1(_e1(azul))
+    azul = _e1(_e1(_d1(_d1(azul))))
     modo_cajas = BORRAR.get(next((k for k in BORRAR if nombre.lower().startswith(k)), ''), None)
     if modo_cajas:
         modo, cajas = modo_cajas
@@ -221,18 +230,39 @@ for f0 in bm.faces:
         nc += len(isla)
 print('COMPUERTA', nc)
 
-# acoples de carga (boquillas mat08 detrás del pod): de fábrica cuelgan sueltos justo por fuera
-# de la curva del casco (a z −0.7 el casco llega a |x| 0.42 y ellos arrancan en 0.42) → 10 cm
-# adentro y 6 cm arriba: quedan incrustados en el flanco con la boquilla asomando, sin flotar.
-i_acop = next((i for i, m in enumerate(o.data.materials) if m and m.name == 'mat08'), -1)
-va = set()
+# acoples de carga (mat08 detrás del pod): en el Quest se seguían viendo SUELTOS (27/10) → las
+# PATAS de fábrica (islas chicas) se borran y el cilindro del acople (la boca con tapa, isla grande)
+# se EMPOTRA en el flanco bajo del casco: sólo asoma la tapa, como la boca de carga real.
+nomA = [m.name if m else '?' for m in o.data.materials]
+acoplables = {i for i, nm in enumerate(nomA) if nm in ('mat08', 'mat30')}   # mat30: los soportes en V (27/10)
+bm.faces.ensure_lookup_table(); bm.faces.index_update()
+va = set(); borrar = []; nemp = 0
+for f0 in bm.faces:
+    if f0.index in va or f0.material_index not in acoplables: continue
+    c0 = f0.calc_center_median()
+    if not (0.38 < abs(c0.x) < 0.62 and -2.68 < c0.y < -2.28 and -0.95 < c0.z < -0.58): continue
+    pila = [f0]; va.add(f0.index); isla = [f0]
+    while pila:
+        g = pila.pop()
+        for e in g.edges:
+            for h in e.link_faces:
+                if h.index not in va: va.add(h.index); isla.append(h); pila.append(h)
+    if len(isla) < 90: borrar += isla
+    else:
+        lado = 1 if c0.x > 0 else -1; nemp += 1
+        for vv in set(vv for g in isla for vv in g.verts): vv.co.x -= 0.14 * lado; vv.co.z += 0.085
+if borrar: bmesh.ops.delete(bm, geom=borrar, context='FACES')
+print('ACOPLES empotrados', nemp, 'patas borradas', len(borrar))
+# boca de los escapes: el anillo del labio (mat15/mat10) quedaba BLANCO → al metal oscuro del escape
+nom = [m.name if m else '?' for m in o.data.materials]
+i21 = nom.index('mat21') if 'mat21' in nom else -1
+ne = 0
 for f in bm.faces:
+    if nom[f.material_index] not in ('mat15', 'mat10'): continue
     c = f.calc_center_median()
-    if f.material_index == i_acop and 0.38 < abs(c.x) < 0.62 and -2.68 < c.y < -2.40 and -0.86 < c.z < -0.64:
-        for v in f.verts: va.add(v)
-for v in va:
-    v.co.x -= 0.10 * (1 if v.co.x > 0 else -1); v.co.z += 0.06
-print('ACOPLES', len(va))
+    if 0.42 < abs(c.x) < 0.83 and 2.61 < c.y < 2.99 and 0.10 < c.z < 0.40:
+        f.material_index = i21; ne += 1
+print('LABIO ESCAPE', ne)
 bm.to_mesh(o.data); bm.free(); o.data.update()
 
 # estribo del trabajo anterior (el tren ya viene en el OBJ: el nuestro no hace falta);
@@ -260,7 +290,7 @@ bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.vi
 bpy.ops.object.shade_smooth_by_angle(angle=math.radians(38))
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SAL, 'at802_terrestre_v3.blend'))
 for i in bpy.data.images:
-    if i.size[0] > 1024: i.scale(1024, 1024)
+    if i.size[0] > 2048: i.scale(2048, 2048)   # 27/10: a 1024 el fuselaje se veía borroso en el Quest
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.export_scene.gltf(filepath=os.path.join(PROYECTO, 'exterior.glb'), export_format='GLB', use_selection=True, export_yup=True, export_apply=True,
                           export_animations=False, export_materials='EXPORT', export_image_format='AUTO', export_jpeg_quality=85)

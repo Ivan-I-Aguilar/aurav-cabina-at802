@@ -85,6 +85,19 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **Capturas de Iván del 27/10, resueltas (local, v=20261027b, SIN publicar):** (1) el TABLERO asomaba por
+  fuera del parabrisas visto desde afuera-arriba → todo el tablero 2,5 cm atrás (`d0 + 0.019` en vez de
+  `− 0.006`; el tope quedaba 8 mm DELANTE del vidrio) y el glareshield pasó de tapa horizontal de 22 cm (que
+  ATRAVESABA el vidrio) a TAPA INCLINADA del tope del paño al pie del parabrisas (muere en el capó, y 1,12);
+  (2) el ACOPLE de carga seguía «suelto»: las patas/soportes de fábrica (mat08 chicas + mat30, ~1500 caras) se
+  BORRAN y el cilindro se EMPOTRA en el flanco (−0,14 x · +0,085 z): sólo asoma la boca; (3) los ESCAPES tenían
+  el labio BLANCO: el anillo (mat15/mat10 en la caja del escape, 24 caras) pasa a mat21 oscuro; (4) la textura
+  se veía «borrosa, con manchitas azules»: morfología sobre la máscara azul en `blanquear()` (apertura+cierre:
+  mata motas ≤2 px y rellena huecos ≤4 px en las franjas) y el export ya NO baja las texturas a 1024 (quedan
+  2048: el fuselaje se veía borroso en el Quest). exterior.glb pasó de 4,1 a 6,9 MB. Ronda verificada.
+  **Pendiente de decisión de Iván:** si la textura de fábrica limpia alcanza o pasamos a REPINTADO liso total
+  («colores mentirosos», como el ala y la compuerta) — eso borraría remaches y franjas de textura: la franja
+  azul habría que rehacerla por geometría (bisect como la librea AURAV bordó vieja).
 - **CONSOLAS LATERALES RECONSTRUIDAS** (pedido de Iván 26/10, hecho 27/10, local SIN publicar, v=20261026w):
   `crearConsolas()` en main.js (corre tras crearTablero/extras y ANTES de `new Instrumentos`): cajas oscuras
   de pared (±0,615) a muslo (±0,37), y 0,56–0,70 (tapa), z 0,96–1,63. Izquierda: PEDESTAL del cuadrante
