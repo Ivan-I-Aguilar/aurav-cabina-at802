@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null; const V_EXT = '20261026a';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026a';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -185,6 +185,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   /* las piezas sacadas con EXTRAER traen todo el buffer de vértices (caja de 2 m, pivote en cualquier lado): quedarse sólo con los usados */
   g.scene.traverse(o => { if (o.isMesh && /^(sw|lev)\w+$/.test(o.name) && o.geometry.index) o.geometry = o.geometry.toNonIndexed(); });
   controles.armar(g.scene);
+  extras = crearExtrasManual(); controles.armar(extras.grupoPalanca);   /* arma la manija E-DUMP como palanca */
   const matBate = new THREE.MeshStandardMaterial({ color: 0xc8c8cc, metalness: 0.6, roughness: 0.35 });
   for (const n of ['swFPUMP', 'swHOPR', 'swFRDS', 'swWIPER']) { const sw = controles.switches.find(x => x.nombre === n); if (sw) sw.grupo.add(new THREE.Mesh(bate, matBate)); }
   /* switches de 3 posiciones (arriba · medio · abajo). Qué hace cada posición: a confirmar con Bruno (AAXOD).
@@ -321,6 +322,69 @@ function crearTablero(datos) {
   pant.position.set(0, 0.005, 0.002); gps.add(pant);
   for (const s of [-1, 1]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.012, 16).rotateX(Math.PI / 2), matBorde); k.position.set(s * 0.078, -0.047, 0.004); gps.add(k); }
   cabina.add(gps);
+  crearTablero.dCentro = d0;   /* lo usan los extras del manual para apoyarse en la faceta central */
+}
+
+/* Extras del manual (26/10, mapa_cabina.md): brújula sobre el panel inferior, anunciador con luces
+   (LOW VOLT · GEN OUT · FUEL FILT · AIR FILT · BETA) y manija roja E-DUMP que vacía la tolva de una.
+   La tarjeta de la brújula gira con el rumbo; BETA queda apagada hasta que se modele la reversa. */
+function crearExtrasManual() {
+  const g = new THREE.Group(); g.name = 'extras_manual'; cabina.add(g);
+  const oscuro = new THREE.MeshStandardMaterial({ color: 0x1b1c20, roughness: 0.7 });
+  // --- brújula (whiskey): cajita con tarjeta cilíndrica y línea de fe ---
+  const cajaB = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.034, 0.05), oscuro);
+  cajaB.position.set(0, 1.298, 1.045); g.add(cajaB);   /* arriba de la joroba del tablero, contra el parabrisas; la tarjeta cuelga adelante */
+  const cv = document.createElement('canvas'); cv.width = 720; cv.height = 64; const cb = cv.getContext('2d');
+  cb.fillStyle = '#101113'; cb.fillRect(0, 0, 720, 64);
+  cb.fillStyle = '#f0f0f0'; cb.textAlign = 'center'; cb.textBaseline = 'middle';
+  for (let d = 0; d < 360; d += 10) {
+    const x = d / 360 * 720 + 1;
+    cb.fillRect(x - 1, 42, 2, d % 30 ? 8 : 14);
+    if (d % 30 === 0) { const t = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' }[d] || String(d / 10); cb.font = `bold ${d % 90 ? 24 : 30}px Arial`; cb.fillText(t, x, 22); }
+  }
+  const texB = new THREE.CanvasTexture(cv); texB.colorSpace = THREE.SRGBColorSpace; texB.wrapS = THREE.RepeatWrapping;
+  const tarjeta = new THREE.Mesh(new THREE.CylinderGeometry(0.0225, 0.0225, 0.032, 48, 1, true), new THREE.MeshBasicMaterial({ map: texB, side: THREE.BackSide }));
+  tarjeta.position.set(0, 1.272, 1.078); g.add(tarjeta);
+  const fe = new THREE.Mesh(new THREE.PlaneGeometry(0.0022, 0.026), new THREE.MeshBasicMaterial({ color: 0xf2c200 }));
+  fe.position.set(0, 1.272, 1.103); g.add(fe);
+  // --- anunciador: fila de celdas sobre la faceta central, entre los placards ---
+  const d0 = crearTablero.dCentro ?? 0.95, luces = {};
+  const zC = y => (d0 + 0.0175 * y) / 0.9998 + 0.004;
+  const CELDAS = [['LOW VOLT', 0xff9a2a], ['GEN OUT', 0xff9a2a], ['FUEL FILT', 0xffd22a], ['AIR FILT', 0xffd22a], ['BETA', 0x4ad2ff]];
+  const marcoA = new THREE.Mesh(new THREE.PlaneGeometry(0.185, 0.026), new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.7 }));
+  marcoA.position.set(0, 0.947, zC(0.947) - 0.001); g.add(marcoA);
+  const dibujarCelda = (txt, col, prendida) => {   /* apagada: letras de color sobre negro; prendida: negro sobre color pleno (anunciador real) */
+    const cl = document.createElement('canvas'); cl.width = 128; cl.height = 40; const cc = cl.getContext('2d');
+    const hex = '#' + col.toString(16).padStart(6, '0');
+    cc.fillStyle = prendida ? hex : '#141518'; cc.fillRect(0, 0, 128, 40);
+    cc.fillStyle = prendida ? '#101113' : hex; cc.font = 'bold 19px Arial'; cc.textAlign = 'center'; cc.textBaseline = 'middle';
+    const partes = txt.split(' '); partes.forEach((p, j) => cc.fillText(p, 64, partes.length > 1 ? 12 + j * 18 : 21));
+    const tex = new THREE.CanvasTexture(cl); tex.colorSpace = THREE.SRGBColorSpace; return tex;
+  };
+  CELDAS.forEach(([txt, col], i) => {
+    const x = (i - 2) * 0.036;
+    const apagada = dibujarCelda(txt, col, false), prendida = dibujarCelda(txt, col, true);
+    const mat = new THREE.MeshBasicMaterial({ map: apagada, color: 0x8a8a8a });
+    const celda = new THREE.Mesh(new THREE.PlaneGeometry(0.035, 0.021), mat);
+    celda.position.set(x, 0.947, zC(0.947)); g.add(celda); luces[txt] = { mat, apagada, prendida, al: null };
+  });
+  // --- manija E-DUMP (roja, consola izquierda): empujar ADELANTE = salvo total ---
+  const baseE = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.012, 0.062), oscuro);
+  baseE.position.set(-0.505, 0.716, 1.07); g.add(baseE);
+  const geoVara = new THREE.CylinderGeometry(0.0055, 0.0055, 0.095, 10).translate(-0.505, 0.769, 1.07);
+  const geoBola = new THREE.SphereGeometry(0.0155, 16, 12).translate(-0.505, 0.822, 1.07);
+  const manija = new THREE.Mesh(mergeGeometries([geoVara.toNonIndexed(), geoBola.toNonIndexed()], false),
+    new THREE.MeshStandardMaterial({ color: 0xc01212, roughness: 0.5 }));
+  manija.name = 'levEDUMP'; manija.userData.pivY = 0.716; manija.userData.escala = 1;
+  const grupoPalanca = new THREE.Group(); grupoPalanca.add(manija);
+  return { grupo: g, grupoPalanca, actualizar() {
+    tarjeta.rotation.y = vuelo.euler.rumbo;   /* tarjeta fija a la tierra (signo a validar en vuelo) */
+    const m = vuelo.motor, bat = !!m.bateria;
+    const pon = (k, on) => { const l = luces[k]; if (!l || l.al === on) return; l.al = on; l.mat.map = on ? l.prendida : l.apagada; l.mat.color.setHex(on ? 0xffffff : 0x8a8a8a); l.mat.needsUpdate = true; };
+    pon('GEN OUT', bat && !m.generador);
+    pon('LOW VOLT', bat && !m.generador && m.encendido);
+    pon('BETA', false); pon('FUEL FILT', false); pon('AIR FILT', false);   /* reversa y filtros: todavía sin modelar */
+  } };
 }
 
 // ---- controles de cabina → modelo de vuelo ----
@@ -337,6 +401,7 @@ function aplicarControles() {
   c.potencia = adelante('levPOT'); c.helice = adelante('levHEL'); c.condicion = adelante('levCOND');
   if (controles.estado('swFUEL') === 0) c.condicion = 0;   /* válvula de combustible en OFF: sin combustible, el motor se corta (manual 26/10) */
   vuelo.colaLibre = !!controles.estado('swWRUD');   /* traba de cola: destrabada gira más cerrado en el piso */
+  if (adelante('levEDUMP') > 0.85 && vuelo.agua > 0) vuelo.agua = 0;   /* manija E-DUMP adelante: salvo total (manual 26/10) */
   c.cabeceo = mando.x / LIMITE; c.alabeo = -mando.z / LIMITE;
 
   c.pedal = pedal; c.frenos = frenos; c.flaps = flaps;
@@ -620,6 +685,7 @@ renderer.setAnimationLoop(() => {
   if (modoCamara) cuidarSeguimiento();
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
+  if (extras) extras.actualizar();
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;
   if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
