@@ -9,7 +9,7 @@ import { crearEscenario } from './escenario.js?v=20261017a';
 import { crearRadios } from './radios.js?v=20261017a';
 import { Controles } from './controles.js?v=20261022e';
 import { Instrumentos } from './instrumentos.js?v=20261025e';
-import { Vuelo, MPH, FT } from './vuelo.js?v=20261026e';
+import { Vuelo, MPH, FT } from './vuelo.js?v=20261026j';
 import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
@@ -185,6 +185,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   /* las piezas sacadas con EXTRAER traen todo el buffer de vértices (caja de 2 m, pivote en cualquier lado): quedarse sólo con los usados */
   g.scene.traverse(o => { if (o.isMesh && /^(sw|lev)\w+$/.test(o.name) && o.geometry.index) o.geometry = o.geometry.toNonIndexed(); });
   controles.armar(g.scene);
+  { const p = controles.palancas.find(x => x.nombre === 'levPOT'); if (p) p.max = 0.42; }   /* detrás del ralentí (0,15) está el rango BETA/REVERSA (manual 26/10) */
   extras = crearExtrasManual(); controles.armar(extras.grupoPalanca);   /* arma la manija E-DUMP como palanca */
   const matBate = new THREE.MeshStandardMaterial({ color: 0xc8c8cc, metalness: 0.6, roughness: 0.35 });
   for (const n of ['swFPUMP', 'swHOPR', 'swFRDS', 'swWIPER']) { const sw = controles.switches.find(x => x.nombre === n); if (sw) sw.grupo.add(new THREE.Mesh(bate, matBate)); }
@@ -377,13 +378,30 @@ function crearExtrasManual() {
     new THREE.MeshStandardMaterial({ color: 0xc01212, roughness: 0.5 }));
   manija.name = 'levEDUMP'; manija.userData.pivY = 0.716; manija.userData.escala = 1;
   const grupoPalanca = new THREE.Group(); grupoPalanca.add(manija);
+  // botón TEST del anunciador (a la derecha de la fila): se arma como switch, prende todas las luces
+  const zB = zC(0.947) + 0.004;
+  const aro = new THREE.Mesh(new THREE.TorusGeometry(0.0085, 0.0025, 10, 24), oscuro); aro.position.set(0.117, 0.947, zB - 0.002); g.add(aro);
+  const cvT = document.createElement('canvas'); cvT.width = 64; cvT.height = 64; const ct = cvT.getContext('2d');
+  ct.fillStyle = '#26282d'; ct.beginPath(); ct.arc(32, 32, 32, 0, 7); ct.fill();
+  ct.fillStyle = '#e8e8e8'; ct.font = 'bold 15px Arial'; ct.textAlign = 'center'; ct.textBaseline = 'middle'; ct.fillText('TEST', 32, 33);
+  const texT = new THREE.CanvasTexture(cvT); texT.colorSpace = THREE.SRGBColorSpace;
+  const boton = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.0075, 0.012, 20).rotateX(Math.PI / 2).translate(0.117, 0.947, zB),
+    new THREE.MeshStandardMaterial({ map: texT, roughness: 0.6 }));
+  boton.name = 'swTEST'; boton.userData.piv = [0.117, 0.947, zB - 0.006]; boton.userData.eje = 'x'; boton.userData.ang = [0, 0.001];   /* casi no se mueve: es un botón */
+  grupoPalanca.add(boton);
   return { grupo: g, grupoPalanca, actualizar() {
     tarjeta.rotation.y = vuelo.euler.rumbo;   /* tarjeta fija a la tierra (signo a validar en vuelo) */
     const m = vuelo.motor, bat = !!m.bateria;
     const pon = (k, on) => { const l = luces[k]; if (!l || l.al === on) return; l.al = on; l.mat.map = on ? l.prendida : l.apagada; l.mat.color.setHex(on ? 0xffffff : 0x8a8a8a); l.mat.needsUpdate = true; };
     pon('GEN OUT', bat && !m.generador);
     pon('LOW VOLT', bat && !m.generador && m.encendido);
-    pon('BETA', false); pon('FUEL FILT', false); pon('AIR FILT', false);   /* reversa y filtros: todavía sin modelar */
+    pon('BETA', !!vuelo.enBeta);
+    const test = !!controles.estado('swTEST');   /* push-to-test: prende todo un ratito y se suelta solo */
+    if (test && !this.t0) this.t0 = performance.now();
+    if (!test) this.t0 = null;
+    if (test && performance.now() - this.t0 > 1800) { const sb = controles.switches.find(x => x.nombre === 'swTEST'); if (sb) { sb.estado = false; controles._aplicarSwitch(sb); } }
+    for (const k of ['FUEL FILT', 'AIR FILT']) pon(k, test);
+    if (test) { pon('LOW VOLT', true); pon('GEN OUT', true); pon('BETA', true); }
   } };
 }
 
@@ -399,6 +417,7 @@ function aplicarControles() {
   m.ignicion = !!controles.estado(SW.IGNTR); m.arrancador = !!controles.estado(SW.START) && m.bateria; m.bombaCombustible = !!controles.estado(SW.FPUMP);
   m.extintor = !!controles.estado(SW.FIRE);
   c.potencia = adelante('levPOT'); c.helice = adelante('levHEL'); c.condicion = adelante('levCOND');
+  c.reversa = THREE.MathUtils.clamp((levAng('levPOT') - 0.17) / 0.25, 0, 1);   /* palanca detrás del ralentí = beta/reversa */
   if (controles.estado('swFUEL') === 0) c.condicion = 0;   /* válvula de combustible en OFF: sin combustible, el motor se corta (manual 26/10) */
   vuelo.colaLibre = !!controles.estado('swWRUD');   /* traba de cola: destrabada gira más cerrado en el piso */
   if (adelante('levEDUMP') > 0.85 && vuelo.agua > 0) vuelo.agua = 0;   /* manija E-DUMP adelante: salvo total (manual 26/10) */

@@ -72,6 +72,9 @@ export class Vuelo {
     const pot = P_MAX * m.torque / 100 * Math.min(1, m.rpmHel / 1500);
     const v = Math.max(this.vel.length(), 1);
     this.empuje = c.helice < 0.15 ? 0 : Math.min(T_ESTATICO * m.torque / 100, 0.82 * pot / v);
+    // beta / reversa (26/10): palanca de potencia detrás del tope de ralentí; sólo empuja para atrás con motor andando
+    this.enBeta = m.encendido && (c.reversa || 0) > 0.02;
+    if (this.enBeta) this.empuje = -T_ESTATICO * 0.35 * c.reversa * Math.min(1, m.ng / 70);
   }
 
   paso(dt) {
