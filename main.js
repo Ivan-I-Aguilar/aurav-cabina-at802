@@ -120,7 +120,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
          (chapa m1, vidrios m22, biseles m29, carátulas m25/m28/m30/m31/m4/m8, tapitas m10/m11) y las
          varillas del mecanismo se OCULTAN; la placa nueva la arma crearTablero y las carátulas instrumentos.js */
       if (/^(m1|m18|m20|m22|m29|m25|m28|m30|m31|m4|m8|m10|m11)$/.test(o.name) || /^varilla/.test(o.name)) { o.visible = false; return; }   /* m1 y m18: panel viejo entero afuera (el tablero único lo reemplaza, 26/10) */
-      if (/^(sw|lev|pedal|palanca|puerta)/.test(o.name)) return;   /* controles e interior armado: no tocar */
+      if (/^(sw|lev|pedal|palanca|puerta|mamparo)/.test(o.name)) return;   /* controles e interior armado: no tocar */
       const geo = o.geometry, pos = geo.attributes.position, idx = geo.index; if (!idx) { o.visible = false; return; }
       /* parante frontal izquierdo de la cúpula interior (m26) «salido» ~8 cm en el empalme con el
          techo (Quest 27/10): se ESPEJA contra el lado derecho, que empalma bien */
@@ -190,8 +190,15 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   for (const o of partes) { o.position.sub(PIVOTE); palanca.add(o); }
   /* mamparo trasero (27/10, pedido de Iván): al mirar atrás se veía el interior hueco del fuselaje;
      pared blanca falsa entre el asiento y la cola, como el mamparo del respaldo real */
-  const mamparo = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.3), new THREE.MeshStandardMaterial({ color: 0xd6d6d0, roughness: 0.85 }));
-  mamparo.position.set(0, 0.7, 2.44); mamparo.rotation.y = Math.PI; g.scene.add(mamparo);   /* grande: por debajo se seguía viendo el túnel de cola */
+  /* con la FORMA del fuselaje (perfil medido a z 2,3-2,5) hasta el techo: el plano rectangular
+     dejaba una rendija arriba y por ahí se seguía viendo el túnel de cola (27/10) */
+  const fMam = new THREE.Shape();
+  fMam.moveTo(-0.66, -0.60); fMam.lineTo(0.66, -0.60); fMam.lineTo(0.68, 0.0); fMam.lineTo(0.66, 0.55);
+  fMam.lineTo(0.54, 1.05); fMam.lineTo(0.48, 1.40); fMam.lineTo(0.30, 1.66); fMam.lineTo(0, 1.78);
+  fMam.lineTo(-0.30, 1.66); fMam.lineTo(-0.48, 1.40); fMam.lineTo(-0.54, 1.05); fMam.lineTo(-0.66, 0.55);
+  fMam.lineTo(-0.68, 0.0); fMam.closePath();   /* al ras del perfil (a 2,10 asomaba sobre el lomo visto de afuera) */
+  const mamparo = new THREE.Mesh(new THREE.ShapeGeometry(fMam), new THREE.MeshStandardMaterial({ color: 0xd6d6d0, roughness: 0.85 }));
+  mamparo.name = 'mamparo'; mamparo.position.set(0, 0, 2.37); mamparo.rotation.y = Math.PI; g.scene.add(mamparo);   /* con nombre: el recorte general lo ocultaba (usa coords locales y el plano tiene transform) */
   /* panel inferior: tapa el recuadro donde estaba el soporte del GPS (se veían los cables y el parallamas) */
   const tapa = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.31), new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.85 })); tapa.position.set(0, 1.0, 0.86); g.scene.add(tapa);
   /* palanquita para los switches que en el modelo son sólo la tuerca (F PUMP, HOPR, FRDS, WIPER) */

@@ -85,6 +85,14 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **Mamparo trasero DEFINITIVO (27/10, noche, v=20261027n):** ShapeGeometry con la FORMA del fuselaje
+  (perfil medido a z 2,3-2,5: tope y 1,78, hombros 0,48-0,54, base ±0,66-0,68) en z 2,37, FrontSide,
+  `name='mamparo'`. OJO TRAMPA: toda malla agregada a `g.scene` con transform (position/rotation) la OCULTA
+  el recorte general del exterior-then (usa coordenadas LOCALES): hay que sumarla al regex de exentos
+  (`sw|lev|pedal|palanca|puerta|mamparo`). Por eso las dos versiones anteriores del mamparo nunca se vieron.
+  Tope al RAS del perfil: con 2,10 asomaba sobre el lomo visto desde afuera (el plano es FrontSide pero de
+  frente se ve). Al mirar atrás desde el asiento se ven los CINTURONES azules del respaldo de la butaca:
+  no confundirlos con el túnel de cola.
 - **REPINTADO LISO TOTAL** (decisión de Iván 27/10: «colores mentirosos pero liso»; la textura blanqueada se
   veía borrosa y moteada): las texturas at_01/02/04 se QUITAN de los materiales (color plano BLANCO 0.845,
   roughness 0.5) y la librea va por GEOMETRÍA con cortes bisect: franja azul z 0,04–0,20 + línea fina
