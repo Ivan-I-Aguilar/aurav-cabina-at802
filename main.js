@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026q';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261026u';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -218,11 +218,11 @@ function crearTablero(datos) {
   const ROTULOS = { sw62: 'BATT', sw64: 'ALTN', sw56: 'GEN', sw53: 'IGNTR', sw47: 'START', sw60: 'FIRE', swFPUMP: 'F PUMP', sw54: 'HYD', sw63: 'AVNC', sw50: 'PITOT', swHOPR: 'HOPPER', swFRDS: 'FRDS', swWIPER: 'WIPER', sw52: 'LDG LT', sw49: 'DOME', sw61: 'BCN', sw51: 'NAV', sw48: 'STRB', sw38: 'SPARE',
     swK_FRDS1: '', swK_FRDS2: '', swK_FRDS3: '', swFRDS_A: 'ARM', swFRDS_B: 'MODE', swFRDS_C: 'FOAM', swFRDS_D: 'GATE' };
   const FACETAS = [   /* paños: izq (con FRDS), centro (joroba) y der (motor + radios adosadas) */
-    { lado: -1, cx: -0.4225, cy: 0.955, w: 0.397, h: 0.51, rI: 0.10, rc: 0.04, frds: true },   /* hasta x -0,615: a -0,645 asomaba por la chapa */
+    { lado: -1, cx: -0.4225, cy: 0.955, w: 0.397, h: 0.51, rI: 0.11, rc: 0.04, t: 0.27, frds: true },   /* afina desde y~0,94: la cúpula se angosta (a y 1,05 la chapa está en 0,56) */
     { lado: 0, cx: 0, cy: 0.9775, w: 0.52, h: 0.555, rI: 0.07, rD: 0.07, rc: 0.06, placards: true },
-    { lado: 1, cx: 0.405, cy: 0.955, w: 0.402, h: 0.51, rD: 0.10, rc: 0.04 },
+    { lado: 1, cx: 0.405, cy: 0.955, w: 0.402, h: 0.51, rD: 0.11, rc: 0.04, t: 0.27 },
   ];
-  const forma = (w, h, rI, rD, rc, m = 0) => { const sh = new THREE.Shape(); const a = w / 2 + m, b = h / 2 + m, t = 0.16;
+  const forma = (w, h, rI, rD, rc, m = 0, t = 0.16) => { const sh = new THREE.Shape(); const a = w / 2 + m, b = h / 2 + m;
     sh.moveTo(-a + rc, -b);
     sh.lineTo(a - rc, -b); sh.quadraticCurveTo(a, -b, a, -b + rc);
     if (rD) { sh.lineTo(a, b - t); sh.quadraticCurveTo(a, b - t * 0.4, a - rD, b); }
@@ -299,11 +299,11 @@ function crearTablero(datos) {
     const pl2 = planos[f.lado];
     const z = (pl2.dPlaca - pl2.n.x * f.cx - pl2.n.y * f.cy) / pl2.n.z;
     const matPanel = new THREE.MeshStandardMaterial({ map: texFaceta(f), roughness: 0.85, metalness: 0.1 });
-    const placa = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc), matPanel);
+    const placa = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc, 0, f.t || 0.16), matPanel);
     placa.position.set(f.cx, f.cy, z);
     placa.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(pl2.ex, pl2.ey, pl2.n));
     placa.name = 'tablero_' + f.lado; cabina.add(placa);
-    const marco = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc, 0.008), matBorde);
+    const marco = new THREE.Mesh(forma(f.w, f.h, f.rI || 0, f.rD || 0, f.rc, 0.008, f.t || 0.16), matBorde);
     marco.position.copy(placa.position).addScaledVector(pl2.n, -0.003); marco.quaternion.copy(placa.quaternion); cabina.add(marco);
     /* TAPA superior (glareshield): cierra la vista cenital entre el paño y el parabrisas */
     const tapaF = new THREE.Mesh(new THREE.PlaneGeometry(f.w - (f.rI || 0) - (f.rD || 0), 0.22), matTapa);
@@ -318,8 +318,8 @@ function crearTablero(datos) {
   for (const lado of [-1, 1]) {
     const xB = lado * 0.605;
     const zB = zEn(lado, xB, 0.955);
-    const mejilla = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.49), matTapa);
-    mejilla.position.set(xB, 0.955, zB - 0.08);
+    const mejilla = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.25), matTapa);
+    mejilla.position.set(xB, 0.835, zB - 0.08);   /* sólo bajo la línea del marco: arriba la cúpula se angosta */
     mejilla.rotation.y = -lado * Math.PI / 2; cabina.add(mejilla);   /* mira hacia ADENTRO (FrontSide): desde afuera no existe */
   }
   /* reubicar los relojes según el plano de la foto, sobre el paño que les toca */

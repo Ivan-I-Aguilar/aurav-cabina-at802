@@ -93,8 +93,8 @@ print('BORRADAS', len(quitar))
 # Nada de dibujo por geometría: sólo las ruedas de goma y las palas (negras con banda roja) se pintan aparte.
 BORRAR = {'b_at_04': ('azul', [(0.07, 0.17, 0.27, 0.33), (0.62, 0.17, 0.82, 0.33)]),    # «493»: se rellena con el azul de la deriva (u0, v0, u1, v1; v desde abajo)
           'b_at_01': ('blanco', [(0.42, 0.79, 0.51, 0.835), (0.49, 0.50, 0.57, 0.54)])}  # «RESTRICTED»: chapa blanca lisa
-PALA = (0.645, 0.0, 0.70, 0.245)      # tira de la pala Hartzell en at_01 (punta arriba)
-PALA_BANDA = (0.196, 0.236)           # banda roja de la punta (franja de v dentro de la tira)
+PALA = (0.645, 0.0, 0.70, 0.292)      # tira de la pala Hartzell en at_01 (raiz v~0.06, punta v~0.284)
+PALA_BANDA = (0.250, 0.284)           # banda roja pegada a la punta (antes quedaba a mitad de pala y la punta gastada)
 def blanquear(img, nombre):
     W, H = img.size
     px = np.array(img.pixels[:], dtype=np.float32).reshape(H, W, 4)
@@ -123,12 +123,12 @@ def blanquear(img, nombre):
     if nombre.lower().startswith('b_at_01'):   # pala: negra con banda roja en la punta (pedido 24/10)
         u0, v0, u1, v1 = PALA
         reg = (slice(int(v0 * H), int(v1 * H)), slice(int(u0 * W), int(u1 * W)))
-        hoja = ~azul[reg]   # toda la tira negra pareja (con sombreado quedaba «gastada»)
-        sub = px[reg]; sub[hoja] = (0.02, 0.02, 0.022, 1); px[reg] = sub
+        # TODA la tira negra pareja, sin excepciones: el metal gastado del original es azulado
+        # y el filtro «azul de fábrica» lo conservaba → palas moteadas (video de Iván 26/10)
+        px[reg] = (0.02, 0.02, 0.022, 1)
         b0, b1 = (slice(int(PALA_BANDA[0] * H), int(PALA_BANDA[1] * H)), reg[1])
-        hoja_b = ~azul[b0, b1]
-        sub = px[b0, b1]; sub[hoja_b] = (0.35, 0.012, 0.012, 1); px[b0, b1] = sub
-        azul[reg] |= hoja
+        px[b0, b1] = (0.35, 0.012, 0.012, 1)
+        azul[reg] = True
     gris = oscuro & ~azul   # lo oscuro conservado va a GRIS neutro (los parches de amarillo sombreado quedaban amarillos)
     for i in range(3): px[..., i] = np.where(gris, lum, px[..., i])
     conservar = azul | oscuro
@@ -197,9 +197,43 @@ for f in bm.faces:
     c = f.calc_center_median()
     if (1.26 < abs(c.x) < 1.66 and -2.05 < c.z < -1.05 and 0.3 < c.y < 1.35) or (-6.45 < c.y < -5.9 and c.z < -0.75 and abs(c.x) < 0.12): f.material_index = i_goma; ng += 1
     if -1.10 < c.x < -0.80 and -1.02 < c.y < -0.68 and -0.45 < c.z < 0.15 and f.normal.z > 0.3: f.material_index = i_pedana; np_ += 1
-    if f.normal.z < -0.5 and abs(c.x) < 0.40 and -1.2 < c.y < 0.2 and c.z < -0.82: f.material_index = i_compuerta
 bm.to_mesh(o.data); bm.free(); o.data.update()
 print('GOMA', ng, 'PEDANA', np_)
+
+# compuerta: la BURBUJA ENTERA roja (26/10, Iván: «tiene que estar toda esa burbuja roja»).
+# Por islas conexas enteramente contenidas en la caja del pod: la panza (mat05) y la ballesta
+# del tren siguen de largo fuera de la caja y quedan afuera solas. mat02 no sirve de filtro
+# (se usa hasta en las alas) y la regla vieja por normal pintaba sólo el piso de la puerta.
+bm = bmesh.new(); bm.from_mesh(o.data); bm.faces.ensure_lookup_table(); bm.faces.index_update()
+vistas = set(); nc = 0
+for f0 in bm.faces:
+    if f0.index in vistas: continue
+    pila = [f0]; vistas.add(f0.index); isla = []
+    while pila:
+        g = pila.pop(); isla.append(g)
+        for e in g.edges:
+            for h in e.link_faces:
+                if h.index not in vistas: vistas.add(h.index); pila.append(h)
+    ps = [v.co for g in isla for v in g.verts]
+    if (max(abs(p.x) for p in ps) < 0.50 and min(p.y for p in ps) > -1.70
+            and max(p.y for p in ps) < 1.30 and max(p.z for p in ps) < -0.45):
+        for g in isla: g.material_index = i_compuerta
+        nc += len(isla)
+print('COMPUERTA', nc)
+
+# acoples de carga (boquillas mat08 detrás del pod): de fábrica cuelgan sueltos justo por fuera
+# de la curva del casco (a z −0.7 el casco llega a |x| 0.42 y ellos arrancan en 0.42) → 10 cm
+# adentro y 6 cm arriba: quedan incrustados en el flanco con la boquilla asomando, sin flotar.
+i_acop = next((i for i, m in enumerate(o.data.materials) if m and m.name == 'mat08'), -1)
+va = set()
+for f in bm.faces:
+    c = f.calc_center_median()
+    if f.material_index == i_acop and 0.38 < abs(c.x) < 0.62 and -2.68 < c.y < -2.40 and -0.86 < c.z < -0.64:
+        for v in f.verts: va.add(v)
+for v in va:
+    v.co.x -= 0.10 * (1 if v.co.x > 0 else -1); v.co.z += 0.06
+print('ACOPLES', len(va))
+bm.to_mesh(o.data); bm.free(); o.data.update()
 
 # estribo del trabajo anterior (el tren ya viene en el OBJ: el nuestro no hace falta);
 # pisada_ala queda afuera: flotaba sobre el ala del OBJ (la pedana ahora va pintada, arriba)

@@ -40,9 +40,9 @@
 <ul id="tareas" hidden></ul>
 <div id="panel" hidden><div class="caja"><h2 id="panel-titulo"></h2><div id="panel-texto"></div><div id="panel-botones"></div></div></div>
 <script>/* si el navegador guardó un index viejo, recargar con la versión publicada (GitHub Pages cachea 10 min) */
-const VERSION_PAGINA = '20261026r';
+const VERSION_PAGINA = '20261026u';
 fetch('./version.txt?' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => { v = v.trim(); if (v && v !== VERSION_PAGINA && !sessionStorage.getItem('recargado-' + v)) { sessionStorage.setItem('recargado-' + v, '1'); location.replace(location.pathname + '?v=' + v); } }).catch(() => {});
 </script>
-<script type="module" src="./main.js?v=20261026r"></script>
+<script type="module" src="./main.js?v=20261026u"></script>
 </body>
 </html>
