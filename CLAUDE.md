@@ -113,6 +113,7 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 7. Certificado final estilo AAXOD como en los otros juegos (`constancia.js` de aurav-senales).
 
 ## Trampas conocidas
+- `git push` NUNCA en segundo plano: el gestor de credenciales de Windows necesita la terminal (falla con exit 128 «could not read Username»). Siempre en primer plano.
 - `node --check` no detecta todos los errores de sintaxis de estos módulos: probar también `new Function(src sin imports)` o cargar la página.
 - Panel inferior negro (`tapa` en main.js) tapa el hueco del soporte del GPS; el horizonte lleva una caja cilíndrica atrás.
 - Nunca meter un comentario `//` en medio de una línea al hacer reemplazos de texto: ya se tragó código tres veces. Usar `/* */`.
