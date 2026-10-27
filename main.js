@@ -271,7 +271,10 @@ function crearTablero(datos) {
   /* planos de los tres paños (barrido ±14°; las alas anclan al plano central en x ±0,20) */
   const n0 = new THREE.Vector3(0, -0.0175, 0.9998).normalize();
   const centros = datos.filter(d => d.c[1] > 1.0 && Math.abs(d.n[0]) <= 0.05);
-  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) + 0.010;   /* 27/10: +1,6 cm atrás; a −0.006 el tope asomaba por el parabrisas y con +0.019 el flanco izq. asomaba por el hueco de la puerta */
+  const d0c = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) + 0.010;
+  /* CLAMP contra el parabrisas (27/10, medido en vivo: la esquina superior del paño quedaba 6 mm
+     AFUERA del vidrio y su marco 16 mm): el tope del marco (y 1,263) va 15 mm detrás del vidrio */
+  const d0 = Math.max(d0c, 0.955);
   const zAncla = () => (d0 + 0.0175 * 1.05) / 0.9998 - 0.004;
   const planos = {};
   for (const f of FACETAS) {
@@ -346,7 +349,7 @@ function crearTablero(datos) {
        afuera negra sobre la trompa; el parabrisas es z = 0,74 + 0,93·(y − 1,02)) */
     const yTop = f.cy + f.h / 2 - 0.004;
     const zTop = (pl2.dPlaca - pl2.n.x * f.cx - pl2.n.y * yTop) / pl2.n.z;
-    const yPie = 1.12, zPie = 0.74 + 0.93 * (yPie - 1.02) + 0.012;
+    const yPie = 1.12, zPie = 0.74 + 0.93 * (yPie - 1.02) + 0.012 + (f.lado ? 0.055 : 0);   /* el barrido hunde la esquina interna de la tapa: margen (27/10) */
     const dirT = new THREE.Vector3(0, yPie - yTop, zPie - zTop); const LT = dirT.length(); dirT.normalize();
     const nT = new THREE.Vector3().crossVectors(pl2.ex, dirT).normalize();
     const tapaF = new THREE.Mesh(new THREE.PlaneGeometry(f.w - (f.rI || 0) - (f.rD || 0), LT), matTapa);
@@ -772,7 +775,7 @@ function actualizarMarca(dt) {
 // texto flotante en VR (tutor): tablilla a la derecha del panel, fija a la cabina
 const hudVR = (() => {
   const W = 768, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.14), new THREE.MeshBasicMaterial({ map: tex, transparent: true })); m.renderOrder = 3; m.position.set(0.33, 1.30, 1.09);   /* con depthTest: ya no se dibuja a traves de la chapa (24/10) */ m.rotation.set(-0.12, -0.22, 0); cabina.add(m);   /* adentro del vidrio: a 0,78 atravesaba la cupula (24/10) */
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.14), new THREE.MeshBasicMaterial({ map: tex, transparent: true })); m.renderOrder = 3; m.position.set(0.33, 1.29, 1.13);   /* con depthTest: ya no se dibuja a traves de la chapa (24/10) */ m.rotation.set(-0.12, -0.22, 0); cabina.add(m);   /* adentro del vidrio: a 0,78 atravesaba la cupula (24/10) */
   return { texto(titulo, texto) { c.clearRect(0, 0, W, H); if (!texto) { tex.needsUpdate = true; return; } c.fillStyle = 'rgba(8,36,64,0.85)'; c.beginPath(); c.roundRect(0, 0, W, H, 28); c.fill(); c.fillStyle = '#c8e63a'; c.font = 'bold 30px Arial'; c.fillText(titulo || '', 28, 48);
     c.fillStyle = '#fff'; c.font = '34px Arial'; let y = 100, l = ''; for (const p of texto.split(' ')) { const t = l ? l + ' ' + p : p; if (c.measureText(t).width > W - 56) { c.fillText(l, 28, y); y += 42; l = p; } else l = t; } c.fillText(l, 28, y); tex.needsUpdate = true; } };
 })();

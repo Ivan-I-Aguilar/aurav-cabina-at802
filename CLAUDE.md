@@ -85,6 +85,14 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **«Sigue sobresaliendo» (27/10, noche, v=20261027o): RESUELTO con medición en vivo.** Un chequeo por
+  vértices contra el plano del parabrisas (z = 0,74 + 0,93·(y−1,02)) encontró 4 piezas AFUERA: la esquina
+  del paño central 6 mm (el d0 calculado de los relojes era menor al supuesto → ahora `d0 =
+  Math.max(d0c + 0.010, 0.955)`, CLAMP explícito), su marco 16 mm, la ESQUINA INTERNA de las tapas
+  glareshield laterales 25 mm (el barrido las hunde → `zPie` lleva +0,055 si f.lado) y la tablilla hudVR
+  24 mm (movida a (0,33, 1,29, 1,13)). Verificación: el mismo chequeo da CERO violaciones y la vista de la
+  captura de Iván quedó limpia. MÉTODO para «sobresale»: medir vértices world→local contra el plano del
+  vidrio en el navegador, no confiar en d0 teórico.
 - **Mamparo trasero DEFINITIVO (27/10, noche, v=20261027n):** ShapeGeometry con la FORMA del fuselaje
   (perfil medido a z 2,3-2,5: tope y 1,78, hombros 0,48-0,54, base ±0,66-0,68) en z 2,37, FrontSide,
   `name='mamparo'`. OJO TRAMPA: toda malla agregada a `g.scene` con transform (position/rotation) la OCULTA
