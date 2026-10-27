@@ -85,6 +85,13 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **La caja oscura sobre el hombro izquierdo (captura 35 de Iván, v=20261027z): era el RESTO DEL PANEL
+  VIEJO (m23, y 1,06-1,25 × z 0,72-0,90) que quedó DESTAPADO al eliminar la «tapa»** — la tapa negra
+  ocultaba esos bultos de fábrica. Se resuelve DESCARTANDO sus triángulos en el recorte general
+  (`restoPanel`: m23 con centro y>0,97, z 0,58-1,00, |x|<0,66). OJO LECCIÓN: para piezas 3D NUNCA aplastar
+  vértices por caja (un intento previo estiró los triángulos como chicle por todo el cockpit: placas
+  negras y varillas amarillas gigantes); aplastar sólo chapas continuas; piezas → descarte de triángulos.
+  Escape negro confirmado (sin nodos de textura). Los paños del tablero NO eran el problema de la 35.
 - **Tanda «sigue mal» 3 (27/10, noche, v=20261027x):** vistos desde afuera-arriba replicando la captura de
   Iván: (1) la «tapa» del panel inferior ELIMINADA (plano negro 1,0×0,31 delante del tablero: tapaba el panel
   VIEJO m1, hoy oculto); (2) m14 con fallback claro + DoubleSide + emisivo 0x191917 y APLASTADO de dientes

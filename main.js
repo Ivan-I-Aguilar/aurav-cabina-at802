@@ -152,7 +152,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
           if ((vx > 0.58 && vx < 0.66 && vy > 0.62 && vy < 0.80 && vz > 1.33 && vz < 1.58)
             || (vx > 0.54 && vx < 0.62 && vy > 0.69 && vy < 0.76 && vz > 1.00 && vz < 1.08)
             || (/^(m23|m12|m16|m21)$/.test(o.name) && Math.abs(vx) > 0.40 && Math.abs(vx) < 0.68 && vy > 0.90 && vy < 1.30 && vz > 0.85 && vz < 1.20)
-            || (o.name === 'm23' && vx > -0.28 && vx < 0.38 && vy > 0.76 && vz > 1.46 && vz < 1.90)) { pos.setY(i, 0.60); toco = true; } }   /* correas sueltas del asiento (m23): picos negros vistos desde afuera (27/10) */
+            || (o.name === 'm23' && vx > -0.28 && vx < 0.38 && vy > 0.76 && vz > 1.46 && vz < 1.90)) { pos.setY(i, 0.60); toco = true; } }   /* correas sueltas del asiento (m23) hundidas */
         if (toco) pos.needsUpdate = true; }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
@@ -162,7 +162,8 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       const quedan = [];
       for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
         const anchoMax = c.y > 0.85 ? 0.5 : (c.z > 1.6 ? 0.6 : 0.615);   /* el fuselaje se angosta arriba y atrás; a 0,63 la consola (m16) y la butaca (m14) asomaban por la puerta */
-        if (c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        const restoPanel = o.name === 'm23' && c.y > 0.97 && c.z > 0.58 && c.z < 1.00 && Math.abs(c.x) < 0.66;   /* caja del panel viejo que la «tapa» (eliminada) ocultaba: asomaba sobre el capó (27/10) */
+        if (!restoPanel && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
