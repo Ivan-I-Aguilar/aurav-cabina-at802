@@ -148,17 +148,26 @@ def blanquear(img, nombre):
     out.pixels.foreach_set(px.ravel())
     out.filepath_raw = os.path.join(SAL, 'tex', nombre + '.png'); out.file_format = 'PNG'; out.save()
     return out
+# REPINTADO LISO (27/10, decisión de Iván: «colores mentirosos pero que se vea más liso»): se
+# QUITAN las texturas de fábrica de la piel (at_01/02/04) y va color plano; la librea azul se
+# rehace por GEOMETRÍA más abajo. blanquear() queda sin uso (por si se vuelve atrás).
+BLANCO = (0.845, 0.85, 0.838, 1)
 PIEL = []
 for sl in o.material_slots:
     mat = sl.material
     if not mat or not mat.use_nodes: continue
-    for n in mat.node_tree.nodes:
-        if n.type == 'TEX_IMAGE' and n.image and n.image.name.lower().startswith(('at_01', 'at_02', 'at_04')):
-            if n.image.size[0] == 0: continue
-            nb = bpy.data.images.get('b_' + n.image.name) or blanquear(n.image, 'b_' + n.image.name)
-            n.image = nb; PIEL.append(mat.name)
+    nt = mat.node_tree
+    for n in [x for x in nt.nodes if x.type == 'TEX_IMAGE' and x.image and x.image.name.lower().startswith(('at_01', 'at_02', 'at_04'))]:
+        b = next((x for x in nt.nodes if x.type == 'BSDF_PRINCIPLED'), None)
+        if b:
+            for lk in list(nt.links):
+                if lk.from_node is n: nt.links.remove(lk)
+            b.inputs['Base Color'].default_value = BLANCO
+            b.inputs['Roughness'].default_value = 0.5
+            b.inputs['Alpha'].default_value = 1.0
+        nt.nodes.remove(n); PIEL.append(mat.name)
 PIEL = set(PIEL)
-print('PIEL', sorted(PIEL))
+print('PIEL lisa', sorted(PIEL))
 # sanear imágenes rotas (steel.bmp, vertex.bmp): color plano
 for sl in o.material_slots:
     mat = sl.material
@@ -177,8 +186,8 @@ if m21 and m21.use_nodes:   # escapes: metal oscuro parejo (se teñían de blanc
     nt21 = m21.node_tree; b21 = next(n for n in nt21.nodes if n.type == 'BSDF_PRINCIPLED')
     for lk in list(nt21.links):
         if lk.to_node is b21 and lk.to_socket.name == 'Base Color': nt21.links.remove(lk)
-    b21.inputs['Base Color'].default_value = (0.055, 0.055, 0.06, 1)
-    b21.inputs['Metallic'].default_value = 0.6; b21.inputs['Roughness'].default_value = 0.45
+    b21.inputs['Base Color'].default_value = (0.03, 0.03, 0.032, 1)
+    b21.inputs['Metallic'].default_value = 0.2; b21.inputs['Roughness'].default_value = 0.6   # 27/10: con metallic 0.6 el tubo reflejaba el sol DORADO; Ivan lo quiere negro
 
 def mat_plano(nombre, color):
     m = bpy.data.materials.get(nombre) or bpy.data.materials.new(nombre); m.use_nodes = True
@@ -191,6 +200,15 @@ i_goma = len(o.data.materials) - 1
 m_compuerta = mat_plano('compuerta', (0.40, 0.015, 0.02)); m_compuerta.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.55   # compuerta ROJA (reglamentación, 26/10)
 o.data.materials.append(m_compuerta)
 i_compuerta = len(o.data.materials) - 1
+m_azul = mat_plano('azul_librea', (0.045, 0.115, 0.40)); m_azul.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.5
+o.data.materials.append(m_azul)
+i_azul = len(o.data.materials) - 1
+m_pala = mat_plano('pala', (0.016, 0.016, 0.018)); m_pala.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.55
+o.data.materials.append(m_pala)
+i_pala = len(o.data.materials) - 1
+m_banda = mat_plano('banda_pala', (0.38, 0.012, 0.012)); m_banda.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.55
+o.data.materials.append(m_banda)
+i_banda = len(o.data.materials) - 1
 m_pedana = mat_plano('pedana', (0.05, 0.05, 0.052)); m_pedana.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 1.0   # gris oscuro: negra parecia un bulto en escorzo
 o.data.materials.append(m_pedana)
 i_pedana = len(o.data.materials) - 1
@@ -199,15 +217,30 @@ i_pedana = len(o.data.materials) - 1
 # (24/10, pedido de Iván: la placa flotante pisada_ala se reemplaza por pintura sobre la chapa)
 bm = bmesh.new(); bm.from_mesh(o.data)
 # cortes para que la pedana tenga bordes netos (marco Blender: x, y=-largo, z arriba; ala izq. x<0, z_cab 0.63..1.1 → y -1.1..-0.63)
-for co, no in [((-1.10, 0, 0), (1, 0, 0)), ((-0.80, 0, 0), (1, 0, 0)), ((0, -1.02, 0), (0, 1, 0)), ((0, -0.68, 0), (0, 1, 0))]:
+for co, no in [((-1.10, 0, 0), (1, 0, 0)), ((-0.80, 0, 0), (1, 0, 0)), ((0, -1.02, 0), (0, 1, 0)), ((0, -0.68, 0), (0, 1, 0)),
+               ((0, 0, 0.04), (0, 0, 1)), ((0, 0, 0.20), (0, 0, 1)), ((0, 0, 0.24), (0, 0, 1)), ((0, 0, 0.27), (0, 0, 1)),   # franja + línea fina
+               ((0, -5.75, 0), (0, 1, 0)), ((0, -4.85, 0), (0, 1, 0)), ((0, 0, 0.35), (0, 0, 1)),   # cola azul (desde -4.85: deriva + timon)
+               ((8.42, 0, 0), (1, 0, 0)), ((-8.42, 0, 0), (1, 0, 0))]:   # puntas de ala
     bmesh.ops.bisect_plane(bm, geom=list(bm.verts) + list(bm.edges) + list(bm.faces), plane_co=co, plane_no=no)
-ng = np_ = 0
+ng = np_ = na_ = 0
+i_piel = {i for i, sl in enumerate(o.data.materials) if sl and sl.name in PIEL}
+import math as _m
 for f in bm.faces:
     c = f.calc_center_median()
-    if (1.26 < abs(c.x) < 1.66 and -2.05 < c.z < -1.05 and 0.3 < c.y < 1.35) or (-6.45 < c.y < -5.9 and c.z < -0.75 and abs(c.x) < 0.12): f.material_index = i_goma; ng += 1
+    if (1.26 < abs(c.x) < 1.66 and -2.05 < c.z < -1.05 and 0.3 < c.y < 1.35) or (-6.75 < c.y < -5.85 and c.z < -0.75 and abs(c.x) < 0.18): f.material_index = i_goma; ng += 1
     if -1.10 < c.x < -0.80 and -1.02 < c.y < -0.68 and -0.45 < c.z < 0.15 and f.normal.z > 0.3: f.material_index = i_pedana; np_ += 1
+    if f.material_index in i_piel:
+        # palas: negras con banda roja cerca de la punta (antes iban pintadas en la textura)
+        rad = _m.sqrt(c.x * c.x + (c.z - 0.3) ** 2)
+        if c.y > 3.15 and rad > 0.42:
+            f.material_index = i_banda if 1.16 < rad < 1.30 else i_pala; continue
+        # librea azul por geometría: franja ancha + línea fina en los flancos, cola y puntas de ala
+        flanco = abs(f.normal.x) > 0.35 and abs(c.x) < 0.85 and -5.75 < c.y < 3.35
+        if flanco and (0.04 < c.z < 0.20 or 0.24 < c.z < 0.27): f.material_index = i_azul; na_ += 1
+        elif c.y < -4.85 and c.z > 0.35 and abs(c.x) < 0.35: f.material_index = i_azul; na_ += 1   # deriva Y timon (con -5.75 la deriva quedaba blanca)
+        elif abs(c.x) > 8.42: f.material_index = i_azul; na_ += 1
 bm.to_mesh(o.data); bm.free(); o.data.update()
-print('GOMA', ng, 'PEDANA', np_)
+print('GOMA', ng, 'PEDANA', np_, 'AZUL', na_)
 
 # compuerta: la BURBUJA ENTERA roja (26/10, Iván: «tiene que estar toda esa burbuja roja»).
 # Por islas conexas enteramente contenidas en la caja del pod: la panza (mat05) y la ballesta
@@ -234,36 +267,83 @@ print('COMPUERTA', nc)
 # PATAS de fábrica (islas chicas) se borran y el cilindro del acople (la boca con tapa, isla grande)
 # se EMPOTRA en el flanco bajo del casco: sólo asoma la tapa, como la boca de carga real.
 nomA = [m.name if m else '?' for m in o.data.materials]
-acoplables = {i for i, nm in enumerate(nomA) if nm in ('mat08', 'mat30')}   # mat30: los soportes en V (27/10)
+acoplables = {i for i, nm in enumerate(nomA) if nm in ('mat08', 'mat30', 'mat05')}   # mat30: soportes en V; mat05: canos sueltos (27/10)
 bm.faces.ensure_lookup_table(); bm.faces.index_update()
 va = set(); borrar = []; nemp = 0
 for f0 in bm.faces:
     if f0.index in va or f0.material_index not in acoplables: continue
     c0 = f0.calc_center_median()
-    if not (0.38 < abs(c0.x) < 0.62 and -2.68 < c0.y < -2.28 and -0.95 < c0.z < -0.58): continue
+    if not (abs(c0.x) < 0.62 and -2.68 < c0.y < -1.95 and -0.95 < c0.z < -0.55): continue
     pila = [f0]; va.add(f0.index); isla = [f0]
     while pila:
         g = pila.pop()
         for e in g.edges:
             for h in e.link_faces:
                 if h.index not in va: va.add(h.index); isla.append(h); pila.append(h)
-    if len(isla) < 90: borrar += isla
-    else:
-        lado = 1 if c0.x > 0 else -1; nemp += 1
-        for vv in set(vv for g in isla for vv in g.verts): vv.co.x -= 0.14 * lado; vv.co.z += 0.085
+    if len(isla) < 400: borrar += isla   # 27/10: fuera TODO el conjunto de fábrica (el real es un tubo con flexible, se construye abajo)
 if borrar: bmesh.ops.delete(bm, geom=borrar, context='FACES')
-print('ACOPLES empotrados', nemp, 'patas borradas', len(borrar))
-# boca de los escapes: el anillo del labio (mat15/mat10) quedaba BLANCO → al metal oscuro del escape
+print('ACOPLES de fabrica borrados', len(borrar))
+# ventilador y reloj de fábrica del OBJ en el rincón derecho interior (27/10, captura de Iván:
+# «un instrumento queda por debajo de otro»): islas de piel CONTENIDAS en el rincón → fuera
+bm.faces.ensure_lookup_table(); bm.faces.index_update()
+i_piel2 = {i for i, m in enumerate(o.data.materials) if m and m.name in PIEL}
+vis2 = set(); borrar2 = []
+for f0 in bm.faces:
+    if f0.index in vis2 or f0.material_index not in i_piel2: continue
+    c0 = f0.calc_center_median()
+    if not (0.38 < abs(c0.x) < 0.70 and -1.28 < c0.y < -0.80 and 0.84 < c0.z < 1.34): continue
+    pila = [f0]; vis2.add(f0.index); isla = [f0]
+    while pila:
+        g = pila.pop()
+        for e in g.edges:
+            for h in e.link_faces:
+                if h.index not in vis2: vis2.add(h.index); isla.append(h); pila.append(h)
+    ps = [vv.co for g in isla for vv in g.verts]
+    if (min(abs(p.x) for p in ps) > 0.36 and max(abs(p.x) for p in ps) < 0.72
+            and min(p.y for p in ps) > -1.35 and max(p.y for p in ps) < -0.75
+            and min(p.z for p in ps) > 0.80 and max(p.z for p in ps) < 1.40):
+        borrar2 += isla
+if borrar2: bmesh.ops.delete(bm, geom=borrar2, context='FACES')
+print('RINCON der/izq borrado', len(borrar2))
+
+# ESCAPES enteros al metal oscuro (27/10: el labio y la mitad trasera del tubo eran piel y quedaban
+# blancos). En la caja del escape se repinta todo lo que no sea el flanco del capó (normal.x alta
+# con |x| chico); si cae un pedacito de capó junto al tubo, pasa por chapa antiquemadura.
 nom = [m.name if m else '?' for m in o.data.materials]
 i21 = nom.index('mat21') if 'mat21' in nom else -1
 ne = 0
 for f in bm.faces:
-    if nom[f.material_index] not in ('mat15', 'mat10'): continue
+    if nom[f.material_index] == 'mat21': continue
     c = f.calc_center_median()
-    if 0.42 < abs(c.x) < 0.83 and 2.61 < c.y < 2.99 and 0.10 < c.z < 0.40:
+    if 0.42 < abs(c.x) < 0.85 and 2.56 < c.y < 3.0 and 0.08 < c.z < 0.42 and (abs(c.x) > 0.60 or abs(f.normal.x) < 0.6):
         f.material_index = i21; ne += 1
-print('LABIO ESCAPE', ne)
+print('ESCAPE repintado', ne)
 bm.to_mesh(o.data); bm.free(); o.data.update()
+
+# sistema de carga REAL (27/10, fotos del avión de AAXOD en fotos/detalles): codo de acero que
+# entra a la panza hacia la tolva + tramo FLEXIBLE VERDE con abrazaderas + tubo de carga colgando
+# con la boca reforzada (ahí acopla la manguera del hidrante). Centro-izquierda, detrás de la tolva.
+import mathutils
+m_acero = mat_plano('acero_carga', (0.52, 0.53, 0.55))
+pa = m_acero.node_tree.nodes['Principled BSDF']; pa.inputs['Metallic'].default_value = 0.85; pa.inputs['Roughness'].default_value = 0.35
+m_verde = mat_plano('flexible_verde', (0.028, 0.135, 0.05)); m_verde.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.8
+def tubo(a, b, r, mat, nombre):
+    a = mathutils.Vector(a); b = mathutils.Vector(b); d = b - a
+    bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=d.length, vertices=14, location=(a + b) / 2)
+    ob = bpy.context.active_object; ob.name = nombre
+    ob.rotation_mode = 'QUATERNION'; ob.rotation_quaternion = d.to_track_quat('Z', 'Y')
+    ob.data.materials.append(mat); bpy.ops.object.shade_smooth()
+    return ob
+A = (-0.10, -1.86, -0.56); B = (-0.16, -2.02, -0.84)   # codo: de adentro de la panza al empalme
+C = (-0.20, -2.12, -0.98)                               # fin del flexible
+D = (-0.28, -2.36, -1.30)                               # boca del tubo de carga
+tubo(A, B, 0.046, m_acero, 'carga_codo')
+tubo(B, C, 0.052, m_verde, 'carga_flexible')
+tubo((B[0] * 0.98, B[1], B[2]), (B[0] * 1.02, B[1] - 0.02, B[2] - 0.03), 0.057, m_acero, 'carga_abraz1')
+tubo((C[0] * 0.98, C[1] + 0.02, C[2] + 0.03), (C[0] * 1.02, C[1], C[2]), 0.057, m_acero, 'carga_abraz2')
+tubo(C, D, 0.046, m_acero, 'carga_tubo')
+tubo((D[0] - 0.012, D[1] - 0.036, D[2] - 0.048), D, 0.052, m_acero, 'carga_boca')
+bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
 
 # estribo del trabajo anterior (el tren ya viene en el OBJ: el nuestro no hace falta);
 # pisada_ala queda afuera: flotaba sobre el ala del OBJ (la pedana ahora va pintada, arriba)

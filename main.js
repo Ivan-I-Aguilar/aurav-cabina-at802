@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261027a';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261027h';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -122,11 +122,27 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       if (/^(m1|m18|m20|m22|m29|m25|m28|m30|m31|m4|m8|m10|m11)$/.test(o.name) || /^varilla/.test(o.name)) { o.visible = false; return; }   /* m1 y m18: panel viejo entero afuera (el tablero único lo reemplaza, 26/10) */
       if (/^(sw|lev|pedal|palanca|puerta)/.test(o.name)) return;   /* controles e interior armado: no tocar */
       const geo = o.geometry, pos = geo.attributes.position, idx = geo.index; if (!idx) { o.visible = false; return; }
+      /* parante frontal izquierdo de la cúpula interior (m26) «salido» ~8 cm en el empalme con el
+         techo (Quest 27/10): se ESPEJA contra el lado derecho, que empalma bien */
+      if (o.name === 'm26') {
+        const der = [];
+        for (let i = 0; i < pos.count; i++) { const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i); if (vx > 0.15 && vx < 0.9 && vy > 1.4 && vz > 0.4 && vz < 1.6) der.push([vx, vy, vz]); }
+        let nesp = 0;
+        for (let i = 0; i < pos.count; i++) {
+          const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+          if (!(vx < -0.15 && vx > -0.9 && vy > 1.4 && vz > 0.4 && vz < 1.6)) continue;
+          let mejor = 9, mv = null;
+          for (const w of der) { const d = Math.hypot(vx + w[0], vy - w[1], vz - w[2]); if (d < mejor) { mejor = d; mv = w; } }
+          if (mejor > 0.002 && mv) { pos.setX(i, -mv[0]); pos.setY(i, mv[1]); pos.setZ(i, mv[2]); nesp++; }   /* simetría total: con umbral 3 cm quedaba un escalón en la unión (27/10) */
+        }
+        if (nesp) pos.needsUpdate = true;
+      }
       /* piecitas de fábrica que asomaban por las tapas de las consolas nuevas (26/10): se hunden adentro */
       { let toco = false;
         for (let i = 0; i < pos.count; i++) { const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
           if ((vx > 0.58 && vx < 0.66 && vy > 0.62 && vy < 0.80 && vz > 1.33 && vz < 1.58)
-            || (vx > 0.54 && vx < 0.62 && vy > 0.69 && vy < 0.76 && vz > 1.00 && vz < 1.08)) { pos.setY(i, 0.60); toco = true; } }
+            || (vx > 0.54 && vx < 0.62 && vy > 0.69 && vy < 0.76 && vz > 1.00 && vz < 1.08)
+            || (/^(m23|m12|m16|m21)$/.test(o.name) && Math.abs(vx) > 0.40 && Math.abs(vx) < 0.68 && vy > 0.90 && vy < 1.30 && vz > 0.85 && vz < 1.20)) { pos.setY(i, 0.60); toco = true; } }
         if (toco) pos.needsUpdate = true; }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
@@ -142,6 +158,8 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
     let texAt01 = null; e.scene.traverse(o => { if (o.isMesh && !texAt01 && o.material?.map && o.material.name === 'mat02') texAt01 = o.material.map; });
     if (texAt01) g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = texAt01; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
+    /* con el exterior LISO (27/10) ya no hay atlas: la butaca va de cuerina gris oscura */
+    else g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0x55524c); o.material.roughness = 0.9; o.material.needsUpdate = true; } });
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -170,6 +188,10 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = !!mj.pivBase; if (mj.piv) m.userData.piv = mj.piv; if (mj.eje) m.userData.eje = mj.eje; for (const k of ['ang', 'pos', 'inicial', 'perilla', 'suave']) if (mj[k] != null) m.userData[k] = mj[k]; g.scene.add(m); }
   const partes = []; g.scene.traverse(o => { if (o.isMesh && o.name.startsWith('palanca_')) partes.push(o); });
   for (const o of partes) { o.position.sub(PIVOTE); palanca.add(o); }
+  /* mamparo trasero (27/10, pedido de Iván): al mirar atrás se veía el interior hueco del fuselaje;
+     pared blanca falsa entre el asiento y la cola, como el mamparo del respaldo real */
+  const mamparo = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.3), new THREE.MeshStandardMaterial({ color: 0xd6d6d0, roughness: 0.85 }));
+  mamparo.position.set(0, 0.7, 2.44); mamparo.rotation.y = Math.PI; g.scene.add(mamparo);   /* grande: por debajo se seguía viendo el túnel de cola */
   /* panel inferior: tapa el recuadro donde estaba el soporte del GPS (se veían los cables y el parallamas) */
   const tapa = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.31), new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.85 })); tapa.position.set(0, 1.0, 0.86); g.scene.add(tapa);
   /* palanquita para los switches que en el modelo son sólo la tuerca (F PUMP, HOPR, FRDS, WIPER) */
@@ -225,9 +247,9 @@ function crearTablero(datos) {
   const ROTULOS = { sw62: 'BATT', sw64: 'ALTN', sw56: 'GEN', sw53: 'IGNTR', sw47: 'START', sw60: 'FIRE', swFPUMP: 'F PUMP', sw54: 'HYD', sw63: 'AVNC', sw50: 'PITOT', swHOPR: 'HOPPER', swFRDS: 'FRDS', swWIPER: 'WIPER', sw52: 'LDG LT', sw49: 'DOME', sw61: 'BCN', sw51: 'NAV', sw48: 'STRB', sw38: 'SPARE',
     swK_FRDS1: '', swK_FRDS2: '', swK_FRDS3: '', swFRDS_A: 'ARM', swFRDS_B: 'MODE', swFRDS_C: 'FOAM', swFRDS_D: 'GATE' };
   const FACETAS = [   /* paños: izq (con FRDS), centro (joroba) y der (motor + radios adosadas) */
-    { lado: -1, cx: -0.4225, cy: 0.955, w: 0.397, h: 0.51, rI: 0.11, rc: 0.04, t: 0.27, frds: true },   /* afina desde y~0,94: la cúpula se angosta (a y 1,05 la chapa está en 0,56) */
+    { lado: -1, cx: -0.4115, cy: 0.955, w: 0.375, h: 0.51, rI: 0.11, rc: 0.04, t: 0.36, frds: true },   /* angosto y afinado desde y~0,85: el canto asomaba por el hueco de la puerta (27/10) */
     { lado: 0, cx: 0, cy: 0.9775, w: 0.52, h: 0.555, rI: 0.07, rD: 0.07, rc: 0.06, placards: true },
-    { lado: 1, cx: 0.405, cy: 0.955, w: 0.402, h: 0.51, rD: 0.11, rc: 0.04, t: 0.27 },
+    { lado: 1, cx: 0.394, cy: 0.955, w: 0.38, h: 0.51, rD: 0.11, rc: 0.04, t: 0.36 },
   ];
   const forma = (w, h, rI, rD, rc, m = 0, t = 0.16) => { const sh = new THREE.Shape(); const a = w / 2 + m, b = h / 2 + m;
     sh.moveTo(-a + rc, -b);
@@ -242,7 +264,7 @@ function crearTablero(datos) {
   /* planos de los tres paños (barrido ±14°; las alas anclan al plano central en x ±0,20) */
   const n0 = new THREE.Vector3(0, -0.0175, 0.9998).normalize();
   const centros = datos.filter(d => d.c[1] > 1.0 && Math.abs(d.n[0]) <= 0.05);
-  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) + 0.019;   /* 27/10: +2,5 cm atrás; a −0.006 el tope del paño quedaba 8 mm DELANTE del parabrisas y asomaba afuera */
+  const d0 = (centros.length ? Math.min(...centros.map(d => n0.dot(new THREE.Vector3().fromArray(d.c)))) : 0.95) + 0.010;   /* 27/10: +1,6 cm atrás; a −0.006 el tope asomaba por el parabrisas y con +0.019 el flanco izq. asomaba por el hueco de la puerta */
   const zAncla = () => (d0 + 0.0175 * 1.05) / 0.9998 - 0.004;
   const planos = {};
   for (const f of FACETAS) {
@@ -332,9 +354,9 @@ function crearTablero(datos) {
   for (const lado of [-1, 1]) {
     const xB = lado * 0.605;
     const zB = zEn(lado, xB, 0.955);
-    const mejilla = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.25), matTapa);
-    mejilla.position.set(xB, 0.835, zB - 0.08);   /* sólo bajo la línea del marco: arriba la cúpula se angosta */
-    mejilla.rotation.y = -lado * Math.PI / 2; cabina.add(mejilla);   /* mira hacia ADENTRO (FrontSide): desde afuera no existe */
+    const mejilla = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.36), new THREE.MeshStandardMaterial({ color: 0x1c1d21, roughness: 0.95, side: THREE.DoubleSide }));
+    mejilla.position.set(xB, 0.86, zB - 0.10);   /* pared lateral del tablero: a doble cara, por el vano de la puerta se veía el canto crudo (27/10) */
+    mejilla.rotation.y = -lado * Math.PI / 2; cabina.add(mejilla);
   }
   /* reubicar los relojes según el plano de la foto, sobre el paño que les toca */
   for (const d of datos) {
@@ -407,7 +429,7 @@ function crearConsolas(datos) {
     rotulo(c, aPx, -0.413, 1.17, 'MAX', 10, '#9aa48c'); rotulo(c, aPx, -0.413, 1.26, 'IDLE', 10, '#9aa48c'); rotulo(c, aPx, -0.413, 1.315, 'REV', 10, '#c77');
     ranura(c, aPx, -0.35, 1.13, 1.30, 0.02); rotulo(c, aPx, -0.35, 1.105, 'PROP', 12);
     rotulo(c, aPx, -0.385, 1.17, 'MAX', 10, '#9aa48c'); rotulo(c, aPx, -0.385, 1.27, 'FTHR', 10, '#c77');
-    rotulo(c, aPx, -0.575, 1.115, 'E-DUMP', 12, '#e05555'); rotulo(c, aPx, -0.575, 1.15, 'PUSH', 10, '#e05555');
+    rotulo(c, aPx, -0.575, 1.16, 'E-DUMP', 12, '#e05555'); rotulo(c, aPx, -0.575, 1.195, 'PUSH', 10, '#e05555');
   });
   tapaCanvas(-0.615, -0.37, ZP, Z1, Y_TAPA + 0.0008, (c, aPx) => {
     rotulo(c, aPx, -0.59, 1.455, 'FLAPS', 13); rotulo(c, aPx, -0.59, 1.49, '0 · 10 · 20', 11, '#9aa48c');
@@ -438,6 +460,7 @@ function crearConsolas(datos) {
   const mover = (n, dx, dy, dz) => { const p = cabina.getObjectByName('piv_' + n); if (p) { p.position.x += dx; p.position.y += dy; p.position.z += dz; } };
   mover('levPOT', 0, 0.04, 0); mover('levHEL', 0, 0.08, 0); mover('levCOND', 0, 0.06, 0.18);   /* la condición se junta con sus hermanas en el pedestal */
   mover('swFLAPS', 0, 0.045, 0); mover('swAUX', 0, 0.045, 0); mover('swK_TRIMTIMON', 0, 0.04, 0); mover('swWRUD', 0, -0.05, 0);
+  mover('swK_FRDS1', 0.025, 0, 0);   /* al achicar el paño izq. la perilla externa del FRDS quedaba fuera del canto (27/10) */
   /* el suction vivía en la consola de fábrica (y 0,62): pasa empotrado a la tapa trasera, mirando arriba */
   for (const d of datos) if (d.tipo === 'suction') { d.c = [-0.44, Y_TAPA + 0.001, 1.52]; d.n = [0, 1, 0]; d.ex = [1, 0, 0]; d.ey = [0, 0, -1]; }
 }
@@ -487,9 +510,9 @@ function crearExtrasManual() {
   });
   // --- manija E-DUMP (roja, consola izquierda): empujar ADELANTE = salvo total ---
   const baseE = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.012, 0.062), oscuro);
-  baseE.position.set(-0.575, 0.762, 1.04); g.add(baseE);   /* sobre el pedestal del cuadrante, pegado a la pared (manual: junto al acelerador) */
-  const geoVara = new THREE.CylinderGeometry(0.0055, 0.0055, 0.095, 10).translate(-0.575, 0.815, 1.04);
-  const geoBola = new THREE.SphereGeometry(0.0155, 16, 12).translate(-0.575, 0.868, 1.04);
+  baseE.position.set(-0.575, 0.762, 1.26); g.add(baseE);   /* fondo del pedestal: adelante quedaba incrustada contra el tablero (27/10) */
+  const geoVara = new THREE.CylinderGeometry(0.0055, 0.0055, 0.095, 10).translate(-0.575, 0.815, 1.26);
+  const geoBola = new THREE.SphereGeometry(0.0155, 16, 12).translate(-0.575, 0.868, 1.26);
   const manija = new THREE.Mesh(mergeGeometries([geoVara.toNonIndexed(), geoBola.toNonIndexed()], false),
     new THREE.MeshStandardMaterial({ color: 0xc01212, roughness: 0.5 }));
   manija.name = 'levEDUMP'; manija.userData.pivY = 0.762; manija.userData.escala = 1;

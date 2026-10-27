@@ -85,6 +85,29 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **REPINTADO LISO TOTAL** (decisión de Iván 27/10: «colores mentirosos pero liso»; la textura blanqueada se
+  veía borrosa y moteada): las texturas at_01/02/04 se QUITAN de los materiales (color plano BLANCO 0.845,
+  roughness 0.5) y la librea va por GEOMETRÍA con cortes bisect: franja azul z 0,04–0,20 + línea fina
+  0,24–0,27 en los flancos (|normal.x|>0.35, sólo materiales de piel), cola azul desde y −4,85 (deriva Y
+  timón; con −5,75 la deriva quedaba blanca), puntas de ala |x|>8,42; palas negras con banda roja por
+  geometría (radio 1,16–1,30 del eje a z 0,3); blanquear() queda sin uso. mat21 escape: Base 0.03,
+  metallic 0.2 (con 0.6 reflejaba DORADO). Rueda de cola: caja goma ampliada (−6,75..−5,85, |x|<0,18).
+- **Sistema de carga REAL** (fotos del avión AAXOD en `Documents/aurav-cabina/fotos/detalles/`): se BORRÓ
+  todo el conjunto de fábrica (acoples+patas+caños sueltos, islas mat08/mat30/mat05 chicas bajo la panza) y
+  se construye con primitivas: codo de acero a la panza + FLEXIBLE VERDE con abrazaderas + tubo de carga
+  colgando con boca (objetos carga_* en el script, mathutils to_track_quat). Centro-izquierda, detrás de la tolva.
+- **Cabina (capturas de Iván 27/10):** tablero a d0+0.010 (con +0.019 el canto llegaba al vano de la puerta;
+  OJO: la cúpula real llega a |x| 0,66 a y 0,9 — el canto queda adentro), paños laterales w 0,375/0,38 con
+  bisel t 0,36, mejillas 0,26×0,36 a DOBLE CARA (pared lateral del tablero, se veía el canto crudo por el
+  vano), perilla swK_FRDS1 +0,025 adentro; glareshield INCLINADO (del tope del paño al capó en y 1,12: la
+  tapa horizontal atravesaba el parabrisas); E-DUMP al FONDO del pedestal (z 1,26: adelante quedaba
+  incrustado contra el tablero); parante frontal izquierdo de m26 (cúpula interior) ESPEJADO contra el
+  derecho (umbral 2 mm: estaba «salido» ~8 cm y luego con escalón); MAMPARO blanco detrás del asiento
+  (1,5×2,3 en z 2,44: se veía el túnel de cola); ventilador+reloj de fábrica del rincón derecho BORRADOS
+  (islas de piel del OBJ en el script + clamp m23/m12/m16/m21 en main.js: «un instrumento debajo de otro»);
+  butaca sin atlas → cuerina gris (0x55524c).
+- Todo verificado con ronda (exterior 4 lados, cola, panza, interior). Local SIN publicar, v=20261027i.
+  OJO ronda: el juego tiene luz por hora real (anochece): capturar de día o considerar la luz.
 - **Capturas de Iván del 27/10, resueltas (local, v=20261027b, SIN publicar):** (1) el TABLERO asomaba por
   fuera del parabrisas visto desde afuera-arriba → todo el tablero 2,5 cm atrás (`d0 + 0.019` en vez de
   `− 0.006`; el tope quedaba 8 mm DELANTE del vidrio) y el glareshield pasó de tapa horizontal de 22 cm (que
