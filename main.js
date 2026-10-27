@@ -186,7 +186,6 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   g.scene.traverse(o => { if (o.isMesh && /^(sw|lev)\w+$/.test(o.name) && o.geometry.index) o.geometry = o.geometry.toNonIndexed(); });
   controles.armar(g.scene);
   { const p = controles.palancas.find(x => x.nombre === 'levPOT'); if (p) p.max = 0.42; }   /* detrás del ralentí (0,15) está el rango BETA/REVERSA (manual 26/10) */
-  extras = crearExtrasManual(); controles.armar(extras.grupoPalanca);   /* arma la manija E-DUMP como palanca */
   const matBate = new THREE.MeshStandardMaterial({ color: 0xc8c8cc, metalness: 0.6, roughness: 0.35 });
   for (const n of ['swFPUMP', 'swHOPR', 'swFRDS', 'swWIPER']) { const sw = controles.switches.find(x => x.nombre === n); if (sw) sw.grupo.add(new THREE.Mesh(bate, matBate)); }
   /* switches de 3 posiciones (arriba · medio · abajo). Qué hace cada posición: a confirmar con Bruno (AAXOD).
@@ -206,6 +205,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
      (consola) no se tocan. Las perillas FRDS acompañan (abajo). */
   for (const d of datosInst) if (d.c[1] > 1.0) d.c[2] += 0.08;
   crearTablero(datosInst);
+  extras = crearExtrasManual(); controles.armar(extras.grupoPalanca);   /* después del tablero: usa sus planos; arma la manija E-DUMP y el botón TEST */
   instrumentos = new Instrumentos(cabina, datosInst);
   /* las perillas FRDS quedan en su lugar: su chapa (franja baja de m18) volvió */
   document.getElementById('cargando').remove();
@@ -323,7 +323,7 @@ function crearTablero(datos) {
   pant.position.set(0, 0.005, 0.002); gps.add(pant);
   for (const s of [-1, 1]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.012, 16).rotateX(Math.PI / 2), matBorde); k.position.set(s * 0.078, -0.047, 0.004); gps.add(k); }
   cabina.add(gps);
-  crearTablero.dCentro = d0;   /* lo usan los extras del manual para apoyarse en la faceta central */
+  crearTablero.dCentro = d0; crearTablero.planos = planos;   /* los usan los extras del manual para apoyarse en las facetas */
 }
 
 /* Extras del manual (26/10, mapa_cabina.md): brújula sobre el panel inferior, anunciador con luces
@@ -393,14 +393,14 @@ function crearExtrasManual() {
   // Placa al MISMO plano (apenas detrás de las facetas), con rótulos dibujados, y las palanquitas se
   // corren al frente para asentarse en ella. El panel viejo queda tapado detrás. ---
   const ROTULOS = { sw62: 'BATT', sw64: 'ALTN', sw56: 'GEN', sw53: 'IGNTR', sw47: 'START', sw60: 'FIRE', swFPUMP: 'F PUMP', sw54: 'HYD', sw63: 'AVNC', sw50: 'PITOT', swHOPR: 'HOPPER', swFRDS: 'FRDS', swWIPER: 'WIPER', sw52: 'LDG LT', sw49: 'DOME', sw61: 'BCN', sw51: 'NAV', sw48: 'STRB', sw38: 'SPARE' };
-  const esDeAbajo = sw => sw.pivote.z > 0.80 && sw.pivote.z < 0.99 && sw.pivote.y > 0.73 && sw.pivote.y < 0.97 && sw.pivote.x > -0.465 && sw.pivote.x < 0.57;
-  const X0 = -0.46, X1 = 0.57, Y0 = 0.742, Y1 = 0.915;
+  const esDeAbajo = sw => sw.pivote.z > 0.80 && sw.pivote.z < 0.99 && sw.pivote.y > 0.73 && sw.pivote.y < 0.97 && sw.pivote.x > -0.465 && sw.pivote.x < 0.50;
+  const X0 = -0.46, X1 = 0.50, Y0 = 0.715, Y1 = 0.915;   /* termina antes del pedestal de radios y baja a tapar el panel viejo */
   const zLl = y => (d0 - 0.004 + 0.0175 * y) / 0.9998;
-  const cvL = document.createElement('canvas'); cvL.width = 1030; cvL.height = 173; const cL = cvL.getContext('2d');
-  const g2 = cL.createLinearGradient(0, 0, 0, 173); g2.addColorStop(0, '#26282d'); g2.addColorStop(1, '#1f2126');
-  cL.fillStyle = g2; cL.fillRect(0, 0, 1030, 173);
-  cL.strokeStyle = '#1b1d21'; cL.lineWidth = 2; cL.strokeRect(4, 4, 1022, 165);
-  const aPx = (x, y) => [(x - X0) / (X1 - X0) * 1030, (Y1 - y) / (Y1 - Y0) * 173];
+  const cvL = document.createElement('canvas'); cvL.width = 960; cvL.height = 200; const cL = cvL.getContext('2d');
+  const g2 = cL.createLinearGradient(0, 0, 0, 200); g2.addColorStop(0, '#26282d'); g2.addColorStop(1, '#1f2126');
+  cL.fillStyle = g2; cL.fillRect(0, 0, 960, 200);
+  cL.strokeStyle = '#1b1d21'; cL.lineWidth = 2; cL.strokeRect(4, 4, 952, 192);
+  const aPx = (x, y) => [(x - X0) / (X1 - X0) * 960, (Y1 - y) / (Y1 - Y0) * 200];
   const placaLl = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Y1 - Y0), new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.1 }));
   const cxL = (X0 + X1) / 2, cyL = (Y0 + Y1) / 2;
   placaLl.position.set(cxL, cyL, zLl(cyL));
@@ -414,13 +414,48 @@ function crearExtrasManual() {
     sw.grupo.position.z = zLl(p.y) + 0.002;
     const [px, py] = aPx(p.x, p.y);
     cL.fillStyle = '#d8d8d8'; cL.font = 'bold 11px Arial';
-    cL.fillText(ROTULOS[sw.nombre] || '', px, Math.min(164, py + (i % 2 ? 44 : 30)));   /* escalonados: pegados chocaban */
+    cL.fillText(ROTULOS[sw.nombre] || '', px, Math.min(190, py + (i % 2 ? 46 : 32)));   /* escalonados: pegados chocaban */
   });
   // tornillos
   cL.fillStyle = '#404550';
-  for (let x = 30; x < 1030; x += 90) for (const y of [12, 161]) { cL.beginPath(); cL.arc(x, y, 3.5, 0, 7); cL.fill(); }
+  for (let x = 30; x < 960; x += 90) for (const y of [12, 188]) { cL.beginPath(); cL.arc(x, y, 3.5, 0, 7); cL.fill(); }
   const texL = new THREE.CanvasTexture(cvL); texL.colorSpace = THREE.SRGBColorSpace; texL.anisotropy = 4;
   placaLl.material.map = texL; placaLl.material.needsUpdate = true;
+  { // el swWIPER vino con un pedazo de panel (5,5 cm de fondo): se recorta a 3 cm
+    const w = controles.switches.find(x => x.nombre === 'swWIPER');
+    if (w) { const gw = w.malla.geometry, pw = gw.attributes.position; gw.computeBoundingBox();
+      const zMax = gw.boundingBox.min.z + 0.03;
+      for (let i = 0; i < pw.count; i++) if (pw.getZ(i) > zMax) pw.setZ(i, zMax);
+      pw.needsUpdate = true; gw.computeVertexNormals(); }
+  }
+  // --- SUBPANEL FRDS: el ala izquierda del tablero tapaba el panel y las palanquitas FRDS;
+  // placa propia en el plano del ala (apenas atrás) y las perillas FRDS corridas al frente ---
+  const plI = crearTablero.planos && crearTablero.planos[-1];
+  if (plI) {
+    const dF = plI.d - 0.006 - 0.003;
+    const zF = (x, y) => (dF - plI.n.x * x - plI.n.y * y) / plI.n.z;
+    const FX0 = -0.645, FX1 = -0.462, FY0 = 0.715, FY1 = 0.968;
+    const cvF = document.createElement('canvas'); cvF.width = 256; cvF.height = 354; const cF = cvF.getContext('2d');
+    const gF = cF.createLinearGradient(0, 0, 0, 354); gF.addColorStop(0, '#26282d'); gF.addColorStop(1, '#1f2126');
+    cF.fillStyle = gF; cF.fillRect(0, 0, 256, 354);
+    cF.strokeStyle = '#1b1d21'; cF.lineWidth = 2; cF.strokeRect(4, 4, 248, 346);
+    cF.fillStyle = '#d8d8d8'; cF.font = 'bold 20px Arial'; cF.textAlign = 'center'; cF.fillText('FRDS GEN II', 128, 30);
+    cF.fillStyle = '#0a140e'; cF.fillRect(28, 44, 200, 96);   /* pantallita */
+    cF.fillStyle = '#58c878'; cF.font = 'bold 16px Arial'; cF.textAlign = 'left';
+    cF.fillText('COV  3    GAL  820', 40, 80); cF.fillText('PRES 3000  OK', 40, 106);
+    cF.fillStyle = '#404550'; for (const [sx, sy] of [[14, 14], [242, 14], [14, 340], [242, 340]]) { cF.beginPath(); cF.arc(sx, sy, 4, 0, 7); cF.fill(); }
+    const texF = new THREE.CanvasTexture(cvF); texF.colorSpace = THREE.SRGBColorSpace;
+    const placaF = new THREE.Mesh(new THREE.PlaneGeometry(FX1 - FX0, FY1 - FY0), new THREE.MeshStandardMaterial({ map: texF, roughness: 0.85, metalness: 0.1 }));
+    const fcx = (FX0 + FX1) / 2, fcy = (FY0 + FY1) / 2;
+    placaF.position.set(fcx, fcy, zF(fcx, fcy));
+    placaF.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(plI.ex, plI.ey, plI.n));
+    g.add(placaF);
+    for (const sw of controles.switches) {
+      const p = sw.pivote;
+      if (p.x > -0.645 && p.x < -0.462 && p.y > 0.76 && p.y < 0.97 && p.z > 0.85 && p.z < 0.95)
+        sw.grupo.position.z = zF(p.x, p.y) + 0.004;   /* perillas y palanquitas FRDS al frente */
+    }
+  }
   return { grupo: g, grupoPalanca, actualizar() {
     tarjeta.rotation.y = vuelo.euler.rumbo;   /* tarjeta fija a la tierra (signo a validar en vuelo) */
     const m = vuelo.motor, bat = !!m.bateria;
