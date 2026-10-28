@@ -85,6 +85,14 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
 ## Dónde quedamos (27/10)
+- **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
+  y el tablero era m14 APLASTADO a una «mesa» a y 1,02 por el clamp de dientes, y el abanico amarillo eran
+  las varillas del motor dobladas por el clamp de «pelos». REGLA DEFINITIVA: NADA de clamps de vértices
+  sobre m14/m23/m34 (deforman en cadena); los únicos clamps que quedan son los chicos verificados
+  (piecitas de consolas, correas del asiento, rincón derecho). Pelos y dientes se resuelven en el RECORTE
+  GENERAL con la condición por VÉRTICE (`vertsOk`): el triángulo entero se descarta si algún vértice sale
+  de rango (z 0,55-2,55, |x| anchoMax+0,06, y 1,14 — o 2,05 detrás de z 1,85 para no comerse el respaldo).
+  Interior verificado sano desde el asiento. PENDIENTE: verificar los pelos desde AFUERA con luz de día.
 - **«Pelos» del capó (capturas 36-37 de Iván, v=20261028c):** varillas del mecanismo del motor (m5/m34/
   m23/m26, cabina FSX) con triángulos tan largos que su CENTRO cae dentro del recorte y la punta asoma
   sobre el capó. Fix: bajar SOLO esas puntas (vértices y>1,07 con z<0,58 y |x|<0,6 → y 1,07). OJO: el primer

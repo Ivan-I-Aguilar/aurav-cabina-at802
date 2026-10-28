@@ -137,25 +137,13 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         }
         if (nesp) pos.needsUpdate = true;
       }
-      /* m14 (chapa interior): el recorte dejaba TRIÁNGULOS DENTADOS en el borde del cockpit que se
-         veían como picos negros desde afuera (27/10): se APLASTAN a y 1,02 como se hizo con m1 */
-      if (o.name === 'm14') {
-        let toco14 = false;
-        for (let i = 0; i < pos.count; i++) { const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
-          if (vy > 1.02 && Math.abs(vx) < 0.68 && vz > 0.55 && vz < 1.95) { pos.setY(i, 1.02); toco14 = true; }
-          if (vy > 0.84 && Math.abs(vx) > 0.50 && Math.abs(vx) < 0.70 && vz > 0.55 && vz < 2.0) { pos.setX(i, Math.sign(vx) * 0.50); toco14 = true; }   /* dientes del corte lateral del vano */ }
-        if (toco14) pos.needsUpdate = true;
-      }
       /* piecitas de fábrica que asomaban por las tapas de las consolas nuevas (26/10): se hunden adentro */
       { let toco = false;
         for (let i = 0; i < pos.count; i++) { const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
           if ((vx > 0.58 && vx < 0.66 && vy > 0.62 && vy < 0.80 && vz > 1.33 && vz < 1.58)
             || (vx > 0.54 && vx < 0.62 && vy > 0.69 && vy < 0.76 && vz > 1.00 && vz < 1.08)
             || (/^(m23|m12|m16|m21)$/.test(o.name) && Math.abs(vx) > 0.40 && Math.abs(vx) < 0.68 && vy > 0.90 && vy < 1.30 && vz > 0.85 && vz < 1.20)
-            || (o.name === 'm23' && vx > -0.28 && vx < 0.38 && vy > 0.76 && vz > 1.46 && vz < 1.90)) { pos.setY(i, 0.60); toco = true; }
-          /* «pelos» de la trompa (27/10): varillas del motor que asomaban por ENCIMA del capó:
-             sólo se BAJAN las puntas bajo la línea del capó (aplastar en z rompía todo el interior) */
-          if (vy > 1.07 && vz < 0.58 && Math.abs(vx) < 0.6) { pos.setY(i, 1.07); toco = true; } }
+            || (o.name === 'm23' && vx > -0.28 && vx < 0.38 && vy > 0.76 && vz > 1.46 && vz < 1.90)) { pos.setY(i, 0.60); toco = true; } }
         if (toco) pos.needsUpdate = true; }
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
@@ -166,7 +154,13 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
         const anchoMax = c.y > 0.85 ? 0.5 : (c.z > 1.6 ? 0.6 : 0.615);   /* el fuselaje se angosta arriba y atrás; a 0,63 la consola (m16) y la butaca (m14) asomaban por la puerta */
         const restoPanel = o.name === 'm23' && c.y > 0.97 && c.z > 0.58 && c.z < 1.00 && Math.abs(c.x) < 0.66;   /* caja del panel viejo que la «tapa» (eliminada) ocultaba: asomaba sobre el capó (27/10) */
-        if (!restoPanel && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        /* además del centro, los TRES VÉRTICES tienen que quedar en rango: los triángulos-varilla del
+           motor (largos, con centro adentro) asomaban como «pelos» por el capó, y los dientes del borde
+           sobresalían; descartar el triángulo entero no deforma nada (27/10) */
+        let vertsOk = true;
+        for (let k = 0; k < 3 && vertsOk; k++) { p.fromBufferAttribute(pos, idx.getX(t + k));
+          if (p.z < 0.55 || p.z > 2.55 || Math.abs(p.x) > anchoMax + 0.06 || p.y > (p.z > 1.85 ? 2.05 : 1.14)) vertsOk = false; }
+        if (vertsOk && !restoPanel && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
