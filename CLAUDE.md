@@ -84,6 +84,12 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial de Blender Lab (`bl_ext.BlenderLab.mcp`, arranca solo en localhost:9876): las herramientas `mcp__Blender__*` ejecutan Python en su Blender abierto. Así se modelan piezas y se exportan a GLB directo a esta carpeta. No usar a la vez el botón «Connect to Claude» del otro complemento (ahujasid, mismo puerto). Previews con Eevee (placa de 6 GB).
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
 
+## Dónde quedamos (28/10)
+- **PUBLICADO 28/10 con el ok de Iván** («eso sigue bien, subilo así, después seguimos con los detalles»):
+  push f4d459a→6433ea7, Pages verificado sirviendo v=20261028d. La regla de NO publicar sin su ok sigue
+  vigente para lo que venga. Próximo: los «detalles» que marque Iván (probablemente del Quest), y los
+  pendientes ya anotados (pelos verificados sólo desde adentro; pedales lejos; orden de palancas).
+
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
   y el tablero era m14 APLASTADO a una «mesa» a y 1,02 por el clamp de dientes, y el abanico amarillo eran
