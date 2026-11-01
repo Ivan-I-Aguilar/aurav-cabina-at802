@@ -213,6 +213,18 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   cada 10 s (la pestaña abierta se recarga SOLA con cada build: se acabó el «sigue igual» por caché).
   OJO VERIFICACIÓN: mirar SIEMPRE el MISMO lado que la captura de Iván (una vez se validó el lado
   derecho cuando sus fotos eran del izquierdo y el defecto «seguía igual»).
+- **NUEVO MÉTODO (1/11, decisión de Iván: «probemos por Blender»): las piezas problemáticas se
+  REEMPLAZAN con modelado en Blender headless, no se parchan más.** Primera pieza: **BUTACA NUEVA**
+  (`herramientas/butaca_blender.py` → `blender/butaca.glb`, v=20261101u): asiento de UNA pieza
+  (banqueta, respaldo alto inclinado, apoyacabeza, base, rieles) + arnés integrado (2 hombros + 2
+  cintura + hebilla), todo PRISMAS POR VÉRTICES en coords glTF (b(v)=(x,−z,y)) — CERO rotaciones
+  euler: dos intentos con rotation+apply dieron piezas volteadas bajo el piso o desplazadas. El
+  script importa cabina.glb de referencia, RENDERIZA previews (butaca_*.png: verlas ANTES de
+  integrar) y exporta sólo la butaca. En main.js: se carga como pedales.glb (butaca_nueva, hija de
+  `cabina`: fuera del alcance del recorte) y la vieja se descarta (`butacaVieja`: m14 |x|<0,42,
+  y 0,33-1,10, z 1,47-2,12 — caja JUSTA: con z 2,30 se comía piso y chapas traseras). Las tiras
+  y cuerina parciales viejas se eliminaron. OJO: mirando atrás desde el ojo la nuca queda contra el
+  respaldo (normal); la «pista alrededor del respaldo» con cámara corrida son los VANOS (normal).
 - Pendientes menores: techo oliva liso; dientes chicos del canto de la ventana (emparejar en script);
   mazo de alambres del parante trasero izq (tolerado); la «garra» blanca sobre una perilla negra
   (captura de Iván sin ubicar; pedir dónde). Pages sigue en 20261028d (estable): lo del 31/10-1/11

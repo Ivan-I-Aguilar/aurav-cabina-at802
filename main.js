@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101s';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101u';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -162,6 +162,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
            tapados por el cuerpo del cuadrante y las consolas; destapados asoman como PICOS junto al
            umbral (31/10, aviso de Iván «quedaron cosas destruidas»). Sólo si el lado supera 25 cm. */
         const asaIzq = o.name === 'm14' && c.x > -0.62 && c.x < -0.29 && c.y > 0.72 && c.y < 1.02 && c.z > 1.90 && c.z < 2.14;   /* asa/correa de fábrica FLOTANDO junto al respaldo, lado izquierdo (31/10, hallazgo 5) */
+        const butacaVieja = o.name === 'm14' && Math.abs(c.x) < 0.42 && c.y > 0.33 && c.y < 1.10 && c.z > 1.47 && c.z < 2.12;   /* 1/11: la butaca de fábrica (banqueta z 1,5-1,9 + respaldo z 1,88-1,97) se reemplaza por blender/butaca.glb; caja JUSTA: con z hasta 2,30 se comía piso y chapas traseras */
         let agujaLat = false;
         if (/^(m23|m16|m5)$/.test(o.name) && Math.abs(c.x) > 0.27 && Math.abs(c.x) < 0.68 && c.y > 0.15 && c.y < 0.80 && c.z > 0.68 && c.z < 2.05) {
           const vA = p.fromBufferAttribute(pos, idx.getX(t)).clone(), vB = p.fromBufferAttribute(pos, idx.getX(t + 1)).clone(), vC = p.fromBufferAttribute(pos, idx.getX(t + 2));
@@ -180,7 +181,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         let vertsOk = true;
         for (let k = 0; k < 3 && vertsOk; k++) { p.fromBufferAttribute(pos, idx.getX(t + k));
           if (p.z < 0.55 || p.z > 2.55 || Math.abs(p.x) > anchoMax + 0.06 || p.y > (p.z > 1.85 ? 2.05 : 1.14)) vertsOk = false; }
-        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && !asaIzq && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && !asaIzq && !butacaVieja && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* NADA del interior FSX puede vivir DELANTE del plano del parabrisas (1/11, captura 45 de Iván:
@@ -222,21 +223,8 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       geo.addGroup(0, base.length, 0); geo.addGroup(base.length, extra.length, 1);
       o.material = [Array.isArray(o.material) ? o.material[0] : o.material, matExtra];
     });
-    partirMat('m14', cc => Math.abs(cc.x) < 0.50 && cc.z > 1.48 && cc.z < 2.30 && cc.y > 0.30 && cc.y < 1.30,
-      new THREE.MeshStandardMaterial({ color: 0x4a4a46, roughness: 0.92, side: THREE.DoubleSide }));   /* butaca: cuerina gris oscura (el respaldo llega a |x| 0,48) */
-    /* cinturones NUEVOS sobre el respaldo (los azules de fábrica ya no existen tras los recortes):
-       dos tiras del arnés en V + hebilla, pegadas a la cara del respaldo (z 1,88 abajo → 1,97 arriba) */
-    const matCint = new THREE.MeshStandardMaterial({ color: 0x2f4e8c, roughness: 0.75, side: THREE.DoubleSide });
-    for (const lado of [-1, 1]) {
-      const tira = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.34, 0.012), matCint);
-      tira.name = 'mamparo_cint'; tira.position.set(lado * 0.10, 0.80, 1.820);
-      tira.rotation.set(0.12, 0, lado * -0.34); cabina.add(tira);   /* cortas y SIEMPRE delante de la cáscara del respaldo (1/11, Iván: el respaldo es HUECO y las tiras caían dentro del hueco); hombros arriba separados, convergen en la hebilla */
-    }
-    const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.065, 0.022),
-      new THREE.MeshStandardMaterial({ color: 0x9a9b9e, metalness: 0.6, roughness: 0.4 }));
-    hebilla.name = 'mamparo_hebilla'; hebilla.position.set(0, 0.655, 1.826); hebilla.rotation.x = 0.10; cabina.add(hebilla);
-    /* (el «respaldo alto» de cuerina delante del mamparo se probó el 31/10 y se SACÓ el 1/11:
-       Iván lo veía como un cuadrado oscuro sin sentido detrás del asiento; el mamparo queda blanco) */
+    /* (1/11: la cuerina parcial por grupos y las tiras/hebilla sueltas se ELIMINARON: la butaca
+       entera ahora es blender/butaca.glb, con cinturones integrados; la vieja se descarta arriba) */
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -332,6 +320,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   const PEDAL_VIEJO = [['m16', [-0.255, 0.263, 0.467], [-0.122, 0.499, 0.577]], ['m23', [-0.29, 0.292, 0.524], [-0.099, 0.329, 0.56]], ['m23', [-0.29, 0.28, 0.52], [-0.258, 0.601, 0.637]], ['m23', [-0.302, 0.289, 0.51], [-0.285, 0.333, 0.675]],
     ['m16', [0.12, 0.264, 0.619], [0.252, 0.5, 0.727]], ['m23', [0.097, 0.292, 0.674], [0.288, 0.329, 0.71]], ['m23', [0.256, 0.28, 0.596], [0.288, 0.601, 0.714]], ['m23', [0.282, 0.288, 0.66], [0.299, 0.333, 0.825]]];
   recortarManija(g.scene, PEDAL_VIEJO);   /* se descarta lo recortado */
+  /* BUTACA NUEVA (1/11, Blender/Lichi: blender/butaca.glb): asiento de una pieza con respaldo alto,
+     base y cinturones integrados; la vieja (m14) se descarta en el recorte general (butacaVieja) */
+  new GLTFLoader().loadAsync(`./blender/butaca.glb?v=${V}`).then(p => {
+    p.scene.name = 'butaca_nueva'; cabina.add(p.scene);
+  });
   new GLTFLoader().loadAsync(`./blender/pedales.glb?v=${V}`).then(p => {
     /* 31/10 (pedido de Iván): el conjunto de pedales heredaba la textura m23 (estructura ROJA y
        varillas AMARILLAS de juguete): TODO el conjunto pasa a un único gris metal oscuro */
