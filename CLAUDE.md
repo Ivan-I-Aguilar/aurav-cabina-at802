@@ -225,7 +225,18 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   y 0,33-1,10, z 1,47-2,12 — caja JUSTA: con z 2,30 se comía piso y chapas traseras). Las tiras
   y cuerina parciales viejas se eliminaron. OJO: mirando atrás desde el ojo la nuca queda contra el
   respaldo (normal); la «pista alrededor del respaldo» con cámara corrida son los VANOS (normal).
-- Pendientes menores: techo oliva liso; dientes chicos del canto de la ventana (emparejar en script);
+- **Tanda Blender 2 (1/11, con el ok de Iván al rumbo, v=20261101z):** (a) **ANTEPECHO de ventana**
+  (`herramientas/marco_ventana_blender.py` → `blender/marco_ventana.glb`): cinta de 4,5×14 cm que
+  tapa el canto dentado, construida MUESTREANDO la línea real del canto en exterior.glb (máximo de y
+  por franja de z, ambos lados) → en X sigue la CURVA real del casco (por eso no flota como las
+  molduras rectas) y en Y va RECTA por regresión + residuo máximo (seguir cada pico daba «crema
+  batida»). OJO: NO extender el tramo delante de z 1,40 (el canto sube con el parante y la regresión
+  levanta todo 10 cm); queda una lengüeta menor delante del inicio. Mismo blanco del casco (0.845).
+  (b) **restos laterales**: los paneles viejos «un instrumento bajo otro» del sector izquierdo eran
+  m16/m18/m22/m23/m26 apretados entre el paño nuevo y la pared → descarte `restoLateral` (|x|
+  0,46-0,64, y 0,70-1,08, z 0,82-1,01, ambos lados; ahí no vive nada legítimo: controles = mallas
+  aparte). Verificado en el juego: vano limpio con antepecho calzado y paño izquierdo sin dobles.
+- Pendientes menores: techo oliva liso; lengüeta del dentado delante del antepecho (z<1,40);
   mazo de alambres del parante trasero izq (tolerado); la «garra» blanca sobre una perilla negra
   (captura de Iván sin ubicar; pedir dónde). Pages sigue en 20261028d (estable): lo del 31/10-1/11
   está LOCAL hasta que Iván pida subir.

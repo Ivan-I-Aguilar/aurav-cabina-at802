@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101u';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101z';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -163,6 +163,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
            umbral (31/10, aviso de Iván «quedaron cosas destruidas»). Sólo si el lado supera 25 cm. */
         const asaIzq = o.name === 'm14' && c.x > -0.62 && c.x < -0.29 && c.y > 0.72 && c.y < 1.02 && c.z > 1.90 && c.z < 2.14;   /* asa/correa de fábrica FLOTANDO junto al respaldo, lado izquierdo (31/10, hallazgo 5) */
         const butacaVieja = o.name === 'm14' && Math.abs(c.x) < 0.42 && c.y > 0.33 && c.y < 1.10 && c.z > 1.47 && c.z < 2.12;   /* 1/11: la butaca de fábrica (banqueta z 1,5-1,9 + respaldo z 1,88-1,97) se reemplaza por blender/butaca.glb; caja JUSTA: con z hasta 2,30 se comía piso y chapas traseras */
+        const restoLateral = /^(m16|m18|m22|m23|m26)$/.test(o.name) && Math.abs(c.x) > 0.46 && Math.abs(c.x) < 0.64 && c.y > 0.70 && c.y < 1.08 && c.z > 0.82 && c.z < 1.01;   /* 1/11, Iván: «un instrumento por debajo de otro» en el sector izquierdo: paneles VIEJOS de fábrica apretados entre el paño nuevo y la pared (ambos lados; ahí no vive nada legítimo: los controles son mallas aparte) */
         let agujaLat = false;
         if (/^(m23|m16|m5)$/.test(o.name) && Math.abs(c.x) > 0.27 && Math.abs(c.x) < 0.68 && c.y > 0.15 && c.y < 0.80 && c.z > 0.68 && c.z < 2.05) {
           const vA = p.fromBufferAttribute(pos, idx.getX(t)).clone(), vB = p.fromBufferAttribute(pos, idx.getX(t + 1)).clone(), vC = p.fromBufferAttribute(pos, idx.getX(t + 2));
@@ -181,7 +182,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         let vertsOk = true;
         for (let k = 0; k < 3 && vertsOk; k++) { p.fromBufferAttribute(pos, idx.getX(t + k));
           if (p.z < 0.55 || p.z > 2.55 || Math.abs(p.x) > anchoMax + 0.06 || p.y > (p.z > 1.85 ? 2.05 : 1.14)) vertsOk = false; }
-        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && !asaIzq && !butacaVieja && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && !asaIzq && !butacaVieja && !restoLateral && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* NADA del interior FSX puede vivir DELANTE del plano del parabrisas (1/11, captura 45 de Iván:
@@ -324,6 +325,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
      base y cinturones integrados; la vieja (m14) se descarta en el recorte general (butacaVieja) */
   new GLTFLoader().loadAsync(`./blender/butaca.glb?v=${V}`).then(p => {
     p.scene.name = 'butaca_nueva'; cabina.add(p.scene);
+  });
+  /* MARCO/ANTEPECHO de las ventanas (1/11, Blender: blender/marco_ventana.glb): cinta que SIGUE la
+     línea real del canto dentado (muestreada de exterior.glb), ambos lados; tapa picos y muescas */
+  new GLTFLoader().loadAsync(`./blender/marco_ventana.glb?v=${V}`).then(p => {
+    p.scene.name = 'marco_ventana'; cabina.add(p.scene);
   });
   new GLTFLoader().loadAsync(`./blender/pedales.glb?v=${V}`).then(p => {
     /* 31/10 (pedido de Iván): el conjunto de pedales heredaba la textura m23 (estructura ROJA y
