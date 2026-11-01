@@ -108,8 +108,15 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   MÉTODO que la encontró: el scan por caja no daba nada rojo ahí → proyectar los triángulos de la escena a
   píxeles (`Vector3.project(cam)`, software-raycast) y mirar qué cae en el píxel rojo. OJO: `innerWidth`
   real ≠ tamaño de la captura del pane (746×630 vs 800×675): escalar los píxeles antes de comparar.
-- **Pendientes de la inspección** (a elección de Iván): (3) cuadrante APILADO: la caja negra de fábrica
-  sobre el pedestal tapa ranuras y perillas azul/gris; (4) el bastón tapa la brújula y la brújula se ve
+- **(3) cuadrante APILADO: RESUELTO (v=20261031j).** La caja apilada era el CUERPO del cuadrante de
+  fábrica (m23, 667 tri, z 0,88–1,39, subía a y 0,958 sobre la tapa del pedestal): descartado por
+  triángulo en el recorte general (`cuadranteViejo`: m23, x −0,60..−0,32, y>0,72, z 0,955..1,42).
+  Al destaparse quedó a la vista que las perillas estaban TRAGADAS por las tapas nuevas → `mover()` en
+  crearConsolas: levHEL −0,09 x / +0,25 y / +0,22 z (estaba hundida, adelantada y FUERA del canto
+  interior), levCOND +0,16 y, levPOT dz −0,04 (colgaba del borde trasero). Las 3 + E-DUMP asoman ahora
+  de sus ranuras rotuladas. MÉTODO: scan por caja sobre el pedestal (triángulos indexados) señaló m23
+  como única malla con volumen ahí; bbox de cada palanca con `pv.traverse` para afinar los mover.
+- **Pendientes de la inspección** (a elección de Iván): (4) el bastón tapa la brújula y la brújula se ve
   «montada a la nada»; (5) asa blanca flotante en el rincón trasero izquierdo; (6) menores: techo oliva
   liso, butaca «de yeso», hueco bajo la consola derecha.
 

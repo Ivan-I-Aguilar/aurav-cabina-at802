@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031g';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031j';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -157,13 +157,14 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         const anchoMax = c.y > 0.85 ? 0.5 : (c.z > 1.6 ? 0.6 : 0.615);   /* el fuselaje se angosta arriba y atrás; a 0,63 la consola (m16) y la butaca (m14) asomaban por la puerta */
         const restoPanel = o.name === 'm23' && c.y > 0.97 && c.z > 0.58 && c.z < 1.00 && Math.abs(c.x) < 0.66;   /* caja del panel viejo que la «tapa» (eliminada) ocultaba: asomaba sobre el capó (27/10) */
         const varillasDer = o.name === 'm14' && c.x > 0.40 && c.x < 0.615 && c.y > 0.32 && c.z > 1.94 && c.z < 2.34;   /* haz de varillas doradas del lateral trasero derecho (31/10, pedido de Iván) */
+        const cuadranteViejo = o.name === 'm23' && c.x > -0.60 && c.x < -0.32 && c.y > 0.72 && c.z > 0.955 && c.z < 1.42;   /* cuerpo del cuadrante de fábrica APILADO sobre el pedestal nuevo: tapaba ranuras y perillas (31/10, hallazgo 3) */
         /* además del centro, los TRES VÉRTICES tienen que quedar en rango: los triángulos-varilla del
            motor (largos, con centro adentro) asomaban como «pelos» por el capó, y los dientes del borde
            sobresalían; descartar el triángulo entero no deforma nada (27/10) */
         let vertsOk = true;
         for (let k = 0; k < 3 && vertsOk; k++) { p.fromBufferAttribute(pos, idx.getX(t + k));
           if (p.z < 0.55 || p.z > 2.55 || Math.abs(p.x) > anchoMax + 0.06 || p.y > (p.z > 1.85 ? 2.05 : 1.14)) vertsOk = false; }
-        if (vertsOk && !restoPanel && !varillasDer && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
@@ -492,7 +493,7 @@ function crearConsolas(datos) {
     placa.position.set(-0.612, 0.745, 0.947); placa.rotation.y = Math.PI / 2; cabina.add(placa); }
   /* palancas y llaves armadas: subirlas a las tapas nuevas (mover el grupo pivote traslada el control entero) */
   const mover = (n, dx, dy, dz) => { const p = cabina.getObjectByName('piv_' + n); if (p) { p.position.x += dx; p.position.y += dy; p.position.z += dz; } };
-  mover('levPOT', 0, 0.04, 0); mover('levHEL', 0, 0.08, 0); mover('levCOND', 0, 0.06, 0.18);   /* la condición se junta con sus hermanas en el pedestal */
+  mover('levPOT', 0, 0.04, -0.04); mover('levHEL', -0.09, 0.25, 0.22); mover('levCOND', 0, 0.16, 0.18);   /* la condición se junta con sus hermanas en el pedestal; 31/10 (sin el cuadrante de fábrica): HEL y COND suben a asomar por las ranuras (HEL también 9 cm adentro: quedaba fuera del canto) y POWER deja de colgar del borde trasero */
   mover('swFLAPS', 0, 0.045, 0); mover('swAUX', 0, 0.045, 0); mover('swK_TRIMTIMON', 0, 0.04, 0); mover('swWRUD', 0, -0.05, 0);
   mover('swK_FRDS1', 0.025, 0, 0);   /* al achicar el paño izq. la perilla externa del FRDS quedaba fuera del canto (27/10) */
   { /* la varilla amarilla de la hélice bajaba suelta hasta el piso (31/10): se corta a ras de la tapa */
