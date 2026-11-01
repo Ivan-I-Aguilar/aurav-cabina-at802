@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031j';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031l';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -106,7 +106,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     if (o.name === 'm13') o.visible = false;   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
     if (o.isMesh && (o.name === 'm14' || o.name === 'm15')) { o.material.color.set(0xe6e6df); o.material.roughness = 0.55; }   /* exterior blanco */
     if (o.isMesh && o.name === 'm32') { o.material = o.material.clone(); o.material.color.set(0x3b3c40); o.material.metalness = 0.3; o.material.roughness = 0.6; }   /* varillas amarillas lisas del mecanismo (31/10): a gris metal */
-    if (o.isMesh && /^m\d+$/.test(o.name) && o.name !== 'm14' && o.name !== 'm15' && o.material && o.material.map) { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0x8c8c88); o.material.metalness = 0.1; o.material.roughness = 0.8; o.material.needsUpdate = true; }   /* 31/10: TODA chapa de fabrica texturada (armazon del asiento, soportes, consolas, varillas) a gris neutro liso; los controles sw/lev conservan su textura */
+    if (o.isMesh && /^m\d+$/.test(o.name) && o.name !== 'm14' && o.name !== 'm15' && o.material && o.material.map && !o.material.transparent) { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0x8c8c88); o.material.metalness = 0.1; o.material.roughness = 0.8; o.material.needsUpdate = true; }   /* 31/10: TODA chapa de fabrica texturada (armazon del asiento, soportes, consolas, varillas) a gris neutro liso; los controles sw/lev conservan su textura. OJO: los materiales TRANSPARENTES (vidrios m22/m26) no se tocan: pintados quedaban como chapas grises opacas («se rompió el fuselaje», 31/10) */
   });
   cabina.add(g.scene);
   /* exterior completo (Lichi: AT-802 TERRESTRE real —OBJ de la familia FSN— con tren de ballesta, hélice de 5 palas,
@@ -158,13 +158,21 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         const restoPanel = o.name === 'm23' && c.y > 0.97 && c.z > 0.58 && c.z < 1.00 && Math.abs(c.x) < 0.66;   /* caja del panel viejo que la «tapa» (eliminada) ocultaba: asomaba sobre el capó (27/10) */
         const varillasDer = o.name === 'm14' && c.x > 0.40 && c.x < 0.615 && c.y > 0.32 && c.z > 1.94 && c.z < 2.34;   /* haz de varillas doradas del lateral trasero derecho (31/10, pedido de Iván) */
         const cuadranteViejo = o.name === 'm23' && c.x > -0.60 && c.x < -0.32 && c.y > 0.72 && c.z > 0.955 && c.z < 1.42;   /* cuerpo del cuadrante de fábrica APILADO sobre el pedestal nuevo: tapaba ranuras y perillas (31/10, hallazgo 3) */
+        /* agujas del mecanismo de fábrica (m23/m16/m5): triángulos-varilla de hasta 1 m que vivían
+           tapados por el cuerpo del cuadrante y las consolas; destapados asoman como PICOS junto al
+           umbral (31/10, aviso de Iván «quedaron cosas destruidas»). Sólo si el lado supera 25 cm. */
+        let agujaLat = false;
+        if (/^(m23|m16|m5)$/.test(o.name) && Math.abs(c.x) > 0.27 && Math.abs(c.x) < 0.68 && c.y > 0.15 && c.y < 0.80 && c.z > 0.68 && c.z < 2.05) {
+          const vA = p.fromBufferAttribute(pos, idx.getX(t)).clone(), vB = p.fromBufferAttribute(pos, idx.getX(t + 1)).clone(), vC = p.fromBufferAttribute(pos, idx.getX(t + 2));
+          agujaLat = Math.max(vA.distanceTo(vB), vB.distanceTo(vC), vC.distanceTo(vA)) > 0.25;
+        }
         /* además del centro, los TRES VÉRTICES tienen que quedar en rango: los triángulos-varilla del
            motor (largos, con centro adentro) asomaban como «pelos» por el capó, y los dientes del borde
            sobresalían; descartar el triángulo entero no deforma nada (27/10) */
         let vertsOk = true;
         for (let k = 0; k < 3 && vertsOk; k++) { p.fromBufferAttribute(pos, idx.getX(t + k));
           if (p.z < 0.55 || p.z > 2.55 || Math.abs(p.x) > anchoMax + 0.06 || p.y > (p.z > 1.85 ? 2.05 : 1.14)) vertsOk = false; }
-        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
@@ -512,12 +520,13 @@ function crearExtrasManual() {
   const g = new THREE.Group(); g.name = 'extras_manual'; cabina.add(g);
   const oscuro = new THREE.MeshStandardMaterial({ color: 0x1b1c20, roughness: 0.7 });
   // --- brújula (whiskey): cajita con tarjeta cilíndrica y línea de fe ---
-  /* montada al PARANTE CENTRAL del parabrisas con su soporte (27/10: colgada en el aire se veía
-     FLOTAR desde afuera, como marcó Iván dos veces; así va en el 802 real) */
-  const soporteB = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.03, 0.032), oscuro);
-  soporteB.position.set(0, 1.33, 1.046); g.add(soporteB);
+  /* COLGADA del marco superior del parabrisas (31/10, hallazgo 4: abajo el bastón la tapaba y el
+     soporte al parante se veía «montado a la nada»; arriba al centro va en el 802 real). El arco del
+     marco pasa por y 1,54-1,69 / z 1,29-1,62 en x 0 (medido en vivo): el brazo nace empotrado ahí. */
+  const soporteB = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.09, 0.028), oscuro);
+  soporteB.position.set(0, 1.575, 1.345); g.add(soporteB);
   const cajaB = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.034, 0.05), oscuro);
-  cajaB.position.set(0, 1.33, 1.085); g.add(cajaB);
+  cajaB.position.set(0, 1.512, 1.375); g.add(cajaB);
   const cv = document.createElement('canvas'); cv.width = 720; cv.height = 64; const cb = cv.getContext('2d');
   cb.fillStyle = '#101113'; cb.fillRect(0, 0, 720, 64);
   cb.fillStyle = '#f0f0f0'; cb.textAlign = 'center'; cb.textBaseline = 'middle';
@@ -528,9 +537,9 @@ function crearExtrasManual() {
   }
   const texB = new THREE.CanvasTexture(cv); texB.colorSpace = THREE.SRGBColorSpace; texB.wrapS = THREE.RepeatWrapping;
   const tarjeta = new THREE.Mesh(new THREE.CylinderGeometry(0.0225, 0.0225, 0.032, 48, 1, true), new THREE.MeshBasicMaterial({ map: texB, side: THREE.BackSide }));
-  tarjeta.position.set(0, 1.304, 1.118); g.add(tarjeta);
+  tarjeta.position.set(0, 1.486, 1.408); g.add(tarjeta);
   const fe = new THREE.Mesh(new THREE.PlaneGeometry(0.0022, 0.026), new THREE.MeshBasicMaterial({ color: 0xf2c200 }));
-  fe.position.set(0, 1.304, 1.143); g.add(fe);
+  fe.position.set(0, 1.486, 1.433); g.add(fe);
   // --- anunciador: fila de celdas sobre la faceta central, entre los placards ---
   const d0 = crearTablero.dCentro ?? 0.95, luces = {};
   const zC = y => (d0 + 0.0175 * y) / 0.9998 + 0.004;

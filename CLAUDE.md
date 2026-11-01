@@ -116,9 +116,27 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   interior), levCOND +0,16 y, levPOT dz −0,04 (colgaba del borde trasero). Las 3 + E-DUMP asoman ahora
   de sus ranuras rotuladas. MÉTODO: scan por caja sobre el pedestal (triángulos indexados) señaló m23
   como única malla con volumen ahí; bbox de cada palanca con `pv.traverse` para afinar los mover.
-- **Pendientes de la inspección** (a elección de Iván): (4) el bastón tapa la brújula y la brújula se ve
-  «montada a la nada»; (5) asa blanca flotante en el rincón trasero izquierdo; (6) menores: techo oliva
-  liso, butaca «de yeso», hueco bajo la consola derecha.
+- **(4) bastón/brújula: HECHO (v=20261031k).** La brújula pasa del parante bajo (el bastón la tapaba y el
+  soporte se veía «a la nada») a COLGADA del marco superior del parabrisas, como el 802 real: el arco pasa
+  por y 1,54-1,69 / z 1,29-1,62 en x 0 (medido en vivo) → brazo (0, 1,575, 1,345), caja (0, 1,512, 1,375),
+  tarjeta 1,486/1,408, fe z 1,433. Falta el visto de Iván en el Quest (de cerca se ve grande: es fiel al
+  tamaño real, 7,8 cm a ~30 cm del ojo).
+- **«Quedaron cosas destruidas» (aviso de Iván 31/10): DOS causas encontradas y corregidas (v=20261031l).**
+  (a) El gris neutro de 31f pintaba también los VIDRIOS (m22/m26, transparentes): quedaban como chapas
+  grises OPACAS por dentro y por fuera («se rompió el fuselaje») → los materiales con `transparent` quedan
+  exentos del repintado. (b) Al borrar el cuerpo del cuadrante quedaron DESTAPADOS los triángulos-varilla
+  del mecanismo de fábrica (m23/m16/m5, lados de hasta 1,1 m): PICOS blancos junto al umbral → descarte
+  `agujaLat` en el recorte general (lado >25 cm, |x| 0,27-0,68, y 0,15-0,80, z 0,68-2,05, ambos lados).
+  RONDA COMPLETA hecha (31/10): interior (frente/izq/atrás, consola, piso) y EXTERIOR a pie con teleport
+  (perfiles izq/der, frente, atrás): fuselaje sano, franja y cola azules, palas con banda, compuerta roja.
+  OJO MÉTODO ronda exterior: los drags sintéticos NO mueven la mirada a pie (apie rota al JUGADOR):
+  teleport = jugador.position.set + jugador.rotation.y, corrigiendo contra __rumbo() (la cámara guarda
+  yaw residual del modo cabina). `__aPie.bajar()`/`subir()` andan por consola. De noche (luz por hora
+  real) forzar luces de nuevo al bajar.
+- **Pendientes de la inspección** (a elección de Iván): (5) asa blanca flotante en el rincón trasero
+  izquierdo; (6) menores: techo oliva liso, butaca «de yeso» (los cinturones del respaldo eran textura y
+  hoy quedan grises), hueco bajo la consola derecha; dos dientes del canto del casco (mat02) visibles
+  sólo desde adentro en el borde de la ventana izquierda (menor).
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
