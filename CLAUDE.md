@@ -246,6 +246,19 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   verdosa del «suelo» y se veía oliva). MEJORA PARCIAL: bóveda central clara; los FLANCOS siguen
   oliva (el raycast horizontal desde el eje pega en la butaca antes que en la pared: 65 caras;
   rehacer otro día con rayos desde cerca de la pared). Exterior verificado limpio tras el recorte.
+- **Tanda «desprolijo» (capturas 51+ de Iván, 2/11, v=20261102i): LA CAUSA RAÍZ de los vidrios.**
+  El borrado del «paño interno duplicado» del vidrio de cúpula clasificaba por NORMAL, y las normales
+  del OBJ vienen mezcladas → borraba MITAD del paño EXTERNO: vidrios agujereados con bordes en SIERRA
+  (el zigzag «al lado de la ventana» de siempre). Criterio nuevo inmune a normales: BVHTree de las
+  caras mat22 + rayo RADIAL desde cada cara; si pega en otro vidrio a <6 cm es la interna. Con el
+  vidrio sano, el bloque «astillas de vidrio» pasó a comerse vidrio legítimo → DESACTIVADO (rama
+  mat22 en False). Además: antepecho con x TAMBIÉN por regresión (el promedio móvil serpenteaba a la
+  derecha); butaca v2 (banqueta +10 cm de fondo —Iván la vio «cortita»—, base 0,68×0,54 que tapa lo
+  de abajo, correas de cintura sobre el cojín); `butacaVieja` ampliada a |x|<0,52 e y>0,27 (la
+  estructura blanca vieja asomaba abajo y a los costados); `restoLateral` ampliado (y 0,52-1,08,
+  z 0,80-1,06); `mamparo_faldon2` ×2 delante de las consolas (por ahí entraban las «líneas azules»).
+  DECISIÓN (pregunta de Iván «¿reconstruir toda la cabina?»): NO: tablero/consolas/controles/butaca
+  ya son nuestros; lo que queda es limpiar la FRONTERA con el casco por zonas.
 - Pendientes menores: flancos interiores oliva (mejor técnica de raycast); lengüeta del dentado
   delante del antepecho (z<1,40); mazo de alambres del parante trasero izq (tolerado); la «garra»
   blanca sobre una perilla negra (captura de Iván sin ubicar; pedir dónde). Pages sigue en 20261028d

@@ -62,16 +62,17 @@ def prisma(nombre, c4, espVec, material, bisel=0.0):
     o.data.materials.append(material)
     piezas.append(o); return o
 
-# banqueta (cojín): top y 0,64
-caja('banqueta', (0, 0.585, 1.70), (0.72, 0.11, 0.46), m_cuerina, bisel=0.022)
+# banqueta (cojín): top y 0,64 (2/11: más LARGA — Iván la vio «cortita» — y llega casi al respaldo)
+caja('banqueta', (0, 0.585, 1.72), (0.72, 0.11, 0.56), m_cuerina, bisel=0.022)
 # respaldo ALTO inclinado (cara trasera de (0,60, z 1,955) a (1,44, z 2,045); espesor 10 cm al frente)
 prisma('respaldo', [(-0.35, 0.60, 1.955), (0.35, 0.60, 1.955), (0.35, 1.44, 2.045), (-0.35, 1.44, 2.045)],
        (0, 0, -0.10), m_cuerina, bisel=0.02)
 # apoyacabeza: sigue la inclinación arriba
 prisma('apoyacabeza', [(-0.17, 1.44, 2.043), (0.17, 1.44, 2.043), (0.17, 1.60, 2.060), (-0.17, 1.60, 2.060)],
        (0, 0, -0.088), m_cuerina, bisel=0.018)
-# base/cajón estructural bajo la banqueta (tapa el mecanismo y el hueco al piso)
-caja('base', (0, 0.42, 1.70), (0.58, 0.24, 0.42), m_base, bisel=0.008)
+# base/cajón estructural bajo la banqueta (2/11: más ANCHA y LARGA: tapaba a medias y el asiento
+# blanco viejo asomaba por abajo — pedido de Iván «estirar la base»)
+caja('base', (0, 0.44, 1.72), (0.68, 0.30, 0.54), m_base, bisel=0.008)
 # rieles al piso
 caja('riel_i', (-0.22, 0.285, 1.70), (0.05, 0.05, 0.50), m_base, bisel=0.004)
 caja('riel_d', (0.22, 0.285, 1.70), (0.05, 0.05, 0.50), m_base, bisel=0.004)
@@ -88,9 +89,10 @@ def correa(nombre, A, B, planoVert=True, ancho=0.056, espesor=0.013):
 # hombros: del respaldo alto a la hebilla, extremos hundidos 2 mm (quedan «cosidos»)
 correa('correa_hi', (-0.135, 1.33, zFrente(1.33) - 0.002), (-0.045, 0.72, zFrente(0.72) - 0.002))
 correa('correa_hd', (0.135, 1.33, zFrente(1.33) - 0.002), (0.045, 0.72, zFrente(0.72) - 0.002))
-# cintura: del costado de la banqueta (hundidas en el cojín) al centro
-correa('correa_ci', (-0.33, 0.630, 1.80), (-0.055, 0.655, 1.86), planoVert=False)
-correa('correa_cd', (0.33, 0.630, 1.80), (0.055, 0.655, 1.86), planoVert=False)
+# cintura: SOBRE el cojín y pegadas al pliegue del respaldo (2/11: a ras del cojín se veían
+# cortadas donde el bisel subía)
+correa('correa_ci', (-0.33, 0.658, 1.86), (-0.055, 0.672, 1.90), planoVert=False)
+correa('correa_cd', (0.33, 0.658, 1.86), (0.055, 0.672, 1.90), planoVert=False)
 # hebilla central
 bpy.ops.mesh.primitive_cube_add(size=1, location=b((0, 0.70, zFrente(0.70) - 0.014)))
 heb = bpy.context.active_object; heb.name = 'hebilla'

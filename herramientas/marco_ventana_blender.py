@@ -61,8 +61,11 @@ for lado in (-1, 1):
     recta = [base + pend * (i - zm) for i in range(n)]
     desvio = max(y - r for y, r in zip(ys, recta))
     cresta = [r + desvio for r in recta]
-    # suavizado del x (promedio móvil ±2)
-    xsu = [sum(xs[max(0, i - 2):i + 3]) / len(xs[max(0, i - 2):i + 3]) for i in range(n_franjas)]
+    # x también RECTO por regresión (2/11: el promedio móvil serpenteaba en el lado derecho —
+    # las muestras saltan entre marco y ventanilla— y la cinta se veía quebrada)
+    sx = sum(xs)
+    pendx = sum((i - zm) * x_ for i, x_ in enumerate(xs)) / sz2 if sz2 else 0.0
+    xsu = [sx / n + pendx * (i - zm) for i in range(n_franjas)]
     # cinta: sección rectangular (ANCHO×ALTO) centrada 1 cm sobre la cresta menos medio alto
     verts, caras = [], []
     for i in range(n_franjas):

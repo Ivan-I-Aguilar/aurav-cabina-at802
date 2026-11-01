@@ -73,16 +73,34 @@ bm = bmesh.new(); bm.from_mesh(me)
 INT_MIN, INT_MAX = Vector((-0.5, -2.02, 0.15)), Vector((0.5, -0.7, 1.25))    # restos interiores (el habitáculo lo pone nuestra cabina); el mamparo de atrás (y<-2.02) queda: cierra la chapa detrás de la ventana
 # la cúpula del OBJ queda ENTERA, vidrios incluidos (sin puerta que abre: el modelo lo más fiel posible)
 gi = {i for i, sl in enumerate(o.material_slots) if sl.material and sl.material.name == 'mat22'}
+# vidrios de la cúpula duplicados (paño interno + externo pelean entre sí): queda SÓLO el paño
+# EXTERNO. OJO 2/11: clasificar por normal borraba MITAD del paño externo (las normales del OBJ
+# vienen mezcladas) y los vidrios quedaban agujereados («desprolijo», captura 51 de Iván).
+# Criterio inmune a normales: rayo RADIAL hacia afuera desde cada cara; si pega en OTRO vidrio a
+# menos de 6 cm, esta cara es la interna.
+from mathutils.bvhtree import BVHTree
+bm.faces.ensure_lookup_table()
+caras_v = [f for f in bm.faces if f.material_index in gi and -2.6 < f.calc_center_median().y < -0.3 and f.calc_center_median().z > 0.85]
+bm_v = bmesh.new()
+mapa_v = {}
+for f in caras_v:
+    nv = [bm_v.verts.new(v.co) for v in f.verts]
+    try: bm_v.faces.new(nv)
+    except ValueError: pass
+bm_v.verts.index_update(); bm_v.faces.index_update()
+arbol_v = BVHTree.FromBMesh(bm_v) if caras_v else None
+internos = set()
+for f in caras_v:
+    c = f.calc_center_median()
+    d = Vector((c.x, 0, c.z - 1.0)).normalized()
+    hit = arbol_v.ray_cast(c + d * 0.004, d, 0.06) if arbol_v else (None,)
+    if hit[0] is not None: internos.add(f.index)
+bm_v.free()
 quitar = []
 for f in bm.faces:
     c = f.calc_center_median()
     en_int = all(INT_MIN[i] <= c[i] <= INT_MAX[i] for i in range(3))
-    # vidrios de la cúpula duplicados (paño interno + externo superpuestos pelean entre sí): queda sólo la cara que mira hacia afuera
-    vidrio_int = False
-    if f.material_index in gi and -2.6 < c.y < -0.3 and c.z > 0.85:
-        d = Vector((c.x, 0, c.z - 1.0)).normalized()
-        vidrio_int = f.normal.dot(d) < 0
-    if f.material_index in mats_borrar or en_int or vidrio_int: quitar.append(f)
+    if f.material_index in mats_borrar or en_int or f.index in internos: quitar.append(f)
 bmesh.ops.delete(bm, geom=quitar, context='FACES')
 bm.to_mesh(me); bm.free(); me.update()
 print('BORRADAS', len(quitar))
@@ -457,9 +475,9 @@ i_m22a = {i for i, m in enumerate(o.data.materials) if m and m.name == 'mat22'}
 borrarV = []
 for f in bm.faces:
     c = f.calc_center_median()
-    if f.material_index in i_m22a:
-        # vidrio: todo lo que quede en la zona del vano es astilla (el centro puede caer bien ADENTRO
-        # del hueco: |x| desde 0,28). z_s hasta 1,45 e y_s desde −1,35 para NO tocar el parabrisas.
+    if False and f.material_index in i_m22a:
+        # (DESACTIVADO 2/11: estas «astillas de vidrio» eran el vidrio exterior agujereado por el
+        # borrado por normal; con el criterio BVH el vidrio está entero y este bloque se lo comía)
         if 0.28 < abs(c.x) < 0.68 and -2.25 < c.y < -1.35 and 0.88 < c.z < 1.45:
             borrarV.append(f)
     elif f.material_index in i_m02a:

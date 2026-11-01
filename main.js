@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261102g';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261102i';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -162,8 +162,8 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
            tapados por el cuerpo del cuadrante y las consolas; destapados asoman como PICOS junto al
            umbral (31/10, aviso de Iván «quedaron cosas destruidas»). Sólo si el lado supera 25 cm. */
         const asaIzq = o.name === 'm14' && c.x > -0.62 && c.x < -0.29 && c.y > 0.72 && c.y < 1.02 && c.z > 1.90 && c.z < 2.14;   /* asa/correa de fábrica FLOTANDO junto al respaldo, lado izquierdo (31/10, hallazgo 5) */
-        const butacaVieja = o.name === 'm14' && Math.abs(c.x) < 0.42 && c.y > 0.33 && c.y < 1.10 && c.z > 1.47 && c.z < 2.12;   /* 1/11: la butaca de fábrica (banqueta z 1,5-1,9 + respaldo z 1,88-1,97) se reemplaza por blender/butaca.glb; caja JUSTA: con z hasta 2,30 se comía piso y chapas traseras */
-        const restoLateral = /^(m16|m18|m22|m23|m26)$/.test(o.name) && Math.abs(c.x) > 0.46 && Math.abs(c.x) < 0.64 && c.y > 0.70 && c.y < 1.08 && c.z > 0.82 && c.z < 1.01;   /* 1/11, Iván: «un instrumento por debajo de otro» en el sector izquierdo: paneles VIEJOS de fábrica apretados entre el paño nuevo y la pared (ambos lados; ahí no vive nada legítimo: los controles son mallas aparte) */
+        const butacaVieja = o.name === 'm14' && Math.abs(c.x) < 0.52 && c.y > 0.27 && c.y < 1.10 && c.z > 1.45 && c.z < 2.13;   /* 1/11: la butaca de fábrica se reemplaza por blender/butaca.glb. 2/11: |x|<0,52 e y>0,27 (la estructura blanca vieja asomaba por abajo y a los costados). NO pasar z 2,13 (chapas traseras) */
+        const restoLateral = /^(m16|m18|m22|m23|m26)$/.test(o.name) && Math.abs(c.x) > 0.46 && Math.abs(c.x) < 0.64 && c.y > 0.52 && c.y < 1.08 && c.z > 0.80 && c.z < 1.06;   /* 1/11, Iván: «un instrumento por debajo de otro»: paneles VIEJOS entre el paño nuevo y la pared (ambos lados). 2/11: ampliada hacia abajo y atrás (seguían asomando bajo la caja negra izquierda) */
         let agujaLat = false;
         if (/^(m23|m16|m5)$/.test(o.name) && Math.abs(c.x) > 0.27 && Math.abs(c.x) < 0.68 && c.y > 0.15 && c.y < 0.80 && c.z > 0.68 && c.z < 2.05) {
           const vA = p.fromBufferAttribute(pos, idx.getX(t)).clone(), vB = p.fromBufferAttribute(pos, idx.getX(t + 1)).clone(), vC = p.fromBufferAttribute(pos, idx.getX(t + 2));
@@ -298,6 +298,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     const faldon = new THREE.Mesh(new THREE.BoxGeometry(0.245, 0.32, 0.67),
       new THREE.MeshStandardMaterial({ color: 0x202023, roughness: 0.85 }));
     faldon.name = 'mamparo_faldon'; faldon.position.set(lado * 0.4925, 0.41, 1.295); g.scene.add(faldon);
+    /* 2/11, Iván: «se ven las líneas azules del fuselaje»: el tramo DELANTE de la consola (zona de
+       pedales laterales) seguía abierto al casco → faldón delantero hasta el cortafuegos */
+    const faldon2 = new THREE.Mesh(new THREE.BoxGeometry(0.245, 0.46, 0.44),
+      new THREE.MeshStandardMaterial({ color: 0x202023, roughness: 0.85 }));
+    faldon2.name = 'mamparo_faldon2'; faldon2.position.set(lado * 0.4925, 0.47, 0.75); g.scene.add(faldon2);
   }
   /* VIDRIOS de las ventanillas del carenado trasero (1/11, captura 45 de Iván: «abertura importante
      detrás de la ventana»: los huecos iban SIN vidrio y se veían como agujeros crudos al interior) */
