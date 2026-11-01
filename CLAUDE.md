@@ -159,9 +159,25 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   blanco asomaba sobre el respaldo y la butaca parecía mitad y mitad → `mamparo_respaldo`: respaldo
   ALTO de cuerina (0,60×0,52) en (0, 1,26, 2,30) delante del mamparo. Verificado adentro (ambos vanos,
   respaldo) y afuera (3/4 izquierdo: carenado entero, franja continua).
-- **Pendientes de la inspección** (a elección de Iván): (6) menores restantes: techo oliva liso, hueco
-  bajo la consola derecha; dos dientes del canto del casco (mat02) visibles sólo desde adentro en el
-  borde de la ventana izquierda (menor).
+- **Tanda 1/11 (lista grande de Iván, resuelta en v=20261101i; tiene DEMO y necesita estabilidad):**
+  cuadrado oscuro tras el asiento = mi «respaldo alto» → ELIMINADO (el mamparo queda blanco); cinturones
+  caían DENTRO del respaldo (es una CÁSCARA HUECA abierta arriba) → tiras cortas en z 1,82, siempre
+  delante; panel negro atravesando el pedestal = la MEJILLA que bajaba a 0,70 → 0,36×0,27 muriendo
+  sobre la tapa; «líneas azules del avión» por el hueco paño-pared → placa de cierre `mamparo_pared_izq`;
+  «fuselaje rajado sobre la ventana» = ASTILLAS del vidrio recortado de la cúpula (mat22) + caras de piel
+  con la PUNTA colgando en el hueco (el centro ancla afuera: condición por VÉRTICE, lado >20 cm, franja
+  z_s 1,00-1,26 — con 1,42 entraba el marco superior y se abría una RENDIJA en el techo); manija ESPEJO
+  derecha borrada (cajita x≤0,555); el borrado de la manija alta con caja apretada (de 640 a 32 caras:
+  el resto era un trozo de carenado que VOLVIÓ); mamparo CORTAFUEGOS (plano oscuro z 0,52) tapa el
+  interior hueco del capó que se veía con la librea al revés; eje acodado de levCOND hundido bajo la
+  tapa (clamp local z>0,92 → y 0,585).
+  **REGLA NUEVA (1/11, tras dos agujeros autoinfligidos): NO BORRAR MÁS NADA del casco (mat02/mat22)
+  por cajas o islas «generosas»: el OBJ está lleno de CHAPAS-ISLA sueltas que caen adentro. Sólo
+  borrados con firma inequívoca (vértice en el AIRE del hueco + cara grande; isla diminuta <20 cm) y
+  verificación inmediata; lo demás se TAPA con piezas nuevas (molduras, placas).**
+- Pendientes menores: techo oliva liso; hueco bajo la consola derecha; el ESCAPE visto de afuera
+  (captura chica de Iván, sin verificar de cerca); la «garra» blanca sobre una perilla negra (captura
+  de Iván sin ubicar: no apareció en scans de la cabina; pedir dónde la ve si sigue).
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento

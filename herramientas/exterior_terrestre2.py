@@ -364,8 +364,8 @@ print('ASA 2 borrada', len(borrarA2))
 borrarD = []
 for f in bm.faces:
     c = f.calc_center_median()
-    if f.material_index in i_m02a and 0.44 < c.x < 0.575 and -1.98 < c.y < -1.78 and 0.76 < c.z < 1.01:
-        borrarD.append(f)
+    if f.material_index in i_m02a and 0.44 < c.x < 0.555 and -1.98 < c.y < -1.78 and 0.76 < c.z < 1.01:
+        borrarD.append(f)   # 1/11: tope x 0,555 (con 0,575 mordía la chapa del flanco, que arranca en ~0,56)
 if borrarD: bmesh.ops.delete(bm, geom=borrarD, context='FACES')
 print('ASA derecha borrada', len(borrarD))
 bm.faces.ensure_lookup_table(); bm.faces.index_update()
@@ -387,6 +387,92 @@ for f0 in bm.faces:
         borrarD2 += isla
 if borrarD2: bmesh.ops.delete(bm, geom=borrarD2, context='FACES')
 print('ASA derecha alta borrada', len(borrarD2))
+
+# DIENTES del canto en la línea de ventana (1/11, captura de Iván: flecha dentada en el borde del
+# vano): vértices de caras mat02 que suben en pico sobre el canto (~z_s 1,0) en la banda del vano,
+# ambos lados → clamp a 1,02 (chapa continua, clamp chico y dirigido: regla de los «pelos del capó»)
+nd = 0
+for f in bm.faces:
+    if f.material_index not in i_m02a: continue
+    c = f.calc_center_median()
+    if not (0.52 < abs(c.x) < 0.68 and -2.38 < c.y < -1.28 and 0.86 < c.z < 1.30): continue
+    for vv in f.verts:
+        if vv.co.z > 1.02 and 0.50 < abs(vv.co.x) < 0.70 and -2.42 < vv.co.y < -1.24:
+            vv.co.z = 1.02; nd += 1
+print('DIENTES ventana bajados', nd)
+
+# haz de ALAMBRES finos pegado a la pared/parante (1/11, captura de Iván: rayas verticales grises;
+# era el «remanente tolerado» del 31/10): cables que siguen hasta la cola → ISLAS mat02 CONTENIDAS
+# en una vaina larga pegada a la pared, ambos lados; la chapa (conectada a todo) no cae.
+bm.faces.ensure_lookup_table(); bm.faces.index_update()
+visW = set(); borrarW = []
+for f0 in bm.faces:
+    if f0.index in visW or f0.material_index not in i_m02a: continue
+    c0 = f0.calc_center_median()
+    if not (0.54 < abs(c0.x) < 0.70 and -2.5 < c0.y < -1.0 and 0.05 < c0.z < 1.9): continue
+    pila = [f0]; visW.add(f0.index); isla = [f0]
+    while pila:
+        g2 = pila.pop()
+        for e in g2.edges:
+            for h in e.link_faces:
+                if h.index not in visW: visW.add(h.index); isla.append(h); pila.append(h)
+    ps = [vv.co for g2 in isla for vv in g2.verts]
+    dx = max(p.x for p in ps) - min(p.x for p in ps); dz = max(p.z for p in ps) - min(p.z for p in ps)
+    dy = max(p.y for p in ps) - min(p.y for p in ps)
+    # 1/11 OJO: la vaina «contenida» se llevó CHAPAS-ISLA del lomo (muescas en la franja). Un alambre
+    # es LARGO y FINÍSIMO: sección <6×8 cm y largo >80 cm; ninguna chapa tiene esa forma.
+    if dx < 0.06 and dz < 0.08 and dy > 0.8:
+        borrarW += isla
+if borrarW: bmesh.ops.delete(bm, geom=borrarW, context='FACES')
+print('ALAMBRES pared borrados', len(borrarW))
+
+# resto de la MANIJA alta izquierda (1/11, captura de Iván: quedaba un bucle): islas que TOCAN el
+# cluster, contenidas en caja media Y chicas (<300 caras: el trozo de carenado era ~600)
+bm.faces.ensure_lookup_table(); bm.faces.index_update()
+visR = set(); borrarR = []
+for f0 in bm.faces:
+    if f0.index in visR or f0.material_index not in i_m02a: continue
+    c0 = f0.calc_center_median()
+    if not (-0.56 < c0.x < -0.32 and -2.36 < c0.y < -2.10 and 1.22 < c0.z < 1.48): continue
+    pila = [f0]; visR.add(f0.index); isla = [f0]
+    while pila:
+        g2 = pila.pop()
+        for e in g2.edges:
+            for h in e.link_faces:
+                if h.index not in visR: visR.add(h.index); isla.append(h); pila.append(h)
+    ps = [vv.co for g2 in isla for vv in g2.verts]
+    dx = max(p.x for p in ps) - min(p.x for p in ps); dz = max(p.z for p in ps) - min(p.z for p in ps)
+    dy = max(p.y for p in ps) - min(p.y for p in ps)
+    # 1/11 OJO: con tope 300 caras cayeron pedazos de carenado. La manija es DIMINUTA (12×5×6 cm):
+    # sólo islas con bbox menor a 20 cm en los tres ejes.
+    if len(isla) < 300 and dx < 0.20 and dy < 0.20 and dz < 0.20:
+        borrarR += isla
+if borrarR: bmesh.ops.delete(bm, geom=borrarR, context='FACES')
+print('RESTO manija alta borrado', len(borrarR))
+
+# ASTILLAS DE VIDRIO en los vanos (1/11, Iván: «rajado el fuselaje sobre la ventana, ambos lados»):
+# el recorte de los vidrios de la cúpula dejó triángulos colgando en el hueco de la ventana lateral.
+# mat22 = vidrio: en la zona de cabina el vidrio legítimo YA se quitó, lo que quede ahí es astilla.
+i_m22a = {i for i, m in enumerate(o.data.materials) if m and m.name == 'mat22'}
+borrarV = []
+for f in bm.faces:
+    c = f.calc_center_median()
+    if f.material_index in i_m22a:
+        # vidrio: todo lo que quede en la zona del vano es astilla (el centro puede caer bien ADENTRO
+        # del hueco: |x| desde 0,28). z_s hasta 1,45 e y_s desde −1,35 para NO tocar el parabrisas.
+        if 0.28 < abs(c.x) < 0.68 and -2.25 < c.y < -1.35 and 0.88 < c.z < 1.45:
+            borrarV.append(f)
+    elif f.material_index in i_m02a:
+        # piel invadiendo el HUECO del vano: la cara cuelga desde el marco con la PUNTA en el aire
+        # (el centro queda afuera) → condición por VÉRTICE + cara grande (las molduras son chicas)
+        pts = [vv.co for vv in f.verts]
+        # franja SOLO hasta z_s 1,26: con 1,42 entraban caras del MARCO SUPERIOR del vano y se abría
+        # una rendija en el techo (1/11)
+        if any(0.26 < abs(p.x) < 0.50 and -2.20 < p.y < -1.45 and 1.00 < p.z < 1.26 for p in pts):
+            L = max((pts[0] - pts[1]).length, (pts[1] - pts[2]).length, (pts[2] - pts[0]).length)
+            if L > 0.20: borrarV.append(f)
+if borrarV: bmesh.ops.delete(bm, geom=borrarV, context='FACES')
+print('ASTILLAS vidrio/piel borradas', len(borrarV))
 
 # ESCAPES enteros al metal oscuro (27/10: el labio y la mitad trasera del tubo eran piel y quedaban
 # blancos). En la caja del escape se repinta todo lo que no sea el flanco del capó (normal.x alta

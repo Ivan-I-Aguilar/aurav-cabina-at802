@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101a';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101i';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -167,6 +167,13 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
           const vA = p.fromBufferAttribute(pos, idx.getX(t)).clone(), vB = p.fromBufferAttribute(pos, idx.getX(t + 1)).clone(), vC = p.fromBufferAttribute(pos, idx.getX(t + 2));
           agujaLat = Math.max(vA.distanceTo(vB), vB.distanceTo(vC), vC.distanceTo(vA)) > 0.25;
         }
+        /* astillas del VIDRIO VIEJO de la cabina en los vanos (1/11, Iván: «rajado sobre la ventana,
+           ambos lados»): triángulos-aguja de m22 tintado colgando en el hueco; el paño sano es de
+           triángulos chicos y no se toca */
+        if (!agujaLat && o.name === 'm22' && Math.abs(c.x) > 0.48 && c.y > 0.82 && c.y < 1.50 && c.z > 1.25 && c.z < 2.35) {
+          const vA = p.fromBufferAttribute(pos, idx.getX(t)).clone(), vB = p.fromBufferAttribute(pos, idx.getX(t + 1)).clone(), vC = p.fromBufferAttribute(pos, idx.getX(t + 2));
+          agujaLat = Math.max(vA.distanceTo(vB), vB.distanceTo(vC), vC.distanceTo(vA)) > 0.30;
+        }
         /* además del centro, los TRES VÉRTICES tienen que quedar en rango: los triángulos-varilla del
            motor (largos, con centro adentro) asomaban como «pelos» por el capó, y los dientes del borde
            sobresalían; descartar el triángulo entero no deforma nada (27/10) */
@@ -204,18 +211,15 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
        dos tiras del arnés en V + hebilla, pegadas a la cara del respaldo (z 1,88 abajo → 1,97 arriba) */
     const matCint = new THREE.MeshStandardMaterial({ color: 0x2f4e8c, roughness: 0.75, side: THREE.DoubleSide });
     for (const lado of [-1, 1]) {
-      const tira = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.46, 0.012), matCint);
-      tira.name = 'mamparo_cint'; tira.position.set(lado * 0.10, 0.86, 1.845);
-      tira.rotation.set(0.10, 0, lado * -0.34); cabina.add(tira);   /* 4 cm DELANTE del respaldo y poca inclinación: el respaldo es almohadillado (ondula z 1,86-1,94) y las tiras pegadas se hundían. rot.z invertida: hombros ARRIBA separados, convergen en la hebilla */
+      const tira = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.34, 0.012), matCint);
+      tira.name = 'mamparo_cint'; tira.position.set(lado * 0.10, 0.80, 1.820);
+      tira.rotation.set(0.12, 0, lado * -0.34); cabina.add(tira);   /* cortas y SIEMPRE delante de la cáscara del respaldo (1/11, Iván: el respaldo es HUECO y las tiras caían dentro del hueco); hombros arriba separados, convergen en la hebilla */
     }
     const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.065, 0.022),
       new THREE.MeshStandardMaterial({ color: 0x9a9b9e, metalness: 0.6, roughness: 0.4 }));
     hebilla.name = 'mamparo_hebilla'; hebilla.position.set(0, 0.655, 1.826); hebilla.rotation.x = 0.10; cabina.add(hebilla);
-    /* respaldo ALTO de cuerina delante del mamparo (31/10, captura 44 de Iván: el mamparo blanco
-       asomaba sobre el respaldo y la butaca parecía mitad y mitad; el asiento real es de respaldo alto) */
-    const respAlto = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.52, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0x4a4a46, roughness: 0.92 }));
-    respAlto.name = 'mamparo_respaldo'; respAlto.position.set(0, 1.26, 2.30); cabina.add(respAlto);
+    /* (el «respaldo alto» de cuerina delante del mamparo se probó el 31/10 y se SACÓ el 1/11:
+       Iván lo veía como un cuadrado oscuro sin sentido detrás del asiento; el mamparo queda blanco) */
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -263,6 +267,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   const piso = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.012, 0.95),
     new THREE.MeshStandardMaterial({ color: 0x232326, roughness: 0.9 }));
   piso.name = 'mamparo_piso'; piso.position.set(0, 0.262, 1.025); g.scene.add(piso);   /* el nombre arranca con «mamparo»: exento del recorte general */
+  /* mamparo CORTAFUEGOS (1/11, captura de Iván: mirando rasante sobre el tablero se veía el INTERIOR
+     hueco del capó con la librea al revés): chapa oscura al límite delantero del habitáculo */
+  const fuego = new THREE.Mesh(new THREE.PlaneGeometry(1.16, 1.0),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a28, roughness: 0.9 }));
+  fuego.name = 'mamparo_fuego'; fuego.position.set(0, 0.65, 0.52); g.scene.add(fuego);   /* FrontSide mirando al asiento: desde afuera no existe */
   /* (la «tapa» del panel inferior se eliminó el 27/10: tapaba el recuadro del panel VIEJO m1, hoy
      oculto, y quedaba como plano negro flotante delante del tablero visto desde afuera) */
   /* palanquita para los switches que en el modelo son sólo la tuerca (F PUMP, HOPR, FRDS, WIPER) */
@@ -432,10 +441,15 @@ function crearTablero(datos) {
   for (const lado of [-1, 1]) {
     const xB = lado * 0.605;
     const zB = zEn(lado, xB, 0.955);
-    const mejilla = new THREE.Mesh(new THREE.PlaneGeometry(0.20, 0.30), matTapa);
-    mejilla.position.set(xB, 0.85, zB - 0.09);
-    mejilla.rotation.y = -lado * Math.PI / 2; cabina.add(mejilla);   /* FrontSide hacia ADENTRO: a doble cara se veía una placa negra FLOTANDO por el vano de la puerta (27/10) */
+    const mejilla = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.27), matTapa);
+    mejilla.position.set(xB, 0.895, zB - 0.04);
+    mejilla.rotation.y = -lado * Math.PI / 2; cabina.add(mejilla);   /* FrontSide hacia ADENTRO: a doble cara se veía una placa negra FLOTANDO por el vano (27/10). 1/11: muere SOBRE la tapa del pedestal (antes bajaba a 0,70 y se INCRUSTABA, se veía atravesada) */
   }
+  /* cierre del hueco paño-pared izquierdo (1/11, Iván: «se ven las líneas azules del avión» = el casco
+     exterior por dentro): placa oscura pegada a la pared detrás del subpanel FRDS */
+  const cierreIzq = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.52), matTapa);
+  cierreIzq.name = 'mamparo_pared_izq'; cierreIzq.position.set(-0.606, 0.96, 1.24);
+  cierreIzq.rotation.y = Math.PI / 2; cabina.add(cierreIzq);
   /* reubicar los relojes según el plano de la foto, sobre el paño que les toca */
   for (const d of datos) {
     const p = LAYOUT[d.tipo]; if (!p) continue;
@@ -544,6 +558,12 @@ function crearConsolas(datos) {
     if (hel && hel.malla) { const gh = hel.malla.geometry, ph = gh.attributes.position;
       for (let i = 0; i < ph.count; i++) if (ph.getY(i) < 0.67) ph.setY(i, 0.67);
       ph.needsUpdate = true; gh.computeBoundingBox(); gh.computeBoundingSphere(); } }
+  /* el eje acodado de levCOND quedó a la vista al subirla (1/11, captura de Iván: cilindro con corte
+     crudo junto a la perilla): se hunde bajo la tapa del pedestal (coords locales pre-pivote) */
+  { const cond = controles.palancas.find(x => x.nombre === 'levCOND');
+    if (cond && cond.malla) { const gc = cond.malla.geometry, pc = gc.attributes.position;
+      for (let i = 0; i < pc.count; i++) if (pc.getZ(i) > 0.92 && pc.getY(i) > 0.585) pc.setY(i, 0.585);
+      pc.needsUpdate = true; gc.computeBoundingBox(); gc.computeBoundingSphere(); } }
   /* el suction vivía en la consola de fábrica (y 0,62): pasa empotrado a la tapa trasera, mirando arriba */
   for (const d of datos) if (d.tipo === 'suction') { d.c = [-0.44, Y_TAPA + 0.001, 1.52]; d.n = [0, 1, 0]; d.ex = [1, 0, 0]; d.ey = [0, 0, -1]; }
 }
