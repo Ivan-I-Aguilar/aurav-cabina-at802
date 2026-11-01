@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101i';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101k';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -183,6 +183,23 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && !asaIzq && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
+    /* NADA del interior FSX puede vivir DELANTE del plano del parabrisas (1/11, captura 45 de Iván:
+       los paneles viejos m22/m8/m3/m4 asomaban hasta 36 cm fuera del vidrio, en gris claro; con la
+       textura oscura de fábrica nunca se habían notado). Descarte geométrico puro, pieza por pieza;
+       el margen de 15 mm salva los parantes que van AL RAS del plano. */
+    g.scene.traverse(o => {
+      if (!o.isMesh || !/^m\d+/.test(o.name) || !o.geometry.index) return;
+      const geo = o.geometry, idx = geo.index, pos = geo.attributes.position;
+      const qd = []; const pv = new THREE.Vector3();
+      for (let t = 0; t < idx.count; t += 3) {
+        let fuera = false;   /* por VÉRTICE: triángulos con el centro adentro asomaban la punta («pelos») */
+        for (let k = 0; k < 3 && !fuera; k++) { pv.fromBufferAttribute(pos, idx.getX(t + k));
+          if (pv.y > 1.04 && pv.z < 0.74 + 0.93 * (pv.y - 1.02) - 0.015) fuera = true; }
+        if (fuera) continue;
+        qd.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2));
+      }
+      if (qd.length < idx.count) { geo.setIndex(qd); if (!qd.length) o.visible = false; }   /* nunca ENCENDER visibilidad: m1/m18 están ocultas a propósito */
+    });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
     let texAt01 = null; e.scene.traverse(o => { if (o.isMesh && !texAt01 && o.material?.map && o.material.name === 'mat02') texAt01 = o.material.map; });
     if (texAt01) g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = texAt01; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
@@ -272,6 +289,14 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   const fuego = new THREE.Mesh(new THREE.PlaneGeometry(1.16, 1.0),
     new THREE.MeshStandardMaterial({ color: 0x2a2a28, roughness: 0.9 }));
   fuego.name = 'mamparo_fuego'; fuego.position.set(0, 0.65, 0.52); g.scene.add(fuego);   /* FrontSide mirando al asiento: desde afuera no existe */
+  /* VIDRIOS de las ventanillas del carenado trasero (1/11, captura 45 de Iván: «abertura importante
+     detrás de la ventana»: los huecos iban SIN vidrio y se veían como agujeros crudos al interior) */
+  const matVentanilla = new THREE.MeshStandardMaterial({ color: 0x1a2026, roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.82, side: THREE.DoubleSide });
+  for (const lado of [-1, 1]) {
+    const vent = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.30), matVentanilla);
+    vent.name = 'mamparo_ventanilla'; vent.position.set(lado * 0.40, 1.44, 2.33);
+    vent.rotation.y = Math.PI / 2; g.scene.add(vent);
+  }
   /* (la «tapa» del panel inferior se eliminó el 27/10: tapaba el recuadro del panel VIEJO m1, hoy
      oculto, y quedaba como plano negro flotante delante del tablero visto desde afuera) */
   /* palanquita para los switches que en el modelo son sólo la tuerca (F PUMP, HOPR, FRDS, WIPER) */

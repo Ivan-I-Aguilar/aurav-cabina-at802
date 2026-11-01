@@ -175,9 +175,17 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   por cajas o islas «generosas»: el OBJ está lleno de CHAPAS-ISLA sueltas que caen adentro. Sólo
   borrados con firma inequívoca (vértice en el AIRE del hueco + cara grande; isla diminuta <20 cm) y
   verificación inmediata; lo demás se TAPA con piezas nuevas (molduras, placas).**
+- **Captura 45 de Iván («sobresale el tablero / agujereado tras la ventana»), RESUELTA en v=20261101k:**
+  lo que sobresalía del capó eran los PANELES VIEJOS FSX (m22/m8/m3/m4…, hasta 36 cm DELANTE del plano
+  del parabrisas; el recorte los salteaba por «pieza interior entera» y el gris claro de 31/10 los hizo
+  visibles) → pasada nueva en el exterior-then: descarte por VÉRTICE de todo m\d+ delante del plano
+  (margen 15 mm salva los parantes al ras). Verificado: CERO violaciones. OJO: al reindexar, NUNCA
+  tocar o.visible salvo para apagar (la 1.ª versión re-ENCENDIÓ m1, oculta a propósito). El «agujero»
+  tras la ventana = ventanillas del carenado SIN vidrio → placas tintadas `mamparo_ventanilla` ±0,40.
 - Pendientes menores: techo oliva liso; hueco bajo la consola derecha; el ESCAPE visto de afuera
   (captura chica de Iván, sin verificar de cerca); la «garra» blanca sobre una perilla negra (captura
-  de Iván sin ubicar: no apareció en scans de la cabina; pedir dónde la ve si sigue).
+  de Iván sin ubicar: no apareció en scans de la cabina; pedir dónde la ve si sigue); confirmar con
+  Iván la vista de la captura 45 en v20261101k (ventanillas nuevas y silueta limpia).
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
