@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101o';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101p';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -294,16 +294,16 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
      el hueco del lomo se tolera: el cortafuegos y el glareshield tapan lo grueso) */
   /* LISTÓN que tapa el haz de alambres del parante trasero izquierdo (1/11; no se pueden borrar:
      no son islas con forma de hilo) */
-  const liston = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.05, 0.16),
+  const liston = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.72, 0.15),
     new THREE.MeshStandardMaterial({ color: 0xd8d8d4, roughness: 0.6 }));
-  liston.name = 'mamparo_liston'; liston.position.set(-0.585, 1.35, 2.21); g.scene.add(liston);
+  liston.name = 'mamparo_liston'; liston.position.set(-0.563, 1.26, 2.21); g.scene.add(liston);   /* 1/11: metido ADENTRO y más bajo (a −0,585×1,88 sobresalía del casco y del techo: se veía como una viga parada desde afuera, captura 49) */
   /* RIEL del canto de la ventana, ambos lados (1/11): el borde inferior del vano viene DENTADO de
      fábrica y perseguir cada diente era interminable → moldura que lo tapa entero, como el riel de
      la ventana corrediza del 802 real */
   const matRiel = new THREE.MeshStandardMaterial({ color: 0xd8d8d4, roughness: 0.6 });
   for (const lado of [-1, 1]) {
-    const riel = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.11, 0.92), matRiel);
-    riel.name = 'mamparo_riel'; riel.position.set(lado * 0.582, 0.965, 1.85); g.scene.add(riel);
+    const riel = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.10, 0.90), matRiel);
+    riel.name = 'mamparo_riel'; riel.position.set(lado * 0.558, 0.962, 1.85); g.scene.add(riel);   /* 1/11: a ±0,558 (a ±0,582 el canto asomaba 1-3 cm por FUERA de la chapa y se veía como viga flotante, captura 49) */
   }
   /* FALDONES bajo las consolas laterales (1/11, captura de Iván: por el hueco consola-piso se veía
      la cara interior del casco con la franja azul, y la consola parecía flotar) */
