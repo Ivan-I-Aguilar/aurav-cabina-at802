@@ -59,7 +59,10 @@ Coordenadas de CUT/EXTRAER en el marco del MDL (z sin invertir: el GLB tiene z =
 Marco del GLB (= `cabina`): +x derecha del piloto, +y arriba, −z adelante; ojo del piloto en (0, 1.38, 1.64) — subido el 22/10: con 1,15 el tablero tapaba el horizonte.
 
 ## Probar sin casco
-- Servidor local: `python -m http.server 8765` en la carpeta del repo y abrir `http://localhost:8765/`.
+- Servidor local: **`python servidor.py`** en la carpeta del repo y abrir `http://localhost:8765/`.
+  Manda `Cache-Control: no-store` en todo: cada F5 trae la última versión DE VERDAD. (Con
+  `python -m http.server` pelado el navegador cacheaba index/main/GLB y se veían versiones viejas:
+  así se perdió una hora el 1/11 con Iván viendo «vigas» de una build ya corregida.)
 - Teclado: flechas = bastón, A/D pedales, B frenos, F flaps, E largar carga, Esc menú, clic = switches/palancas.
 - Ganchos de prueba en consola: `__vuelo`, `__controles`, `__mision`, `__vel = 4` (acelera la física), `__auto = {cabeceo: 8, alabeo: 0}` (piloto automático de prueba, en grados).
 - Simulación headless sin navegador (rápida): un script Node que importe `vuelo.js` y `mision.js` con un `controles` falso (ver TRASPASO; había uno en `/tmp` de la sesión anterior, rehacerlo si hace falta).
