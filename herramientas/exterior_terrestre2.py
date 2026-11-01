@@ -309,15 +309,15 @@ print('RINCON der/izq borrado', len(borrar2))
 # varillas/cables de fábrica del OBJ DENTRO del habitáculo trasero (31/10, pedido de Iván: se veía
 # un haz dorado chrome en el lateral derecho): islas de mat08/mat02 contenidas en esa franja → fuera
 # los cables siguen hasta la COLA (islas larguísimas: el borrado por islas no los tocaba): POR CARA.
-# mat08 (chrome, no hay chapa chrome ahí) en toda la franja; mat02 sólo hasta x 0,595 (la pared arranca en 0,60)
+# SOLO mat08 (chrome: no hay chapa chrome ahí). OJO 31/10: la rama mat02 «hasta x 0,595» se COMIO
+# CHAPA DEL CASCO (el fuselaje se angosta atrás/arriba y baja de 0,595): raja en el lomo y muesca en
+# la franja azul (captura 40 de Iván). El alambre fino mat02 que queda en la pared se tolera.
 i_m08 = {i for i, m in enumerate(o.data.materials) if m and m.name == 'mat08'}
-i_m02 = {i for i, m in enumerate(o.data.materials) if m and m.name == 'mat02'}
 borrarL = []
 for f in bm.faces:
     c = f.calc_center_median()
     if not (-2.45 < c.y < -1.30 and 0.12 < c.z < 1.78): continue   # 31/10: los cables siguen hacia adelante (quedaba el tramo y -1.9..-1.3)
     if f.material_index in i_m08 and 0.34 < abs(c.x) < 0.70: borrarL.append(f)
-    elif f.material_index in i_m02 and 0.36 < abs(c.x) < 0.595: borrarL.append(f)
 if borrarL: bmesh.ops.delete(bm, geom=borrarL, context='FACES')
 print('LATERAL trasero borrado', len(borrarL))
 

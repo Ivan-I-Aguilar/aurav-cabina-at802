@@ -133,10 +133,17 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   teleport = jugador.position.set + jugador.rotation.y, corrigiendo contra __rumbo() (la cámara guarda
   yaw residual del modo cabina). `__aPie.bajar()`/`subir()` andan por consola. De noche (luz por hora
   real) forzar luces de nuevo al bajar.
-- **Pendientes de la inspección** (a elección de Iván): (5) asa blanca flotante en el rincón trasero
-  izquierdo; (6) menores: techo oliva liso, butaca «de yeso» (los cinturones del respaldo eran textura y
-  hoy quedan grises), hueco bajo la consola derecha; dos dientes del canto del casco (mat02) visibles
-  sólo desde adentro en el borde de la ventana izquierda (menor).
+- **CHAPA FALTANTE en el casco (captura 40 de Iván, RESUELTO en v=20261031m):** la rama mat02 del
+  borrado LATERAL de cables («hasta |x| 0,595, la pared arranca en 0,60») se COMIÓ chapa real: el
+  fuselaje se angosta atrás/arriba y baja de 0,595 → raja en el lomo, muesca en la franja azul,
+  astillas, y desde el asiento se veía la PISTA alrededor del respaldo. Fix: el borrado por cara queda
+  SOLO para mat08 (el haz cromo de cables; 1433 caras); el alambre fino mat02 de la pared se tolera.
+  Verificado: 1659 caras de chapa de vuelta en la franja y el fuselaje cerrado mirando atrás.
+  OJO REGLA: borrar POR CARA sobre mat02 (piel) es jugar con fuego: preferir mat específicos.
+- **Pendientes de la inspección** (a elección de Iván): (5) asa blanca flotante junto al respaldo, lado
+  derecho (bucle de cinta, se ve mirando atrás); (6) menores: techo oliva liso, butaca «de yeso» (los
+  cinturones del respaldo eran textura y hoy quedan grises), hueco bajo la consola derecha; dos dientes
+  del canto del casco (mat02) visibles sólo desde adentro en el borde de la ventana izquierda (menor).
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
