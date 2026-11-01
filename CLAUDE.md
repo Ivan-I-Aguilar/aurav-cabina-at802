@@ -182,10 +182,21 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   (margen 15 mm salva los parantes al ras). Verificado: CERO violaciones. OJO: al reindexar, NUNCA
   tocar o.visible salvo para apagar (la 1.ª versión re-ENCENDIÓ m1, oculta a propósito). El «agujero»
   tras la ventana = ventanillas del carenado SIN vidrio → placas tintadas `mamparo_ventanilla` ±0,40.
-- Pendientes menores: techo oliva liso; hueco bajo la consola derecha; el ESCAPE visto de afuera
-  (captura chica de Iván, sin verificar de cerca); la «garra» blanca sobre una perilla negra (captura
-  de Iván sin ubicar: no apareció en scans de la cabina; pedir dónde la ve si sigue); confirmar con
-  Iván la vista de la captura 45 en v20261101k (ventanillas nuevas y silueta limpia).
+- **Tanda «todo eso está mal» (6 capturas de Iván, 1/11, resuelta en v=20261101l):** el patrón de fondo
+  es que el OBJ tiene HUECOS REALES arriba (lomo entre tolva y parabrisas, cubretablero) y por ahí se ve
+  el interior desde afuera. Fixes ADITIVOS: `mamparo_tapa_lomo` (chapa blanca horizontal y 1,128, x ±0,52,
+  z 0,48-0,82) cierra el hueco del lomo; cortafuegos ACHICADO a 1,02×0,86 (asomaba por los hombros del
+  capó y se veía como mancha negra: FrontSide asomado = hueco negro); `mamparo_pared_izq` achicada a
+  0,18×0,42 (parecía una puerta negra gigante por el vano); `mamparo_ventanilla` a ±0,33 y 0,26×0,22
+  (a ±0,40 el canto atravesaba el carenado: grieta + rectángulo negro); `mamparo_liston` (0,035×1,05×0,16
+  en −0,585/1,35/2,21) tapa el haz de alambres del parante (no se pueden borrar); `mamparo_faldon` ×2
+  (0,245×0,32×0,67 bajo cada consola) cierran el hueco consola-piso por el que se veía la franja azul.
+  MÉTODO NUEVO ronda exterior en picada: a pie, elevar la cámara LOCAL (cam.position.y 3-4,5 +
+  cam.rotation.x) — el clamp del terreno sólo pisa al jugador, no a la cámara. El ESCAPE negro de la
+  captura G era el escape legítimo del PT6 visto en ángulo: no era defecto.
+- Pendientes menores: techo oliva liso; la «garra» blanca sobre una perilla negra (captura de Iván sin
+  ubicar; pedir dónde); el zigzag blanco del canto trasero del vano si Iván lo vuelve a ver (captura B,
+  sin coordenadas); que Iván confirme todas las vistas en v20261101l con Ctrl+F5.
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento

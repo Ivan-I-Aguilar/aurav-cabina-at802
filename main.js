@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101k';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101l';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -286,16 +286,33 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   piso.name = 'mamparo_piso'; piso.position.set(0, 0.262, 1.025); g.scene.add(piso);   /* el nombre arranca con «mamparo»: exento del recorte general */
   /* mamparo CORTAFUEGOS (1/11, captura de Iván: mirando rasante sobre el tablero se veía el INTERIOR
      hueco del capó con la librea al revés): chapa oscura al límite delantero del habitáculo */
-  const fuego = new THREE.Mesh(new THREE.PlaneGeometry(1.16, 1.0),
+  const fuego = new THREE.Mesh(new THREE.PlaneGeometry(1.02, 0.86),
     new THREE.MeshStandardMaterial({ color: 0x2a2a28, roughness: 0.9 }));
-  fuego.name = 'mamparo_fuego'; fuego.position.set(0, 0.65, 0.52); g.scene.add(fuego);   /* FrontSide mirando al asiento: desde afuera no existe */
+  fuego.name = 'mamparo_fuego'; fuego.position.set(0, 0.62, 0.52); g.scene.add(fuego);   /* FrontSide mirando al asiento. 1/11: achicado (con 1,16×1,0 ASOMABA por los hombros del capó y de afuera se veía una mancha negra) */
+  /* TAPA del lomo sobre el tablero (1/11, capturas de Iván: el hueco del OBJ entre la tolva y el
+     parabrisas deja ver el tablero y las mejillas desde arriba-afuera): chapa blanca casco */
+  const tapaLomo = new THREE.Mesh(new THREE.PlaneGeometry(1.04, 0.34),
+    new THREE.MeshStandardMaterial({ color: 0xdadad6, roughness: 0.6, side: THREE.DoubleSide }));
+  tapaLomo.name = 'mamparo_tapa_lomo'; tapaLomo.position.set(0, 1.128, 0.65); tapaLomo.rotation.x = -Math.PI / 2; g.scene.add(tapaLomo);
+  /* LISTÓN que tapa el haz de alambres del parante trasero izquierdo (1/11; no se pueden borrar:
+     no son islas con forma de hilo) */
+  const liston = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.05, 0.16),
+    new THREE.MeshStandardMaterial({ color: 0xd8d8d4, roughness: 0.6 }));
+  liston.name = 'mamparo_liston'; liston.position.set(-0.585, 1.35, 2.21); g.scene.add(liston);
+  /* FALDONES bajo las consolas laterales (1/11, captura de Iván: por el hueco consola-piso se veía
+     la cara interior del casco con la franja azul, y la consola parecía flotar) */
+  for (const lado of [-1, 1]) {
+    const faldon = new THREE.Mesh(new THREE.BoxGeometry(0.245, 0.32, 0.67),
+      new THREE.MeshStandardMaterial({ color: 0x202023, roughness: 0.85 }));
+    faldon.name = 'mamparo_faldon'; faldon.position.set(lado * 0.4925, 0.41, 1.295); g.scene.add(faldon);
+  }
   /* VIDRIOS de las ventanillas del carenado trasero (1/11, captura 45 de Iván: «abertura importante
      detrás de la ventana»: los huecos iban SIN vidrio y se veían como agujeros crudos al interior) */
   const matVentanilla = new THREE.MeshStandardMaterial({ color: 0x1a2026, roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.82, side: THREE.DoubleSide });
   for (const lado of [-1, 1]) {
-    const vent = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.30), matVentanilla);
-    vent.name = 'mamparo_ventanilla'; vent.position.set(lado * 0.40, 1.44, 2.33);
-    vent.rotation.y = Math.PI / 2; g.scene.add(vent);
+    const vent = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.22), matVentanilla);
+    vent.name = 'mamparo_ventanilla'; vent.position.set(lado * 0.33, 1.44, 2.33);
+    vent.rotation.y = Math.PI / 2; g.scene.add(vent);   /* 1/11: a ±0,33 y más chica (a ±0,40 el canto ATRAVESABA el carenado curvo y se veía una grieta y un rectángulo negro) */
   }
   /* (la «tapa» del panel inferior se eliminó el 27/10: tapaba el recuadro del panel VIEJO m1, hoy
      oculto, y quedaba como plano negro flotante delante del tablero visto desde afuera) */
@@ -472,9 +489,9 @@ function crearTablero(datos) {
   }
   /* cierre del hueco paño-pared izquierdo (1/11, Iván: «se ven las líneas azules del avión» = el casco
      exterior por dentro): placa oscura pegada a la pared detrás del subpanel FRDS */
-  const cierreIzq = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.52), matTapa);
-  cierreIzq.name = 'mamparo_pared_izq'; cierreIzq.position.set(-0.606, 0.96, 1.24);
-  cierreIzq.rotation.y = Math.PI / 2; cabina.add(cierreIzq);
+  const cierreIzq = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.42), matTapa);
+  cierreIzq.name = 'mamparo_pared_izq'; cierreIzq.position.set(-0.606, 0.92, 1.15);
+  cierreIzq.rotation.y = Math.PI / 2; cabina.add(cierreIzq);   /* 1/11: achicada (0,34×0,52 se veía como una puerta negra gigante por el vano desde afuera) */
   /* reubicar los relojes según el plano de la foto, sobre el paño que les toca */
   for (const d of datos) {
     const p = LAYOUT[d.tipo]; if (!p) continue;
