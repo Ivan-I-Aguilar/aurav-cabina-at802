@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101q';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101s';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -300,11 +300,9 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   /* RIEL del canto de la ventana, ambos lados (1/11): el borde inferior del vano viene DENTADO de
      fábrica y perseguir cada diente era interminable → moldura que lo tapa entero, como el riel de
      la ventana corrediza del 802 real */
-  const matRiel = new THREE.MeshStandardMaterial({ color: 0xd8d8d4, roughness: 0.6 });
-  for (const lado of [-1, 1]) {
-    const riel = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.10, 0.90), matRiel);
-    riel.name = 'mamparo_riel'; riel.position.set(lado * 0.558, 0.962, 1.85); g.scene.add(riel);   /* 1/11: a ±0,558 (a ±0,582 el canto asomaba 1-3 cm por FUERA de la chapa y se veía como viga flotante, captura 49) */
-  }
+  /* (el «riel/burlete» del canto se ELIMINÓ el 1/11 tras dos intentos: el canto del vano es ondulado
+     y cualquier pieza RECTA flota en partes — blanca parecía un estante, oscura una barra. Los
+     dientes chicos que quedan en el canto son de fábrica y se emparejan otro día EN EL SCRIPT.) */
   /* FALDONES bajo las consolas laterales (1/11, captura de Iván: por el hueco consola-piso se veía
      la cara interior del casco con la franja azul, y la consola parecía flotar) */
   for (const lado of [-1, 1]) {
@@ -314,12 +312,9 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   }
   /* VIDRIOS de las ventanillas del carenado trasero (1/11, captura 45 de Iván: «abertura importante
      detrás de la ventana»: los huecos iban SIN vidrio y se veían como agujeros crudos al interior) */
-  const matVentanilla = new THREE.MeshStandardMaterial({ color: 0x1a2026, roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.82, side: THREE.DoubleSide });
-  for (const lado of [-1, 1]) {
-    const vent = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.22), matVentanilla);
-    vent.name = 'mamparo_ventanilla'; vent.position.set(lado * 0.33, 1.44, 2.33);
-    vent.rotation.y = Math.PI / 2; g.scene.add(vent);   /* 1/11: a ±0,33 y más chica (a ±0,40 el canto ATRAVESABA el carenado curvo y se veía una grieta y un rectángulo negro) */
-  }
+  /* (las «ventanillas tintadas» del carenado se ELIMINARON el 1/11: una placa plana no puede seguir
+     el carenado curvo — a ±0,40 atravesaba la chapa y a ±0,33 se veía como parche negro en la pared
+     interior. El hueco del carenado es del modelo y se tolera.) */
   /* (la «tapa» del panel inferior se eliminó el 27/10: tapaba el recuadro del panel VIEJO m1, hoy
      oculto, y quedaba como plano negro flotante delante del tablero visto desde afuera) */
   /* palanquita para los switches que en el modelo son sólo la tuerca (F PUMP, HOPR, FRDS, WIPER) */

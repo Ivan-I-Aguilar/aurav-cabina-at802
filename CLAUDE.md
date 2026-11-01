@@ -204,8 +204,19 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   taparon DE RAÍZ con `mamparo_riel` ×2: moldura blanca (0,055×0,11×0,92 en ±0,582/0,965/1,85) sobre
   TODO el borde inferior del vano, como el riel de la ventana corrediza real — perseguir cada diente
   era interminable; el listón del parante ya tapaba el haz. Verificado: canto recto y prolijo.
-- Pendientes menores: techo oliva liso; la «garra» blanca sobre una perilla negra (captura de Iván sin
-  ubicar; pedir dónde); que Iván confirme todas las vistas en v20261101o con Ctrl+F5.
+- **Saga de molduras (1/11, noche): TODAS ELIMINADAS (v=20261101s).** Listón, riel/burlete y
+  ventanillas tintadas: cada pieza RECTA puesta sobre el casco CURVO/ondulado flota o asoma desde
+  algún ángulo (viga de la 49-50, estante, parche negro). LECCIÓN FINAL: sobre el casco no van
+  piezas postizas rectas; los defectos finos del canto (dientes chicos) y el mazo de alambres del
+  parante se toleran (existen en el avión real) o se emparejan EN EL SCRIPT otro día con calma.
+  También: `servidor.py` (no-store) reemplaza al http.server pelado, y el index chequea version.txt
+  cada 10 s (la pestaña abierta se recarga SOLA con cada build: se acabó el «sigue igual» por caché).
+  OJO VERIFICACIÓN: mirar SIEMPRE el MISMO lado que la captura de Iván (una vez se validó el lado
+  derecho cuando sus fotos eran del izquierdo y el defecto «seguía igual»).
+- Pendientes menores: techo oliva liso; dientes chicos del canto de la ventana (emparejar en script);
+  mazo de alambres del parante trasero izq (tolerado); la «garra» blanca sobre una perilla negra
+  (captura de Iván sin ubicar; pedir dónde). Pages sigue en 20261028d (estable): lo del 31/10-1/11
+  está LOCAL hasta que Iván pida subir.
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
