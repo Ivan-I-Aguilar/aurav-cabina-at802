@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031r';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101a';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -211,6 +211,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.065, 0.022),
       new THREE.MeshStandardMaterial({ color: 0x9a9b9e, metalness: 0.6, roughness: 0.4 }));
     hebilla.name = 'mamparo_hebilla'; hebilla.position.set(0, 0.655, 1.826); hebilla.rotation.x = 0.10; cabina.add(hebilla);
+    /* respaldo ALTO de cuerina delante del mamparo (31/10, captura 44 de Iván: el mamparo blanco
+       asomaba sobre el respaldo y la butaca parecía mitad y mitad; el asiento real es de respaldo alto) */
+    const respAlto = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.52, 0.05),
+      new THREE.MeshStandardMaterial({ color: 0x4a4a46, roughness: 0.92 }));
+    respAlto.name = 'mamparo_respaldo'; respAlto.position.set(0, 1.26, 2.30); cabina.add(respAlto);
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -553,10 +558,10 @@ function crearExtrasManual() {
   /* COLGADA del marco superior del parabrisas (31/10, hallazgo 4: abajo el bastón la tapaba y el
      soporte al parante se veía «montado a la nada»; arriba al centro va en el 802 real). El arco del
      marco pasa por y 1,54-1,69 / z 1,29-1,62 en x 0 (medido en vivo): el brazo nace empotrado ahí. */
-  const soporteB = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.09, 0.028), oscuro);
+  const soporteB = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.09, 0.02), oscuro);
   soporteB.position.set(0, 1.575, 1.345); g.add(soporteB);
-  const cajaB = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.034, 0.05), oscuro);
-  cajaB.position.set(0, 1.512, 1.375); g.add(cajaB);
+  const cajaB = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.028, 0.042), oscuro);
+  cajaB.position.set(0, 1.514, 1.378); g.add(cajaB);   /* caja y brazo más finos (captura 43: se veía tosca) */
   const cv = document.createElement('canvas'); cv.width = 720; cv.height = 64; const cb = cv.getContext('2d');
   cb.fillStyle = '#101113'; cb.fillRect(0, 0, 720, 64);
   cb.fillStyle = '#f0f0f0'; cb.textAlign = 'center'; cb.textBaseline = 'middle';

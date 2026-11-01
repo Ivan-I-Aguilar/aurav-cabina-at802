@@ -151,6 +151,14 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   (hombros arriba separados, convergen abajo; 4 cm DELANTE del respaldo: es almohadillado, ondula
   z 1,86-1,94, y pegadas se hundían; rot.x 0,10 apenas). OJO cámara de prueba: `cam.position` es
   relativa al JUGADOR (no gira con la mirada): mirando atrás, alejarse del respaldo es z NEGATIVO.
+- **«Cosas raras» (capturas 41-44 de Iván, RESUELTAS en v=20261101a):** (41) el borrado por islas de la
+  manija alta se había llevado un TROZO de carenado suelto (tajo en zigzag) → caja de islas APRETADA al
+  cluster de la manija (de 640 caras bajó a 32: sólo la manija); (42) quedaba la manija ESPEJO del lado
+  derecho (0,55, 0,88, 1,87) → cajita por cara (79 caras) + bloque espejo de islas para la alta derecha
+  (dio 0: no existía); (43) brújula tosca → caja 0,06×0,028×0,042 y brazo más finos; (44) el MAMPARO
+  blanco asomaba sobre el respaldo y la butaca parecía mitad y mitad → `mamparo_respaldo`: respaldo
+  ALTO de cuerina (0,60×0,52) en (0, 1,26, 2,30) delante del mamparo. Verificado adentro (ambos vanos,
+  respaldo) y afuera (3/4 izquierdo: carenado entero, franja continua).
 - **Pendientes de la inspección** (a elección de Iván): (6) menores restantes: techo oliva liso, hueco
   bajo la consola derecha; dos dientes del canto del casco (mat02) visibles sólo desde adentro en el
   borde de la ventana izquierda (menor).
