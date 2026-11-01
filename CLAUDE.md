@@ -259,10 +259,17 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   z 0,80-1,06); `mamparo_faldon2` ×2 delante de las consolas (por ahí entraban las «líneas azules»).
   DECISIÓN (pregunta de Iván «¿reconstruir toda la cabina?»): NO: tablero/consolas/controles/butaca
   ya son nuestros; lo que queda es limpiar la FRONTERA con el casco por zonas.
-- Pendientes menores: flancos interiores oliva (mejor técnica de raycast); lengüeta del dentado
-  delante del antepecho (z<1,40); mazo de alambres del parante trasero izq (tolerado); la «garra»
-  blanca sobre una perilla negra (captura de Iván sin ubicar; pedir dónde). Pages sigue en 20261028d
-  (estable): lo del 31/10-2/11 está LOCAL hasta que Iván pida subir.
+- **Captura 52 «igual» (2/11, v=20261102j): la sierra era MI CIELORRASO.** La proyección por píxel
+  reveló que el zigzag «al lado de la ventana» visto desde AFUERA era el BORDE ESCALONADO del
+  techo_forro (celdas de 4,5 cm) cayendo justo EN los huecos de las ventanas → el forro se recorta a
+  la bóveda CENTRAL (|x|≤0,42) y los flancos del raycast quedan desactivados. Verificado desde
+  afuera: sin sierra, interior ordenado. LECCIÓN: toda pieza interior nueva cerca de un HUECO del
+  casco se ve desde afuera; mantener los bordes lejos de los huecos o taparlos con el marco.
+- Pendientes menores: franja oscura chica en la ventana trasera del carenado (hueco legítimo, interior
+  en sombra; evaluar vidrio-parche); flancos interiores oliva; lengüeta del dentado delante del
+  antepecho (z<1,40); mazo de alambres del parante trasero izq (tolerado); la «garra» blanca sobre
+  una perilla negra (sin ubicar; pedir dónde). Pages sigue en 20261028d (estable): lo del 31/10-2/11
+  está LOCAL hasta que Iván pida subir.
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento

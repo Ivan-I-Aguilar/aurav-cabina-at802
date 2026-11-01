@@ -8,8 +8,8 @@ from mathutils import Vector
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SALIDA = os.path.join(RAIZ, 'blender')
-X0, X1, PX = -0.56, 0.56, 0.045
-Z0, Z1, PZ = 1.55, 2.52, 0.045   # de DETRÁS del arco (a 1,05 el raycast pegaba en el VIDRIO y tapaba la vista) hasta el mamparo (2,52: con 2,32 quedaba un empalme oliva atrás)
+X0, X1, PX = -0.42, 0.42, 0.045
+Z0, Z1, PZ = 1.55, 2.52, 0.045   # bóveda CENTRAL solamente (2/11: a ±0,56 el borde escalonado del forro caía EN los huecos de las ventanas y desde afuera se veía como SIERRA — la famosa «sierra al lado de la ventana» de las capturas 51-52)
 BAJADA = 0.012
 
 def b(v): return Vector((v[0], -v[2], v[1]))
@@ -66,10 +66,10 @@ bpy.context.view_layer.objects.active = o
 bpy.ops.object.shade_smooth()
 piezas = [o]
 
-# FLANCOS laterales (las paredes curvas bajo la bóveda también se veían oliva): raycast HORIZONTAL
-# desde el eje; donde hay VANO el rayo no pega y el forro queda abierto solo.
-Y0f, Y1f, PYf = 0.95, 1.44, 0.045
-Zf0, Zf1 = 1.05, 2.52
+# FLANCOS laterales: DESACTIVADOS 2/11 (los rayos desde el eje pegaban en la butaca: 65 caras
+# inútiles, y sus bordes también serían sierra en los huecos). Pendiente con mejor técnica.
+Y0f, Y1f, PYf = 0.95, 0.96, 0.045
+Zf0, Zf1 = 1.05, 1.06
 NYf = int((Y1f - Y0f) / PYf) + 1
 NZf = int((Zf1 - Zf0) / PZ) + 1
 for lado in (-1, 1):
