@@ -194,9 +194,15 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   MÉTODO NUEVO ronda exterior en picada: a pie, elevar la cámara LOCAL (cam.position.y 3-4,5 +
   cam.rotation.x) — el clamp del terreno sólo pisa al jugador, no a la cámara. El ESCAPE negro de la
   captura G era el escape legítimo del PT6 visto en ángulo: no era defecto.
+- **Capturas 46-48 (1/11, «cada mejora empeora otra cosa»), resueltas en v=20261101o:** la TAPA DEL
+  LOMO se ELIMINÓ (sobresalía del perfil como una aleta y se veía flotando dentro de la cúpula: el
+  lomo real es más bajo que y 1,128; el hueco del lomo SE TOLERA, cortafuegos y glareshield tapan lo
+  grueso); los dientes del canto trasero (vértices en (−0,53, 0,97, 2,13), fuera de las cajas) se
+  taparon DE RAÍZ con `mamparo_riel` ×2: moldura blanca (0,055×0,11×0,92 en ±0,582/0,965/1,85) sobre
+  TODO el borde inferior del vano, como el riel de la ventana corrediza real — perseguir cada diente
+  era interminable; el listón del parante ya tapaba el haz. Verificado: canto recto y prolijo.
 - Pendientes menores: techo oliva liso; la «garra» blanca sobre una perilla negra (captura de Iván sin
-  ubicar; pedir dónde); el zigzag blanco del canto trasero del vano si Iván lo vuelve a ver (captura B,
-  sin coordenadas); que Iván confirme todas las vistas en v20261101l con Ctrl+F5.
+  ubicar; pedir dónde); que Iván confirme todas las vistas en v20261101o con Ctrl+F5.
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento

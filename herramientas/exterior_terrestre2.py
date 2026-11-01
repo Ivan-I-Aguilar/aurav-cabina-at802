@@ -467,10 +467,11 @@ for f in bm.faces:
         # (el centro queda afuera) → condición por VÉRTICE + cara grande (las molduras son chicas)
         pts = [vv.co for vv in f.verts]
         # franja SOLO hasta z_s 1,26: con 1,42 entraban caras del MARCO SUPERIOR del vano y se abría
-        # una rendija en el techo (1/11)
-        if any(0.26 < abs(p.x) < 0.50 and -2.20 < p.y < -1.45 and 1.00 < p.z < 1.26 for p in pts):
+        # una rendija en el techo (1/11). |x| hasta 0,565 y z_s desde 0,93: los dientes del tramo
+        # TRASERO del canto (medidos en (−0,53, 0,97, 2,13)) quedaban fuera de la caja original.
+        if any(0.26 < abs(p.x) < 0.565 and -2.26 < p.y < -1.45 and 0.93 < p.z < 1.26 for p in pts):
             L = max((pts[0] - pts[1]).length, (pts[1] - pts[2]).length, (pts[2] - pts[0]).length)
-            if L > 0.20: borrarV.append(f)
+            if L > 0.22: borrarV.append(f)
 if borrarV: bmesh.ops.delete(bm, geom=borrarV, context='FACES')
 print('ASTILLAS vidrio/piel borradas', len(borrarV))
 
