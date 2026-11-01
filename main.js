@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101z';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261102g';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -330,6 +330,12 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
      línea real del canto dentado (muestreada de exterior.glb), ambos lados; tapa picos y muescas */
   new GLTFLoader().loadAsync(`./blender/marco_ventana.glb?v=${V}`).then(p => {
     p.scene.name = 'marco_ventana'; cabina.add(p.scene);
+  });
+  /* CIELORRASO interior (1/11, Blender: blender/techo.glb): forro claro 1,2 cm bajo la bóveda real
+     de la cúpula (muestreada de exterior.glb); tapa el techo oliva y aclara el interior */
+  new GLTFLoader().loadAsync(`./blender/techo.glb?v=${V}`).then(p => {
+    p.scene.traverse(o => { if (o.isMesh) { o.material.side = THREE.DoubleSide; o.material.color.set(0x5e5e5a); o.material.emissive = new THREE.Color(0x44443f); } });   /* DoubleSide + emisivo dominante: la cara inferior recibe la hemisférica verdosa del «suelo» y sin esto el forro se veía OLIVA */
+    p.scene.name = 'techo_forro'; cabina.add(p.scene);
   });
   new GLTFLoader().loadAsync(`./blender/pedales.glb?v=${V}`).then(p => {
     /* 31/10 (pedido de Iván): el conjunto de pedales heredaba la textura m23 (estructura ROJA y

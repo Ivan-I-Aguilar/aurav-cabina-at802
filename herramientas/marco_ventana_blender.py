@@ -9,8 +9,8 @@ from mathutils import Vector
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SALIDA = os.path.join(RAIZ, 'blender')
-Z0, Z1, PASO = 1.40, 2.30, 0.03          # tramo del vano (glTF). OJO: NO extender a 1,26: el canto delantero SUBE con el parante y la regresión+residuo levanta toda la moldura 10 cm
-ALTO, ANCHO = 0.14, 0.045                # sección de la cinta (alto generoso: la recta debe cubrir también las muescas bajas)
+Z0, Z1, PASO = 1.40, 2.18, 0.03          # tramo del vano (glTF). OJO: NO extender a 1,26 (el canto delantero sube con el parante) NI pasar de 2,18 (a 2,30 el extremo atravesaba el marco trasero y asomaba por fuera, captura de Iván)
+ALTO, ANCHO = 0.14, 0.040                # sección de la cinta (alto generoso: cubre las muescas bajas)
 
 def b(v): return Vector((v[0], -v[2], v[1]))   # glTF → Blender
 def degltf(v): return (v.x, v.z, -v.y)         # Blender → glTF
@@ -68,7 +68,7 @@ for lado in (-1, 1):
     for i in range(n_franjas):
         z = Z0 + i * PASO
         ytop = cresta[i] + 0.010
-        xin, xout = xsu[i] - lado * ANCHO / 2, xsu[i] + lado * ANCHO / 2
+        xin, xout = xsu[i] - lado * (ANCHO - 0.004), xsu[i] + lado * 0.004   # casi toda ADENTRO: hacia afuera sólo 4 mm (con la mitad afuera se veía una banda gruesa sobre el flanco)
         s = [(xin, ytop - ALTO, z), (xout, ytop - ALTO, z), (xout, ytop, z), (xin, ytop, z)]
         verts += [tuple(b(q)) for q in s]
         if i:

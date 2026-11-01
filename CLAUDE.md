@@ -236,10 +236,20 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   m16/m18/m22/m23/m26 apretados entre el paño nuevo y la pared → descarte `restoLateral` (|x|
   0,46-0,64, y 0,70-1,08, z 0,82-1,01, ambos lados; ahí no vive nada legítimo: controles = mallas
   aparte). Verificado en el juego: vano limpio con antepecho calzado y paño izquierdo sin dobles.
-- Pendientes menores: techo oliva liso; lengüeta del dentado delante del antepecho (z<1,40);
-  mazo de alambres del parante trasero izq (tolerado); la «garra» blanca sobre una perilla negra
-  (captura de Iván sin ubicar; pedir dónde). Pages sigue en 20261028d (estable): lo del 31/10-1/11
-  está LOCAL hasta que Iván pida subir.
+- **Tanda Blender 3 (2/11, v=20261102g):** el ANTEPECHO se recorta a z 1,40-2,18 y va casi todo
+  ADENTRO (4 mm afuera): a z 2,30 el extremo atravesaba el marco trasero y asomaba por fuera
+  (captura de Iván), y con la mitad del ancho afuera se veía una banda gruesa en el flanco.
+  CIELORRASO `techo_blender.py` → `blender/techo.glb`: forro 1,2 cm bajo la bóveda real por RAYCAST
+  por celda (muestrear vértices daba confeti: la cúpula tiene triángulos grandes); arranca DETRÁS
+  del arco (z 1,55: a 1,05 el rayo pegaba en el VIDRIO y el forro tapaba el parabrisas) hasta el
+  mamparo (2,52). DoubleSide + emisivo dominante al cargar (la cara inferior recibe la hemisférica
+  verdosa del «suelo» y se veía oliva). MEJORA PARCIAL: bóveda central clara; los FLANCOS siguen
+  oliva (el raycast horizontal desde el eje pega en la butaca antes que en la pared: 65 caras;
+  rehacer otro día con rayos desde cerca de la pared). Exterior verificado limpio tras el recorte.
+- Pendientes menores: flancos interiores oliva (mejor técnica de raycast); lengüeta del dentado
+  delante del antepecho (z<1,40); mazo de alambres del parante trasero izq (tolerado); la «garra»
+  blanca sobre una perilla negra (captura de Iván sin ubicar; pedir dónde). Pages sigue en 20261028d
+  (estable): lo del 31/10-2/11 está LOCAL hasta que Iván pida subir.
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
