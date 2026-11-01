@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101p';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261101q';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -294,9 +294,9 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
      el hueco del lomo se tolera: el cortafuegos y el glareshield tapan lo grueso) */
   /* LISTÓN que tapa el haz de alambres del parante trasero izquierdo (1/11; no se pueden borrar:
      no son islas con forma de hilo) */
-  const liston = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.72, 0.15),
-    new THREE.MeshStandardMaterial({ color: 0xd8d8d4, roughness: 0.6 }));
-  liston.name = 'mamparo_liston'; liston.position.set(-0.563, 1.26, 2.21); g.scene.add(liston);   /* 1/11: metido ADENTRO y más bajo (a −0,585×1,88 sobresalía del casco y del techo: se veía como una viga parada desde afuera, captura 49) */
+  /* (el «listón» que tapaba el haz de alambres del parante se ELIMINÓ el 1/11: el carenado se
+     angosta hacia arriba y el listón quedaba FUERA del casco en su mitad alta — era la VIGA blanca
+     de la captura 49, verificada mirando el lado IZQUIERDO. Los alambres finos se toleran.) */
   /* RIEL del canto de la ventana, ambos lados (1/11): el borde inferior del vano viene DENTADO de
      fábrica y perseguir cada diente era interminable → moldura que lo tapa entero, como el riel de
      la ventana corrediza del 802 real */
