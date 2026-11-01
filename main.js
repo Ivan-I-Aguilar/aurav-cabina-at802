@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261027r';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031g';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -105,6 +105,8 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   g.scene.traverse(o => {
     if (o.name === 'm13') o.visible = false;   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
     if (o.isMesh && (o.name === 'm14' || o.name === 'm15')) { o.material.color.set(0xe6e6df); o.material.roughness = 0.55; }   /* exterior blanco */
+    if (o.isMesh && o.name === 'm32') { o.material = o.material.clone(); o.material.color.set(0x3b3c40); o.material.metalness = 0.3; o.material.roughness = 0.6; }   /* varillas amarillas lisas del mecanismo (31/10): a gris metal */
+    if (o.isMesh && /^m\d+$/.test(o.name) && o.name !== 'm14' && o.name !== 'm15' && o.material && o.material.map) { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0x8c8c88); o.material.metalness = 0.1; o.material.roughness = 0.8; o.material.needsUpdate = true; }   /* 31/10: TODA chapa de fabrica texturada (armazon del asiento, soportes, consolas, varillas) a gris neutro liso; los controles sw/lev conservan su textura */
   });
   cabina.add(g.scene);
   /* exterior completo (Lichi: AT-802 TERRESTRE real —OBJ de la familia FSN— con tren de ballesta, hélice de 5 palas,
@@ -154,13 +156,14 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
       for (let t = 0; t < idx.count; t += 3) { c.set(0, 0, 0); for (let k = 0; k < 3; k++) c.add(p.fromBufferAttribute(pos, idx.getX(t + k))); c.multiplyScalar(1 / 3);
         const anchoMax = c.y > 0.85 ? 0.5 : (c.z > 1.6 ? 0.6 : 0.615);   /* el fuselaje se angosta arriba y atrás; a 0,63 la consola (m16) y la butaca (m14) asomaban por la puerta */
         const restoPanel = o.name === 'm23' && c.y > 0.97 && c.z > 0.58 && c.z < 1.00 && Math.abs(c.x) < 0.66;   /* caja del panel viejo que la «tapa» (eliminada) ocultaba: asomaba sobre el capó (27/10) */
+        const varillasDer = o.name === 'm14' && c.x > 0.40 && c.x < 0.615 && c.y > 0.32 && c.z > 1.94 && c.z < 2.34;   /* haz de varillas doradas del lateral trasero derecho (31/10, pedido de Iván) */
         /* además del centro, los TRES VÉRTICES tienen que quedar en rango: los triángulos-varilla del
            motor (largos, con centro adentro) asomaban como «pelos» por el capó, y los dientes del borde
            sobresalían; descartar el triángulo entero no deforma nada (27/10) */
         let vertsOk = true;
         for (let k = 0; k < 3 && vertsOk; k++) { p.fromBufferAttribute(pos, idx.getX(t + k));
           if (p.z < 0.55 || p.z > 2.55 || Math.abs(p.x) > anchoMax + 0.06 || p.y > (p.z > 1.85 ? 2.05 : 1.14)) vertsOk = false; }
-        if (vertsOk && !restoPanel && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        if (vertsOk && !restoPanel && !varillasDer && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
@@ -168,7 +171,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     if (texAt01) g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = texAt01; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
     /* con el exterior LISO (27/10) ya no hay atlas: m14 va de chapa CLARA (m14 no es sólo la
        butaca: sus chapas con cuerina oscura se veían como PLACAS NEGRAS por el vano y el vidrio) */
-    else g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0xc6c6c0); o.material.roughness = 0.85; o.material.side = THREE.DoubleSide; o.material.emissive = new THREE.Color(0x191917); o.material.needsUpdate = true; } });   /* doble cara + emisivo: las correas del asiento tienen normales invertidas y se veian como PICOS NEGROS */
+    else g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0xc6c6c0); o.material.roughness = 0.85; o.material.metalness = 0.05; o.material.side = THREE.DoubleSide; o.material.emissive = new THREE.Color(0x191917); o.material.needsUpdate = true; } });   /* doble cara + emisivo + SIN metal (31/10: el metallic heredado hacia brillar DORADAS las varillas del lateral) */
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.
@@ -194,9 +197,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     { nombre: 'swTRABA', piv: [-0.609, 0.9385, 1.308], eje: 'x', pos: [0, 1.2], piezas: [['m23', [-0.638, 0.899, 1.211], [-0.618, 0.956, 1.322]], ['m23', [-0.647, 0.906, 1.229], [-0.629, 0.926, 1.246]], ['m23', [-0.628, 0.915, 1.285], [-0.590, 0.962, 1.331]]] },
     { nombre: 'levCOND', pivY: 0.63, escala: 0.6, piezas: [['m2'], ['m6']] },                                                                     /* palanca de condición (manual 26/10): atrás corte · medio ground idle · adelante flight */
   ];
-  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre; m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = !!mj.pivBase; if (mj.piv) m.userData.piv = mj.piv; if (mj.eje) m.userData.eje = mj.eje; for (const k of ['ang', 'pos', 'inicial', 'perilla', 'suave']) if (mj[k] != null) m.userData[k] = mj[k]; g.scene.add(m); }
+  for (const mj of MANIJAS) { const m = recortarManija(g.scene, mj.piezas); if (!m) continue; m.name = mj.nombre;
+    if (mj.nombre === 'swTRABA') { m.material = new THREE.MeshStandardMaterial({ color: 0xb01414, roughness: 0.5 }); }   /* roja propia: m23 global paso a gris (31/10) */ m.userData.pivY = mj.pivY; m.userData.escala = mj.escala; m.userData.pivBase = !!mj.pivBase; if (mj.piv) m.userData.piv = mj.piv; if (mj.eje) m.userData.eje = mj.eje; for (const k of ['ang', 'pos', 'inicial', 'perilla', 'suave']) if (mj[k] != null) m.userData[k] = mj[k]; g.scene.add(m); }
   const partes = []; g.scene.traverse(o => { if (o.isMesh && o.name.startsWith('palanca_')) partes.push(o); });
-  for (const o of partes) { o.position.sub(PIVOTE); palanca.add(o); }
+  const matBaston = new THREE.MeshStandardMaterial({ color: 0x2c2d30, metalness: 0.3, roughness: 0.55 });
+  for (const o of partes) { o.position.sub(PIVOTE); o.material = matBaston; palanca.add(o); }   /* 31/10: el soporte del bastón venía con textura FSX roja/amarilla (de juguete): grafito liso */
   /* mamparo trasero (27/10, pedido de Iván): al mirar atrás se veía el interior hueco del fuselaje;
      pared blanca falsa entre el asiento y la cola, como el mamparo del respaldo real */
   /* con la FORMA del fuselaje (perfil medido a z 2,3-2,5) hasta el techo: el plano rectangular
@@ -209,6 +214,11 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
   fMam.lineTo(-0.58, 0.1); fMam.closePath();   /* perfil FINO medido a z 2,24-2,36 MENOS 2 cm (el anterior asomaba como cresta por el lomo y los flancos) */
   const mamparo = new THREE.Mesh(new THREE.ShapeGeometry(fMam), new THREE.MeshStandardMaterial({ color: 0xd6d6d0, roughness: 0.85 }));
   mamparo.name = 'mamparo'; mamparo.position.set(0, 0, 2.33); mamparo.rotation.y = Math.PI; g.scene.add(mamparo);   /* con nombre: el recorte general lo ocultaba (usa coords locales y el plano tiene transform) */
+  /* chapa de piso bajo el bastón (31/10): el piso de fábrica tiene huecos alrededor del mecanismo
+     y por ahí se veía la COMPUERTA ROJA de la tolva (AT802-4_17 del exterior, a medio metro abajo) */
+  const piso = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.012, 0.95),
+    new THREE.MeshStandardMaterial({ color: 0x232326, roughness: 0.9 }));
+  piso.name = 'mamparo_piso'; piso.position.set(0, 0.262, 1.025); g.scene.add(piso);   /* el nombre arranca con «mamparo»: exento del recorte general */
   /* (la «tapa» del panel inferior se eliminó el 27/10: tapaba el recuadro del panel VIEJO m1, hoy
      oculto, y quedaba como plano negro flotante delante del tablero visto desde afuera) */
   /* palanquita para los switches que en el modelo son sólo la tuerca (F PUMP, HOPR, FRDS, WIPER) */
@@ -227,6 +237,10 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     ['m16', [0.12, 0.264, 0.619], [0.252, 0.5, 0.727]], ['m23', [0.097, 0.292, 0.674], [0.288, 0.329, 0.71]], ['m23', [0.256, 0.28, 0.596], [0.288, 0.601, 0.714]], ['m23', [0.282, 0.288, 0.66], [0.299, 0.333, 0.825]]];
   recortarManija(g.scene, PEDAL_VIEJO);   /* se descarta lo recortado */
   new GLTFLoader().loadAsync(`./blender/pedales.glb?v=${V}`).then(p => {
+    /* 31/10 (pedido de Iván): el conjunto de pedales heredaba la textura m23 (estructura ROJA y
+       varillas AMARILLAS de juguete): TODO el conjunto pasa a un único gris metal oscuro */
+    const matPed = new THREE.MeshStandardMaterial({ color: 0x3b3c40, metalness: 0.35, roughness: 0.55 });
+    p.scene.traverse(o => { if (o.isMesh) o.material = matPed; });
     cabina.add(p.scene); pedales.mixer = new THREE.AnimationMixer(p.scene);
     const clip = THREE.AnimationClip.findByName(p.animations, 'pedales_timon');
     if (clip) { pedales.accion = pedales.mixer.clipAction(clip); pedales.accion.play(); pedales.accion.paused = true; pedales.dur = clip.duration; }
@@ -481,6 +495,11 @@ function crearConsolas(datos) {
   mover('levPOT', 0, 0.04, 0); mover('levHEL', 0, 0.08, 0); mover('levCOND', 0, 0.06, 0.18);   /* la condición se junta con sus hermanas en el pedestal */
   mover('swFLAPS', 0, 0.045, 0); mover('swAUX', 0, 0.045, 0); mover('swK_TRIMTIMON', 0, 0.04, 0); mover('swWRUD', 0, -0.05, 0);
   mover('swK_FRDS1', 0.025, 0, 0);   /* al achicar el paño izq. la perilla externa del FRDS quedaba fuera del canto (27/10) */
+  { /* la varilla amarilla de la hélice bajaba suelta hasta el piso (31/10): se corta a ras de la tapa */
+    const hel = controles.palancas.find(x => x.nombre === 'levHEL');
+    if (hel && hel.malla) { const gh = hel.malla.geometry, ph = gh.attributes.position;
+      for (let i = 0; i < ph.count; i++) if (ph.getY(i) < 0.67) ph.setY(i, 0.67);
+      ph.needsUpdate = true; gh.computeBoundingBox(); gh.computeBoundingSphere(); } }
   /* el suction vivía en la consola de fábrica (y 0,62): pasa empotrado a la tapa trasera, mirando arriba */
   for (const d of datos) if (d.tipo === 'suction') { d.c = [-0.44, Y_TAPA + 0.001, 1.52]; d.n = [0, 1, 0]; d.ex = [1, 0, 0]; d.ey = [0, 0, -1]; }
 }

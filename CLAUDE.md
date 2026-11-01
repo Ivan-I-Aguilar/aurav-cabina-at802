@@ -90,6 +90,29 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   vigente para lo que venga. Próximo: los «detalles» que marque Iván (probablemente del Quest), y los
   pendientes ya anotados (pelos verificados sólo desde adentro; pedales lejos; orden de palancas).
 
+## Dónde quedamos (31/10)
+- **Inspección crítica a pedido de Iván** («entrá a la cabina y decime qué está mal»): 6 hallazgos; aprobó
+  arrancar por 1 y 2. **RESUELTOS (local, v=20261031g, SIN publicar):**
+  (1) **haz de varillas amarillas** (rincón trasero derecho + horizontal cruzando la consola + varilla al
+  piso): eran CABLES del mecanismo del EXTERIOR (mat08 cromo y mat02) → borrados POR CARA en
+  `exterior_terrestre2.py` (franja y_s −2,45..−1,30, z_s 0,12..1,78; mat08 |x| 0,34–0,70, mat02 0,36–0,595;
+  3116 caras). Queda un alambre gris fino en la pared derecha (menor, a propósito).
+  (2) **mecanismo pedales/bastón de juguete**: pedales.glb entero a UN gris (matPed 0x3b3c40), `palanca_*`
+  grafito 0x2c2d30, m32 gris; **TODAS las mallas `m\d+` de la cabina con textura FSX → clone sin map gris
+  neutro 0x8c8c88** (el armazón rojo/amarillo era m23+m16 texturados; los controles sw/lev conservan su
+  textura; swTRABA recupera rojo propio 0xb01414; m14/m15 quedan con su color claro); la varilla de levHEL
+  se corta a y 0,67 (bajaba al piso). El ROJO que seguía apareciendo tras todo eso NO era de la cabina:
+  era la **COMPUERTA ROJA de la tolva** (`AT802-4_17` del exterior, a y −0,5..−1 bajo el piso) vista por los
+  HUECOS del piso de fábrica → **chapa de piso oscura `mamparo_piso`** (0,78×0,95 m en y 0,262, z 0,55–1,50;
+  el nombre arranca con «mamparo» para quedar exento del recorte general).
+  MÉTODO que la encontró: el scan por caja no daba nada rojo ahí → proyectar los triángulos de la escena a
+  píxeles (`Vector3.project(cam)`, software-raycast) y mirar qué cae en el píxel rojo. OJO: `innerWidth`
+  real ≠ tamaño de la captura del pane (746×630 vs 800×675): escalar los píxeles antes de comparar.
+- **Pendientes de la inspección** (a elección de Iván): (3) cuadrante APILADO: la caja negra de fábrica
+  sobre el pedestal tapa ranuras y perillas azul/gris; (4) el bastón tapa la brújula y la brújula se ve
+  «montada a la nada»; (5) asa blanca flotante en el rincón trasero izquierdo; (6) menores: techo oliva
+  liso, butaca «de yeso», hueco bajo la consola derecha.
+
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
   y el tablero era m14 APLASTADO a una «mesa» a y 1,02 por el clamp de dientes, y el abanico amarillo eran
