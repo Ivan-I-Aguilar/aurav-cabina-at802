@@ -321,6 +321,42 @@ for f in bm.faces:
 if borrarL: bmesh.ops.delete(bm, geom=borrarL, context='FACES')
 print('LATERAL trasero borrado', len(borrarL))
 
+# asidero/manija del OBJ junto al respaldo, lado izquierdo (31/10, hallazgo 5 de Iván: «asa blanca
+# flotando»): bucle de mat02 que quedó colgado hacia ADENTRO de la cabina al borrar su chapa de apoyo.
+# Cajita quirúrgica (x −0,56..−0,28: NO llega a la chapa del flanco, que arranca en |x|≈0,58).
+i_m02a = {i for i, m in enumerate(o.data.materials) if m and m.name == 'mat02'}
+bm.faces.ensure_lookup_table()
+borrarA = []
+for f in bm.faces:
+    c = f.calc_center_median()
+    if f.material_index in i_m02a and -0.56 < c.x < -0.28 and -2.16 < c.y < -1.88 and 0.70 < c.z < 1.04:
+        borrarA.append(f)
+if borrarA: bmesh.ops.delete(bm, geom=borrarA, context='FACES')
+print('ASA borrada', len(borrarA))
+
+# SEGUNDA manija del OBJ, más arriba (junto a la ventanilla del carenado, ~(−0,45, −2,22, 1,35) en
+# marco script): pieza densa (~270 caras). Por ISLA CONEXA CONTENIDA en la caja: la chapa del
+# carenado está conectada al casco entero y no cae; sólo se va la manija suelta.
+bm.faces.ensure_lookup_table(); bm.faces.index_update()
+visA = set(); borrarA2 = []
+for f0 in bm.faces:
+    if f0.index in visA or f0.material_index not in i_m02a: continue
+    c0 = f0.calc_center_median()
+    if not (-0.58 < c0.x < -0.30 and -2.32 < c0.y < -2.12 and 1.22 < c0.z < 1.48): continue
+    pila = [f0]; visA.add(f0.index); isla = [f0]
+    while pila:
+        g2 = pila.pop()
+        for e in g2.edges:
+            for h in e.link_faces:
+                if h.index not in visA: visA.add(h.index); isla.append(h); pila.append(h)
+    ps = [vv.co for g2 in isla for vv in g2.verts]
+    if (min(p.x for p in ps) > -0.62 and max(p.x for p in ps) < -0.26
+            and min(p.y for p in ps) > -2.40 and max(p.y for p in ps) < -2.05
+            and min(p.z for p in ps) > 1.15 and max(p.z for p in ps) < 1.55):
+        borrarA2 += isla
+if borrarA2: bmesh.ops.delete(bm, geom=borrarA2, context='FACES')
+print('ASA 2 borrada', len(borrarA2))
+
 # ESCAPES enteros al metal oscuro (27/10: el labio y la mitad trasera del tubo eran piel y quedaban
 # blancos). En la caja del escape se repinta todo lo que no sea el flanco del capó (normal.x alta
 # con |x| chico); si cae un pedacito de capó junto al tubo, pasa por chapa antiquemadura.

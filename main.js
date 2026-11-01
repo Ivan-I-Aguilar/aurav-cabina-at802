@@ -78,7 +78,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031m';
+let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261031r';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -161,6 +161,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         /* agujas del mecanismo de fábrica (m23/m16/m5): triángulos-varilla de hasta 1 m que vivían
            tapados por el cuerpo del cuadrante y las consolas; destapados asoman como PICOS junto al
            umbral (31/10, aviso de Iván «quedaron cosas destruidas»). Sólo si el lado supera 25 cm. */
+        const asaIzq = o.name === 'm14' && c.x > -0.62 && c.x < -0.29 && c.y > 0.72 && c.y < 1.02 && c.z > 1.90 && c.z < 2.14;   /* asa/correa de fábrica FLOTANDO junto al respaldo, lado izquierdo (31/10, hallazgo 5) */
         let agujaLat = false;
         if (/^(m23|m16|m5)$/.test(o.name) && Math.abs(c.x) > 0.27 && Math.abs(c.x) < 0.68 && c.y > 0.15 && c.y < 0.80 && c.z > 0.68 && c.z < 2.05) {
           const vA = p.fromBufferAttribute(pos, idx.getX(t)).clone(), vB = p.fromBufferAttribute(pos, idx.getX(t + 1)).clone(), vC = p.fromBufferAttribute(pos, idx.getX(t + 2));
@@ -172,7 +173,7 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
         let vertsOk = true;
         for (let k = 0; k < 3 && vertsOk; k++) { p.fromBufferAttribute(pos, idx.getX(t + k));
           if (p.z < 0.55 || p.z > 2.55 || Math.abs(p.x) > anchoMax + 0.06 || p.y > (p.z > 1.85 ? 2.05 : 1.14)) vertsOk = false; }
-        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
+        if (vertsOk && !restoPanel && !varillasDer && !cuadranteViejo && !agujaLat && !asaIzq && c.y <= 1.05 && Math.abs(c.x) <= anchoMax && dentro.containsPoint(c)) quedan.push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2)); }
       geo.setIndex(quedan); o.visible = quedan.length > 0;
     });
     /* la butaca (en m14) no tenía textura: usar el atlas blanqueado del exterior (mismas UV de la familia) */
@@ -181,6 +182,35 @@ Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrum
     /* con el exterior LISO (27/10) ya no hay atlas: m14 va de chapa CLARA (m14 no es sólo la
        butaca: sus chapas con cuerina oscura se veían como PLACAS NEGRAS por el vano y el vidrio) */
     else g.scene.traverse(o => { if (o.isMesh && o.name === 'm14') { o.material = o.material.clone(); o.material.map = null; o.material.color.set(0xc6c6c0); o.material.roughness = 0.85; o.material.metalness = 0.05; o.material.side = THREE.DoubleSide; o.material.emissive = new THREE.Color(0x191917); o.material.needsUpdate = true; } });   /* doble cara + emisivo + SIN metal (31/10: el metallic heredado hacia brillar DORADAS las varillas del lateral) */
+    /* COLOR del interior (31/10, pedido de Iván: «devolverle color»): butaca en cuerina oscura y
+       cinturones del respaldo en azul, por GRUPOS de material sobre la malla recortada (sin texturas,
+       estilo liso). Las geometrías de la cabina tienen transform identidad: las cajas van directo. */
+    const partirMat = (nombre, caja, matExtra) => g.scene.traverse(o => {
+      if (!o.isMesh || o.name !== nombre || !o.geometry.index) return;
+      const geo = o.geometry, idx = geo.index, pos = geo.attributes.position;
+      const base = [], extra = []; const cc = new THREE.Vector3(), pv = new THREE.Vector3();
+      for (let t = 0; t < idx.count; t += 3) {
+        cc.set(0, 0, 0); for (let k = 0; k < 3; k++) cc.add(pv.fromBufferAttribute(pos, idx.getX(t + k))); cc.multiplyScalar(1 / 3);
+        (caja(cc) ? extra : base).push(idx.getX(t), idx.getX(t + 1), idx.getX(t + 2));
+      }
+      if (!extra.length) return;
+      geo.setIndex(base.concat(extra)); geo.clearGroups();
+      geo.addGroup(0, base.length, 0); geo.addGroup(base.length, extra.length, 1);
+      o.material = [Array.isArray(o.material) ? o.material[0] : o.material, matExtra];
+    });
+    partirMat('m14', cc => Math.abs(cc.x) < 0.50 && cc.z > 1.48 && cc.z < 2.30 && cc.y > 0.30 && cc.y < 1.30,
+      new THREE.MeshStandardMaterial({ color: 0x4a4a46, roughness: 0.92, side: THREE.DoubleSide }));   /* butaca: cuerina gris oscura (el respaldo llega a |x| 0,48) */
+    /* cinturones NUEVOS sobre el respaldo (los azules de fábrica ya no existen tras los recortes):
+       dos tiras del arnés en V + hebilla, pegadas a la cara del respaldo (z 1,88 abajo → 1,97 arriba) */
+    const matCint = new THREE.MeshStandardMaterial({ color: 0x2f4e8c, roughness: 0.75, side: THREE.DoubleSide });
+    for (const lado of [-1, 1]) {
+      const tira = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.46, 0.012), matCint);
+      tira.name = 'mamparo_cint'; tira.position.set(lado * 0.10, 0.86, 1.845);
+      tira.rotation.set(0.10, 0, lado * -0.34); cabina.add(tira);   /* 4 cm DELANTE del respaldo y poca inclinación: el respaldo es almohadillado (ondula z 1,86-1,94) y las tiras pegadas se hundían. rot.z invertida: hombros ARRIBA separados, convergen en la hebilla */
+    }
+    const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.065, 0.022),
+      new THREE.MeshStandardMaterial({ color: 0x9a9b9e, metalness: 0.6, roughness: 0.4 }));
+    hebilla.name = 'mamparo_hebilla'; hebilla.position.set(0, 0.655, 1.826); hebilla.rotation.x = 0.10; cabina.add(hebilla);
   });
   // manijas reales del cuadrante: vienen fundidas en mallas grandes; se recortan por caja (marco de la cabina) y pasan a ser palancas.
   // Las lev75/77/42 de la conversión eran varillitas del mecanismo, no las manijas: quedan fijas.

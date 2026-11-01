@@ -140,10 +140,20 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   SOLO para mat08 (el haz cromo de cables; 1433 caras); el alambre fino mat02 de la pared se tolera.
   Verificado: 1659 caras de chapa de vuelta en la franja y el fuselaje cerrado mirando atrás.
   OJO REGLA: borrar POR CARA sobre mat02 (piel) es jugar con fuego: preferir mat específicos.
-- **Pendientes de la inspección** (a elección de Iván): (5) asa blanca flotante junto al respaldo, lado
-  derecho (bucle de cinta, se ve mirando atrás); (6) menores: techo oliva liso, butaca «de yeso» (los
-  cinturones del respaldo eran textura y hoy quedan grises), hueco bajo la consola derecha; dos dientes
-  del canto del casco (mat02) visibles sólo desde adentro en el borde de la ventana izquierda (menor).
+- **(5) asas flotantes + (parte de 6) butaca: HECHO (v=20261031r).** Las «asas» eran DOS manijas del
+  OBJ del exterior (mat02) colgadas hacia adentro junto al respaldo, lado izquierdo: la de abajo
+  (y 0,75-1,0, z 1,90-2,14) borrada POR CARA en cajita quirúrgica (x −0,56..−0,28: sin tocar la chapa,
+  que arranca en |x|≈0,58; 32 caras) y la de arriba (densa, ~640 caras, junto a la ventanilla del
+  carenado) por ISLA CONEXA CONTENIDA (la chapa conectada al casco no cae). BUTACA con color:
+  `partirMat` en main.js (exterior-then, tras el fallback de m14) parte el índice en GRUPOS de material
+  → cuerina gris oscura 0x4a4a46 en caja |x|<0,50, z 1,48-2,30, y 0,30-1,30. CINTURONES nuevos
+  (los azules de fábrica ya no existen tras los recortes): 2 tiras `mamparo_cint` + `mamparo_hebilla`
+  (hombros arriba separados, convergen abajo; 4 cm DELANTE del respaldo: es almohadillado, ondula
+  z 1,86-1,94, y pegadas se hundían; rot.x 0,10 apenas). OJO cámara de prueba: `cam.position` es
+  relativa al JUGADOR (no gira con la mirada): mirando atrás, alejarse del respaldo es z NEGATIVO.
+- **Pendientes de la inspección** (a elección de Iván): (6) menores restantes: techo oliva liso, hueco
+  bajo la consola derecha; dos dientes del canto del casco (mat02) visibles sólo desde adentro en el
+  borde de la ventana izquierda (menor).
 
 ## Dónde quedamos (27/10)
 - **«Se rompió peor» (capturas 38-39, resuelto en v=20261028d):** la chapa blanca gigante entre el asiento
