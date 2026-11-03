@@ -10,6 +10,10 @@ https://ivan-i-aguilar.github.io/aurav-cabina-at802/
 - Avanzar sin pedir permiso para cambios chicos; preguntar antes de rehacer algo grande.
 - Él prueba en el **Meta Quest** y en Chrome. Nosotros no podemos probar en el casco: decirlo siempre que corresponda.
 - **Antes de mostrar una captura, revisarla con ojo crítico** (pedido 25/10): si se ve algo raro —bulto, pieza flotante, hueco, algo que asoma— es un defecto: corregirlo SIN esperar a que Iván lo marque. Correr la ronda de vistas (adentro, esquinas, puerta) tras cada cambio.
+- **RONDA FIJA antes de decir «listo»** (2/11, crítica de Iván: «vos la ves hermosa pero siempre le falta
+  un pedazo»): adentro — frente, vano izq., vano der., atrás, piso; afuera — 3/4 delantero izq. y der.
+  desde arriba (cámara local elevada) y 3/4 trasero izq. y der. mirando POR las ventanas. Mirar SIEMPRE
+  el mismo lado que la captura de Iván, y mandarle las vistas: él decide si quedó, no yo.
 - El modelo es freeware de FSX (Flight Sim Nation / rikoooo): no publicitar fuera de lo interno sin revisar el readme.
 
 ## Publicar
@@ -86,6 +90,44 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 ## Herramienta disponible: Blender + MCP (proponerla cuando sirva)
 Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial de Blender Lab (`bl_ext.BlenderLab.mcp`, arranca solo en localhost:9876): las herramientas `mcp__Blender__*` ejecutan Python en su Blender abierto. Así se modelan piezas y se exportan a GLB directo a esta carpeta. No usar a la vez el botón «Connect to Claude» del otro complemento (ahujasid, mismo puerto). Previews con Eevee (placa de 6 GB).
 **Ofrecerla** cuando haga falta una pieza que el modelo FSX no trae o trae mal: pedales móviles, perillas, palancas que «se rompen», panel inferior real (en vez de la tapa negra), palanquitas de switches, exterior con librea AUR-AV. Se modela aparte y se carga como GLB encima de `cabina.glb`.
+
+## Cabina NUEVA DE CERO (propuesta de Iván, 2/11) — referencia: la cabina REAL de AAXOD
+Iván: «¿y si se hace una cabina de 0 por Blender? lo que tenemos no sé si se puede arreglar, siempre
+le falta un pedazo». Respuesta: SÍ — el INTERIOR entero de cero en Blender con las fotos reales; el
+exterior (FSN) no se toca. La cabina FSX que veníamos parchando es OTRA configuración del 802 y sus
+restos causaron casi todos los «un paso adelante, dos atrás». Falta el ok de Iván para arrancar.
+Fotos (NO subirlas al repo público): `Documents/aurav-cabina/fotos/cabina_real/` — tablero izq. (FRDS),
+tablero der. (llaves), consola izq. (cuadrante y trims), rack de radios der. Lo que muestran:
+- **Tablero casi «de vidrio»**: monitor de motor (pantalla rectangular), anemómetro y altímetro
+  analógicos, Garmin G5 (horizonte digital) y un Garmin debajo; varios huecos redondos VACÍOS (nada de
+  la pared de ~20 relojes del FSX). Arriba-izq.: anunciadores MASTER WARN · MASTER CAUTION · LOW FUEL
+  · ARMED y la llave FUEL BOOST PUMP. El ala izquierda (más baja) lleva el FRDS GEN III (GATE
+  CLOSE/OPEN, MODE AUTO/MANUAL, ARMED, FOAM SET/INJECT, GALLONS TO DUMP, COVERAGE LEVEL, pantallita con
+  perilla) y el botón rojo grande MANUAL SALVO «PRESS TO DUMP HOPPER». A la derecha: soporte vacío de
+  Garmin portátil, placa de pérdida en virajes, perillas UPPER/LOWER PANEL LIGHTS. Borde superior en
+  CURVA continua: no hay glareshield plano.
+- **Llaves ABAJO**, en dos paneles inclinados con filas de breakers y llaves rotuladas: LANDING/WORKING
+  LIGHTS y DISPERSAL SYSTEMS/MISC (izq.); FLIGHT LIGHTS/GYROS/FLAPS y ENGINE OPERATION (der., con una
+  llave de guarda roja). Placa PARK BRAKE OPERATION. (Pedir a Iván fotos de cerca: no todos los
+  rótulos se leen.)
+- **Bajo el tablero**: pared trasera de la TOLVA en amarillo cromato, con la MIRILLA horizontal y la
+  escala vertical «FLIGHT 580…400» (galones) entre los pedales.
+- **Cuadrante en la PARED izquierda**, bajo la ventana (no pedestal): POWER (manija plateada), PROP
+  (perilla azul), CONDITION (perilla roja); arriba manija roja FUEL y una perilla «TURN TO …»;
+  AILERON TRIM y DOWN FLAPS/OFF; abajo volante del compensador con cadena y dial RUDDER TRIM (NOSE
+  LEFT/RIGHT · TAKEOFF/CLIMB/CRUISE).
+- **Derecha**: rack de radios alto, negro, de marco abierto (PAC24, COM, XPDR, Kenwood, Motorola,
+  sirena; jacks MIC/PHONES), bandeja abajo y PULL FOR FRESH AIR. No hay consola de breakers.
+- **Asiento de malla ROJA**, arnés negro; piso y paredes GRISES con antideslizante negro; pedales con
+  placa AIR TRACTOR; palanca cromada con empuñadura negra multifunción y, a su izquierda, otra palanca
+  gris de puño negro y tapa roja (función a confirmar).
+- **PLAN** (por piezas, el juego jugable en cada paso): (1) cascarón — piso y paredes grises, pared de
+  tolva con mirilla, techo; se deja de cargar TODA la cabina FSX estática (m*); (2) tablero real con
+  pantallas en vivo; (3) paneles de llaves + re-cableado a la sim y a los pasos del tutor (lo
+  delicado: nombres de control en SW/mision.js); (4) cuadrante en la pared y trims; (5) rack de
+  radios; (6) asiento de malla, pedales y palanca. Los forros siguen al casco por RAYCAST
+  (techo_blender) con 1,5 cm de holgura y los bordes LEJOS de los huecos de las ventanas (lección de
+  la sierra). Expectativa honesta: geometría simple y limpia con la distribución real, no fotorrealista.
 
 ## Dónde quedamos (28/10)
 - **PUBLICADO 28/10 con el ok de Iván** («eso sigue bien, subilo así, después seguimos con los detalles»):
@@ -257,7 +299,7 @@ Iván tiene Blender 5.2 conectado a **Claude Code** con el complemento oficial d
   de abajo, correas de cintura sobre el cojín); `butacaVieja` ampliada a |x|<0,52 e y>0,27 (la
   estructura blanca vieja asomaba abajo y a los costados); `restoLateral` ampliado (y 0,52-1,08,
   z 0,80-1,06); `mamparo_faldon2` ×2 delante de las consolas (por ahí entraban las «líneas azules»).
-  DECISIÓN (pregunta de Iván «¿reconstruir toda la cabina?»): NO: tablero/consolas/controles/butaca
+  DECISIÓN (pregunta de Iván «¿reconstruir toda la cabina?»): NO —REVISADA el 2/11: ver «Cabina NUEVA DE CERO»—: tablero/consolas/controles/butaca
   ya son nuestros; lo que queda es limpiar la FRONTERA con el casco por zonas.
 - **Captura 52 «igual» (2/11, v=20261102j): la sierra era MI CIELORRASO.** La proyección por píxel
   reveló que el zigzag «al lado de la ventana» visto desde AFUERA era el BORDE ESCALONADO del
