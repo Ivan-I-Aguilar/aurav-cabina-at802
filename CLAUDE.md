@@ -131,6 +131,22 @@ tablero der. (llaves), consola izq. (cuadrante y trims), rack de radios der. Lo 
   (A–H), técnica (scripts `cab_*.py`, controles con propiedades → `userData`, pantallas en canvas),
   chequeos automáticos, fotos que faltan y decisiones pendientes. Falta su ok para arrancar.
   Expectativa honesta: geometría simple y limpia con la distribución real, no fotorrealista.
+- **FOTO 360 DESDE EL ASIENTO (2/11, la mejor referencia para medir):** `Documents/aurav-cabina/fotos/
+  vr360/VR 360 VARIAS ALTURAS/DSCN0054.JPG` (también en el Drive de Iván, carpeta AT8T; el conector de
+  Drive NO baja más de 10 MB: usar la copia local). Nikon KeyMission 360, equirectangular 7744×3872
+  (0,05°/px), 24/9/2026, avión BLANCO Y ROJO de AAXOD (las 4 fotos del 2/11 son de uno AMARILLO: MISMO
+  tablero; radios distintas: rack alto en el amarillo, consola compacta en el blanco y rojo). La
+  manija naranja «DUMP» junto al cuadrante es el E-DUMP. DSCN0001–0052: 360 alrededor y debajo del
+  avión a varias alturas (0040–0051, la cúpula de cerca desde afuera). Pillow está con `--user`:
+  correr Python con `-E -P`, no `-I`. Vista plana desde la 360: `python -E -P herramientas/vista360.py
+  foto.jpg salida.jpg yaw pitch hfov ancho alto` (yaw 0 = tablero, negativo = izquierda; pitch
+  negativo = abajo). MÉTODO («calcada»): la 360 de fondo en Blender y la cámara en el punto de la
+  toma; primero se ubica ese punto alineando parantes, marcos y jaula del FSN.
+- **INTEGRACIÓN CON EL FUSELAJE (recordatorio de Iván 2/11: «al final hay que integrarla al ya
+  existente o recrear el fuselaje»):** se decide en la etapa 0 superponiendo las 360 con el FSN:
+  A = integrar al FSN (cascarón medido contra su chapa) si coincide con ≤ 2 cm; B = rehacer SÓLO la
+  sección de cabina del fuselaje (cúpula, marcos, vidrios, puertas, chapa del cortafuegos a detrás
+  del asiento) con dos cortes planos. El avión entero no hace falta.
 
 ## Dónde quedamos (28/10)
 - **PUBLICADO 28/10 con el ok de Iván** («eso sigue bien, subilo así, después seguimos con los detalles»):

@@ -4,15 +4,20 @@ Pedido de Iván (2/11/2026): hacer el interior de cero en Blender, con la cabina
 modelo, y antes de arrancar tener un plan profundo de todas las piezas y etapas. Este documento es
 ese plan. Se actualiza a medida que avanzamos: cada etapa se marca HECHA con fecha y versión.
 
-**Estado:** plan propuesto el 2/11; falta el ok de Iván para arrancar.
+**Estado:** plan propuesto el 2/11 y ampliado el mismo día con la foto 360 de la cabina (método de
+medidas) y la integración con el fuselaje; falta el ok de Iván para arrancar.
 
 ## En una mirada
 - **Qué:** se reemplaza TODO el interior que viene del FSX (`cabina.glb` y las ~400 líneas de
   parches que lo sostienen en main.js) por una cabina modelada de cero, por scripts de Blender, con
-  la distribución de la cabina real. El exterior (`exterior.glb`) queda como está.
+  la distribución de la cabina real.
+- **El fuselaje:** la cabina tiene que calzar en el fuselaje que ya tenemos (`exterior.glb`). Si en
+  la etapa 0 se ve que el fuselaje FSN no coincide con el real, se rehace sólo la sección de cabina
+  del fuselaje, no el avión entero (§4, «Integración con el fuselaje»).
 - **Cómo:** 8 etapas (0 a 7). Cada etapa deja el juego andando. La cabina vieja y la nueva conviven
   con un interruptor hasta la última etapa, así siempre se puede comparar.
-- **Cuánto:** unas 10 a 14 sesiones de trabajo como las de estos días.
+- **Cuánto:** unas 10 a 16 sesiones de trabajo como las de estos días (16 si hay que rehacer la
+  sección de cabina del fuselaje).
 - **Cómo sabemos que quedó:** antes de mirar, un chequeo automático (que nada asome por fuera, que
   nada flote ni se superponga); después, una ronda fija de 12 vistas que se le manda a Iván. Iván
   aprueba cada etapa. Publicar, sólo con su ok.
@@ -20,7 +25,8 @@ ese plan. Se actualiza a medida que avanzamos: cada etapa se marca HECHA con fec
 
 ## 1. Qué se conserva, qué se reemplaza y qué se borra
 
-**Se conserva:** el exterior (casco, cúpula, vidrios, pintura), la simulación (`vuelo.js`), la
+**Se conserva:** el exterior (alas, cola, motor, tolva y pintura; también la cúpula y la chapa de la
+zona de cabina, salvo que la etapa 0 diga que hay que rehacerlas), la simulación (`vuelo.js`), la
 misión y el tutor (`mision.js`), el audio, el escenario, el modo a pie (`apie.js`), el panel VR, la
 lógica de `controles.js` (con dos agregados), la brújula y el ojo del piloto en (0; 1,38; 1,64).
 
@@ -57,9 +63,20 @@ lógica de `controles.js` (con dos agregados), la brújula y el ojo del piloto e
 8. **Lo que no sepamos se marca como provisorio** en este plan; no se inventa en silencio.
 
 ## 3. La cabina real, zona por zona
-Fuentes: las 4 fotos del 2/11 (`Documents/aurav-cabina/fotos/cabina_real/`, NO van al repo) y el
-manual de Air Tractor (notas en `herramientas/mapa_cabina.md`). En las tablas, «interactiva» quiere
-decir que se acciona en el juego y «en vivo», que es una pantalla que dibuja datos de la simulación.
+Fuentes (ninguna foto va al repo):
+- Las 4 fotos del 2/11 (`Documents/aurav-cabina/fotos/cabina_real/`): avión AMARILLO de AAXOD.
+- La foto 360 desde el asiento del piloto (`Documents/aurav-cabina/fotos/vr360/VR 360 VARIAS
+  ALTURAS/DSCN0054.JPG`, 24/9): Nikon KeyMission 360, equirectangular de 7744×3872, avión BLANCO Y
+  ROJO de AAXOD. Las otras 52 de esa carpeta son 360 alrededor y debajo del mismo avión, a varias
+  alturas; de la 0040 a la 0051 se ve la cúpula de cerca, desde afuera.
+- El manual de Air Tractor (notas en `herramientas/mapa_cabina.md`).
+
+Los dos aviones tienen el MISMO tablero (FRDS GEN III, MVP-50, anunciadores, SALVO, mirilla y
+escalas de la tolva). Lo que cambia son las radios: el amarillo tiene el rack alto de la zona E; el
+blanco y rojo, una consola compacta entre el tablero y la pared derecha (decisión en §9).
+
+En las tablas, «interactiva» quiere decir que se acciona en el juego y «en vivo», que es una
+pantalla que dibuja datos de la simulación.
 
 ### A. Tablero superior (casi todo pantallas)
 Chapa negra mate. El borde de arriba es una curva continua bajo el parabrisas: no hay visera plana.
@@ -126,7 +143,7 @@ Los rótulos de C3 y C4 no se leen todos en las fotos: hacen falta fotos de cerc
 | D6 | Llave DOWN FLAPS / OFF | interactiva (`swFLAPS`; el manual dice recorrido continuo de 0 a 30°, hoy cicla 0/10/20) |
 | D7 | Volante del compensador de profundidad con cadena y piñón (NOSE DOWN / NOSE UP) | trim de profundidad (nuevo en la simulación) |
 | D8 | Dial RUDDER TRIM (NOSE LEFT · TAKEOFF · CLIMB · CRUISE · NOSE RIGHT) | interactivo (`swK_TRIMTIMON`) |
-| D9 | Palanca de piso gris, puño negro y tapa roja, delante del asiento | probablemente la manija E-DUMP (el manual: «manija con botón rojo, apretar y empujar adelante»). **A confirmar** |
+| D9 | Manija E-DUMP al lado del cuadrante: en la 360 (avión blanco y rojo) es NARANJA y tiene «DUMP» escrito; en el amarillo se ve gris con tapa roja | interactiva (`levEDUMP`; el manual: «manija con botón rojo, apretar y empujar adelante») |
 
 En las fotos tampoco se ven la traba de la rueda de cola ni el freno de estacionamiento: preguntar
 dónde están.
@@ -140,7 +157,8 @@ dónde están.
 | E3 | Bandeja abajo y una cajita | estáticas |
 | E4 | Pared derecha: PULL FOR FRESH AIR, toma de 12 V, fichas, conexiones de bronce, manija baja | estáticas |
 
-A la derecha no hay consola de breakers: la que inventamos el 27/10 se va.
+A la derecha no hay consola de breakers: la que inventamos el 27/10 se va. Esta zona es la del
+avión amarillo; si se copia el blanco y rojo, va su consola compacta de radios (§9).
 
 ### F. Piso, pedales y bastón
 
@@ -168,6 +186,9 @@ A la derecha no hay consola de breakers: la que inventamos el 27/10 se va.
 | H4 | Antepecho de las ventanas | parte del forro (reemplaza `marco_ventana.glb`) |
 | H5 | Techo | forro medido (reemplaza `techo.glb`) |
 | H6 | Mamparo trasero | detrás del asiento |
+| H7 | Jaula de caños grises a la vista en el techo y los costados (se ve en la 360) | estática |
+| H8 | Puertas por dentro: panel oscuro con la placa CATEGORÍA RESTRINGIDA, manija roja, calco DO NOT OPEN DOOR IN FLIGHT en el vidrio | estáticas (la puerta no abre: decisión del 24/10) |
+| H9 | Paño rojo en el techo, sobre el parabrisas (¿parasol?) | estático, **a confirmar** |
 
 ## 4. Cómo se construye
 
@@ -185,9 +206,50 @@ Marco de la cabina: +x a la derecha del piloto, +y arriba, −z adelante. En Ble
 | Mamparo trasero de hoy | z 2,33 |
 | Base del bastón de hoy | (0,004; 0,22; 0,969) |
 
-Las medidas salen de tres fuentes: el casco medido (etapa 0), los tamaños de catálogo de cada equipo
-(los relojes son de 3⅛", unos 8 cm; el G5, el MVP-50, el PAC24 y las radios tienen medidas
-publicadas) y las proporciones de las fotos, usando un reloj como regla.
+### Medidas y escala
+- **Una sola escala: metros, la del fuselaje.** El exterior está a escala real (18,06 m de
+  envergadura, la del AT-802) y la cabina usa su mismo marco. No hay una escala para ajustar a ojo:
+  todo se mide en metros en ese marco.
+- **De dónde sale cada medida**, de más a menos confiable:
+  1. **El fuselaje medido por dentro** (rayos contra `exterior.glb`). Manda en todo lo que toca la
+     chapa: ancho, techo, antepecho y piso.
+  2. **Las medidas de catálogo de cada equipo.** Los relojes y el G5 van en huecos estándar de 3⅛"
+     (8 cm); el MVP-50 tiene medidas publicadas; las radios de panel suelen tener 6¼" de ancho (16 cm).
+  3. **La foto 360 desde el asiento.** Da la DIRECCIÓN exacta de cada cosa: un píxel equivale a 0,05°,
+     menos de 1 mm a un metro. Con la dirección y una superficie conocida (el plano del tablero, el
+     piso, la pared) sale la posición.
+  4. **Las fotos comunes**, para detalles y rótulos. No sirven para medir porque no se conoce el lente.
+- **Cómo se usa la 360 (la «calcada»).** En Blender la foto va de fondo, como un cielo
+  equirectangular, y la cámara se pone en el punto donde estuvo la Nikon. Mirando desde ahí, todo lo
+  modelado tiene que caer ENCIMA de lo que se ve en la foto. Si un reloj o una manija no coinciden,
+  están mal puestos. Es la misma vista que tiene el piloto.
+- **Primero se ubica la cámara.** El punto exacto de la toma se calcula alineando lo que ya está en
+  el modelo: los parantes del parabrisas, los marcos de las puertas y la jaula del techo. De paso,
+  eso mide qué tan bien coincide el fuselaje FSN con el real (ver «Integración con el fuselaje»).
+- **Tolerancias:** ±1 cm en lo que se toca (palancas y llaves) y en lo que está junto al casco;
+  ±2 cm en lo demás. Cerca de las costuras de los dos lentes de la Nikon, lo que está a menos de medio
+  metro puede correrse 1 a 2 cm: ahí mandan el catálogo o el casco.
+- **También se verifica el ojo del piloto.** La 360 muestra a qué altura queda el tablero visto desde
+  el asiento; si nuestro ojo (1,38) no da lo mismo que un piloto real, se corrige.
+- **Mejor todavía, si se vuelve al hangar:** una segunda 360 desde el mismo asiento, corrida unos
+  20 cm (arriba o al costado). Con dos puntos de vista se triangula y la distancia sale directa, sin
+  depender del casco.
+
+### Integración con el fuselaje
+Al final la cabina nueva tiene que quedar DENTRO del fuselaje que se ve desde afuera. Hay dos
+caminos, y se elige en la etapa 0 con datos, no a ojo:
+- **A. Integrarla al fuselaje que ya tenemos (FSN).** El cascarón se mide contra su chapa, con 1,5 cm
+  de holgura. Sirve si el fuselaje FSN coincide con el real.
+- **B. Rehacer la sección de cabina del fuselaje.** Cúpula, marcos, vidrios, puertas y la chapa desde
+  el cortafuegos hasta detrás del asiento, modelados con las 360 de adentro y de afuera. Esa sección
+  se saca del exterior con dos cortes planos (adelante y atrás) y se reemplaza. Termina de raíz con
+  los problemas de la frontera (vidrios en sierra, dientes, huecos del lomo, alambres), pero es más
+  trabajo: suma una etapa (1b, de 1 a 2 sesiones).
+- **El avión entero no hace falta rehacerlo:** alas, cola, motor y tolva del FSN están bien.
+- **Cómo se decide:** se superpone la 360 de adentro con el fuselaje FSN visto desde el mismo punto,
+  y las 360 de afuera (0040 a 0051) con el exterior visto desde donde se tomaron. Si los parantes,
+  los marcos y el techo coinciden con 2 cm de error o menos, va A; si no, va B. Iván ve las
+  superposiciones y decide.
 
 ### Archivos nuevos
 - `herramientas/cab_comun.py`: lo común a todos los scripts. Conversiones, prismas, materiales con
@@ -239,8 +301,11 @@ por material), una sola imagen de rótulos de 2048 y 3 MB de GLB en total (hoy `
 ## 5. Etapas
 Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lista.
 
-### Etapa 0 — Base de trabajo (½ a 1 sesión)
+### Etapa 0 — Base de trabajo (1 sesión)
 - `cab_comun.py`, la medición del casco y el chequeador automático.
+- La 360 en Blender: ubicar la cámara de la toma y superponer la foto con el fuselaje FSN, desde
+  adentro y desde afuera. **Sale la decisión A o B** de «Integración con el fuselaje», con las
+  imágenes para que Iván la vea.
 - `__ronda(n)` en el juego: pone la cámara en cada una de las 12 vistas fijas, adentro o afuera, con
   luz de día. Las capturas salen idénticas cada vez (hoy se arman a mano, y una vez miramos el lado
   equivocado).
@@ -248,8 +313,14 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
 - Para Iván: un «plano» de la cabina vacía, el casco por dentro con sus medidas.
 - **Lista cuando** la ronda sale con un comando y el chequeador corre sobre una pieza de prueba.
 
+### Etapa 1b — Sección de cabina del fuselaje (1 a 2 sesiones; sólo si en la etapa 0 sale B)
+- Cúpula, marcos, vidrios, puertas y chapa de la zona de cabina, modelados con las 360 y calcados
+  desde adentro y desde afuera; se reemplazan en `exterior.glb` con dos cortes planos.
+- Se hace ANTES del cascarón, porque el cascarón se mide contra esta chapa.
+
 ### Etapa 1 — Cascarón (1 a 2 sesiones)
-- Crea el cascarón (H1–H6), la mirilla con el agua (C1) y las escalas (C2).
+- Crea el cascarón (H1–H9), la mirilla con el agua (C1) y las escalas (C2), medidos contra el
+  fuselaje (el FSN si sale A; la sección nueva si sale B) y calcados sobre la 360.
 - Se deja de cargar TODA la parte estática del FSX. Lo que todavía no se rehízo (tablero, consolas,
   radios, controles, asiento, pedales) queda provisorio hasta su etapa.
 - Borra el recorte general, los mamparos, los faldones, `techo.glb` y `marco_ventana.glb`. Los
@@ -356,10 +427,11 @@ Se le mandan las 12 vistas a Iván; si su captura es de un lado, se mira ese lad
 | Pasar meses sin una versión estable | cada etapa se puede publicar sola (con el ok de Iván) |
 
 ## 8. Fotos que hacen falta (y para cuándo)
-- **Etapa 1:** la pared de la tolva entera, de frente (mirilla y escalas); lo que hay detrás del
-  asiento; el piso.
-- **Etapa 2:** el tablero ENTERO de frente, derecho, desde el asiento; el MVP-50 y la pantalla de
-  actitud encendidos (qué muestran).
+La 360 desde el asiento ya da la vista general de toda la cabina (tablero, puertas, techo, cuadrante y
+tolva), así que no hace falta una foto de frente para las proporciones. Lo que sigue faltando:
+- **Etapa 1:** lo que hay detrás del asiento (la 360 no lo ve, porque la cámara estaba contra el
+  respaldo) y el piso de cerca.
+- **Etapa 2:** el MVP-50 y la pantalla de actitud encendidos (qué muestran).
 - **Etapa 3:** cada fila de llaves de cerca (son 4 filas), que se lean los rótulos; dónde está el Master.
 - **Etapa 4:** el cuadrante de costado; la perilla «TURN TO LO…»; la palanca de piso con tapa roja;
   dónde están la traba de la rueda de cola y el freno de estacionamiento.
@@ -368,17 +440,22 @@ Se le mandan las 12 vistas a Iván; si su captura es de un lado, se mira ese lad
 
 ## 9. Decisiones pendientes de Iván
 1. Arrancar por las etapas 0 y 1 (recomendado).
-2. Paso de FUEGO: la llave FIRE pasa a ser la manija FUEL a OFF (consultar con Bruno).
-3. El anunciador de 5 celdas inventado se reemplaza por los 4 anunciadores reales y mensajes en el MVP-50.
-4. Trims nuevos en la simulación (profundidad y alerón).
-5. Mirilla con el nivel del agua en vivo.
-6. Publicar por etapas (con su ok en cada una) o todo junto al final.
+2. Qué avión se copia: el blanco y rojo de la 360 (consola de radios compacta) o el amarillo de las
+   4 fotos (rack alto de radios). El tablero es el mismo en los dos.
+3. Integración con el fuselaje: A (el FSN de hoy) o B (sección de cabina nueva). Se decide al
+   terminar la etapa 0, mirando las superposiciones.
+4. Paso de FUEGO: la llave FIRE pasa a ser la manija FUEL a OFF (consultar con Bruno).
+5. El anunciador de 5 celdas inventado se reemplaza por los 4 anunciadores reales y mensajes en el MVP-50.
+6. Trims nuevos en la simulación (profundidad y alerón).
+7. Mirilla con el nivel del agua en vivo.
+8. Publicar por etapas (con su ok en cada una) o todo junto al final.
 
 ## 10. Cronograma
 
 | Etapa | Qué | Sesiones |
 |---|---|---|
-| 0 | Base: medición, chequeos, ronda automática | ½–1 |
+| 0 | Base: medición, chequeos, ronda automática, 360 superpuesta y decisión A o B | 1 |
+| 1b | Sección de cabina del fuselaje (sólo si sale B) | 0–2 |
 | 1 | Cascarón | 1–2 |
 | 2 | Tablero superior | 2 |
 | 3 | FRDS, SALVO, paneles de llaves y re-cableado | 2–3 |
@@ -386,7 +463,7 @@ Se le mandan las 12 vistas a Iván; si su captura es de un lado, se mira ese lad
 | 5 | Rack de radios | 1 |
 | 6 | Asiento, pedales y bastón | 1–2 |
 | 7 | Limpieza, rendimiento y Quest | 1 |
-| | **Total** | **9½–14** |
+| | **Total** | **10–16** |
 
 ## Fuera de alcance (por ahora)
 Fotorrealismo y texturas sacadas de las fotos (las fotos no van al repo), manos animadas, aire
