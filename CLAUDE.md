@@ -14,6 +14,8 @@ https://ivan-i-aguilar.github.io/aurav-cabina-at802/
   un pedazo»): adentro — frente, vano izq., vano der., atrás, piso; afuera — 3/4 delantero izq. y der.
   desde arriba (cámara local elevada) y 3/4 trasero izq. y der. mirando POR las ventanas. Mirar SIEMPRE
   el mismo lado que la captura de Iván, y mandarle las vistas: él decide si quedó, no yo.
+- **Trabajos grandes: primero un PLAN PROFUNDO escrito** (todas las piezas, etapas, verificación y lo
+  que falta saber) y él lo aprueba antes de arrancar (pedido 2/11). Ejemplo: `PLAN_CABINA_NUEVA.md`.
 - El modelo es freeware de FSX (Flight Sim Nation / rikoooo): no publicitar fuera de lo interno sin revisar el readme.
 
 ## Publicar
@@ -49,6 +51,7 @@ ar_terrestre\Air Tractor AT-802iles\AT802-4.obj` (familia FSN, tren de ballesta
 | `herramientas/` | Conversor y utilidades (ver abajo). `pedales_blender.py` regenera `blender/pedales.glb` (Blender en segundo plano). |
 | `blender/` | Piezas animadas hechas en Blender (Lichi): `pedales.glb` + `.blend` + vistas previas. Los pedales originales se recortan de la cabina al cargar (`PEDAL_VIEJO` en main.js) y el clip `pedales_timon` (0 = timón izquierda, 1 s = derecha) sigue a la variable `pedal`. Recorrido ±0,2 rad (~11°), confirmado por Iván 22/10. |
 | `TRASPASO.md` | Historia detallada de decisiones y números. Leerlo antes de tocar la conversión. |
+| `PLAN_CABINA_NUEVA.md` | Plan de la cabina nueva de cero (2/11): etapas, piezas por zona, técnica, verificación. Marcar cada etapa HECHA con fecha y versión. |
 
 ## Regenerar `cabina.glb` (sólo si hace falta tocar la geometría)
 Fuente: `at802_intA.MDL` + carpeta `texture/` de la instalación FSX (`C:\Users\ivani\Documents\aurav-cabina\fsx\SimObjects\Airplanes\...`).
@@ -121,13 +124,13 @@ tablero der. (llaves), consola izq. (cuadrante y trims), rack de radios der. Lo 
 - **Asiento de malla ROJA**, arnés negro; piso y paredes GRISES con antideslizante negro; pedales con
   placa AIR TRACTOR; palanca cromada con empuñadura negra multifunción y, a su izquierda, otra palanca
   gris de puño negro y tapa roja (función a confirmar).
-- **PLAN** (por piezas, el juego jugable en cada paso): (1) cascarón — piso y paredes grises, pared de
-  tolva con mirilla, techo; se deja de cargar TODA la cabina FSX estática (m*); (2) tablero real con
-  pantallas en vivo; (3) paneles de llaves + re-cableado a la sim y a los pasos del tutor (lo
-  delicado: nombres de control en SW/mision.js); (4) cuadrante en la pared y trims; (5) rack de
-  radios; (6) asiento de malla, pedales y palanca. Los forros siguen al casco por RAYCAST
-  (techo_blender) con 1,5 cm de holgura y los bordes LEJOS de los huecos de las ventanas (lección de
-  la sierra). Expectativa honesta: geometría simple y limpia con la distribución real, no fotorrealista.
+- **PLAN COMPLETO en `PLAN_CABINA_NUEVA.md`** (2/11, Iván pidió «un plan profundo de todas las
+  creaciones y etapas» antes de arrancar): 8 etapas (0 base y ronda automática `__ronda(1..12)` ·
+  1 cascarón · 2 tablero de vidrio · 3 FRDS, SALVO y llaves con re-cableado · 4 pared izquierda ·
+  5 rack de radios · 6 asiento, pedales y bastón · 7 limpieza y Quest), inventario real por zonas
+  (A–H), técnica (scripts `cab_*.py`, controles con propiedades → `userData`, pantallas en canvas),
+  chequeos automáticos, fotos que faltan y decisiones pendientes. Falta su ok para arrancar.
+  Expectativa honesta: geometría simple y limpia con la distribución real, no fotorrealista.
 
 ## Dónde quedamos (28/10)
 - **PUBLICADO 28/10 con el ok de Iván** («eso sigue bien, subilo así, después seguimos con los detalles»):
