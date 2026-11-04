@@ -1,0 +1,12 @@
+{
+ "pos": [
+  1.3924999999999998,
+  0.8325000000000001,
+  1.9474999999999998
+ ],
+ "yaw": 0.5759586531581288,
+ "pitch": -0.013089969389957472,
+ "roll": -0.0916297857297023,
+ "iou": 0.5097331881295943,
+ "nota": "marco cabina (m); \u00e1ngulos en rad; d_cabina = Rx(pitch)\u00b7Rz(roll)\u00b7Ry(yaw)\u00b7d_c\u00e1mara; yaw positivo = la c\u00e1mara gira a la izquierda; pitch positivo = mira arriba"
+}

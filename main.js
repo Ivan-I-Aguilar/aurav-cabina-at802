@@ -14,7 +14,11 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261103a';
 
+/* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
+   ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
+const MODO_CABINA = new URLSearchParams(location.search).get('cabina') === 'nueva' ? 'nueva' : 'vieja'; window.__cabina = MODO_CABINA;
 const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
 const ALTURA_CABINA = 1.9;                      // el marco de la cabina sobre el del avión: a 7,2° de 3 puntos las ruedas (y_cab −2 / −1,12) apoyan justo (24/10)
 const V = '20261017a';
@@ -101,7 +105,10 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261103a', V_EXT, OJO }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+  exterior = r.exterior; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();
+}));
+else Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
   g.scene.traverse(o => {
     if (o.name === 'm13') o.visible = false;   /* GPS: flotaba delante del panel; oculto hasta tener la foto real */
     if (o.isMesh && (o.name === 'm14' || o.name === 'm15')) { o.material.color.set(0xe6e6df); o.material.roughness = 0.55; }   /* exterior blanco */
@@ -824,6 +831,54 @@ addEventListener('pointerup', e => {
 });
 addEventListener('pointermove', e => { if (!arr) return; yaw += (e.clientX - arr[0]) * 0.004; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - arr[1]) * 0.004, -1.4, 1.4); arr = [e.clientX, e.clientY]; });
 addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+/* RONDA FIJA (etapa 0, 3/11; PLAN §6): __ronda(n) pone la cámara en la vista n de las 12 y devuelve una
+   promesa que se cumple con la vista ya dibujada. Adentro (1–7) desde el ojo del piloto; afuera (8–12) a
+   pie, con la cámara local elevada (a pie el jugador se pega al suelo cada cuadro). La luz es fija (de día).
+   Posiciones y miradas en el marco de la cabina. __ronda() sin número lista las vistas. */
+const RONDA = [
+  { n: 1, nombre: 'frente', yaw: 0, pitch: -0.12 },
+  { n: 2, nombre: 'abajo a la izquierda (cuadrante)', yaw: 0.75, pitch: -0.7 },
+  { n: 3, nombre: 'abajo a la derecha (radios)', yaw: -0.75, pitch: -0.7 },
+  { n: 4, nombre: 'vano izquierdo', yaw: 1.5, pitch: -0.1 },
+  { n: 5, nombre: 'vano derecho', yaw: -1.5, pitch: -0.1 },
+  { n: 6, nombre: 'atrás', yaw: Math.PI, pitch: -0.1 },
+  { n: 7, nombre: 'piso y pedales', yaw: 0, pitch: -1.15 },
+  { n: 8, nombre: '3/4 delantero izquierdo desde arriba', desde: [-2.6, 2.6, -1.0], hacia: [0, 1.15, 1.5] },
+  { n: 9, nombre: '3/4 delantero derecho desde arriba', desde: [2.6, 2.6, -1.0], hacia: [0, 1.15, 1.5] },
+  { n: 10, nombre: '3/4 trasero izquierdo, por las ventanas', desde: [-2.4, 1.6, 3.6], hacia: [0, 1.1, 1.5] },
+  { n: 11, nombre: '3/4 trasero derecho, por las ventanas', desde: [2.4, 1.6, 3.6], hacia: [0, 1.1, 1.5] },
+  { n: 12, nombre: 'de costado, a la altura de la ventana (izquierda)', desde: [-3.0, 1.3, 1.55], hacia: [0, 1.15, 1.55] },
+];
+const cuadros = n => new Promise(r => { const f = () => (n-- > 0 ? requestAnimationFrame(f) : r()); f(); });
+window.__ronda = async n => {
+  const v = RONDA.find(x => x.n === n); if (!v) { console.table(RONDA.map(x => ({ n: x.n, vista: x.nombre }))); return RONDA.map(x => x.n + ' ' + x.nombre); }
+  $('panel').hidden = true; panelVR.ocultar();   /* el menú tapa la vista; la misión no cambia */
+  const esperar = async () => { for (let i = 0; i < 300 && aPie.animando; i++) await cuadros(1); };
+  if (v.desde) {
+    if (aPie.modo === 'cabina') { aPie.bajar(); await cuadros(2); await esperar(); }
+    const desde = cabina.localToWorld(new THREE.Vector3(...v.desde)), hacia = cabina.localToWorld(new THREE.Vector3(...v.hacia));
+    const suelo = ambiente.alturaTerreno(desde.x, desde.z);
+    escena.attach(jugador); jugador.position.set(desde.x, suelo, desde.z); jugador.scale.setScalar(1);
+    const d = hacia.clone().sub(desde); jugador.rotation.set(0, Math.atan2(-d.x, -d.z), 0);
+    camara.position.set(0, desde.y - suelo, 0); yaw = 0; pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
+  } else {
+    if (aPie.modo === 'pie') { aPie.subir(); await cuadros(2); await esperar(); }
+    yaw = v.yaw; pitch = v.pitch;
+  }
+  await cuadros(3); return v.nombre;
+};
+/* __vista(x, y, z, yaw°, pitch°, hfov°): la cámara en un punto cualquiera de la cabina (marco cabina) mirando
+   con ese yaw (positivo = derecha) y pitch (positivo = arriba) y ese campo horizontal: para comparar el juego
+   con una foto desde el mismo punto (calcado de la 360, etapa 0). Sin argumentos vuelve al ojo del piloto. */
+window.__vista = async (x, y, z, yawDeg = 0, pitchDeg = 0, hfov = null) => {
+  if (aPie.modo !== 'cabina') return 'sólo en la cabina';
+  $('panel').hidden = true; panelVR.ocultar();
+  if (x == null) { jugador.position.copy(OJO_AVION); yaw = 0; pitch = -0.15; camara.fov = 75; camara.updateProjectionMatrix(); await cuadros(3); return 'ojo del piloto'; }
+  const p = cabina.localToWorld(new THREE.Vector3(x, y, z)); avion.worldToLocal(p); jugador.position.copy(p); camara.position.set(0, 0, 0);
+  yaw = -THREE.MathUtils.degToRad(yawDeg); pitch = THREE.MathUtils.degToRad(pitchDeg);
+  if (hfov) { camara.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hfov) / 2) / camara.aspect)); camara.updateProjectionMatrix(); }
+  await cuadros(3); return `vista desde (${x}, ${y}, ${z}) yaw ${yawDeg}° pitch ${pitchDeg}° hfov ${hfov ?? 'igual'}`;
+};
 
 // ---- VR ----
 const bVR = document.getElementById('vr');

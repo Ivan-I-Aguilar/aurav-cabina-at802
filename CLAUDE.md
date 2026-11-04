@@ -33,15 +33,21 @@ git push origin main
 **Versión de la página:** `version.txt` y `VERSION_PAGINA` en index.html tienen que coincidir con el `?v=` de main.js; si el navegador guardó un index viejo, se recarga solo. **Siempre subir la versión** de los imports (`?v=AAAAMMDDx`) en `index.html` (main.js) y en `main.js` para cada módulo o
 GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no cambió», casi siempre es caché.
 
-## Estado (2/11)
+## Estado (3/11)
 - **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván).
-- **Local, SIN publicar:** los arreglos del 31/10 al 2/11 sobre la cabina FSX (última versión
-  v=20261102j) y el plan de la cabina nueva. Esos arreglos quedan superados por la cabina nueva: no
-  seguir parchando la cabina FSX.
-- **Esperando a Iván para arrancar la etapa 0:** (1) qué avión copiamos: el BLANCO Y ROJO de la 360
-  (recomendado: está completo para calcar, adentro y afuera) o el AMARILLO de las 4 fotos (mismo
-  tablero; cambian las radios); (2) su ok para arrancar. La decisión del fuselaje (A o B) sale de la
-  etapa 0.
+- **Local, SIN publicar:** los arreglos del 31/10 al 2/11 sobre la cabina FSX (v=20261102j, superados:
+  no seguir parchando la cabina FSX) y la **etapa 0 de la cabina nueva, HECHA el 3/11 (v=20261103a)**:
+  `herramientas/cab_comun.py` (casco medido, chequeador), `cab_calcar.py` / `cab_superponer.py` /
+  `cab_render_pose.py` / `cab_plano.py` (calcado de las 360), `cabina_nueva.js` con `?cabina=nueva`,
+  `__ronda(n)` y `__vista(...)`. Detalle y hallazgos en `PLAN_CABINA_NUEVA.md` §5 etapa 0.
+- **Iván eligió copiar el avión BLANCO Y ROJO** (el de la 360 desde el asiento).
+- **Esperando a Iván: la decisión A o B** con las superposiciones (`Documents/aurav-cabina/fotos/
+  calcado_etapa0/`, fuera del repo). Resumen: puertas y techo del FSN calzan con 2–3 cm; el parabrisas
+  del FSN es un paño único con parantes pintados y borde en sierra, corrido ~6 cm; las ventanas del
+  techo, ~10 cm más afuera. Recomendado: B acotada a la cúpula (rehacer parabrisas, ventanas del techo
+  y vidrios; conservar el FSN bajo el antepecho y las puertas).
+- La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es
+  razonable; se vuelve a mirar con el asiento nuevo (etapa 6).
 
 ## Cabina nueva de cero (decidida el 2/11)
 - Iván: «¿y si se hace una cabina de 0 por Blender? lo que tenemos no sé si se puede arreglar, siempre
@@ -94,6 +100,8 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `cabina.glb` | Interior del Fire Boss de FSX convertido (7 MB). **Se reemplaza por la cabina nueva** (`PLAN_CABINA_NUEVA.md`): no seguir parchándolo. Cómo se regeneraba y toda su historia: `TRASPASO.md`. |
 | `exterior.glb` | **AT-802 TERRESTRE real** (22-23/10, Lichi): sale del OBJ de Metasequoia en `Documents\aurav-cabina\fsx\rar_terrestre\Air Tractor AT-802\files\AT802-4.obj` (familia FSN, tren de ballesta, ruedas y hélice de 5 palas de fábrica). Se regenera con `herramientas/exterior_terrestre2.py`: aplica la matriz del importador (¡clave!), orienta (deriva a −y, envergadura ±9,03), alinea (ruedas al piso −2, cúpula centrada en la nuestra), blanquea el AMARILLO de sus texturas conservando remaches y deja TAL CUAL la pintura AZUL de fábrica (franjas convergentes y deriva; decisión de Iván 24/10: «respetar el modelo base, pintado azul, sin volverse loco»), borra el «493» de la deriva (relleno con el azul de alrededor) y el «RESTRICTED» (quedaba espejado), pinta por geometría SOLO las ruedas (goma negra, medidas del modelo) y en textura las palas Hartzell negras con banda roja (cajas PALA/PALA_BANDA en at_01), borra su interior; su cúpula queda entera pero SIN sus vidrios en la zona de cabina (los vidrios y la vista interior los pone la cabina). **Todo a doble cara y SIN recalcular normales**: las normales del OBJ vienen mezcladas y el recálculo global dio vuelta chapas (alas/cúpula desaparecían según el ángulo). Suma el estribo. El atlas del OBJ comparte texels: NO hornear librea por posición ahí. Versión `V_EXT` en main.js. (Después, 27/10: repintado liso total con la franja y la cola azules por geometría; ver TRASPASO.) |
 | `herramientas/` | `exterior_terrestre2.py` (regenera el exterior), scripts de Blender `*_blender.py`, `vista360.py` (vista plana desde una foto 360), `voces.py` / `voces.ps1`, `mapa_cabina.md` (notas del manual) y los de la cabina FSX vieja (`mdl2glb.py`, `relojes.py`, `instrumentos.py`). |
+| `herramientas/cab_*.py` | **Cabina nueva** (etapa 0, 3/11). `cab_comun.py`: lo común (marco cabina ↔ Blender, prismas por vértices, materiales, `Casco` = exterior.glb con BVH y rayos, `medir_casco` → `blender/casco_medido.json`, `Panorama` para calcar fotos 360, `control()` con propiedades → userData, `exportar()` con `export_extras`, `vista()` Eevee, `chequear()` = los 6 chequeos del plan; corrido directo mide el casco y prueba el chequeador). `cab_calcar.py` (pose de una 360 contra el FSN: `-- carpeta [--foto 54] [--afuera]`), `cab_superponer.py` (superposiciones y medidas en cm, Pillow), `cab_render_pose.py` (el FSN visto desde la pose), `cab_plano.py` (plano del casco). Poses y medidas en `blender/calcado/`; las imágenes con foto, FUERA del repo en `Documents/aurav-cabina/fotos/calcado_etapa0/`. |
+| `cabina_nueva.js` | Carga la cabina nueva con `?cabina=nueva` (exterior + GLB por zona `blender/cab_*.glb` según `PIEZAS`, hoy vacía, + las líneas del casco medido y el ojo). Con `?cabina=vieja` (o nada) sigue la FSX con sus parches. |
 | `blender/` | Piezas hechas en Blender por scripts (Lichi): `pedales.glb` (clip `pedales_timon`: 0 = timón izquierda, 1 s = derecha; sigue a la variable `pedal`; recorrido ±0,2 rad, confirmado por Iván 22/10), y `butaca.glb`, `marco_ventana.glb` y `techo.glb`, parches provisorios hasta la cabina nueva. |
 | `servidor.py` | Servidor local sin caché (puerto 8765). |
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
@@ -115,6 +123,11 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   navegador queda de fondo, el juego va a ~1 fps (traerla al frente). Para saber QUÉ se ve en un
   píxel: proyectar los triángulos con `Vector3.project(cam)` (escalar: `innerWidth` no es el tamaño
   de la captura).
+- **Ronda fija con un comando (3/11):** `await __ronda(n)` (n = 1..12, las vistas del plan §6; sin número
+  las lista) deja la cámara puesta y dibujada; las de afuera bajan a pie solas y `__ronda(1)` vuelve al
+  asiento. `await __vista(x, y, z, yaw°, pitch°, hfov°)` mira desde un punto cualquiera de la cabina
+  (yaw positivo = derecha); sin argumentos vuelve al ojo. Sirve para comparar con una foto desde el
+  mismo punto (la 360 se tomó en (0; 1,16; 1,58), girada 13° a la izquierda y 6° arriba).
 - La barra del juego muestra la versión (vAAAAMMDDx): preguntarle a Iván cuál ve antes de diagnosticar.
 
 ## Controles y simulación (lo vigente, hasta re-cablear la cabina nueva)

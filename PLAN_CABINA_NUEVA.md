@@ -5,7 +5,8 @@ modelo, y antes de arrancar tener un plan profundo de todas las piezas y etapas.
 ese plan. Se actualiza a medida que avanzamos: cada etapa se marca HECHA con fecha y versión.
 
 **Estado:** plan propuesto el 2/11 y ampliado el mismo día con la foto 360 de la cabina (método de
-medidas) y la integración con el fuselaje; falta el ok de Iván para arrancar.
+medidas) y la integración con el fuselaje. **3/11: Iván eligió copiar el BLANCO Y ROJO (el de la 360) y
+la etapa 0 quedó HECHA (v=20261103a, local, sin publicar); falta su decisión A o B** (ver etapa 0).
 
 ## En una mirada
 - **Qué:** se reemplaza TODO el interior que viene del FSX (`cabina.glb` y las ~400 líneas de
@@ -312,6 +313,35 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
 - Interruptor `?cabina=vieja` / `?cabina=nueva` para comparar.
 - Para Iván: un «plano» de la cabina vacía, el casco por dentro con sus medidas.
 - **Lista cuando** la ronda sale con un comando y el chequeador corre sobre una pieza de prueba.
+
+**HECHA el 3/11/2026 (v=20261103a, local).** Lo que quedó:
+- `herramientas/cab_comun.py` (`Casco` con rayos, `medir_casco` → `blender/casco_medido.json`, 81
+  estaciones × 73 alturas; `Panorama`; `control()`; `exportar()`; `vista()`; `chequear()` con los 6
+  chequeos). Corrido directo prueba el chequeador con piezas de prueba y encuentra las 5 fallas.
+- `cab_calcar.py` (pose de una 360 por calce de máscaras: adentro vidrios↔claros, afuera chapa↔claros),
+  `cab_superponer.py` (superposiciones y medidas borde a borde), `cab_render_pose.py` (el FSN desde el
+  punto de la toma), `cab_plano.py` (el plano del casco). Las imágenes con foto quedan FUERA del repo:
+  `Documents/aurav-cabina/fotos/calcado_etapa0/`; las poses y medidas, en `blender/calcado/`.
+- Juego: `?cabina=nueva` / `?cabina=vieja` (`cabina_nueva.js`), `__ronda(n)` con las 12 vistas (devuelve
+  una promesa; a pie para las de afuera) y `__vista(x, y, z, yaw°, pitch°, hfov°)` para mirar desde un
+  punto dado (comparar con una foto). Verificado en el navegador: las 12 vistas salen con un comando.
+- **Calcado de la 360 (DSCN0054):** la cámara estuvo en (0,00; 1,16; 1,58) m, girada 13° a la
+  izquierda y 6° hacia arriba; es decir 22 cm MÁS BAJO que el ojo del juego (1,38) y 6 cm adelante:
+  altura de pecho de un piloto sentado (el ojo real queda ~25 cm arriba, o sea ≈ 1,41: el ojo del juego
+  está bien o apenas bajo). Calce con los vidrios del FSN: mediana 1,7 cm, p75 3,7 cm, p90 5,4 cm (171
+  bordes). Por zona: parabrisas 1,8 / 4,7; puerta izq. 1,3 / 5,1; puerta der. 2,2 / 5,9; atrás 1,5 / 2,4
+  (mediana / p90 en cm).
+- **Hallazgos para la decisión A/B:** (1) las PUERTAS (marcos, postes, antepecho) y el techo calzan con
+  2–3 cm; (2) el PARABRISAS del FSN es un solo paño de vidrio con los parantes PINTADOS en la textura,
+  borde inferior en sierra con huecos (los «dientes» de siempre), y el paño central queda corrido ~6°
+  (≈ 6 cm) respecto del real visto desde el mismo punto; (3) las VENTANAS DEL TECHO del FSN quedan
+  unos 10° (≈ 8–10 cm) más afuera y atrás que las reales; (4) el FSN no tiene piso ni cortafuegos
+  (agujeros). La 360 de afuera (DSCN0050, sobre el ala derecha) calzó sólo en forma aproximada (mediana
+  6 cm): no sirve para medir; sí para ver la forma.
+- **Recomendación (pendiente de Iván):** B acotada a la CÚPULA: conservar el fuselaje FSN por debajo
+  del antepecho y las puertas (calzan), y rehacer parabrisas (3 paños con sus 2 parantes), ventanas del
+  techo y vidrios con geometría limpia calcada de la 360. Si Iván prefiere A, el cascarón se mide
+  contra el FSN tal cual y los dientes del parabrisas se tapan con el antepecho/glareshield nuevos.
 
 ### Etapa 1b — Sección de cabina del fuselaje (1 a 2 sesiones; sólo si en la etapa 0 sale B)
 - Cúpula, marcos, vidrios, puertas y chapa de la zona de cabina, modelados con las 360 y calcados
