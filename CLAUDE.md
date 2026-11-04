@@ -45,8 +45,8 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   antepecho, del cortafuegos a detrás del asiento (parabrisas de 3 paños, ventanas del techo, puertas y
   ventanillas traseras), calcado de la 360; se conserva la chapa del FSN bajo el antepecho (calza con
   2–3 cm). Base: las superposiciones de la etapa 0 (`Documents/aurav-cabina/fotos/calcado_etapa0/`,
-  fuera del repo). **Sigue: la etapa 1b**, con su plan detallado antes de modelar (pedido de Iván para
-  los trabajos grandes).
+  fuera del repo). **Sigue: la etapa 1b, con su plan detallado en `PLAN_CUPULA.md` (3/11), que Iván
+  tiene que aprobar antes de modelar.** Arranca por la medición (1b.0: `cupula_puntos.json` y lámina).
 - La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es
   razonable; se vuelve a mirar con el asiento nuevo (etapa 6).
 
@@ -107,6 +107,7 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `servidor.py` | Servidor local sin caché (puerto 8765). |
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
 | `PLAN_CABINA_NUEVA.md` | Plan de la cabina nueva de cero (2/11): etapas, piezas por zona, técnica, verificación. Marcar cada etapa HECHA con fecha y versión. |
+| `PLAN_CUPULA.md` | Plan detallado de la etapa 1b (3/11): la cúpula nueva (jaula, 3 paños de parabrisas, techo con ventanas, puertas, carenado), medidas desde la 360, corte del FSN, etapas 1b.0–1b.4 y verificación. |
 
 ## Probar sin casco
 - Servidor local: **`python servidor.py`** en la carpeta del repo y abrir `http://localhost:8765/`.

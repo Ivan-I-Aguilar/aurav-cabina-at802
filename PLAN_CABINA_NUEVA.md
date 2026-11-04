@@ -345,10 +345,12 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
   puertas (marcos y vidrios) y las ventanillas traseras del carenado, calcado de la 360. Se conserva la
   chapa del FSN por debajo del antepecho (calza con 2–3 cm) y el resto del avión.
 
-### Etapa 1b — Sección de cabina del fuselaje (1 a 2 sesiones; sólo si en la etapa 0 sale B)
-- Cúpula, marcos, vidrios, puertas y chapa de la zona de cabina, modelados con las 360 y calcados
-  desde adentro y desde afuera; se reemplazan en `exterior.glb` con dos cortes planos.
-- Se hace ANTES del cascarón, porque el cascarón se mide contra esta chapa.
+### Etapa 1b — La cúpula (2 a 3 sesiones; DECIDIDA el 3/11: sale B)
+- **Plan detallado en `PLAN_CUPULA.md`** (3/11, a la espera del ok de Iván): jaula de caños, parabrisas
+  de 3 paños, techo con sus ventanas y forro, puertas, carenado con ventanillas, costura con el FSN.
+- Se rehace sólo lo que está sobre el antepecho; el FSN se corta por triángulos enteros a un archivo
+  nuevo (`exterior_cupula.glb`, sólo para `?cabina=nueva`); `exterior.glb` queda para la cabina vieja.
+- Se hace ANTES del cascarón, porque el cascarón se mide contra esta cúpula (arriba) y el FSN (abajo).
 
 ### Etapa 1 — Cascarón (1 a 2 sesiones)
 - Crea el cascarón (H1–H9), la mirilla con el agua (C1) y las escalas (C2), medidos contra el
