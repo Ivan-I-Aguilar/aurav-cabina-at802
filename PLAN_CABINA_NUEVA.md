@@ -338,10 +338,12 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
   unos 10° (≈ 8–10 cm) más afuera y atrás que las reales; (4) el FSN no tiene piso ni cortafuegos
   (agujeros). La 360 de afuera (DSCN0050, sobre el ala derecha) calzó sólo en forma aproximada (mediana
   6 cm): no sirve para medir; sí para ver la forma.
-- **Recomendación (pendiente de Iván):** B acotada a la CÚPULA: conservar el fuselaje FSN por debajo
-  del antepecho y las puertas (calzan), y rehacer parabrisas (3 paños con sus 2 parantes), ventanas del
-  techo y vidrios con geometría limpia calcada de la 360. Si Iván prefiere A, el cascarón se mide
-  contra el FSN tal cual y los dientes del parabrisas se tapan con el antepecho/glareshield nuevos.
+- **DECIDIDO por Iván el 3/11: B, rehacer la CÚPULA** («el FSN se ve roto»: con `?cabina=nueva`, sin
+  forro, se ven los huecos en sierra de las ventanillas traseras del carenado sin vidrio, caras que faltan
+  y chapas-isla flotando). Alcance de la 1b: todo lo que está por encima del antepecho, desde el
+  cortafuegos hasta detrás del asiento: parabrisas de 3 paños con sus 2 parantes, ventanas del techo,
+  puertas (marcos y vidrios) y las ventanillas traseras del carenado, calcado de la 360. Se conserva la
+  chapa del FSN por debajo del antepecho (calza con 2–3 cm) y el resto del avión.
 
 ### Etapa 1b — Sección de cabina del fuselaje (1 a 2 sesiones; sólo si en la etapa 0 sale B)
 - Cúpula, marcos, vidrios, puertas y chapa de la zona de cabina, modelados con las 360 y calcados
