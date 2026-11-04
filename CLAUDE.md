@@ -44,7 +44,8 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 - **DECIDIDO (3/11): B, rehacer la cúpula** (etapa 1b del plan): todo lo que está por encima del
   antepecho, del cortafuegos a detrás del asiento (parabrisas de 3 paños, ventanas del techo, puertas y
   ventanillas traseras), calcado de la 360; se conserva la chapa del FSN bajo el antepecho (calza con
-  2–3 cm). Base: las superposiciones de la etapa 0 (`Documents/aurav-cabina/fotos/calcado_etapa0/`,
+  2–3 cm; arriba no: las ventanas de puerta del FSN son 7–10 cm más chicas en la esquina superior
+  trasera, el parabrisas está corrido 6 cm y las ventanas del techo 8–10 cm). Base: las superposiciones de la etapa 0 (`Documents/aurav-cabina/fotos/calcado_etapa0/`,
   fuera del repo). **Sigue: la etapa 1b, con su plan detallado en `PLAN_CUPULA.md` (3/11), que Iván
   tiene que aprobar antes de modelar.** Arranca por la medición (1b.0: `cupula_puntos.json` y lámina).
 - La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es

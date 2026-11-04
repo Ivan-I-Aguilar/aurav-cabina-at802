@@ -28,7 +28,7 @@ antes de modelar. Marco: el de la cabina (+x derecha del piloto, +y arriba, −z
 | Parantes del parabrisas REAL desde la 360 | a −17,5° y +22,6° del eje (≈ ±0,22 m en la base) | panorama (PROVISORIO: la asimetría de 5° es la cámara corrida ~2 cm o el yaw; se resuelve en 1b.0) |
 | Ventanas del techo REALES | lon −110…−60 / +60…+100, lat 55–75 desde la cámara | panorama (PROVISORIO) |
 | Ventana de puerta REAL (izq.) | lon −125…−55, lat −10…+45 desde la cámara | panorama (PROVISORIO) |
-| Diferencias FSN ↔ real | paño central corrido ~6 cm; ventanas del techo 8–10 cm más afuera/atrás; puertas y techo con 2–3 cm | sup54_medidas |
+| Diferencias FSN ↔ real | paño central corrido ~6 cm; ventanas del techo 8–10 cm más afuera/atrás; ventanas de puerta: coinciden abajo y adelante, pero el FSN queda ~7 cm más bajo arriba y ~10 cm más corto en la esquina superior trasera (ambos lados; lo vio Iván el 3/11); techo con 2–3 cm | sup54_medidas + superposición |
 
 Provisorio también: los diámetros de los caños (supongo 3,2 cm los largueros y arcos, 5 cm los parantes
 del parabrisas y los postes de puerta; se miden en 1b.0 contra el ancho que ocupan en la 360) y la forma

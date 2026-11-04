@@ -331,8 +331,10 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
   está bien o apenas bajo). Calce con los vidrios del FSN: mediana 1,7 cm, p75 3,7 cm, p90 5,4 cm (171
   bordes). Por zona: parabrisas 1,8 / 4,7; puerta izq. 1,3 / 5,1; puerta der. 2,2 / 5,9; atrás 1,5 / 2,4
   (mediana / p90 en cm).
-- **Hallazgos para la decisión A/B:** (1) las PUERTAS (marcos, postes, antepecho) y el techo calzan con
-  2–3 cm; (2) el PARABRISAS del FSN es un solo paño de vidrio con los parantes PINTADOS en la textura,
+- **Hallazgos para la decisión A/B:** (1) el antepecho, los postes delanteros de puerta y el techo calzan
+  con 2–3 cm, pero las VENTANAS DE PUERTA del FSN quedan ~7 cm más bajas arriba y ~10 cm más cortas en
+  la esquina superior trasera (ambos lados; la mediana de 1,3–2,2 cm escondía esas esquinas: lo marcó
+  Iván el 3/11); (2) el PARABRISAS del FSN es un solo paño de vidrio con los parantes PINTADOS en la textura,
   borde inferior en sierra con huecos (los «dientes» de siempre), y el paño central queda corrido ~6°
   (≈ 6 cm) respecto del real visto desde el mismo punto; (3) las VENTANAS DEL TECHO del FSN quedan
   unos 10° (≈ 8–10 cm) más afuera y atrás que las reales; (4) el FSN no tiene piso ni cortafuegos
