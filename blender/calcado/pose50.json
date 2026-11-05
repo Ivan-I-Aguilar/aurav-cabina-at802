@@ -1,12 +1,23 @@
 {
  "pos": [
-  1.3924999999999998,
-  0.8325000000000001,
-  1.9474999999999998
+  1.2487057602781704,
+  1.465422317473843,
+  1.8166256104774072
  ],
- "yaw": 0.5759586531581288,
- "pitch": -0.013089969389957472,
- "roll": -0.0916297857297023,
- "iou": 0.5097331881295943,
- "nota": "marco cabina (m); \u00e1ngulos en rad; d_cabina = Rx(pitch)\u00b7Rz(roll)\u00b7Ry(yaw)\u00b7d_c\u00e1mara; yaw positivo = la c\u00e1mara gira a la izquierda; pitch positivo = mira arriba"
+ "yaw": 0.6023819188877019,
+ "pitch": -0.12965603536834697,
+ "roll": 0.05661379821185286,
+ "lente_m": 0.011,
+ "lente_giro": [
+  0.0,
+  -0.013539937087737259,
+  0.004363323129985824
+ ],
+ "sigma_pos_cm": [
+  2.4,
+  2.7,
+  2.3
+ ],
+ "residuo_medio_grados": 0.239,
+ "nota": "marco cabina (m); ángulos en rad; d_cabina = Rx(pitch)·Rz(roll)·Ry(yaw)·d_cámara; pos = centro de la cámara (cada lente mira desde pos ± lente_m·frente, cab_foto360.py) · 1b.0 (5/11): ajuste conjunto de las dos 360 de afuera (cab_cupula_afuera.py); PROVISORIA ±3 cm"
 }

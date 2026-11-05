@@ -1,0 +1,414 @@
+{
+ "formato": 2,
+ "nota": "grados de cada FOTO (lon 0 = frente de la camara, lat 0 = su horizonte). puerta_esq_* y ojo_centro: los mismos de la 360 del asiento, vistos de afuera (el vidrio por fuera); trasera_esq_* y techo_punta_*: lo que se mide desde afuera. lente F = delantera (|lon| < 90), T = trasera. Lo genera cab_cupula_marcas.py",
+ "fotos": {
+  "50": {
+   "archivo": "DSCN0050.JPG",
+   "lado": "der",
+   "puntos": {
+    "puerta_esq_del_sup": {
+     "lon_lat": [
+      -35.032,
+      7.393
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "puerta_esq_del_inf": {
+     "lon_lat": [
+      -5.399,
+      -19.809
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "puerta_esq_tras_inf": {
+     "lon_lat": [
+      -45.854,
+      -32.94
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "puerta_esq_tras_sup": {
+     "lon_lat": [
+      -61.701,
+      3.896
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_del_sup": {
+     "lon_lat": [
+      -71.439,
+      2.241
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_tras_sup": {
+     "lon_lat": [
+      -103.042,
+      -4.848
+     ],
+     "lente": "T",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_tras_inf": {
+     "lon_lat": [
+      -102.275,
+      -28.244
+     ],
+     "lente": "T",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_del_inf": {
+     "lon_lat": [
+      -58.687,
+      -34.688
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "ojo_centro": {
+     "lon_lat": [
+      -55.6,
+      0.2
+     ],
+     "lente": "F",
+     "sigma_grados": 0.5
+    },
+    "techo_punta_del": {
+     "lon_lat": [
+      -41.5,
+      16.0
+     ],
+     "lente": "F",
+     "sigma_grados": 0.5
+    },
+    "techo_punta_tras": {
+     "lon_lat": [
+      -63.4,
+      13.3
+     ],
+     "lente": "F",
+     "sigma_grados": 0.5
+    }
+   },
+   "bordes": {
+    "pd_sup": {
+     "A": [
+      -61.489,
+      3.928
+     ],
+     "B": [
+      -34.713,
+      7.426
+     ],
+     "lente": "F",
+     "residuo_grados": 0.02
+    },
+    "pd_del": {
+     "A": [
+      -34.811,
+      7.185
+     ],
+     "B": [
+      -5.457,
+      -19.763
+     ],
+     "lente": "F",
+     "residuo_grados": 0.023
+    },
+    "pd_inf": {
+     "A": [
+      -5.351,
+      -19.785
+     ],
+     "B": [
+      -46.045,
+      -32.967
+     ],
+     "lente": "F",
+     "residuo_grados": 0.031
+    },
+    "pd_tras": {
+     "A": [
+      -46.008,
+      -32.664
+     ],
+     "B": [
+      -61.71,
+      3.919
+     ],
+     "lente": "F",
+     "residuo_grados": 0.026
+    },
+    "pt_sup_F": {
+     "A": [
+      -71.342,
+      2.262
+     ],
+     "B": [
+      -87.027,
+      -1.154
+     ],
+     "lente": "F",
+     "residuo_grados": 0.027
+    },
+    "pt_sup_T": {
+     "A": [
+      -92.966,
+      -2.867
+     ],
+     "B": [
+      -102.968,
+      -4.834
+     ],
+     "lente": "T",
+     "residuo_grados": 0.019
+    },
+    "pt_tras": {
+     "A": [
+      -103.046,
+      -4.702
+     ],
+     "B": [
+      -102.269,
+      -28.399
+     ],
+     "lente": "T",
+     "residuo_grados": 0.023
+    },
+    "pt_inf_F": {
+     "A": [
+      -59.394,
+      -34.712
+     ],
+     "B": [
+      -87.024,
+      -32.435
+     ],
+     "lente": "F",
+     "residuo_grados": 0.036
+    },
+    "pt_inf_T": {
+     "A": [
+      -93.011,
+      -30.974
+     ],
+     "B": [
+      -102.233,
+      -28.258
+     ],
+     "lente": "T",
+     "residuo_grados": 0.021
+    },
+    "pt_del": {
+     "A": [
+      -58.849,
+      -34.331
+     ],
+     "B": [
+      -71.388,
+      2.073
+     ],
+     "lente": "F",
+     "residuo_grados": 0.02
+    }
+   }
+  },
+  "43": {
+   "archivo": "DSCN0043.JPG",
+   "lado": "izq",
+   "puntos": {
+    "puerta_esq_del_sup": {
+     "lon_lat": [
+      20.779,
+      5.788
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "puerta_esq_tras_sup": {
+     "lon_lat": [
+      40.33,
+      0.036
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "puerta_esq_tras_inf": {
+     "lon_lat": [
+      34.199,
+      -30.403
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "puerta_esq_del_inf": {
+     "lon_lat": [
+      -15.106,
+      -26.265
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_del_sup": {
+     "lon_lat": [
+      46.018,
+      -1.344
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_tras_sup": {
+     "lon_lat": [
+      63.814,
+      -6.926
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_tras_inf": {
+     "lon_lat": [
+      65.181,
+      -23.641
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "trasera_esq_del_inf": {
+     "lon_lat": [
+      42.646,
+      -29.763
+     ],
+     "lente": "F",
+     "sigma_grados": 0.15
+    },
+    "ojo_centro": {
+     "lon_lat": [
+      36.7,
+      -2.2
+     ],
+     "lente": "F",
+     "sigma_grados": 0.5
+    },
+    "techo_punta_del": {
+     "lon_lat": [
+      23.8,
+      14.2
+     ],
+     "lente": "F",
+     "sigma_grados": 0.5
+    },
+    "techo_punta_tras": {
+     "lon_lat": [
+      40.0,
+      7.6
+     ],
+     "lente": "F",
+     "sigma_grados": 0.5
+    }
+   },
+   "bordes": {
+    "pd_sup": {
+     "A": [
+      20.382,
+      5.899
+     ],
+     "B": [
+      40.072,
+      0.114
+     ],
+     "lente": "F",
+     "residuo_grados": 0.104
+    },
+    "pd_tras": {
+     "A": [
+      40.351,
+      0.154
+     ],
+     "B": [
+      34.193,
+      -30.426
+     ],
+     "lente": "F",
+     "residuo_grados": 0.052
+    },
+    "pd_inf": {
+     "A": [
+      34.579,
+      -30.361
+     ],
+     "B": [
+      -14.91,
+      -26.32
+     ],
+     "lente": "F",
+     "residuo_grados": 0.023
+    },
+    "pd_del": {
+     "A": [
+      -14.771,
+      -26.034
+     ],
+     "B": [
+      20.44,
+      5.458
+     ],
+     "lente": "F",
+     "residuo_grados": 0.055
+    },
+    "pt_sup": {
+     "A": [
+      45.973,
+      -1.329
+     ],
+     "B": [
+      63.831,
+      -6.931
+     ],
+     "lente": "F",
+     "residuo_grados": 0.021
+    },
+    "pt_tras": {
+     "A": [
+      63.797,
+      -6.708
+     ],
+     "B": [
+      65.185,
+      -23.686
+     ],
+     "lente": "F",
+     "residuo_grados": 0.017
+    },
+    "pt_inf": {
+     "A": [
+      65.003,
+      -23.706
+     ],
+     "B": [
+      42.758,
+      -29.743
+     ],
+     "lente": "F",
+     "residuo_grados": 0.045
+    },
+    "pt_del": {
+     "A": [
+      42.684,
+      -29.498
+     ],
+     "B": [
+      46.011,
+      -1.407
+     ],
+     "lente": "F",
+     "residuo_grados": 0.044
+    }
+   }
+  }
+ }
+}

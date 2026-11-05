@@ -5,7 +5,8 @@ ventanillas traseras, caras que faltan, chapas-isla flotando) y su parabrisas es
 parantes pintados. Este plan es el detalle de la etapa 1b de `PLAN_CABINA_NUEVA.md`. Iván lo aprueba
 antes de modelar. Marco: el de la cabina (+x derecha del piloto, +y arriba, −z adelante; Blender = (x, −z, y)).
 
-**Estado:** propuesto el 3/11, a la espera del ok de Iván.
+**Estado:** aprobado por Iván el 3/11. **1b.0 (medición) hecha el 5/11**: lámina enviada a Iván, falta su ok para
+modelar (§2b: lo medido, los hallazgos y lo que quedó sin resolver).
 
 ## 1. Qué es «la cúpula» y qué se conserva
 - **Se rehace** todo lo que está POR ENCIMA del antepecho (y ≈ 0,93–0,95) entre el borde trasero del capó
@@ -34,7 +35,63 @@ Provisorio también: los diámetros de los caños (supongo 3,2 cm los largueros 
 del parabrisas y los postes de puerta; se miden en 1b.0 contra el ancho que ocupan en la 360) y la forma
 exacta de las ventanillas traseras (no se ven desde el asiento: salen de las 360 de afuera, aproximadas).
 
+## 2b. Lo medido en la 1b.0 (5/11/2026): reemplaza lo PROVISORIO de la tabla de arriba
+Todo está en `blender/calcado/cupula_puntos.json` (279 puntos, cada uno con su píxel de origen, su superficie y su
+precisión; el bloque `simetrico` es lo que se modela: lado derecho, el izquierdo es su espejo) y dibujado en
+`blender/calcado/cupula_plano.png` (tres vistas con cotas, sin foto). La lámina con foto para revisar,
+`cupula_puntos.png`, queda fuera del repo (`Documents/aurav-cabina/fotos/calcado_etapa0/`).
+
+| Qué | Valor (m, lado derecho; x a la derecha, y arriba, z hacia atrás) | Precisión |
+|---|---|---|
+| Cámara de la 360 del asiento | (-0,003; 1,159; 1,578), 12,2° a la izq., 5,6° arriba, alabeo -0,3° | simetría izq./der. 0,25 cm |
+| Ventana de puerta (el marco visto desde el asiento) | adelante-abajo (0,601; 0,969; 1,068) · atrás-abajo (0,577; 0,913; 1,732) · atrás-arriba (0,364; 1,488; 1,896) · adelante-arriba (0,387; 1,496; 1,501); lados: abajo 66,6 · atrás 63,5 · arriba 39,5 · adelante 71,5 cm | ±1 cm vista desde el asiento; ±3,5 cm en x |
+| Ojo de buey | centro (0,388; 1,436; 1,813); disco Ø 9,0 cm | ±1 cm |
+| Parante del parabrisas (eje) | tope (0,218; 1,537; 1,221) · donde lo tapa el tablero (0,225; 1,318; 1,018) · prolongado al antepecho (0,235; 0,950; 0,675); ancho visible 5,0 a 6,1 cm (caño + burletes); ejes a 43,7 cm arriba | ±1 cm; la base, prolongada |
+| Paño central del parabrisas | 37,8 cm de ancho arriba; esquina superior (0,189; 1,537; 1,221) | ±1 cm (en el plano del FSN) |
+| Paño lateral | esquinas de arriba (0,243; 1,515; 1,218) y (0,360; 1,453; 1,361); último punto visible abajo (0,470; 1,078; 1,094) | ±1,5 cm |
+| Poste de puerta delantero · poste entre ventanas | 10,2 cm · 15,8 cm de ancho | ±1,5 · ±3 cm |
+| Ventana del techo | puntas (0,286; 1,668; 1,547) y (0,290; 1,649; 1,915): unos 37 × 13,5 cm; el techo real queda unos 5 cm POR FUERA del techo del FSN | ±2 a 3 cm, provisorio |
+| Ventanilla trasera (desde afuera) | adelante-arriba (0,368; 1,480; 2,056) · atrás-arriba (0,376; 1,427; 2,785) · atrás-abajo (0,551; 0,954; 2,664) · adelante-abajo (0,563; 0,943; 1,915); lados: arriba 73,1 · atrás 51,8 · abajo 74,9 · adelante 58,8 cm | ±2 cm adelante, ±4 a 5 cm atrás, provisorio |
+| Jaula del techo (nudos) | FR (0,334; 1,571; 1,438) · PR (0,203; 1,565; 1,321) · FC (0,000; 1,697; 1,483) · RR (0,303; 1,599; 2,035) · RC (0,000; 1,599; 2,035); caños de 3 a 4 cm | ±4 cm, provisorio |
+| Antepecho | desde el asiento: y 0,969 (z 1,07) → 0,913 (z 1,73); por fuera queda en y 0,94 a 0,96 hasta z 2,66 | ±1 a 2 cm |
+
+**Hallazgos (cambian cosas de este plan):**
+1. **La asimetría de los parantes no existía.** En la etapa 0 se tomó el limpiaparabrisas por el parante
+   izquierdo. Con los bordes bien leídos, la cámara estaba girada 12,2° (no 13,0°) y a 3 mm del eje, y
+   parantes y puertas quedan espejo con 0,25 cm.
+2. **La cámara 360 tiene DOS lentes** (costuras en lon ±90° de la foto): la trasera mira desde otra pupila (±1,1 cm)
+   y su imagen está girada 0,25° alrededor del eje (medido con el hangar) y 0,78° alrededor de la vertical (sale
+   de la simetría; sin confirmar). Con la cabina a 50 cm es hasta 1 cm. Corregido en `cab_foto360.py`.
+3. **La jaula del techo no es de 3 arcos y 2 largueros** (J5/J6 de §3): es un arco delantero de poste a poste
+   (z 1,44 a 1,48), dos diagonales cortas del arco a la cabeza de cada parante, una **V** que va del centro del arco
+   delantero a los dos nudos traseros, y un **marco trasero** (arco + travesaño recto) en z 2,04, sobre el poste
+   entre la puerta y la ventanilla trasera. Del centro del travesaño bajan dos caños hacia atrás y afuera (su
+   extremo lo tapa el asiento). Las ventanas del techo quedan entre la V y el dintel de cada puerta.
+4. **La ventanilla trasera es grande (73 × 55 cm) y llega a z ≈ 2,8** (el plan cortaba el FSN en z 2,55): detrás
+   del piloto hay más cabina. El FSN ahí ya se angosta: hay que rehacer el carenado hasta z ≈ 2,9. Es más
+   alcance que el aprobado: **lo decide Iván.**
+5. **El techo real queda unos 5 cm por fuera del techo del FSN** (ventanas del techo trianguladas desde afuera).
+6. **Sin resolver con fotos:** (a) el ancho de la cabina sale del FSN (plano de la puerta: convergencia
+   3,7°, caída 19,3°); la forma de la ventana de puerta vista de adentro y de afuera difiere 1,9 cm rms
+   (3 cm en la esquina de abajo atrás) y cerraría mejor (1,1 cm) con 8,2° y 13,3°, que corre las esquinas
+   hasta 5 cm en x. Se define con **3 medidas de cinta**: de puerta a puerta en el antepecho, adelante y atrás
+   de la puerta, y en el borde de arriba. (b) La altura de la cámara, su avance y su cabeceo son los del calcado
+   de la etapa 0 (±2 cm, ±2°). (c) La altura de los caños del techo (se apoyaron en el techo del FSN + 2,5 cm).
+7. **No se ve desde el asiento:** la base del parabrisas (la tapa el tablero), el lado derecho del arco
+   delantero (reflejo) y el extremo de los dos caños traseros. Se completa por simetría o prolongando.
+
+**Cómo se rehace** (unos 5 minutos; las fotos están en `Documents/aurav-cabina/fotos/vr360/VR 360 VARIAS ALTURAS/`):
+```
+python -E -P -X utf8 herramientas/cab_cupula_marcas.py "<carpeta de las fotos>"            (marcas54.json, marcas_afuera.json)
+blender -b --factory-startup --python herramientas/cab_cupula_puntos.py -- --ajustar       (pose54.json por simetría)
+blender -b --factory-startup --python herramientas/cab_cupula_afuera.py                    (cupula_afuera.json, pose50/43.json)
+blender -b --factory-startup --python herramientas/cab_cupula_puntos.py                    (cupula_puntos.json completo)
+python -E -P -X utf8 herramientas/cab_cupula_lamina.py "<carpeta de las fotos>" "<salida>" (lámina con foto y cupula_plano.png)
+```
+
 ## 3. Piezas (todas en `blender/cab_cupula.glb`, un solo script `herramientas/cab_cupula.py`)
+**Ojo (5/11):** J5 y J6 se rehacen según la jaula real (§2b.3) y el carenado trasero llega a z ≈ 2,9 si Iván lo
+aprueba (§2b.4).
 
 ### J. Jaula de caños (gris, a la vista desde adentro; desde afuera queda bajo la chapa)
 | Pieza | Qué es | Cómo se construye |
@@ -122,7 +179,7 @@ Cada vidrio cierra EXACTO contra su caño: sus vértices se toman de los mismos 
 ## 6. Etapas de la 1b (cada una deja el juego andando con `?cabina=nueva`)
 | Paso | Qué | Lista cuando |
 |---|---|---|
-| 1b.0 | Medición (§4): `cupula_puntos.json` + lámina; asimetría resuelta; 360 de afuera refinadas | Iván revisa la lámina de puntos sobre la foto y da el ok |
+| 1b.0 | Medición (§4): `cupula_puntos.json` + lámina; asimetría resuelta; 360 de afuera refinadas | Iván revisa la lámina de puntos sobre la foto y da el ok. **MEDIDA el 5/11/2026** (sin cambios en el juego: sigue v=20261103a); lámina enviada, falta el ok de Iván |
 | 1b.1 | Corte del FSN (§5) + jaula J + parabrisas V1/V2 + faja T4 | 12 vistas sin dientes delante; chequeo de estanqueidad (§7) con el techo provisorio |
 | 1b.2 | Techo T1/T2 con las ventanas V4, arcos y largueros | techo cerrado; forro sin sierra en los vanos (lección del 2/11) |
 | 1b.3 | Puertas P + ventanas V3 + carenado T3 con ventanillas V5 + solapas S | estanqueidad total; 360 superpuesta de nuevo: iou ≥ 0,8 y mediana ≤ 1 cm en parantes y puertas |
@@ -153,4 +210,8 @@ contra el FSN abajo.
 1. Si el paño rojo del techo (¿parasol?) va o no (propongo que no, por ahora).
 2. Una foto desde atrás del asiento (ventanillas traseras y mamparo) si la consigue; si no, va aproximado.
 3. Tinte de los vidrios: casi incoloro (propuesto) o gris como en la foto.
-4. Diámetro real de los caños si lo sabe (si no, se mide en la foto).
+4. Diámetro real de los caños si lo sabe (si no, se mide en la foto). (5/11: en la foto dan 3 a 4 cm.)
+5. (5/11) Tres medidas de cinta del avión real: de puerta a puerta en el antepecho, adelante y atrás de la
+   puerta, y en el borde de arriba de la puerta (definen el ancho de la cabina: §2b.6).
+6. (5/11) Si se rehace el carenado hasta z ≈ 2,9 para que entre la ventanilla trasera entera (§2b.4).
+7. (5/11) Qué hay detrás del piloto en este avión (¿segundo asiento?): se ve por la ventanilla trasera.

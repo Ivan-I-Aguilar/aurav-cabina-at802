@@ -348,8 +348,13 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
   chapa del FSN por debajo del antepecho (calza con 2–3 cm) y el resto del avión.
 
 ### Etapa 1b — La cúpula (2 a 3 sesiones; DECIDIDA el 3/11: sale B)
-- **Plan detallado en `PLAN_CUPULA.md`** (3/11, a la espera del ok de Iván): jaula de caños, parabrisas
+- **Plan detallado en `PLAN_CUPULA.md`** (aprobado por Iván el 3/11): jaula de caños, parabrisas
   de 3 paños, techo con sus ventanas y forro, puertas, carenado con ventanillas, costura con el FSN.
+- **1b.0 (medición) hecha el 5/11:** `blender/calcado/cupula_puntos.json` y `cupula_plano.png`; la lámina con
+  foto se le mandó a Iván y falta su ok. Hallazgos en `PLAN_CUPULA.md` §2b: la asimetría de los parantes era
+  un error de lectura, la cámara 360 tiene dos lentes, la jaula del techo es un arco + una V + un marco
+  trasero, la ventanilla trasera llega a z 2,8 y el ancho de la cabina queda con ±3 cm hasta tener medidas
+  de cinta.
 - Se rehace sólo lo que está sobre el antepecho; el FSN se corta por triángulos enteros a un archivo
   nuevo (`exterior_cupula.glb`, sólo para `?cabina=nueva`); `exterior.glb` queda para la cabina vieja.
 - Se hace ANTES del cascarón, porque el cascarón se mide contra esta cúpula (arriba) y el FSN (abajo).

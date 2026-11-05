@@ -1,0 +1,758 @@
+{
+ "marco": "cabina (m): +x derecha del piloto, +y arriba, -z adelante",
+ "metodo": "ajuste conjunto de las dos 360 de afuera (DSCN0050 ala derecha, DSCN0043 ala izquierda reflejada): poses y puntos; escala por el plano de la ventana de puerta; ancla en el ojo de buey y las esquinas medidas desde el asiento",
+ "costo": {
+  "total": 23.9,
+  "marcas": 13.4,
+  "plano": 0.8,
+  "anclas": 9.7
+ },
+ "poses": {
+  "50": {
+   "pos": [
+    1.2487057602781704,
+    1.465422317473843,
+    1.8166256104774072
+   ],
+   "yaw": 0.6023819188877019,
+   "pitch": -0.12965603536834697,
+   "roll": 0.05661379821185286,
+   "lente_m": 0.011,
+   "lente_giro": [
+    0.0,
+    -0.013539937087737259,
+    0.004363323129985824
+   ],
+   "sigma_pos_cm": [
+    2.4,
+    2.7,
+    2.3
+   ],
+   "residuo_medio_grados": 0.239,
+   "nota": "marco cabina (m); ángulos en rad; d_cabina = Rx(pitch)·Rz(roll)·Ry(yaw)·d_cámara; pos = centro de la cámara (cada lente mira desde pos ± lente_m·frente, cab_foto360.py) · 1b.0 (5/11): ajuste conjunto de las dos 360 de afuera (cab_cupula_afuera.py); PROVISORIA ±3 cm"
+  },
+  "43": {
+   "pos": [
+    -1.3007590455075606,
+    1.369218451819074,
+    1.2560185451330648
+   ],
+   "yaw": -1.4846665370520036,
+   "pitch": -0.188365157030499,
+   "roll": -0.014228862908803375,
+   "lente_m": 0.011,
+   "lente_giro": [
+    0.0,
+    -0.013539937087737259,
+    0.004363323129985824
+   ],
+   "sigma_pos_cm": [
+    2.6,
+    2.5,
+    2.7
+   ],
+   "residuo_medio_grados": 0.248,
+   "nota": "marco cabina (m); ángulos en rad; d_cabina = Rx(pitch)·Rz(roll)·Ry(yaw)·d_cámara; pos = centro de la cámara (cada lente mira desde pos ± lente_m·frente, cab_foto360.py) · 1b.0 (5/11): ajuste conjunto de las dos 360 de afuera (cab_cupula_afuera.py); PROVISORIA ±3 cm"
+  }
+ },
+ "vidrio_por_fuera_menos_marco_por_dentro_cm": {
+  "puerta_esq_del_inf": [
+   0.9,
+   -1.3,
+   0.0
+  ],
+  "puerta_esq_tras_inf": [
+   2.2,
+   3.9,
+   -0.0
+  ],
+  "puerta_esq_tras_sup": [
+   0.6,
+   -0.5,
+   -0.1
+  ],
+  "puerta_esq_del_sup": [
+   -1.3,
+   -0.6,
+   -0.7
+  ],
+  "ojo_centro": [
+   0.2,
+   -1.1,
+   0.4
+  ]
+ },
+ "rasgos": {
+  "puerta_esq_del_inf": {
+   "p3d_der": [
+    0.6044,
+    0.9565,
+    1.0773
+   ],
+   "p3d_izq": [
+    -0.6044,
+    0.9565,
+    1.0773
+   ],
+   "sigma_cm": [
+    1.2,
+    1.9,
+    2.1
+   ],
+   "separacion_rayos_cm": 0.2,
+   "angulo_entre_rayos_grados": 30.0,
+   "fsn_a_cm": 0.1,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -5.399,
+      -19.809
+     ],
+     "px": [
+      3755.9,
+      2362.1
+     ],
+     "residuo_grados": 0.06
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      -15.106,
+      -26.265
+     ],
+     "px": [
+      3547.1,
+      2501.0
+     ],
+     "residuo_grados": 0.05
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     64.837,
+     -17.801
+    ],
+    "izq": [
+     -39.746,
+     -18.479
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "puerta_esq_tras_inf": {
+   "p3d_der": [
+    0.5631,
+    0.9496,
+    1.7537
+   ],
+   "p3d_izq": [
+    -0.5631,
+    0.9496,
+    1.7537
+   ],
+   "sigma_cm": [
+    1.1,
+    1.4,
+    1.4
+   ],
+   "separacion_rayos_cm": 0.2,
+   "angulo_entre_rayos_grados": 35.0,
+   "fsn_a_cm": 0.7,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -45.854,
+      -32.94
+     ],
+     "px": [
+      2885.6,
+      2644.6
+     ],
+     "residuo_grados": 0.04
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      34.199,
+      -30.403
+     ],
+     "px": [
+      4607.7,
+      2590.0
+     ],
+     "residuo_grados": 0.07
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     119.634,
+     -17.752
+    ],
+    "izq": [
+     -96.796,
+     -17.914
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "puerta_esq_tras_sup": {
+   "p3d_der": [
+    0.3662,
+    1.4839,
+    1.9012
+   ],
+   "p3d_izq": [
+    -0.3662,
+    1.4839,
+    1.9012
+   ],
+   "sigma_cm": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "separacion_rayos_cm": 0.7,
+   "angulo_entre_rayos_grados": 29.2,
+   "fsn_a_cm": 0.5,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -61.701,
+      3.896
+     ],
+     "px": [
+      2544.7,
+      1852.2
+     ],
+     "residuo_grados": 0.17
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      40.33,
+      0.036
+     ],
+     "px": [
+      4739.5,
+      1935.2
+     ],
+     "residuo_grados": 0.22
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     138.738,
+     37.674
+    ],
+    "izq": [
+     -115.914,
+     37.666
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "puerta_esq_del_sup": {
+   "p3d_der": [
+    0.3967,
+    1.4936,
+    1.4882
+   ],
+   "p3d_izq": [
+    -0.3967,
+    1.4936,
+    1.4882
+   ],
+   "sigma_cm": [
+    1.0,
+    1.1,
+    1.0
+   ],
+   "separacion_rayos_cm": 0.4,
+   "angulo_entre_rayos_grados": 35.7,
+   "fsn_a_cm": 2.2,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -35.032,
+      7.393
+     ],
+     "px": [
+      3118.4,
+      1777.0
+     ],
+     "residuo_grados": 0.14
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      20.779,
+      5.788
+     ],
+     "px": [
+      4319.0,
+      1811.5
+     ],
+     "residuo_grados": 0.15
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     86.749,
+     38.169
+    ],
+    "izq": [
+     -62.004,
+     38.308
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "ojo_centro": {
+   "p3d_der": [
+    0.3882,
+    1.4238,
+    1.8143
+   ],
+   "p3d_izq": [
+    -0.3882,
+    1.4238,
+    1.8143
+   ],
+   "sigma_cm": [
+    1.0,
+    0.9,
+    0.9
+   ],
+   "separacion_rayos_cm": 0.2,
+   "angulo_entre_rayos_grados": 31.8,
+   "fsn_a_cm": 0.7,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -55.6,
+      0.2
+     ],
+     "px": [
+      2676.0,
+      1931.7
+     ],
+     "residuo_grados": 0.32
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      36.7,
+      -2.2
+     ],
+     "px": [
+      4661.5,
+      1983.3
+     ],
+     "residuo_grados": 0.16
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     128.523,
+     33.369
+    ],
+    "izq": [
+     -105.691,
+     33.361
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "trasera_esq_del_sup": {
+   "p3d_der": [
+    0.3683,
+    1.4804,
+    2.056
+   ],
+   "p3d_izq": [
+    -0.3683,
+    1.4804,
+    2.056
+   ],
+   "sigma_cm": [
+    1.7,
+    1.2,
+    1.4
+   ],
+   "separacion_rayos_cm": 0.3,
+   "angulo_entre_rayos_grados": 25.2,
+   "fsn_a_cm": 0.2,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -71.439,
+      2.241
+     ],
+     "px": [
+      2335.3,
+      1887.8
+     ],
+     "residuo_grados": 0.14
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      46.018,
+      -1.344
+     ],
+     "px": [
+      4861.9,
+      1964.9
+     ],
+     "residuo_grados": 0.15
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     151.067,
+     32.865
+    ],
+    "izq": [
+     -128.243,
+     32.842
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "trasera_esq_tras_sup": {
+   "p3d_der": [
+    0.3759,
+    1.427,
+    2.7847
+   ],
+   "p3d_izq": [
+    -0.3759,
+    1.427,
+    2.7847
+   ],
+   "sigma_cm": [
+    3.9,
+    2.6,
+    4.5
+   ],
+   "separacion_rayos_cm": 0.2,
+   "angulo_entre_rayos_grados": 12.4,
+   "fsn_a_cm": 21.5,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -103.042,
+      -4.848
+     ],
+     "px": [
+      1655.5,
+      2040.3
+     ],
+     "residuo_grados": 0.1
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      63.814,
+      -6.926
+     ],
+     "px": [
+      5244.7,
+      2085.0
+     ],
+     "residuo_grados": 0.1
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     173.534,
+     17.542
+    ],
+    "izq": [
+     -150.674,
+     17.513
+    ]
+   },
+   "precision_cm": 4.5,
+   "provisorio": true
+  },
+  "trasera_esq_tras_inf": {
+   "p3d_der": [
+    0.551,
+    0.9541,
+    2.6645
+   ],
+   "p3d_izq": [
+    -0.551,
+    0.9541,
+    2.6645
+   ],
+   "sigma_cm": [
+    3.2,
+    3.0,
+    4.0
+   ],
+   "separacion_rayos_cm": 0.1,
+   "angulo_entre_rayos_grados": 15.7,
+   "fsn_a_cm": 7.5,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -102.275,
+      -28.244
+     ],
+     "px": [
+      1672.0,
+      2543.6
+     ],
+     "residuo_grados": 0.04
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      65.181,
+      -23.641
+     ],
+     "px": [
+      5274.1,
+      2444.5
+     ],
+     "residuo_grados": 0.06
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     164.617,
+     -4.467
+    ],
+    "izq": [
+     -141.796,
+     -4.524
+    ]
+   },
+   "precision_cm": 4.0,
+   "provisorio": true
+  },
+  "trasera_esq_del_inf": {
+   "p3d_der": [
+    0.5628,
+    0.9431,
+    1.9153
+   ],
+   "p3d_izq": [
+    -0.5628,
+    0.9431,
+    1.9153
+   ],
+   "sigma_cm": [
+    1.5,
+    1.6,
+    1.6
+   ],
+   "separacion_rayos_cm": 0.1,
+   "angulo_entre_rayos_grados": 31.5,
+   "fsn_a_cm": 1.1,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -58.687,
+      -34.688
+     ],
+     "px": [
+      2609.6,
+      2682.2
+     ],
+     "residuo_grados": 0.02
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      42.646,
+      -29.763
+     ],
+     "px": [
+      4789.4,
+      2576.2
+     ],
+     "residuo_grados": 0.03
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     133.038,
+     -15.259
+    ],
+    "izq": [
+     -110.233,
+     -15.395
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "techo_punta_del": {
+   "p3d_der": [
+    0.2862,
+    1.668,
+    1.5467
+   ],
+   "p3d_izq": [
+    -0.2862,
+    1.668,
+    1.5467
+   ],
+   "sigma_cm": [
+    1.6,
+    1.4,
+    1.1
+   ],
+   "separacion_rayos_cm": 2.4,
+   "angulo_entre_rayos_grados": 30.9,
+   "fsn_a_cm": 5.8,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -41.5,
+      16.0
+     ],
+     "px": [
+      2979.3,
+      1591.8
+     ],
+     "residuo_grados": 0.65
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      23.8,
+      14.2
+     ],
+     "px": [
+      4384.0,
+      1630.5
+     ],
+     "residuo_grados": 0.72
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     88.657,
+     59.527
+    ],
+    "izq": [
+     -63.934,
+     59.853
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  },
+  "techo_punta_tras": {
+   "p3d_der": [
+    0.2899,
+    1.6489,
+    1.9151
+   ],
+   "p3d_izq": [
+    -0.2899,
+    1.6489,
+    1.9151
+   ],
+   "sigma_cm": [
+    1.7,
+    1.4,
+    1.3
+   ],
+   "separacion_rayos_cm": 0.4,
+   "angulo_entre_rayos_grados": 26.5,
+   "fsn_a_cm": 4.9,
+   "fotos": {
+    "DSCN0050": {
+     "lon_lat": [
+      -63.4,
+      13.3
+     ],
+     "px": [
+      2508.2,
+      1649.9
+     ],
+     "residuo_grados": 0.09
+    },
+    "DSCN0043": {
+     "lon_lat": [
+      40.0,
+      7.6
+     ],
+     "px": [
+      4732.4,
+      1772.5
+     ],
+     "residuo_grados": 0.14
+    }
+   },
+   "en_la_360_del_asiento": {
+    "der": [
+     145.084,
+     52.44
+    ],
+    "izq": [
+     -122.251,
+     52.444
+    ]
+   },
+   "precision_cm": 2.0,
+   "provisorio": true
+  }
+ },
+ "control_desde_el_asiento": {
+  "trasera_der_esq_vista": {
+   "esquina_superior_delantera_vista": [
+    153.1,
+    33.1
+   ],
+   "prevista": [
+    151.067,
+    32.865
+   ],
+   "diferencia_grados": 1.72
+  },
+  "trasera_izq_esq_vista": {
+   "esquina_superior_delantera_vista": [
+    -131.3,
+    33.2
+   ],
+   "prevista": [
+    -128.243,
+    32.842
+   ],
+   "diferencia_grados": 2.59
+  }
+ },
+ "medidas": {
+  "ventanilla_trasera_cm": {
+   "borde_superior": 73.1,
+   "borde_inferior": 74.9,
+   "borde_delantero": 58.8,
+   "borde_trasero": 51.8
+  },
+  "plano_normal": [
+   0.941,
+   0.337,
+   0.015
+  ],
+  "angulo_con_el_plano_de_puerta_grados": 2.7,
+  "movido_por_la_360_del_asiento_cm": {
+   "trasera_esq_del_sup": 1.3,
+   "trasera_esq_tras_sup": 5.9,
+   "trasera_esq_tras_inf": 5.9,
+   "trasera_esq_del_inf": 0.9,
+   "techo_punta_del": 1.9,
+   "techo_punta_tras": 1.5
+  },
+  "poste_B_ancho_cm": 15.5,
+  "ventana_techo_largo_cm": 36.9
+ },
+ "notas": [
+  "PROVISORIO ±3 cm cerca de la puerta y ±5 cm en las esquinas traseras de la ventanilla (PLAN_CUPULA.md §4.3)",
+  "la escala, la posición y el giro (dentro del plano de la puerta) de todo lo de afuera salen de las anclas con lo medido desde el asiento: ±3 % de escala",
+  "sigma_cm: incertidumbre formal del ajuste (x, y, z); separacion_rayos_cm: cuánto les falta a los dos rayos para cruzarse",
+  "fsn_a_cm: a cuánto queda el casco FSN del punto",
+  "puerta_esq_* acá son las esquinas del VIDRIO por fuera; las de cupula_puntos.json (simetrico) son las del marco visto desde el asiento"
+ ]
+}

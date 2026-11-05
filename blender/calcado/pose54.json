@@ -1,12 +1,24 @@
 {
  "pos": [
-  2.7755575615628914e-17,
+  -0.00324218749999996,
   1.1587500000000002,
   1.5775000000000001
  ],
- "yaw": 0.22689280275926285,
+ "yaw": 0.21342786028782224,
  "pitch": 0.09817477042468103,
- "roll": -0.006544984694978736,
+ "roll": -0.005317800064670223,
+ "asimetria_cm": 0.25,
+ "sensibilidad_cm": {
+  "dx ±1 cm": 1.52,
+  "yaw ±0,5°": 0.93,
+  "roll ±0,5°": 1.02
+ },
  "iou": 0.5530993471656648,
- "nota": "marco cabina (m); \u00e1ngulos en rad; d_cabina = Rx(pitch)\u00b7Rz(roll)\u00b7Ry(yaw)\u00b7d_c\u00e1mara; yaw positivo = la c\u00e1mara gira a la izquierda; pitch positivo = mira arriba"
+ "lente_m": 0.011,
+ "lente_giro": [
+  0.0,
+  -0.013539937087737259,
+  0.004363323129985824
+ ],
+ "nota": "marco cabina (m); ángulos en rad; d_cabina = Rx(pitch)·Rz(roll)·Ry(yaw)·d_cámara; yaw positivo = la cámara gira a la izquierda; pitch positivo = mira arriba · pos = centro de la cámara; cada lente mira desde pos ± lente_m·frente y la trasera va girada lente_giro (cab_foto360.py) · 1b.0 (5/11): dx, yaw y roll por SIMETRÍA de parantes y ventanas de puerta (cab_cupula_puntos.py --ajustar); y, z y pitch son los del calcado de la etapa 0 (pose54_etapa0.json)"
 }

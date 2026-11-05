@@ -1,0 +1,23 @@
+{
+ "pos": [
+  -1.3007590455075606,
+  1.369218451819074,
+  1.2560185451330648
+ ],
+ "yaw": -1.4846665370520036,
+ "pitch": -0.188365157030499,
+ "roll": -0.014228862908803375,
+ "lente_m": 0.011,
+ "lente_giro": [
+  0.0,
+  -0.013539937087737259,
+  0.004363323129985824
+ ],
+ "sigma_pos_cm": [
+  2.6,
+  2.5,
+  2.7
+ ],
+ "residuo_medio_grados": 0.248,
+ "nota": "marco cabina (m); ángulos en rad; d_cabina = Rx(pitch)·Rz(roll)·Ry(yaw)·d_cámara; pos = centro de la cámara (cada lente mira desde pos ± lente_m·frente, cab_foto360.py) · 1b.0 (5/11): ajuste conjunto de las dos 360 de afuera (cab_cupula_afuera.py); PROVISORIA ±3 cm"
+}

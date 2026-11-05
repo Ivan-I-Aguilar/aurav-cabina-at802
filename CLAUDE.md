@@ -33,7 +33,7 @@ git push origin main
 **Versión de la página:** `version.txt` y `VERSION_PAGINA` en index.html tienen que coincidir con el `?v=` de main.js; si el navegador guardó un index viejo, se recarga solo. **Siempre subir la versión** de los imports (`?v=AAAAMMDDx`) en `index.html` (main.js) y en `main.js` para cada módulo o
 GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no cambió», casi siempre es caché.
 
-## Estado (3/11)
+## Estado (5/11)
 - **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván).
 - **Local, SIN publicar:** los arreglos del 31/10 al 2/11 sobre la cabina FSX (v=20261102j, superados:
   no seguir parchando la cabina FSX) y la **etapa 0 de la cabina nueva, HECHA el 3/11 (v=20261103a)**:
@@ -46,8 +46,15 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   ventanillas traseras), calcado de la 360; se conserva la chapa del FSN bajo el antepecho (calza con
   2–3 cm; arriba no: las ventanas de puerta del FSN son 7–10 cm más chicas en la esquina superior
   trasera, el parabrisas está corrido 6 cm y las ventanas del techo 8–10 cm). Base: las superposiciones de la etapa 0 (`Documents/aurav-cabina/fotos/calcado_etapa0/`,
-  fuera del repo). **Sigue: la etapa 1b, con su plan detallado en `PLAN_CUPULA.md` (3/11), que Iván
-  tiene que aprobar antes de modelar.** Arranca por la medición (1b.0: `cupula_puntos.json` y lámina).
+  fuera del repo). **Etapa 1b: plan en `PLAN_CUPULA.md`, aprobado por Iván el 3/11.**
+- **1b.0 (medición de la cúpula) hecha el 5/11**, sin cambios en el juego (sigue v=20261103a):
+  `blender/calcado/cupula_puntos.json` (279 puntos; el bloque `simetrico` es lo que se modela) y
+  `cupula_plano.png`. La lámina con foto (`cupula_puntos.png`, en `Documents/aurav-cabina/fotos/calcado_etapa0/`)
+  se le mandó a Iván: **falta su ok para modelar (1b.1)**. Lo medido, los hallazgos y lo que quedó sin resolver
+  están en `PLAN_CUPULA.md` §2b: la asimetría de los parantes era un error de lectura (cámara a 12,2°, no 13°);
+  la jaula del techo es un arco delantero + una V + un marco trasero; la ventanilla trasera llega a z 2,8 (más
+  carenado que rehacer: lo decide Iván); el ancho de la cabina sale del FSN y queda con ±3 cm hasta tener 3
+  medidas de cinta (de puerta a puerta en el antepecho adelante y atrás, y arriba).
 - La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es
   razonable; se vuelve a mirar con el asiento nuevo (etapa 6).
 
@@ -103,6 +110,7 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `exterior.glb` | **AT-802 TERRESTRE real** (22-23/10, Lichi): sale del OBJ de Metasequoia en `Documents\aurav-cabina\fsx\rar_terrestre\Air Tractor AT-802\files\AT802-4.obj` (familia FSN, tren de ballesta, ruedas y hélice de 5 palas de fábrica). Se regenera con `herramientas/exterior_terrestre2.py`: aplica la matriz del importador (¡clave!), orienta (deriva a −y, envergadura ±9,03), alinea (ruedas al piso −2, cúpula centrada en la nuestra), blanquea el AMARILLO de sus texturas conservando remaches y deja TAL CUAL la pintura AZUL de fábrica (franjas convergentes y deriva; decisión de Iván 24/10: «respetar el modelo base, pintado azul, sin volverse loco»), borra el «493» de la deriva (relleno con el azul de alrededor) y el «RESTRICTED» (quedaba espejado), pinta por geometría SOLO las ruedas (goma negra, medidas del modelo) y en textura las palas Hartzell negras con banda roja (cajas PALA/PALA_BANDA en at_01), borra su interior; su cúpula queda entera pero SIN sus vidrios en la zona de cabina (los vidrios y la vista interior los pone la cabina). **Todo a doble cara y SIN recalcular normales**: las normales del OBJ vienen mezcladas y el recálculo global dio vuelta chapas (alas/cúpula desaparecían según el ángulo). Suma el estribo. El atlas del OBJ comparte texels: NO hornear librea por posición ahí. Versión `V_EXT` en main.js. (Después, 27/10: repintado liso total con la franja y la cola azules por geometría; ver TRASPASO.) |
 | `herramientas/` | `exterior_terrestre2.py` (regenera el exterior), scripts de Blender `*_blender.py`, `vista360.py` (vista plana desde una foto 360), `voces.py` / `voces.ps1`, `mapa_cabina.md` (notas del manual) y los de la cabina FSX vieja (`mdl2glb.py`, `relojes.py`, `instrumentos.py`). |
 | `herramientas/cab_*.py` | **Cabina nueva** (etapa 0, 3/11). `cab_comun.py`: lo común (marco cabina ↔ Blender, prismas por vértices, materiales, `Casco` = exterior.glb con BVH y rayos, `medir_casco` → `blender/casco_medido.json`, `Panorama` para calcar fotos 360, `control()` con propiedades → userData, `exportar()` con `export_extras`, `vista()` Eevee, `chequear()` = los 6 chequeos del plan; corrido directo mide el casco y prueba el chequeador). `cab_calcar.py` (pose de una 360 contra el FSN: `-- carpeta [--foto 54] [--afuera]`), `cab_superponer.py` (superposiciones y medidas en cm, Pillow), `cab_render_pose.py` (el FSN visto desde la pose), `cab_plano.py` (plano del casco). Poses y medidas en `blender/calcado/`; las imágenes con foto, FUERA del repo en `Documents/aurav-cabina/fotos/calcado_etapa0/`. |
+| `herramientas/cab_cupula_*.py`, `cab_foto360.py`, `cab_borde360.py`, `cab_costura360.py` | **Medición de la cúpula** (1b.0, 5/11). `cab_cupula_marcas.py`: todo lo leído en las tres 360 (asiento y dos de afuera) y su afinado → `blender/calcado/marcas54.json` y `marcas_afuera.json`. `cab_borde360.py`: afina un borde recto en una 360 (arco de círculo máximo, escalón marco→vidrio por tramos, 1–2 px). `cab_foto360.py`: geometría de la KeyMission 360 (dos lentes, rayos, proyección) y de planos y rectas, sin Blender. `cab_cupula_puntos.py` (Blender): marcas → puntos 3D (`--ajustar`: pose de la cámara por simetría) → `cupula_puntos.json`. `cab_cupula_afuera.py` (Blender): ajuste conjunto de las dos 360 de afuera (ventanillas traseras, techo) → `cupula_afuera.json`. `cab_cupula_lamina.py`: lámina con foto (fuera del repo) y `cupula_plano.png`. `cab_costura360.py`: desalineación de las dos lentes medida con el hangar. Orden y comandos en `PLAN_CUPULA.md` §2b. |
 | `cabina_nueva.js` | Carga la cabina nueva con `?cabina=nueva` (exterior + GLB por zona `blender/cab_*.glb` según `PIEZAS`, hoy vacía, + las líneas del casco medido y el ojo). Con `?cabina=vieja` (o nada) sigue la FSX con sus parches. |
 | `blender/` | Piezas hechas en Blender por scripts (Lichi): `pedales.glb` (clip `pedales_timon`: 0 = timón izquierda, 1 s = derecha; sigue a la variable `pedal`; recorrido ±0,2 rad, confirmado por Iván 22/10), y `butaca.glb`, `marco_ventana.glb` y `techo.glb`, parches provisorios hasta la cabina nueva. |
 | `servidor.py` | Servidor local sin caché (puerto 8765). |
@@ -130,7 +138,7 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   las lista) deja la cámara puesta y dibujada; las de afuera bajan a pie solas y `__ronda(1)` vuelve al
   asiento. `await __vista(x, y, z, yaw°, pitch°, hfov°)` mira desde un punto cualquiera de la cabina
   (yaw positivo = derecha); sin argumentos vuelve al ojo. Sirve para comparar con una foto desde el
-  mismo punto (la 360 se tomó en (0; 1,16; 1,58), girada 13° a la izquierda y 6° arriba).
+  mismo punto (la 360 se tomó en (0; 1,16; 1,58), girada 12,2° a la izquierda y 5,6° arriba).
 - La barra del juego muestra la versión (vAAAAMMDDx): preguntarle a Iván cuál ve antes de diagnosticar.
 
 ## Controles y simulación (lo vigente, hasta re-cablear la cabina nueva)
@@ -205,5 +213,10 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 - El cielo es una esfera de 1500 m que sigue al avión; el terreno plano llega a ±1200 m y el pasto a ±1600 m. Las sierras empiezan a 300–650 m del aeródromo salvo el valle de la pista.
 - Python: Pillow y numpy están instalados con `--user`; con `python -I` no aparecen: usar `python -E -P`.
 - El conector de Google Drive no baja archivos de más de 10 MB: buscar primero la copia local.
+- **La cámara 360 (KeyMission) son DOS lentes** (costuras en lon ±90° de la foto): lo cercano se ve desde dos
+  pupilas (±1,1 cm) y la imagen trasera está girada 0,25° (y 0,78° según la simetría). A 50 cm es hasta 1 cm:
+  usar siempre `cab_foto360.rayo()` / `proyectar()`, no marcar a menos de 2° de la costura y partir ahí los bordes.
+- **Al leer bordes en una 360, mirar el recorte ampliado antes de creerle a un perfil de luminancia:** el
+  limpiaparabrisas pasó por parante en la etapa 0 y de ahí salió una «asimetría» de 5° que no existía.
 - Al escribir rutas de Windows en estos archivos, cuidar las barras invertidas: `\a`, `\f` y `\r` se
   convirtieron alguna vez en caracteres de control y rompieron rutas (arreglado el 2/11).
