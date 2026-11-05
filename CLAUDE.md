@@ -47,10 +47,10 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   2–3 cm; arriba no: las ventanas de puerta del FSN son 7–10 cm más chicas en la esquina superior
   trasera, el parabrisas está corrido 6 cm y las ventanas del techo 8–10 cm). Base: las superposiciones de la etapa 0 (`Documents/aurav-cabina/fotos/calcado_etapa0/`,
   fuera del repo). **Etapa 1b: plan en `PLAN_CUPULA.md`, aprobado por Iván el 3/11.**
-- **1b.0 (medición de la cúpula) hecha el 5/11**, sin cambios en el juego (sigue v=20261103a):
+- **1b.0 (medición de la cúpula) HECHA el 5/11**, sin cambios en el juego (sigue v=20261103a):
   `blender/calcado/cupula_puntos.json` (279 puntos; el bloque `simetrico` es lo que se modela) y
   `cupula_plano.png`. La lámina con foto (`cupula_puntos.png`, en `Documents/aurav-cabina/fotos/calcado_etapa0/`)
-  se le mandó a Iván: **falta su ok para modelar (1b.1)**. Lo medido, los hallazgos y lo que quedó sin resolver
+  la vio Iván y dio el ok (5/11): **sigue la 1b.1** (corte del FSN, jaula, parabrisas y faja). Lo medido, los hallazgos y lo que quedó sin resolver
   están en `PLAN_CUPULA.md` §2b: la asimetría de los parantes era un error de lectura (cámara a 12,2°, no 13°);
   la jaula del techo es un arco delantero + una V + un marco trasero; la ventanilla trasera llega a z 2,8 (más
   carenado que rehacer: lo decide Iván); el ancho de la cabina sale del FSN y queda con ±3 cm hasta tener 3

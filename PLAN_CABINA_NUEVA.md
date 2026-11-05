@@ -350,8 +350,8 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
 ### Etapa 1b — La cúpula (2 a 3 sesiones; DECIDIDA el 3/11: sale B)
 - **Plan detallado en `PLAN_CUPULA.md`** (aprobado por Iván el 3/11): jaula de caños, parabrisas
   de 3 paños, techo con sus ventanas y forro, puertas, carenado con ventanillas, costura con el FSN.
-- **1b.0 (medición) hecha el 5/11:** `blender/calcado/cupula_puntos.json` y `cupula_plano.png`; la lámina con
-  foto se le mandó a Iván y falta su ok. Hallazgos en `PLAN_CUPULA.md` §2b: la asimetría de los parantes era
+- **1b.0 (medición) HECHA el 5/11:** `blender/calcado/cupula_puntos.json` y `cupula_plano.png`; Iván vio la
+  lámina con foto y dio el ok. Hallazgos en `PLAN_CUPULA.md` §2b: la asimetría de los parantes era
   un error de lectura, la cámara 360 tiene dos lentes, la jaula del techo es un arco + una V + un marco
   trasero, la ventanilla trasera llega a z 2,8 y el ancho de la cabina queda con ±3 cm hasta tener medidas
   de cinta.

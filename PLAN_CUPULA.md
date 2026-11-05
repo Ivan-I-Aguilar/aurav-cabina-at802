@@ -5,8 +5,8 @@ ventanillas traseras, caras que faltan, chapas-isla flotando) y su parabrisas es
 parantes pintados. Este plan es el detalle de la etapa 1b de `PLAN_CABINA_NUEVA.md`. Iván lo aprueba
 antes de modelar. Marco: el de la cabina (+x derecha del piloto, +y arriba, −z adelante; Blender = (x, −z, y)).
 
-**Estado:** aprobado por Iván el 3/11. **1b.0 (medición) hecha el 5/11**: lámina enviada a Iván, falta su ok para
-modelar (§2b: lo medido, los hallazgos y lo que quedó sin resolver).
+**Estado:** aprobado por Iván el 3/11. **1b.0 (medición) HECHA el 5/11**: Iván vio la lámina y dio el ok para
+modelar («Sí, arrancá»; §2b: lo medido, los hallazgos y lo que quedó sin resolver). Sigue la 1b.1.
 
 ## 1. Qué es «la cúpula» y qué se conserva
 - **Se rehace** todo lo que está POR ENCIMA del antepecho (y ≈ 0,93–0,95) entre el borde trasero del capó
@@ -179,7 +179,7 @@ Cada vidrio cierra EXACTO contra su caño: sus vértices se toman de los mismos 
 ## 6. Etapas de la 1b (cada una deja el juego andando con `?cabina=nueva`)
 | Paso | Qué | Lista cuando |
 |---|---|---|
-| 1b.0 | Medición (§4): `cupula_puntos.json` + lámina; asimetría resuelta; 360 de afuera refinadas | Iván revisa la lámina de puntos sobre la foto y da el ok. **MEDIDA el 5/11/2026** (sin cambios en el juego: sigue v=20261103a); lámina enviada, falta el ok de Iván |
+| 1b.0 | Medición (§4): `cupula_puntos.json` + lámina; asimetría resuelta; 360 de afuera refinadas | Iván revisa la lámina de puntos sobre la foto y da el ok. **HECHA el 5/11/2026** (sin cambios en el juego: sigue v=20261103a), con el ok de Iván a la lámina |
 | 1b.1 | Corte del FSN (§5) + jaula J + parabrisas V1/V2 + faja T4 | 12 vistas sin dientes delante; chequeo de estanqueidad (§7) con el techo provisorio |
 | 1b.2 | Techo T1/T2 con las ventanas V4, arcos y largueros | techo cerrado; forro sin sierra en los vanos (lección del 2/11) |
 | 1b.3 | Puertas P + ventanas V3 + carenado T3 con ventanillas V5 + solapas S | estanqueidad total; 360 superpuesta de nuevo: iou ≥ 0,8 y mediana ≤ 1 cm en parantes y puertas |
