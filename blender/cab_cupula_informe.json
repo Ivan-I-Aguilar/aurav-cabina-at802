@@ -1,0 +1,58 @@
+{
+ "etapa": "1b.1",
+ "piezas": 46,
+ "triangulos": 2622,
+ "llamadas": 5,
+ "mb": 0.073,
+ "chequeos": {
+  "3 nada flotando": {
+   "ok": true,
+   "detalle": "todas las piezas apoyan en otra o siguen al casco"
+  },
+  "4 nada superpuesto en el mismo plano": {
+   "ok": true,
+   "detalle": "sin caras coplanares encimadas"
+  },
+  "6 presupuesto": {
+   "ok": true,
+   "detalle": "2622 triángulos (máx. 12000) · 46 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+  }
+ },
+ "vidrio_contra_cano_mm": {
+  "vidrio_central": 3.7,
+  "vidrio_lateral_der": 12.4,
+  "vidrio_lateral_izq": 12.9
+ },
+ "silueta_desde_la_360_mm": {
+  "parante, borde al centro": [
+   -0.5,
+   0.5,
+   0.5
+  ],
+  "parante, borde al costado": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "cabezal, borde de abajo": [
+   1.5,
+   1.5,
+   1.5
+  ],
+  "paño lateral, borde de arriba": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "poste de puerta, borde delantero": [
+   -1.5,
+   -0.5,
+   0.5
+  ]
+ },
+ "estanqueidad_frente": {
+  "rayos": 20000,
+  "escapes": 0,
+  "direcciones": []
+ }
+}

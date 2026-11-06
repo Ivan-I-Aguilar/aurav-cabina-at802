@@ -55,6 +55,37 @@
    "nota": "marco cabina (m); ángulos en rad; d_cabina = Rx(pitch)·Rz(roll)·Ry(yaw)·d_cámara; pos = centro de la cámara (cada lente mira desde pos ± lente_m·frente, cab_foto360.py) · 1b.0 (5/11): ajuste conjunto de las dos 360 de afuera (cab_cupula_afuera.py); PROVISORIA ±3 cm"
   }
  },
+ "parabrisas": {
+  "punto": [
+   0.0,
+   1.5,
+   1.2057
+  ],
+  "pendiente_dz_dy": 1.1986,
+  "inclinacion_desde_la_vertical_grados": 50.2,
+  "normal": [
+   0.0,
+   -0.76786,
+   0.64061
+  ],
+  "parante_der_eje": {
+   "punto": [
+    0.216,
+    1.5,
+    1.2057
+   ],
+   "direccion": [
+    -0.0579,
+    0.6395,
+    0.7666
+   ]
+  },
+  "parante_ancho_cm": 5.6,
+  "parante_fondo_cm": 4.1,
+  "angulo_entre_planos_grados": 61.0,
+  "precision_cm": 3.0,
+  "nota": "plano del paño central por dentro (cara interior de los parantes): z = punto.z + pendiente·(y − punto.y). El parante mide «ancho» visto desde el asiento y «fondo» visto de costado. El vidrio y las tapas de afuera quedan unos 4 cm más afuera (se ve en las dos 360 de afuera). La posición depende de la pose de la 360 del ala izquierda (±3 cm); la inclinación, no"
+ },
  "vidrio_por_fuera_menos_marco_por_dentro_cm": {
   "puerta_esq_del_inf": [
    0.9,

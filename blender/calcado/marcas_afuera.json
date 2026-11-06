@@ -407,6 +407,30 @@
      ],
      "lente": "F",
      "residuo_grados": 0.044
+    },
+    "parante_lejano_a": {
+     "A": [
+      -0.723,
+      4.197
+     ],
+     "B": [
+      -7.931,
+      0.109
+     ],
+     "lente": "F",
+     "residuo_grados": 0.11
+    },
+    "parante_lejano_b": {
+     "A": [
+      -0.0,
+      2.967
+     ],
+     "B": [
+      -7.172,
+      -1.183
+     ],
+     "lente": "F",
+     "residuo_grados": 0.03
     }
    }
   }

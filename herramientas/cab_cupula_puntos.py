@@ -6,9 +6,11 @@
 # Cada marca es un rayo que sale de la pupila de SU lente (cab_foto360.py: la KeyMission 360 son dos ojos de pez
 # espalda con espalda, con las pupilas a ±1,1 cm del centro y la lente trasera girada 0,25°; a 50 cm eso es hasta
 # 1 cm) y se corta con la superficie que le toca:
-#   parabrisas   plano del paño central: z = 0,74 + 0,93·(y − 1,02) (medido en el FSN el 1/11)
-#   puerta_*     plano de la ventana de cada puerta: ajustado a los impactos de sus bordes en el FSN y hecho SIMÉTRICO
-#   lateral_*    plano de cada paño lateral: por el borde exterior del parante y el borde delantero de la ventana de puerta
+#   parabrisas   plano del paño central por dentro (cara interior de los parantes), MEDIDO con dos fotos (el parante derecho
+#                desde el asiento y desde el ala izquierda): lo calcula cab_cupula_afuera.py; antes de eso, el valor de abajo.
+#                (Hasta el 5/11 se usaba «z = 0,74 + 0,93·(y − 1,02), del FSN»: estaba MAL, 7° menos tendido que el real.)
+#   puerta_*     plano de la ventana de cada puerta: ajustado a los impactos de sus bordes en el FSN y hecho SIMÉTRICO; también
+#                el borde delantero del poste de puerta (donde termina el paño lateral, que es curvo)
 #   casco        el fuselaje FSN (exterior.glb) por rayos: ventanas del techo (si todavía no está lo de afuera)
 #   jaula        el techo del FSN corrido 2,5 cm hacia afuera: los caños de la jaula del techo (PROVISORIO, ±4 cm: desde el
 #                asiento, que está sobre el plano de simetría, no hay cómo medir la altura del techo)
@@ -50,7 +52,12 @@ B_FIJO = float(opcion('--b', 'nan'))
 GIRO_FIJO = tuple(math.radians(float(v)) for v in opcion('--giro', '').split(',')) if '--giro' in args else None   # grados: gx,gy,gz
 LIBRE_GY = '--sin-gy' not in args                                           # por defecto, el giro de la lente trasera alrededor de la vertical sale de la simetría
 N = 9                                                                           # muestras por borde
-_n = np.array([0.0, -0.93, 1.0]); PARABRISAS = (np.array([0.0, 1.02, 0.74]), _n / np.linalg.norm(_n))
+def plano_parabrisas(punto, pendiente):
+    n = np.array([0.0, -pendiente, 1.0]); return (np.array(punto, float), n / np.linalg.norm(n))
+PARABRISAS = plano_parabrisas([0.0, 1.50, 1.207], 1.19)                         # medido el 6/11; lo pisa cupula_afuera.json['parabrisas'] si existe
+if os.path.exists(EXTRA):
+    _pb = json.load(open(EXTRA, encoding='utf-8')).get('parabrisas')
+    if _pb: PARABRISAS = plano_parabrisas(_pb['punto'], _pb['pendiente_dz_dy'])
 GRUPOS = ('del', 'inf', 'tras', 'sup')                                          # bordes de la ventana de puerta
 ESQUINAS = (('del_inf', 'del', 'inf'), ('tras_inf', 'inf', 'tras'), ('tras_sup', 'tras', 'sup'), ('del_sup', 'sup', 'del'))
 PRECISION = {'parabrisas': (1.0, 3.0), 'puerta': (1.0, 3.5), 'lateral': (1.5, 3.0), 'casco': (1.5, 3.0), 'techo': (1.5, 3.0), 'jaula': (2.0, 4.0)}
@@ -68,7 +75,8 @@ def superficie(nombre):
     if nombre.startswith(('parante_', 'parabrisas_', 'tablero_')): return 'parabrisas'
     for lado in ('izq', 'der'):
         if nombre.startswith((f'puerta_{lado}', f'ojo_{lado}')): return f'puerta_{lado}'
-        if nombre.startswith((f'lateral_{lado}', f'posteA_{lado}')): return f'lateral_{lado}'
+        if nombre.startswith((f'posteA_{lado}', f'lateral_{lado}_base')): return f'puerta_{lado}'
+        if nombre.startswith(f'lateral_{lado}'): return f'lateral_{lado}'
     if nombre.startswith('techo_'): return nombre[:9]                           # techo_izq / techo_der: su plano si ya se midió desde afuera; si no, el casco FSN
     if nombre.startswith('jaula_') and 'lambda' not in nombre: return 'jaula'   # (los dos caños que bajan hacia atrás quedan sólo como marcas: no hay con qué darles profundidad)
     return None                                                                  # sólo control (ventanilla trasera vista desde el asiento)
@@ -189,14 +197,22 @@ class Medicion:
         return dif
 
     def planos_laterales(self, pos, R, ver=False):
-        """Plano de cada paño lateral: por el borde exterior del parante y el borde delantero de la ventana de puerta."""
-        aj = {}
+        """Borde superior de cada paño lateral (que es curvo): la recta entre su esquina junto al parante (en el plano del
+        parabrisas) y su esquina junto al poste de puerta (en el plano de la puerta). Como «superficie» de ese borde se deja el
+        plano que contiene esa recta y es lo más perpendicular posible a las visuales."""
+        def cruce(b1, b2):                                                       # dirección (foto) donde se cruzan dos círculos máximos, del lado de sus marcas
+            n1 = np.cross(f3.dir_foto(*b1[0]), f3.dir_foto(*b1[-1])); n2 = np.cross(f3.dir_foto(*b2[0]), f3.dir_foto(*b2[-1])); d = unit(np.cross(n1, n2))
+            return d if d @ f3.dir_foto(*b1[0]) > 0 else -d
+        self.esq_lateral = {}
         for lado in ('izq', 'der'):
-            p = self.pts(f'parante_{lado}_ext', pos, R) + [q for q in self.pts(f'puerta_{lado}_del', pos, R) if q[1] > 1.25]
-            aj[lado] = f3.plano_por_puntos(p)
-        self.planos['lateral_izq'], self.planos['lateral_der'], dif = simetrizar(aj['izq'], aj['der'])
+            sup, par, pa = self.bordes[f'lateral_{lado}_sup'][0], self.bordes[f'parante_{lado}_ext'][0], self.bordes[f'posteA_{lado}_del'][0]
+            o = np.asarray(pos) + self.b * f3.frente(R)
+            e1 = f3.cortar_plano(o, R @ cruce(sup, par), self.planos['parabrisas']); e2 = f3.cortar_plano(o, R @ cruce(sup, pa), self.planos[f'puerta_{lado}'])
+            self.esq_lateral[lado] = {'sup_parante': e1, 'sup_posteA': e2, 'lon_lat': {'sup_parante': f3.lonlat(cruce(sup, par)), 'sup_posteA': f3.lonlat(cruce(sup, pa))}}
+            u = unit(e2 - e1); w = unit((e1 + e2) / 2 - o); n = unit(w - (w @ u) * u)
+            self.planos[f'lateral_{lado}'] = ((e1 + e2) / 2, n)
         if ver:
-            c, n = self.planos['lateral_der']; print(f'  planos laterales simétricos: der. por ({c[0]:.3f}, {c[1]:.3f}, {c[2]:.3f}) normal ({n[0]:.3f}, {n[1]:.3f}, {n[2]:.3f}) (diferían {dif * 100:.1f} cm)')
+            e = self.esq_lateral['der']; print(f'  borde superior del paño lateral derecho: de ({e["sup_parante"][0]:.3f}, {e["sup_parante"][1]:.3f}, {e["sup_parante"][2]:.3f}) a ({e["sup_posteA"][0]:.3f}, {e["sup_posteA"][1]:.3f}, {e["sup_posteA"][2]:.3f})')
 
     # ---- ventana de puerta: rectas de los 4 bordes en el plano y esquinas en 3D ----
     def ventana(self, lado, pos, R):
@@ -383,14 +399,9 @@ if __name__ == '__main__':
     r_sup = recta_p(['parabrisas_sup'])
     for lado in ('izq', 'der'):
         anotar_calculado(f'parabrisas_esq_sup_{lado}', 'parabrisas_esq', f3.a_3d(f3.cruce_2d(recta_p([f'parante_{lado}_int']), r_sup), PARABRISAS, ejes_p), 'parabrisas')
-    # paños laterales: borde superior y borde delantero del poste A en su plano; esquinas
-    L = {}
+    # paños laterales: esquinas de arriba (junto al parante, en el plano del parabrisas; junto al poste de puerta, en el de la puerta)
     for lado in ('izq', 'der'):
-        plano = m.planos[f'lateral_{lado}']; ejes = f3.base_del_plano(plano)
-        def r2(nombre): return f3.recta_2d([f3.a_2d(p, plano, ejes) for p in m.pts(nombre, pos, R, f'lateral_{lado}')])
-        rs, rp, ra = r2(f'lateral_{lado}_sup'), r2(f'parante_{lado}_ext'), r2(f'posteA_{lado}_del')
-        L[lado] = {'sup_parante': f3.a_3d(f3.cruce_2d(rs, rp), plano, ejes), 'sup_posteA': f3.a_3d(f3.cruce_2d(rs, ra), plano, ejes)}
-        for k, p in L[lado].items(): anotar_calculado(f'lateral_{lado}_esq_{k}', f'lateral_{lado}_esq', p, f'lateral_{lado}')
+        for k in ('sup_parante', 'sup_posteA'): anotar_calculado(f'lateral_{lado}_esq_{k}', f'lateral_{lado}_esq', m.esq_lateral[lado][k], 'parabrisas' if k == 'sup_parante' else f'puerta_{lado}')
 
     # ================= versión SIMÉTRICA (lado derecho, x > 0; el izquierdo es su espejo) =================
     sim = {}
@@ -502,7 +513,8 @@ if __name__ == '__main__':
         control_forma = control_de_forma(ry, m.planos['puerta_der'], fuera)
         print(f'CONTROL de forma de la ventana de puerta (asiento contra afuera): {control_forma["rms_cm"]} cm rms, por punto {control_forma["por_punto_cm"]} · con el plano a '
               f'{control_forma["mejor_plano_grados"]} bajaría (el adoptado: {control_forma["plano_adoptado_grados"]})')
-    sup_json = {'parabrisas': {'punto': redondo(PARABRISAS[0]), 'normal': redondo(PARABRISAS[1]), 'nota': 'z = 0,74 + 0,93·(y − 1,02), del FSN'}}
+    sup_json = {'parabrisas': {'punto': redondo(PARABRISAS[0]), 'normal': redondo(PARABRISAS[1]), 'pendiente_dz_dy': round(float(-PARABRISAS[1][1] / PARABRISAS[1][2]), 4),
+                               'nota': 'paño central POR DENTRO (cara interior de los parantes), medido con dos fotos (cab_cupula_afuera.py); el vidrio va unos 4 cm más afuera'}}
     for k, (c, n) in m.planos.items():
         if k != 'parabrisas': sup_json[k] = {'punto': redondo(c), 'normal': redondo(n)}
     salida = {'marco': 'cabina (m): +x derecha del piloto, +y arriba, -z adelante',

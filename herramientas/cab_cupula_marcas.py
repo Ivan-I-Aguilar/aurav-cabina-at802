@@ -79,6 +79,11 @@ BORDES_AFUERA = {
            'pt_sup': ([45.95, -1.4], [63.9, -6.7], [55, -15]),     'pt_tras': ([63.9, -6.7], [65.0, -23.7], [55, -15]),
            'pt_inf': ([65.0, -23.7], [42.7, -29.5], [55, -15]),    'pt_del': ([42.7, -29.5], [45.95, -1.4], [55, -15])},
 }
+# El parante DERECHO del parabrisas visto desde la 360 del ala izquierda (DSCN0043), por dentro, a través de la cabina: una
+# banda negra entre dos zonas claras (la pared del hangar vista por los vidrios). Sus dos bordes, con lo claro del lado que
+# se indica: de ahí sale la inclinación real del parabrisas (cab_cupula_afuera.py)
+PARANTE_LEJANO_43 = {'parante_lejano_a': ([-0.69, 4.14], [-7.85, -0.03], [-4.9, 3.1]),      # borde de adelante / arriba (lo claro, más arriba)
+                     'parante_lejano_b': ([-0.03, 3.02], [-7.19, -1.15], [-3.0, -0.1])}     # borde de atrás / abajo (lo claro, más abajo)
 ESQUINAS_AFUERA = {   # dónde cae, más o menos, cada esquina (para elegir el cruce bueno de los dos círculos máximos)
     '50': {'pd': {'del_sup': (-34.7, 7.3), 'del_inf': (-5.4, -19.7), 'tras_inf': (-46.1, -32.7), 'tras_sup': (-61.5, 4.0)},
            'pt': {'del_sup': (-71.3, 2.1), 'tras_sup': (-103.0, -4.7), 'tras_inf': (-102.3, -28.4), 'del_inf': (-59.4, -34.5)}},
@@ -146,7 +151,9 @@ if __name__ == '__main__':
            'fotos': {}}
     for n in ('50', '43'):
         print(f'DSCN00{n} (de afuera, lado {LADO[n]}):')
-        B = afinar_bordes(cb.Foto(os.path.join(FOTOS, f'DSCN00{n}.JPG')), BORDES_AFUERA[n], False)
+        foto_n = cb.Foto(os.path.join(FOTOS, f'DSCN00{n}.JPG'))
+        B = afinar_bordes(foto_n, BORDES_AFUERA[n], False)
+        if n == '43': B.update(afinar_bordes(foto_n, PARANTE_LEJANO_43, True))
         puntos = {}
         for pref, familia in (('pd', 'puerta_esq'), ('pt', 'trasera_esq')):
             for esq, c in ESQUINAS_AFUERA[n][pref].items():

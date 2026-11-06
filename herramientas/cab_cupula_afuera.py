@@ -221,6 +221,32 @@ if __name__ == '__main__':
     mov = {RASGOS[j]: round(float(np.linalg.norm(X[j] - X0[j])) * 100, 1) for j in range(EN_PUERTA, len(RASGOS))}
     print('  lo que movió cada punto sumar la 360 del asiento y la ventanilla plana (cm):', mov)
     for j, o, d in techo: print(f'  {RASGOS[j]} desde el asiento: residuo {math.degrees(math.acos(float(np.clip(unit(X[j] - o) @ d, -1, 1)))):.1f}°')
+    # ---- el PARABRISAS: recta del parante derecho = (plano medio de su banda vista desde el asiento) ∩ (plano por la cámara 43
+    #      y el centro de su banda vista desde el ala izquierda, por dentro). El paño central contiene esa recta y su espejo ----
+    parabrisas = None
+    B43 = marcas['43']['bordes']; B54 = json.load(open(os.path.join(CARPETA, 'marcas54.json'), encoding='utf-8'))['bordes']
+    if 'parante_lejano_a' in B43 and 'parante_lejano_b' in B43:
+        C43, R43 = a.camara(p, FOTOS.index('43'))
+        def normal_de(borde, R_, s=1):
+            d1, d2 = R_ @ f3.dir_camara(*borde['A'], giro, s), R_ @ f3.dir_camara(*borde['B'], giro, s); return unit(np.cross(d1, d2))
+        def plano_medio(b1, b2, R_):
+            n1, n2 = normal_de(b1, R_), normal_de(b2, R_); n2 = n2 if n1 @ n2 > 0 else -n2
+            return unit(n1 + n2), math.degrees(math.acos(float(np.clip(n1 @ n2, -1, 1))))
+        n43, ancho43 = plano_medio(B43['parante_lejano_a'], B43['parante_lejano_b'], R43); o43 = C43 + b * f3.frente(R43)
+        n54, ancho54 = plano_medio(B54['parante_der_int'], B54['parante_der_ext'], R54); o54 = pos54 + b * f3.frente(R54)
+        d = unit(np.cross(n54, n43)); d = d if d[1] > 0 else -d
+        P0 = np.linalg.solve(np.array([n54, n43, d]), np.array([n54 @ o54, n43 @ o43, 0.0]))
+        en_y = lambda y: P0 + d * ((y - P0[1]) / d[1])
+        y0 = 1.50; Pm = en_y(y0); m = float(d[2] / d[1]); dist43 = float(np.linalg.norm(Pm - C43)); dist54 = float(np.linalg.norm(Pm - pos54))
+        parabrisas = {'punto': [0.0, y0, round(float(Pm[2]), 4)], 'pendiente_dz_dy': round(m, 4), 'inclinacion_desde_la_vertical_grados': round(math.degrees(math.atan(m)), 1),
+                      'normal': [0.0, round(-m / math.hypot(1, m), 5), round(1 / math.hypot(1, m), 5)],
+                      'parante_der_eje': {'punto': [round(float(v), 4) for v in Pm], 'direccion': [round(float(v), 4) for v in d]},
+                      'parante_ancho_cm': round(math.radians(ancho54) * dist54 * 100, 1), 'parante_fondo_cm': round(math.radians(ancho43) * dist43 * 100, 1),
+                      'angulo_entre_planos_grados': round(math.degrees(math.acos(abs(float(n54 @ n43)))), 0), 'precision_cm': 3.0,
+                      'nota': 'plano del paño central por dentro (cara interior de los parantes): z = punto.z + pendiente·(y − punto.y). El parante mide «ancho» visto desde el asiento y «fondo» visto de '
+                              'costado. El vidrio y las tapas de afuera quedan unos 4 cm más afuera (se ve en las dos 360 de afuera). La posición depende de la pose de la 360 del ala izquierda (±3 cm); la inclinación, no'}
+        print(f'PARABRISAS (medido con dos fotos): z = {Pm[2]:.3f} + {m:.3f}·(y − {y0}) · {parabrisas["inclinacion_desde_la_vertical_grados"]}° desde la vertical · parante derecho: {np.round(en_y(1.537), 3)} (arriba) → {np.round(en_y(1.15), 3)} (capó) · '
+              f'sección {parabrisas["parante_ancho_cm"]} × {parabrisas["parante_fondo_cm"]} cm · planos a {parabrisas["angulo_entre_planos_grados"]:.0f}°')
     E = {k: np.array(rasgos[f'trasera_esq_{k}']['p3d_der']) for k in ('del_sup', 'tras_sup', 'tras_inf', 'del_inf')}
     nvt = unit(np.cross(E['tras_sup'] - E['del_sup'], E['del_inf'] - E['del_sup'])); nvt = nvt if nvt[0] > 0 else -nvt
     ang_planos = math.degrees(math.acos(float(np.clip(abs(nvt @ plano[1]), -1, 1))))
@@ -234,7 +260,7 @@ if __name__ == '__main__':
     salida = {'marco': 'cabina (m): +x derecha del piloto, +y arriba, -z adelante',
               'metodo': 'ajuste conjunto de las dos 360 de afuera (DSCN0050 ala derecha, DSCN0043 ala izquierda reflejada): poses y puntos; escala por el plano de la ventana de puerta; ancla en el ojo de buey y las esquinas medidas desde el asiento',
               'costo': {'total': round(c, 1), 'marcas': round(float(ang @ ang), 1), 'plano': round(float(pl @ pl), 1), 'anclas': round(float(an @ an), 1)},
-              'poses': poses, 'vidrio_por_fuera_menos_marco_por_dentro_cm': margen, 'rasgos': rasgos, 'control_desde_el_asiento': control, 'medidas': med,
+              'poses': poses, 'parabrisas': parabrisas, 'vidrio_por_fuera_menos_marco_por_dentro_cm': margen, 'rasgos': rasgos, 'control_desde_el_asiento': control, 'medidas': med,
               'notas': ['PROVISORIO ±3 cm cerca de la puerta y ±5 cm en las esquinas traseras de la ventanilla (PLAN_CUPULA.md §4.3)',
                         'la escala, la posición y el giro (dentro del plano de la puerta) de todo lo de afuera salen de las anclas con lo medido desde el asiento: ±3 % de escala', 'sigma_cm: incertidumbre formal del ajuste (x, y, z); separacion_rayos_cm: cuánto les falta a los dos rayos para cruzarse',
                         'fsn_a_cm: a cuánto queda el casco FSN del punto', 'puerta_esq_* acá son las esquinas del VIDRIO por fuera; las de cupula_puntos.json (simetrico) son las del marco visto desde el asiento']}

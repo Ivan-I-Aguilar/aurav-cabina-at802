@@ -14,7 +14,7 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261103a';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261105a';
 
 /* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
    ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
@@ -105,7 +105,7 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261103a', V_EXT, OJO }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261105a', V_EXT, OJO }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();
 }));
 else Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
@@ -854,6 +854,7 @@ window.__ronda = async n => {
   const v = RONDA.find(x => x.n === n); if (!v) { console.table(RONDA.map(x => ({ n: x.n, vista: x.nombre }))); return RONDA.map(x => x.n + ' ' + x.nombre); }
   $('panel').hidden = true; panelVR.ocultar();   /* el menú tapa la vista; la misión no cambia */
   const esperar = async () => { for (let i = 0; i < 300 && aPie.animando; i++) await cuadros(1); };
+  camara.fov = 75; camara.updateProjectionMatrix();   /* por si antes se usó __vista(...) con otro campo */
   if (v.desde) {
     if (aPie.modo === 'cabina') { aPie.bajar(); await cuadros(2); await esperar(); }
     const desde = cabina.localToWorld(new THREE.Vector3(...v.desde)), hacia = cabina.localToWorld(new THREE.Vector3(...v.hacia));
@@ -863,6 +864,7 @@ window.__ronda = async n => {
     camara.position.set(0, desde.y - suelo, 0); yaw = 0; pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
   } else {
     if (aPie.modo === 'pie') { aPie.subir(); await cuadros(2); await esperar(); }
+    jugador.position.copy(OJO_AVION); camara.position.set(0, 0, 0);   /* por si antes se usó __vista(...) desde otro punto */
     yaw = v.yaw; pitch = v.pitch;
   }
   await cuadros(3); return v.nombre;
@@ -878,6 +880,16 @@ window.__vista = async (x, y, z, yawDeg = 0, pitchDeg = 0, hfov = null) => {
   yaw = -THREE.MathUtils.degToRad(yawDeg); pitch = THREE.MathUtils.degToRad(pitchDeg);
   if (hfov) { camara.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hfov) / 2) / camara.aspect)); camara.updateProjectionMatrix(); }
   await cuadros(3); return `vista desde (${x}, ${y}, ${z}) yaw ${yawDeg}° pitch ${pitchDeg}° hfov ${hfov ?? 'igual'}`;
+};
+/* __sonda(u, v, n): QUÉ se ve en un punto de la pantalla (u, v de 0 a 1 desde arriba a la izquierda; sirve cualquier
+   tamaño de captura): las primeras n mallas visibles que cruza el rayo, con su material, la distancia y el punto en
+   el marco de la cabina. Para revisar una captura sin adivinar qué pieza es cada mancha (5/11). */
+window.__sonda = (u, v, n = 3) => {
+  const r = new THREE.Raycaster(); r.setFromCamera(new THREE.Vector2(u * 2 - 1, 1 - v * 2), camara);
+  const visible = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  return r.intersectObject(escena, true).filter(h => h.object.isMesh && visible(h.object)).slice(0, n).map(h => {
+    const p = cabina.worldToLocal(h.point.clone());
+    return `${h.object.name} / ${h.object.material.name} · ${h.distance.toFixed(2)} m · (${p.x.toFixed(3)}; ${p.y.toFixed(3)}; ${p.z.toFixed(3)})`; });
 };
 
 // ---- VR ----
