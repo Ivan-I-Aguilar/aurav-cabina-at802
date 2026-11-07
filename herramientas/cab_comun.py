@@ -23,7 +23,7 @@ HOLGURA = 0.015                                                        # todo lo
 
 def b(v): return Vector((v[0], -v[2], v[1]))          # cabina → Blender
 def cab(v): return Vector((v[0], v[2], -v[1]))         # Blender → cabina
-def z_parabrisas(y): return 0.74 + 0.93 * (y - 1.02)   # plano del parabrisas (medido el 1/11)
+def z_parabrisas(y): return 1.2057 + 1.1986 * (y - 1.5)   # plano W del parabrisas, cara de adentro (medido con dos fotos el 5/11; el del 1/11, z = 0,74 + 0,93·(y − 1,02), estaba mal)
 
 
 # ---------------- materiales (colores de la cabina real; PROVISORIOS hasta medirlos en la 360) ----------------

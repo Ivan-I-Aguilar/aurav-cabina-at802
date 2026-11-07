@@ -33,7 +33,7 @@ git push origin main
 **Versión de la página:** `version.txt` y `VERSION_PAGINA` en index.html tienen que coincidir con el `?v=` de main.js; si el navegador guardó un index viejo, se recarga solo. **Siempre subir la versión** de los imports (`?v=AAAAMMDDx`) en `index.html` (main.js) y en `main.js` para cada módulo o
 GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no cambió», casi siempre es caché.
 
-## Estado (5/11)
+## Estado (7/11)
 - **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván).
 - **Local, SIN publicar:** los arreglos del 31/10 al 2/11 sobre la cabina FSX (v=20261102j, superados:
   no seguir parchando la cabina FSX) y la **etapa 0 de la cabina nueva, HECHA el 3/11 (v=20261103a)**:
@@ -55,6 +55,17 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   la jaula del techo es un arco delantero + una V + un marco trasero; la ventanilla trasera llega a z 2,8 (más
   carenado que rehacer: lo decide Iván); el ancho de la cabina sale del FSN y queda con ±3 cm hasta tener 3
   medidas de cinta (de puerta a puerta en el antepecho adelante y atrás, y arriba).
+- **1b.1 (corte del FSN, jaula, parabrisas de 3 paños, faja y techo provisorio) HECHA el 7/11, v=20261105a,
+  SIN publicar**, con el ok de Iván a la ronda («Sí, seguí»): `herramientas/cab_cortar_fsn.py` → `exterior_cupula.glb`
+  (el FSN sin cúpula, corte recto en el antepecho y 0,93) y `herramientas/cab_cupula.py` → `blender/cab_cupula.glb`
+  (2622 triángulos, 5 llamadas); `cabina_nueva.js` los carga con `?cabina=nueva`. **Sigue la 1b.2** (techo con sus
+  ventanas, arcos, largueros y forro). Dos hallazgos que valen para todo lo que siga (`PLAN_CUPULA.md` §2b.8–9):
+  el plano del parabrisas de la etapa 0 estaba mal (el real es W: z = 1,2057 + 1,1986·(y − 1,5), 50° desde la
+  vertical; ya corregido en `cab_comun.z_parabrisas`); y lo que se ve desde el asiento son las caras de ADENTRO
+  (W y el plano de la puerta): el vidrio y las tapas blancas van 4 cm más afuera, y como la cámara mira los
+  parantes de costado, sus caras laterales van sobre el plano cámara–borde («abanico»): a escuadra se veían 3 cm
+  más anchos que en la foto. Lo verifica el chequeo «silueta desde la cámara de la 360» de `cab_cupula.py`.
+  Provisorio hasta 1b.2/1b.3: techo liso, zona trasera y vanos de puerta abiertos.
 - La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es
   razonable; se vuelve a mirar con el asiento nuevo (etapa 6).
 
@@ -111,7 +122,9 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `herramientas/` | `exterior_terrestre2.py` (regenera el exterior), scripts de Blender `*_blender.py`, `vista360.py` (vista plana desde una foto 360), `voces.py` / `voces.ps1`, `mapa_cabina.md` (notas del manual) y los de la cabina FSX vieja (`mdl2glb.py`, `relojes.py`, `instrumentos.py`). |
 | `herramientas/cab_*.py` | **Cabina nueva** (etapa 0, 3/11). `cab_comun.py`: lo común (marco cabina ↔ Blender, prismas por vértices, materiales, `Casco` = exterior.glb con BVH y rayos, `medir_casco` → `blender/casco_medido.json`, `Panorama` para calcar fotos 360, `control()` con propiedades → userData, `exportar()` con `export_extras`, `vista()` Eevee, `chequear()` = los 6 chequeos del plan; corrido directo mide el casco y prueba el chequeador). `cab_calcar.py` (pose de una 360 contra el FSN: `-- carpeta [--foto 54] [--afuera]`), `cab_superponer.py` (superposiciones y medidas en cm, Pillow), `cab_render_pose.py` (el FSN visto desde la pose), `cab_plano.py` (plano del casco). Poses y medidas en `blender/calcado/`; las imágenes con foto, FUERA del repo en `Documents/aurav-cabina/fotos/calcado_etapa0/`. |
 | `herramientas/cab_cupula_*.py`, `cab_foto360.py`, `cab_borde360.py`, `cab_costura360.py` | **Medición de la cúpula** (1b.0, 5/11). `cab_cupula_marcas.py`: todo lo leído en las tres 360 (asiento y dos de afuera) y su afinado → `blender/calcado/marcas54.json` y `marcas_afuera.json`. `cab_borde360.py`: afina un borde recto en una 360 (arco de círculo máximo, escalón marco→vidrio por tramos, 1–2 px). `cab_foto360.py`: geometría de la KeyMission 360 (dos lentes, rayos, proyección) y de planos y rectas, sin Blender. `cab_cupula_puntos.py` (Blender): marcas → puntos 3D (`--ajustar`: pose de la cámara por simetría) → `cupula_puntos.json`. `cab_cupula_afuera.py` (Blender): ajuste conjunto de las dos 360 de afuera (ventanillas traseras, techo) → `cupula_afuera.json`. `cab_cupula_lamina.py`: lámina con foto (fuera del repo) y `cupula_plano.png`. `cab_costura360.py`: desalineación de las dos lentes medida con el hangar. Orden y comandos en `PLAN_CUPULA.md` §2b. |
-| `cabina_nueva.js` | Carga la cabina nueva con `?cabina=nueva` (exterior + GLB por zona `blender/cab_*.glb` según `PIEZAS`, hoy vacía, + las líneas del casco medido y el ojo). Con `?cabina=vieja` (o nada) sigue la FSX con sus parches. |
+| `herramientas/cab_cortar_fsn.py`, `exterior_cupula.glb` | **Corte del FSN** (1b.1, 5/11), sin Blender: lee `exterior.glb`, PARTE sobre los planos y 0,93 (antepecho), z 0,76 (capó) y z 2,55 (carenado) los triángulos que los cruzan (borde recto, ningún vértice se mueve) y borra lo que queda dentro de la caja de la cúpula más todo el vidrio mat22 de la zona; recorta sólo la punta del cable deflector (mat08). Imprime caras por material y verifica «SIN DIENTES». `python -E -P -X utf8 herramientas/cab_cortar_fsn.py`. |
+| `herramientas/cab_cupula.py`, `blender/cab_cupula.glb` | **La cúpula nueva** (1b.1, 5/11; Blender): parantes del parabrisas, cabezal, postes de puerta A y B, 3 paños (central plano, laterales CURVOS: superficie reglada entre el borde del capó y el borde de arriba), faja, largueros del antepecho, jaula del techo (arco delantero, diagonales, V, marco trasero) y techo provisorio con forro. Todo por vértices y medido con rayos contra `exterior_cupula.glb`. Las caras de parantes y postes van sobre el plano cámara–borde («abanico»). Chequeos propios: vidrio contra caño, estanqueidad del frente (20.000 rayos) y silueta desde la cámara de la 360; `-- --vistas <carpeta>` renderiza con Eevee. Une por material (5 llamadas) y escribe `blender/cab_cupula_informe.json`. |
+| `cabina_nueva.js` | Carga la cabina nueva con `?cabina=nueva`: con la cúpula (`PIEZAS = ['cab_cupula']`) el exterior es `exterior_cupula.glb` y las líneas del casco medido quedan sólo bajo el antepecho; más el ojo. Con `?cabina=vieja` (o nada) sigue la FSX con sus parches. |
 | `blender/` | Piezas hechas en Blender por scripts (Lichi): `pedales.glb` (clip `pedales_timon`: 0 = timón izquierda, 1 s = derecha; sigue a la variable `pedal`; recorrido ±0,2 rad, confirmado por Iván 22/10), y `butaca.glb`, `marco_ventana.glb` y `techo.glb`, parches provisorios hasta la cabina nueva. |
 | `servidor.py` | Servidor local sin caché (puerto 8765). |
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
@@ -138,7 +151,13 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   las lista) deja la cámara puesta y dibujada; las de afuera bajan a pie solas y `__ronda(1)` vuelve al
   asiento. `await __vista(x, y, z, yaw°, pitch°, hfov°)` mira desde un punto cualquiera de la cabina
   (yaw positivo = derecha); sin argumentos vuelve al ojo. Sirve para comparar con una foto desde el
-  mismo punto (la 360 se tomó en (0; 1,16; 1,58), girada 12,2° a la izquierda y 5,6° arriba).
+  mismo punto (la 360 se tomó en (0; 1,16; 1,58), girada 12,2° a la izquierda y 5,6° arriba). `__ronda(n)`
+  siempre vuelve al ojo y al campo de 75° aunque antes se haya usado `__vista`. **`__sonda(u, v, n)` (5/11) dice
+  QUÉ se ve en un punto de la pantalla** (u, v de 0 a 1 desde arriba a la izquierda: las primeras n mallas que
+  cruza el rayo, con material, distancia y punto en el marco de la cabina): para revisar una captura sin
+  adivinar qué pieza es cada mancha. El primer impacto suele ser la esfera del fundido, pegada a la cámara.
+- Si el panel del navegador está oculto, el juego no dibuja y `__ronda` se queda esperando un cuadro: mostrarlo
+  (`show_pane preview`) antes de capturar.
 - La barra del juego muestra la versión (vAAAAMMDDx): preguntarle a Iván cuál ve antes de diagnosticar.
 
 ## Controles y simulación (lo vigente, hasta re-cablear la cabina nueva)

@@ -6,7 +6,8 @@ parantes pintados. Este plan es el detalle de la etapa 1b de `PLAN_CABINA_NUEVA.
 antes de modelar. Marco: el de la cabina (+x derecha del piloto, +y arriba, −z adelante; Blender = (x, −z, y)).
 
 **Estado:** aprobado por Iván el 3/11. **1b.0 (medición) HECHA el 5/11**: Iván vio la lámina y dio el ok para
-modelar («Sí, arrancá»; §2b: lo medido, los hallazgos y lo que quedó sin resolver). Sigue la 1b.1.
+modelar («Sí, arrancá»; §2b: lo medido, los hallazgos y lo que quedó sin resolver). **1b.1 (corte del FSN, jaula,
+parabrisas y faja) HECHA el 7/11** con el ok de Iván a la ronda de vistas («Sí, seguí»). Sigue la 1b.2 (techo con ventanas).
 
 ## 1. Qué es «la cúpula» y qué se conserva
 - **Se rehace** todo lo que está POR ENCIMA del antepecho (y ≈ 0,93–0,95) entre el borde trasero del capó
@@ -25,7 +26,7 @@ modelar («Sí, arrancá»; §2b: lo medido, los hallazgos y lo que quedó sin r
 | Antepecho FSN (línea del vidrio) | y 0,95 en z 1,1–1,3; y 0,925 en z 1,4–1,8; x ±0,52–0,56 | casco_medido.json |
 | Techo FSN (eje) | y 1,46 (z 1,2) · 1,62 (z 1,4) · 1,69 (z 1,6–2,0) · 1,63 (z 2,2) · 1,55 (z 2,4) | casco_medido.json |
 | Ancho interior FSN | a y 0,5: 1,33 m (z 1,6) · a y 0,9: 1,20 m · a y 1,5: 0,76 m | casco_medido.json |
-| Plano del parabrisas FSN | z = 0,74 + 0,93·(y − 1,02) | medido 1/11 |
+| Plano del parabrisas FSN | ~~z = 0,74 + 0,93·(y − 1,02)~~ **ESTABA MAL** (43°; el vidrio del FSN tiene 54,5° y el real 50,2°): ver §2b, plano W | medido 1/11, corregido 5/11 |
 | Parantes del parabrisas REAL desde la 360 | a −17,5° y +22,6° del eje (≈ ±0,22 m en la base) | panorama (PROVISORIO: la asimetría de 5° es la cámara corrida ~2 cm o el yaw; se resuelve en 1b.0) |
 | Ventanas del techo REALES | lon −110…−60 / +60…+100, lat 55–75 desde la cámara | panorama (PROVISORIO) |
 | Ventana de puerta REAL (izq.) | lon −125…−55, lat −10…+45 desde la cámara | panorama (PROVISORIO) |
@@ -46,10 +47,11 @@ precisión; el bloque `simetrico` es lo que se modela: lado derecho, el izquierd
 | Cámara de la 360 del asiento | (-0,003; 1,159; 1,578), 12,2° a la izq., 5,6° arriba, alabeo -0,3° | simetría izq./der. 0,25 cm |
 | Ventana de puerta (el marco visto desde el asiento) | adelante-abajo (0,601; 0,969; 1,068) · atrás-abajo (0,577; 0,913; 1,732) · atrás-arriba (0,364; 1,488; 1,896) · adelante-arriba (0,387; 1,496; 1,501); lados: abajo 66,6 · atrás 63,5 · arriba 39,5 · adelante 71,5 cm | ±1 cm vista desde el asiento; ±3,5 cm en x |
 | Ojo de buey | centro (0,388; 1,436; 1,813); disco Ø 9,0 cm | ±1 cm |
-| Parante del parabrisas (eje) | tope (0,218; 1,537; 1,221) · donde lo tapa el tablero (0,225; 1,318; 1,018) · prolongado al antepecho (0,235; 0,950; 0,675); ancho visible 5,0 a 6,1 cm (caño + burletes); ejes a 43,7 cm arriba | ±1 cm; la base, prolongada |
-| Paño central del parabrisas | 37,8 cm de ancho arriba; esquina superior (0,189; 1,537; 1,221) | ±1 cm (en el plano del FSN) |
-| Paño lateral | esquinas de arriba (0,243; 1,515; 1,218) y (0,360; 1,453; 1,361); último punto visible abajo (0,470; 1,078; 1,094) | ±1,5 cm |
-| Poste de puerta delantero · poste entre ventanas | 10,2 cm · 15,8 cm de ancho | ±1,5 · ±3 cm |
+| Plano W del parabrisas (la cara de ADENTRO: pasa por los ejes de los dos parantes) | z = 1,2057 + 1,1986·(y − 1,5), 50,2° desde la vertical (corregido el 5/11: el de la etapa 0 estaba mal). Medido con dos fotos: el parante derecho desde el asiento × la banda oscura del parante lejano vista desde la 360 del ala izquierda (0043). El vidrio y las tapas blancas van unos 4 cm MÁS AFUERA (rasgos exteriores a 4,7–5,7 cm de W en las 360 de afuera) | ±3 cm en posición (depende de la pose de la 0043); la pendiente, firme |
+| Parante del parabrisas (eje) | tope (0,211; 1,523; 1,234) · donde lo tapa el tablero (0,234; 1,325; 0,996); bordes sobre W: hacia el centro x 0,207 → 0,181 y hacia el costado 0,260 → 0,240 (de abajo a arriba); ancho visible 5,2 a 5,9 cm; sección 5,6 × 4,1 cm; ejes a 42,1 cm arriba y 46,7 a la altura del tablero | ±1 cm |
+| Paño central del parabrisas | 36,4 cm de ancho arriba; esquina superior (0,182; 1,523; 1,234) | ±1 cm (sobre W) |
+| Paño lateral (CURVO: del parante da la vuelta hasta el poste de puerta) | esquinas de arriba (0,242; 1,513; 1,221) sobre W y (0,401; 1,486; 1,338) sobre el plano de la puerta; borde de arriba 20,0 cm; último punto visible abajo (0,574; 1,059; 0,989) | ±1,5 cm |
+| Poste de puerta delantero · poste entre ventanas | 12,2 cm · 15,8 cm de ancho, vistos desde el asiento sobre el plano de la puerta | ±1,5 · ±3 cm |
 | Ventana del techo | puntas (0,286; 1,668; 1,547) y (0,290; 1,649; 1,915): unos 37 × 13,5 cm; el techo real queda unos 5 cm POR FUERA del techo del FSN | ±2 a 3 cm, provisorio |
 | Ventanilla trasera (desde afuera) | adelante-arriba (0,368; 1,480; 2,056) · atrás-arriba (0,376; 1,427; 2,785) · atrás-abajo (0,551; 0,954; 2,664) · adelante-abajo (0,563; 0,943; 1,915); lados: arriba 73,1 · atrás 51,8 · abajo 74,9 · adelante 58,8 cm | ±2 cm adelante, ±4 a 5 cm atrás, provisorio |
 | Jaula del techo (nudos) | FR (0,334; 1,571; 1,438) · PR (0,203; 1,565; 1,321) · FC (0,000; 1,697; 1,483) · RR (0,303; 1,599; 2,035) · RC (0,000; 1,599; 2,035); caños de 3 a 4 cm | ±4 cm, provisorio |
@@ -79,6 +81,15 @@ precisión; el bloque `simetrico` es lo que se modela: lado derecho, el izquierd
    de la etapa 0 (±2 cm, ±2°). (c) La altura de los caños del techo (se apoyaron en el techo del FSN + 2,5 cm).
 7. **No se ve desde el asiento:** la base del parabrisas (la tapa el tablero), el lado derecho del arco
    delantero (reflejo) y el extremo de los dos caños traseros. Se completa por simetría o prolongando.
+8. **(5/11, al modelar) El plano del parabrisas de la etapa 0 estaba mal** (43°; el vidrio del FSN tiene 54,5°):
+   el real, con dos fotos, es W: z = 1,2057 + 1,1986·(y − 1,5) (50,2°). Lo que se ve desde el asiento son las caras
+   de ADENTRO de la estructura (W y el plano de la puerta); el vidrio y las tapas blancas van unos 4 cm más afuera
+   (en las 360 de afuera los rasgos exteriores quedan 4,7–5,7 cm por fuera de W; el techo, +5 cm). Los paños
+   laterales son CURVOS: del parante dan la vuelta hasta el poste de puerta y por abajo siguen el borde del capó.
+9. **Los bordes medidos son SILUETAS desde la cámara:** parantes y postes tienen fondo y la cámara los mira de
+   costado, así que sus caras laterales se modelan sobre el plano que pasa por la cámara y por el borde («abanico»,
+   `cab_cupula.py`); con caras a escuadra del paño, desde el asiento se veían 3 cm más anchos que en la foto (2 cm
+   de vidrio tapado por lado). Lo verifica el chequeo «silueta desde la cámara de la 360» (±1,5 mm).
 
 **Cómo se rehace** (unos 5 minutos; las fotos están en `Documents/aurav-cabina/fotos/vr360/VR 360 VARIAS ALTURAS/`):
 ```
@@ -180,7 +191,7 @@ Cada vidrio cierra EXACTO contra su caño: sus vértices se toman de los mismos 
 | Paso | Qué | Lista cuando |
 |---|---|---|
 | 1b.0 | Medición (§4): `cupula_puntos.json` + lámina; asimetría resuelta; 360 de afuera refinadas | Iván revisa la lámina de puntos sobre la foto y da el ok. **HECHA el 5/11/2026** (sin cambios en el juego: sigue v=20261103a), con el ok de Iván a la lámina |
-| 1b.1 | Corte del FSN (§5) + jaula J + parabrisas V1/V2 + faja T4 | 12 vistas sin dientes delante; chequeo de estanqueidad (§7) con el techo provisorio. **MODELO HECHO el 5/11/2026 (v=20261105a, sin publicar); falta el ok de Iván a la ronda.** `cab_cortar_fsn.py` → `exterior_cupula.glb` (corte recto en y 0,93, z 0,76 a 2,55), `cab_cupula.py` → `blender/cab_cupula.glb` (2622 triángulos, 5 llamadas; chequeos OK: nada flotando, nada coplanar, vidrio contra caño, estanqueidad 0 de 20.000 y el nuevo «silueta desde la cámara de la 360» a ±1,5 mm). OJO: el plano del parabrisas de §2 estaba MAL; el medido con dos fotos es W: z = 1,2057 + 1,1986·(y − 1,5) (50,2° desde la vertical, ±3 cm), y el vidrio va 4 cm más afuera. Las caras de parantes y postes van sobre el plano cámara–borde («abanico»): con caras a escuadra se veían 3 cm más anchos que en la foto. Provisorio: techo, zona trasera y vanos de puerta abiertos. **PENDIENTE de anotar:** corregir §2 y la tabla de §2b (parante, paños, poste A), rehacer la lámina y `cupula_plano.png`, `cc.z_parabrisas` de `cab_comun.py` (usa el plano viejo), CLAUDE.md y `PLAN_CABINA_NUEVA.md` |
+| 1b.1 | Corte del FSN (§5) + jaula J + parabrisas V1/V2 + faja T4 | 12 vistas sin dientes delante; chequeo de estanqueidad (§7) con el techo provisorio. **HECHA el 7/11/2026 (v=20261105a, sin publicar), con el ok de Iván a la ronda («Sí, seguí»).** `cab_cortar_fsn.py` → `exterior_cupula.glb` (corte recto en y 0,93, z 0,76 a 2,55) y `cab_cupula.py` → `blender/cab_cupula.glb` (2622 triángulos, 5 llamadas, 0,07 MB; chequeos: nada flotando, nada coplanar, vidrio contra caño ≤ 13 mm, estanqueidad 0 de 20.000 rayos, silueta desde la 360 ±1,5 mm). Provisorio: techo liso, zona trasera y vanos de puerta abiertos. Hallazgos en §2b.8–9 |
 | 1b.2 | Techo T1/T2 con las ventanas V4, arcos y largueros | techo cerrado; forro sin sierra en los vanos (lección del 2/11) |
 | 1b.3 | Puertas P + ventanas V3 + carenado T3 con ventanillas V5 + solapas S | estanqueidad total; 360 superpuesta de nuevo: iou ≥ 0,8 y mediana ≤ 1 cm en parantes y puertas |
 | 1b.4 | Quest: Iván mira desde el asiento y por los vanos; ajuste de tinte y grosores | ok de Iván |

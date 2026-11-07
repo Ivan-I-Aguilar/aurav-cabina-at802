@@ -355,6 +355,11 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
   un error de lectura, la cámara 360 tiene dos lentes, la jaula del techo es un arco + una V + un marco
   trasero, la ventanilla trasera llega a z 2,8 y el ancho de la cabina queda con ±3 cm hasta tener medidas
   de cinta.
+- **1b.1 (corte del FSN, jaula, parabrisas de 3 paños, faja, techo provisorio) HECHA el 7/11, v=20261105a (sin
+  publicar), con el ok de Iván a la ronda:** `herramientas/cab_cortar_fsn.py` → `exterior_cupula.glb` y
+  `herramientas/cab_cupula.py` → `blender/cab_cupula.glb`. El plano del parabrisas de la etapa 0 estaba mal (el real,
+  W: z = 1,2057 + 1,1986·(y − 1,5)); lo que se ve desde el asiento son las caras de adentro, el vidrio va 4 cm más
+  afuera, y las caras de parantes y postes se modelan sobre el plano cámara–borde (`PLAN_CUPULA.md` §2b.8–9).
 - Se rehace sólo lo que está sobre el antepecho; el FSN se corta por triángulos enteros a un archivo
   nuevo (`exterior_cupula.glb`, sólo para `?cabina=nueva`); `exterior.glb` queda para la cabina vieja.
 - Se hace ANTES del cascarón, porque el cascarón se mide contra esta cúpula (arriba) y el FSN (abajo).
