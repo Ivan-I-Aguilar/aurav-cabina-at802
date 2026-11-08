@@ -65,7 +65,12 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   (W y el plano de la puerta): el vidrio y las tapas blancas van 4 cm más afuera, y como la cámara mira los
   parantes de costado, sus caras laterales van sobre el plano cámara–borde («abanico»): a escuadra se veían 3 cm
   más anchos que en la foto. Lo verifica el chequeo «silueta desde la cámara de la 360» de `cab_cupula.py`.
-  Provisorio hasta 1b.2/1b.3: techo liso, zona trasera y vanos de puerta abiertos.
+- **1b.2 (techo con sus dos ventanas y forro) MODELO HECHO el 7/11, v=20261107a, SIN publicar; falta el ok de Iván
+  a las vistas.** Chapa triangulada sobre la bóveda medida (pasa por el plano de la ventana medido desde afuera) con las
+  ventanas recortadas (mismos vértices: sin rendija), flanco hasta 3 cm sobre la ventana de puerta, forro a 7 mm y canto
+  oscuro en cada ventana; caños a la vista. 4888 triángulos, 5 llamadas. Sigue la 1b.3 (puertas, ventanillas traseras,
+  carenado, solapas). Provisorio hasta la 1b.3: zona trasera y vanos de puerta abiertos (las líneas finas y la franja azul
+  que se ven adentro son el casco de referencia y el interior del FSN: se van con el cascarón).
 - La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es
   razonable; se vuelve a mirar con el asiento nuevo (etapa 6).
 
@@ -156,8 +161,10 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   QUÉ se ve en un punto de la pantalla** (u, v de 0 a 1 desde arriba a la izquierda: las primeras n mallas que
   cruza el rayo, con material, distancia y punto en el marco de la cabina): para revisar una captura sin
   adivinar qué pieza es cada mancha. El primer impacto suele ser la esfera del fundido, pegada a la cámara.
-- Si el panel del navegador está oculto, el juego no dibuja y `__ronda` se queda esperando un cuadro: mostrarlo
-  (`show_pane preview`) antes de capturar.
+- Con el panel del navegador oculto el juego no dibuja (la ventana mide 0×0 y no hay `requestAnimationFrame`): desde el
+  7/11 `__ronda`, `__vista` y `__sonda` igual andan (a los 250 ms dibujan un cuadro a mano y la cámara tiene un aspecto de
+  repuesto), y las capturas del navegador salen igual; pero las vistas a pie quedan mal encuadradas y todo es más lento:
+  mejor mostrar el panel (`show_pane preview`) antes de la ronda.
 - La barra del juego muestra la versión (vAAAAMMDDx): preguntarle a Iván cuál ve antes de diagnosticar.
 
 ## Controles y simulación (lo vigente, hasta re-cablear la cabina nueva)

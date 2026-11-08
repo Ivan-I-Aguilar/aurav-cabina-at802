@@ -7,7 +7,8 @@ antes de modelar. Marco: el de la cabina (+x derecha del piloto, +y arriba, −z
 
 **Estado:** aprobado por Iván el 3/11. **1b.0 (medición) HECHA el 5/11**: Iván vio la lámina y dio el ok para
 modelar («Sí, arrancá»; §2b: lo medido, los hallazgos y lo que quedó sin resolver). **1b.1 (corte del FSN, jaula,
-parabrisas y faja) HECHA el 7/11** con el ok de Iván a la ronda de vistas («Sí, seguí»). Sigue la 1b.2 (techo con ventanas).
+parabrisas y faja) HECHA el 7/11** con el ok de Iván a la ronda de vistas («Sí, seguí»). **1b.2 (techo con sus ventanas y forro):
+modelo hecho el 7/11 (v=20261107a), falta el ok de Iván.** Sigue la 1b.3 (puertas, ventanillas traseras, carenado, solapas).
 
 ## 1. Qué es «la cúpula» y qué se conserva
 - **Se rehace** todo lo que está POR ENCIMA del antepecho (y ≈ 0,93–0,95) entre el borde trasero del capó
@@ -192,7 +193,7 @@ Cada vidrio cierra EXACTO contra su caño: sus vértices se toman de los mismos 
 |---|---|---|
 | 1b.0 | Medición (§4): `cupula_puntos.json` + lámina; asimetría resuelta; 360 de afuera refinadas | Iván revisa la lámina de puntos sobre la foto y da el ok. **HECHA el 5/11/2026** (sin cambios en el juego: sigue v=20261103a), con el ok de Iván a la lámina |
 | 1b.1 | Corte del FSN (§5) + jaula J + parabrisas V1/V2 + faja T4 | 12 vistas sin dientes delante; chequeo de estanqueidad (§7) con el techo provisorio. **HECHA el 7/11/2026 (v=20261105a, sin publicar), con el ok de Iván a la ronda («Sí, seguí»).** `cab_cortar_fsn.py` → `exterior_cupula.glb` (corte recto en y 0,93, z 0,76 a 2,55) y `cab_cupula.py` → `blender/cab_cupula.glb` (2622 triángulos, 5 llamadas, 0,07 MB; chequeos: nada flotando, nada coplanar, vidrio contra caño ≤ 13 mm, estanqueidad 0 de 20.000 rayos, silueta desde la 360 ±1,5 mm). Provisorio: techo liso, zona trasera y vanos de puerta abiertos. Hallazgos en §2b.8–9 |
-| 1b.2 | Techo T1/T2 con las ventanas V4, arcos y largueros | techo cerrado; forro sin sierra en los vanos (lección del 2/11) |
+| 1b.2 | Techo T1/T2 con las ventanas V4, arcos y largueros | techo cerrado; forro sin sierra en los vanos (lección del 2/11). **MODELO HECHO el 7/11/2026 (v=20261107a, sin publicar); falta el ok de Iván a las vistas.** La chapa se triangula (Delaunay con los contornos como restricción) sobre la bóveda: arcos medidos + 4,1 cm (ajustado para que pase por el plano de la ventana medido desde afuera) y el carenado del FSN en z 2,56, más el flanco de cada lado hasta 3 cm por encima de la ventana de puerta; las dos ventanas son los mismos triángulos del hueco (contorno medido desde el asiento, redondeado; vidrio 1 mm hundido), el forro va a 7 mm con un canto oscuro en cada ventana. 4888 triángulos, 5 llamadas, 0,13 MB; estanqueidad del techo 0 de 20.000 rayos (de 50° a 90° de altura, hasta que estén las puertas). El larguero FR–RR pasa por debajo del tercio exterior de la ventana: desde el asiento su silueta coincide con el borde exterior que se marcó en la foto (es lo que se ve). Los caños quedan a la vista, 3 a 5 cm por debajo del forro |
 | 1b.3 | Puertas P + ventanas V3 + carenado T3 con ventanillas V5 + solapas S | estanqueidad total; 360 superpuesta de nuevo: iou ≥ 0,8 y mediana ≤ 1 cm en parantes y puertas |
 | 1b.4 | Quest: Iván mira desde el asiento y por los vanos; ajuste de tinte y grosores | ok de Iván |
 Sesiones: 2 a 3. Después sigue la etapa 1 (cascarón), que ya se mide contra la cúpula nueva arriba y

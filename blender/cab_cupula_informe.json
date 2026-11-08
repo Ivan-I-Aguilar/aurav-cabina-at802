@@ -1,9 +1,9 @@
 {
  "etapa": "1b.1",
- "piezas": 46,
- "triangulos": 2622,
+ "piezas": 51,
+ "triangulos": 4888,
  "llamadas": 5,
- "mb": 0.073,
+ "mb": 0.127,
  "chequeos": {
   "3 nada flotando": {
    "ok": true,
@@ -15,7 +15,7 @@
   },
   "6 presupuesto": {
    "ok": true,
-   "detalle": "2622 triángulos (máx. 12000) · 46 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+   "detalle": "4888 triángulos (máx. 12000) · 51 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
   }
  },
  "vidrio_contra_cano_mm": {
@@ -51,6 +51,11 @@
   ]
  },
  "estanqueidad_frente": {
+  "rayos": 20000,
+  "escapes": 0,
+  "direcciones": []
+ },
+ "estanqueidad_techo": {
   "rayos": 20000,
   "escapes": 0,
   "direcciones": []

@@ -14,7 +14,7 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261105a';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261107a';
 
 /* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
    ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
@@ -76,7 +76,7 @@ const vuelo = new Vuelo(); window.__vuelo = vuelo; vuelo.suelo = (x, z) => ambie
 const avion = new THREE.Group(); escena.add(avion);
 const cabina = new THREE.Group(); cabina.rotation.y = -Math.PI / 2; cabina.position.y = ALTURA_CABINA; avion.add(cabina);
 const jugador = new THREE.Group(); avion.add(jugador);
-const camara = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.02, 3000); camara.rotation.order = 'YXZ';
+const camara = new THREE.PerspectiveCamera(75, innerWidth / innerHeight || 800 / 675, 0.02, 3000); camara.rotation.order = 'YXZ';   /* con la pestaña oculta la ventana mide 0×0: aspecto de repuesto para que los rayos (__sonda) sigan andando */
 const OJO_AVION = cabina.localToWorld(OJO.clone()); avion.worldToLocal(OJO_AVION);
 jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Math.PI / 2;
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
@@ -105,7 +105,7 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261105a', V_EXT, OJO }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261107a', V_EXT, OJO }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();
 }));
 else Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
@@ -830,7 +830,7 @@ addEventListener('pointerup', e => {
     controles.clic(r); }
 });
 addEventListener('pointermove', e => { if (!arr) return; yaw += (e.clientX - arr[0]) * 0.004; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - arr[1]) * 0.004, -1.4, 1.4); arr = [e.clientX, e.clientY]; });
-addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+addEventListener('resize', () => { if (!(innerWidth > 0 && innerHeight > 0)) return; camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 /* RONDA FIJA (etapa 0, 3/11; PLAN §6): __ronda(n) pone la cámara en la vista n de las 12 y devuelve una
    promesa que se cumple con la vista ya dibujada. Adentro (1–7) desde el ojo del piloto; afuera (8–12) a
    pie, con la cámara local elevada (a pie el jugador se pega al suelo cada cuadro). La luz es fija (de día).
@@ -849,7 +849,15 @@ const RONDA = [
   { n: 11, nombre: '3/4 trasero derecho, por las ventanas', desde: [2.4, 1.6, 3.6], hacia: [0, 1.1, 1.5] },
   { n: 12, nombre: 'de costado, a la altura de la ventana (izquierda)', desde: [-3.0, 1.3, 1.55], hacia: [0, 1.15, 1.55] },
 ];
-const cuadros = n => new Promise(r => { const f = () => (n-- > 0 ? requestAnimationFrame(f) : r()); f(); });
+/* cuadros(n): espera n cuadros. Si la pestaña está oculta el navegador no dibuja (no hay requestAnimationFrame): a los
+   250 ms se dibuja a mano un cuadro (cámara puesta, escena actualizada, a pie avanzado) para que __ronda, __vista y
+   __sonda sigan sirviendo con el panel del navegador escondido (7/11). */
+const dibujar = () => { if (renderer.xr.isPresenting) return; if (aPie.animando) aPie.actualizar(0.05, teclas, null); camara.rotation.set(pitch, yaw, 0); escena.updateMatrixWorld(true); renderer.render(escena, camara); };
+const cuadros = n => new Promise(r => {
+  const f = () => { if (n-- <= 0) return r(); let hecho = false; const id = requestAnimationFrame(() => { hecho = true; f(); });
+    setTimeout(() => { if (!hecho) { hecho = true; cancelAnimationFrame(id); dibujar(); f(); } }, 250); };
+  f();
+});
 window.__ronda = async n => {
   const v = RONDA.find(x => x.n === n); if (!v) { console.table(RONDA.map(x => ({ n: x.n, vista: x.nombre }))); return RONDA.map(x => x.n + ' ' + x.nombre); }
   $('panel').hidden = true; panelVR.ocultar();   /* el menú tapa la vista; la misión no cambia */
