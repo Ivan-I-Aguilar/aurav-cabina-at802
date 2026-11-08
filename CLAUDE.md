@@ -92,8 +92,17 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   anunciadores (MASTER WARN titila con fuego; CAUTION con generador fuera o ITT > 850; ARMED con la llave FRDS; LOW FUEL sólo en
   el test). Tablilla del tutor prendida al parante derecho del parabrisas y placa MENÚ sobre el ala derecha del tablero. Hasta
   las etapas 3 y 4, `aplicarControles` / `reiniciarAvion` no pisan motor ni mando cuando falta la llave o la palanca: las
-  misiones corren en la cabina nueva. Con eso la etapa 2 está completa salvo la legibilidad en el Quest. Sigue la etapa 3
-  (FRDS, SALVO y llaves). Detalle en `PLAN_CABINA_NUEVA.md`, etapa 2.
+  misiones corren en la cabina nueva. Con eso la etapa 2 está completa salvo la legibilidad en el Quest. Detalle en `PLAN_CABINA_NUEVA.md`, etapa 2.
+- **Etapa 3 (FRDS, SALVO y paneles de llaves) MODELO HECHO el 8/11, v=20261108c, SIN publicar; falta el ok de Iván y la ronda
+  completa (se cortó por límite de uso):** `herramientas/cab_llaves.py` → `blender/cab_llaves.glb` (2230 tris, 32 llamadas, 21
+  controles): placa FRDS GEN III con 6 llaves y display en vivo (pantalla `frds`), CB + FRDS POWER, placa y botón MANUAL SALVO, y
+  los dos paneles bajos inclinados 40° bajo el tablero (y 0,912 · z 0,90, 11 cm; la profundidad sale de las fotos del amarillo, no
+  de la 360) con sus filas LANDING/WORKING LIGHTS · DISPERSAL/MISC · FLIGHT LIGHTS/GYROS/FLAPS · ENGINE OPERATION. Los rótulos
+  NO van en el GLB: cada placa lleva `userData.panel` (JSON) y `pantallas.js` (`Rotulos`) los dibuja en canvas. main.js: tabla `SW`
+  nueva (`swBATT` MASTER, `swGEN`, `swIGN` 3 pos., `swSTART`, `swPITOT`, `swWIPER`, `swLDG_L`, `swSTRBNAV`, `swPULSE`, `swARMED`,
+  `swFRDS`; AVNC va PROVISORIAMENTE con el MASTER hasta el rack; FIRE espera la manija FUEL de la etapa 4). cabina_nueva.js: llaves
+  momentáneas que vuelven solas (SALVO larga todo; GATE larga los galones pedidos con el caudal del nivel de cobertura). FALTA:
+  probar la puesta en marcha completa con el tutor, mirar los rótulos de cerca y la ronda; luego docs del plan (etapa 3).
 - **Lección (7/11): toda fila que llega al borde de otra chapa pasa por los VÉRTICES de ese borde y termina 2–3 mm por
   debajo** (`solapa_techo`): un remuestreo uniforme cortaba la esquina del nudo FR y dejaba un hueco de 1,6 cm por donde
   se colaban rayos. El chequeo de estanqueidad (0°–90°, 20.000 rayos) es el que los encuentra.

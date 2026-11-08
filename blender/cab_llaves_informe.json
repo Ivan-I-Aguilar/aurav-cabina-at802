@@ -1,0 +1,679 @@
+{
+ "etapa": "3",
+ "piezas": 84,
+ "triangulos": 2230,
+ "llamadas": 32,
+ "mb": 0.133,
+ "controles": [
+  "swARMED",
+  "swBATT",
+  "swFLAPS",
+  "swFRDS",
+  "swFRDS_COV",
+  "swFRDS_FOAM",
+  "swFRDS_GAL",
+  "swFRDS_GATE",
+  "swFRDS_MODE",
+  "swGEN",
+  "swIGN",
+  "swLDG_L",
+  "swLDG_R",
+  "swPITOT",
+  "swPNL",
+  "swPULSE",
+  "swSALVO",
+  "swSTART",
+  "swSTRBNAV",
+  "swWIPER",
+  "swWORK"
+ ],
+ "paneles": {
+  "frds_placa": {
+   "c": [
+    -0.4525,
+    1.026,
+    0.964
+   ],
+   "u": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "v": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "n": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "w": 0.20900000000000007,
+   "h": 0.1280000000000001,
+   "titulos": [
+    {
+     "t": "FRDS GEN III",
+     "s": 0.154,
+     "y": 0.012
+    }
+   ],
+   "items": [
+    {
+     "s": 0.03300000000000003,
+     "t": 0.040000000000000036,
+     "tipo": "sw",
+     "nombre": "swFRDS_GATE",
+     "rotulo": "GATE",
+     "arriba": "CLOSE",
+     "abajo": "OPEN"
+    },
+    {
+     "s": 0.061000000000000054,
+     "t": 0.040000000000000036,
+     "tipo": "sw",
+     "nombre": "swFRDS_MODE",
+     "rotulo": "MODE",
+     "arriba": "AUTO",
+     "abajo": "MANUAL"
+    },
+    {
+     "s": 0.09000000000000002,
+     "t": 0.040000000000000036,
+     "tipo": "sw",
+     "nombre": "swARMED",
+     "rotulo": "ARMED",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.03300000000000003,
+     "t": 0.08600000000000008,
+     "tipo": "sw",
+     "nombre": "swFRDS_FOAM",
+     "rotulo": "FOAM",
+     "arriba": "SET",
+     "abajo": "INJECT"
+    },
+    {
+     "s": 0.061000000000000054,
+     "t": 0.08600000000000008,
+     "tipo": "sw3",
+     "nombre": "swFRDS_GAL",
+     "rotulo": "GALLONS\nTO DUMP",
+     "arriba": "+",
+     "abajo": "−"
+    },
+    {
+     "s": 0.09000000000000002,
+     "t": 0.08600000000000008,
+     "tipo": "sw3",
+     "nombre": "swFRDS_COV",
+     "rotulo": "COVERAGE\nLEVEL",
+     "arriba": "+",
+     "abajo": "−"
+    },
+    {
+     "s": 0.15200000000000002,
+     "t": 0.062000000000000055,
+     "tipo": "display",
+     "r": 0.039
+    }
+   ]
+  },
+  "salvo_placa": {
+   "c": [
+    -0.44,
+    0.886,
+    0.962
+   ],
+   "u": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "v": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "n": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "w": 0.09,
+   "h": 0.03,
+   "titulos": [
+    {
+     "t": "MANUAL SALVO",
+     "s": 0.045,
+     "y": 0.009
+    },
+    {
+     "t": "PRESS TO DUMP HOPPER",
+     "s": 0.045,
+     "y": 0.021
+    }
+   ],
+   "items": []
+  },
+  "panel_izq": {
+   "c": [
+    -0.1675,
+    0.86987,
+    0.93535
+   ],
+   "u": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "v": [
+    0.0,
+    0.76604,
+    -0.64279
+   ],
+   "n": [
+    0.0,
+    0.64279,
+    0.76604
+   ],
+   "w": 0.265,
+   "h": 0.11,
+   "titulos": [
+    {
+     "t": "LANDING / WORKING LIGHTS",
+     "s": 0.1325,
+     "y": 0.009
+    },
+    {
+     "t": "DISPERSAL SYSTEMS / MISC",
+     "s": 0.1325,
+     "y": 0.065
+    }
+   ],
+   "items": [
+    {
+     "s": 0.015,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "TURN\nLIGHTS",
+     "arriba": "20",
+     "abajo": null
+    },
+    {
+     "s": 0.044375,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "WORKING\nLIGHTS",
+     "arriba": "",
+     "abajo": null
+    },
+    {
+     "s": 0.07375000000000001,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "MAIN\nL.A.",
+     "arriba": "30",
+     "abajo": null
+    },
+    {
+     "s": 0.10312500000000001,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "MAIN\nR.A.",
+     "arriba": "30",
+     "abajo": null
+    },
+    {
+     "s": 0.1325,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "CONTROL\nL.A.",
+     "arriba": "",
+     "abajo": null
+    },
+    {
+     "s": 0.161875,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "CONTROL\nR.A.",
+     "arriba": "",
+     "abajo": null
+    },
+    {
+     "s": 0.19125000000000003,
+     "t": 0.026,
+     "tipo": "sw",
+     "nombre": "swLDG_L",
+     "rotulo": "MAIN\nL.A.",
+     "arriba": "RETRACT",
+     "abajo": "EXTEND"
+    },
+    {
+     "s": 0.22062500000000002,
+     "t": 0.026,
+     "tipo": "sw",
+     "nombre": "swLDG_R",
+     "rotulo": "MAIN\nR.A.",
+     "arriba": "RETRACT",
+     "abajo": "EXTEND"
+    },
+    {
+     "s": 0.25,
+     "t": 0.026,
+     "tipo": "sw",
+     "nombre": "swWORK",
+     "rotulo": "WORKING\nLIGHTS",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.015,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "GATE\nMOTOR",
+     "arriba": "15",
+     "abajo": null
+    },
+    {
+     "s": 0.044375,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "FOAM\nPUMP",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.07375000000000001,
+     "t": 0.082,
+     "tipo": "sw",
+     "nombre": "swWIPER",
+     "rotulo": "WIPER",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.10312500000000001,
+     "t": 0.082,
+     "tipo": "sw",
+     "nombre": "swPITOT",
+     "rotulo": "PITOT\nHEAT",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.1325,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "PITOT\nHEAT",
+     "arriba": "15",
+     "abajo": null
+    },
+    {
+     "s": 0.161875,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "FOAM\nINJECTION",
+     "arriba": "10",
+     "abajo": null
+    },
+    {
+     "s": 0.22062500000000002,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "DOME\nLIGHT",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.25,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "STALL\nWARN",
+     "arriba": "5",
+     "abajo": null
+    }
+   ]
+  },
+  "panel_der": {
+   "c": [
+    0.175,
+    0.86987,
+    0.93535
+   ],
+   "u": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "v": [
+    0.0,
+    0.76604,
+    -0.64279
+   ],
+   "n": [
+    0.0,
+    0.64279,
+    0.76604
+   ],
+   "w": 0.24,
+   "h": 0.11,
+   "titulos": [
+    {
+     "t": "FLIGHT LIGHTS / GYROS / FLAPS",
+     "s": 0.12,
+     "y": 0.009
+    },
+    {
+     "t": "ENGINE OPERATION",
+     "s": 0.12,
+     "y": 0.065
+    }
+   ],
+   "items": [
+    {
+     "s": 0.015,
+     "t": 0.026,
+     "tipo": "sw",
+     "nombre": "swPULSE",
+     "rotulo": "PULSE\nLIGHTS",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.03833333333333333,
+     "t": 0.026,
+     "tipo": "sw",
+     "nombre": "swPNL",
+     "rotulo": "PANEL\nLIGHTS",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.06166666666666666,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "INST\nLIGHTS",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.08499999999999999,
+     "t": 0.026,
+     "tipo": "sw",
+     "nombre": "swSTRBNAV",
+     "rotulo": "STROBE AND\nNAV LIGHTS",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.10833333333333332,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "STROBE\n& NAV",
+     "arriba": "",
+     "abajo": null
+    },
+    {
+     "s": 0.13166666666666665,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "TURN\nCOORD",
+     "arriba": "",
+     "abajo": null
+    },
+    {
+     "s": 0.15499999999999997,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "ATTITUDE\nGYRO",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.17833333333333334,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "FLAPS",
+     "arriba": "25",
+     "abajo": null
+    },
+    {
+     "s": 0.20166666666666666,
+     "t": 0.026,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "FLAP\nSWITCH",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.22499999999999998,
+     "t": 0.026,
+     "tipo": "swg",
+     "nombre": "swFLAPS",
+     "rotulo": "FLAPS",
+     "arriba": "UP",
+     "abajo": "DOWN"
+    },
+    {
+     "s": 0.015,
+     "t": 0.082,
+     "tipo": "sw",
+     "nombre": "swSTART",
+     "rotulo": "START",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.03833333333333333,
+     "t": 0.082,
+     "tipo": "sw3",
+     "nombre": "swIGN",
+     "rotulo": "IGNITION",
+     "arriba": "ON",
+     "abajo": "CONTINUOUS"
+    },
+    {
+     "s": 0.06166666666666666,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "OVER\nSPEED",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.08499999999999999,
+     "t": 0.082,
+     "tipo": "sw",
+     "nombre": "swBATT",
+     "rotulo": "MASTER",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.10833333333333332,
+     "t": 0.082,
+     "tipo": "sw",
+     "nombre": "swGEN",
+     "rotulo": "GENERATOR",
+     "arriba": "ON",
+     "abajo": "OFF"
+    },
+    {
+     "s": 0.13166666666666665,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "",
+     "arriba": "",
+     "abajo": null
+    },
+    {
+     "s": 0.15499999999999997,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "ENGINE\nINSTRUMENTS",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.17833333333333334,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "START",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.20166666666666666,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "GPS",
+     "arriba": "5",
+     "abajo": null
+    },
+    {
+     "s": 0.22499999999999998,
+     "t": 0.082,
+     "tipo": "cb",
+     "nombre": null,
+     "rotulo": "FUEL\nBOOST PUMP",
+     "arriba": "5",
+     "abajo": null
+    }
+   ]
+  },
+  "rotulos_frds_power": {
+   "c": [
+    -0.3725,
+    0.936,
+    0.9602
+   ],
+   "u": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "v": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "n": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "w": 0.095,
+   "h": 0.052,
+   "titulos": [],
+   "items": [
+    {
+     "s": 0.025,
+     "t": 0.02499999999999991,
+     "tipo": "cb",
+     "rotulo": "CB FRDS\nCONTROL",
+     "arriba": "5"
+    },
+    {
+     "s": 0.06000000000000005,
+     "t": 0.02499999999999991,
+     "tipo": "sw",
+     "nombre": "swFRDS",
+     "rotulo": "FRDS\nPOWER",
+     "arriba": "ON",
+     "abajo": "OFF"
+    }
+   ]
+  }
+ },
+ "chequeos": {
+  "1 nada afuera": {
+   "ok": true,
+   "detalle": "cero vértices afuera"
+  },
+  "3 nada flotando": {
+   "ok": true,
+   "detalle": "CB, placa SALVO y repisa baja apoyan en el tablero y en la pared de la tolva (otros GLB: el chequeo no los ve); {'cb_frds_control': 'a 22.0 cm del casco y sin tocar otra pieza', 'salvo_placa': 'a 13.7 cm del casco y sin tocar otra pieza'}"
+  },
+  "4 nada superpuesto en el mismo plano": {
+   "ok": true,
+   "detalle": "sin caras coplanares encimadas"
+  },
+  "5 alcance (75 cm del hombro)": {
+   "ok": false,
+   "detalle": {
+    "swFRDS_GATE_tuerca": "81 cm",
+    "swFRDS_GATE": "79 cm",
+    "swFRDS_MODE_tuerca": "80 cm",
+    "swFRDS_MODE": "78 cm",
+    "swARMED_tuerca": "79 cm",
+    "swARMED": "77 cm",
+    "swFRDS_FOAM_tuerca": "81 cm",
+    "swFRDS_FOAM": "79 cm",
+    "swFRDS_GAL_tuerca": "80 cm",
+    "swFRDS_GAL": "78 cm",
+    "swFRDS_COV_tuerca": "79 cm",
+    "swFRDS_COV": "77 cm",
+    "swFRDS_tuerca": "78 cm",
+    "swFRDS": "76 cm",
+    "swSALVO": "83 cm",
+    "swLDG_L_tuerca": "82 cm",
+    "swLDG_L": "80 cm",
+    "swLDG_R_tuerca": "82 cm",
+    "swLDG_R": "80 cm",
+    "swWORK_tuerca": "83 cm",
+    "swWORK": "81 cm",
+    "swWIPER_tuerca": "79 cm",
+    "swWIPER": "77 cm",
+    "swPITOT_tuerca": "79 cm",
+    "swPITOT": "77 cm",
+    "swPULSE_tuerca": "83 cm",
+    "swPULSE": "80 cm",
+    "swPNL_tuerca": "82 cm",
+    "swPNL": "80 cm",
+    "swSTRBNAV_tuerca": "82 cm",
+    "swSTRBNAV": "80 cm",
+    "swFLAPS_tuerca": "82 cm",
+    "swFLAPS": "80 cm",
+    "swFLAPS_guarda": "82 cm",
+    "swSTART_tuerca": "80 cm",
+    "swSTART": "78 cm",
+    "swIGN_tuerca": "80 cm",
+    "swIGN": "78 cm",
+    "swBATT_tuerca": "80 cm",
+    "swBATT": "77 cm",
+    "swGEN_tuerca": "80 cm",
+    "swGEN": "77 cm"
+   }
+  },
+  "6 presupuesto": {
+   "ok": true,
+   "detalle": "2230 triángulos (máx. 6000) · 84 llamadas (máx. 40) · 0.00 MB (máx. 0.3) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+  }
+ }
+}

@@ -8,9 +8,9 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas } from './pantallas.js?v=20261108b';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261108c';
 
-export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_frds', … */
+export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_consola', … */
 const HOLGURA = 0.015, PISO = 0.26;
 const CUPULA = PIEZAS.includes('cab_cupula'), CINTURON = 0.93;   /* con la cúpula nueva, el FSN va cortado en el antepecho (y 0,93) */
 const vidrios = raiz => raiz.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) { o.renderOrder = 2; o.material.depthWrite = false; } } });
@@ -39,18 +39,43 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
     const datos = Object.entries(tab.relojes).map(([tipo, c]) => ({ tipo, c: [...c], r: tab.radio_reloj, n: [0, 0, 1], ex: [1, 0, 0], ey: [0, 1, 0] }));
     instrumentos = new Instrumentos(cabina, datos);
   }
+  /* etapa 3 (8/11): el display del FRDS es otra pantalla en vivo; su lugar sale del userData.panel de la placa del FRDS (pieza tipo display) */
+  const placaFRDS = cabina.getObjectByName('frds_placa'); let datosFRDS = null;
+  try { datosFRDS = placaFRDS && JSON.parse(placaFRDS.userData.panel); } catch (e) { console.warn('frds_placa sin panel', e); }
+  const disp = datosFRDS?.items.find(i => i.tipo === 'display');
+  if (tab && disp) { const d = datosFRDS; tab.pantallas.frds = [d.c[0] - d.w / 2 + disp.s, d.c[1] + d.h / 2 - (disp.t + 0.001), d.c[2] + 0.0056 + 0.0005, 0.034, 0.022]; }
   if (tab) pantallas = new Pantallas(cabina, tab);   /* 2b (8/11): G5, Garmin de rumbo, MVP-50 y los cuatro anunciadores */
+  const rotulos = new Rotulos(cabina);   /* etapa 3: los textos de los paneles de llaves, el FRDS y el SALVO, dibujados en canvas */
+  /* FRDS GEN III y SALVO (etapa 3): llaves momentáneas que vuelven solas, galones a largar y nivel de cobertura, compuerta que larga (en AUTO
+     el caudal sigue al nivel de cobertura: de 11 s el 1 a 4 s el 8) y corta al llegar a los galones pedidos; el SALVO vacía la tolva de una */
+  const frds = { galones: 800, cobertura: 3, gate: false, objetivo: null, t: {} };
+  const MOMENTANEOS = { swSALVO: 0.4, swFRDS_GATE: 0.6, swFRDS_FOAM: 0.6, swFRDS_GAL: 0.35, swFRDS_COV: 0.35 };
+  const accionFRDS = (nombre, estado, vuelo) => {
+    if (nombre === 'swSALVO' && vuelo.agua > 0) { vuelo.largarCarga(true); frds.objetivo = null; vuelo.evento('largado'); }
+    if (nombre === 'swFRDS_GAL') frds.galones = Math.max(50, Math.min(800, frds.galones + 50 * (estado > 0 ? 1 : -1)));
+    if (nombre === 'swFRDS_COV') frds.cobertura = Math.max(1, Math.min(8, frds.cobertura + (estado > 0 ? 1 : -1)));
+    if (nombre === 'swFRDS_GATE' && vuelo.agua > 0 && vuelo.largando == null) { vuelo.largarCarga(false); vuelo.largando = 12 - frds.cobertura; frds.objetivo = Math.max(0, vuelo.agua - frds.galones * 3.785); vuelo.evento('largado'); }
+  };
   /* el bucle llama actualizar(vuelo, dt, { controles, SW }) cada cuadro: mirilla, pantallas y anunciadores.
      Rumbo: el avión arranca en la pista 36 con euler.rumbo = π/2 (mirando a −z); girar a la derecha lo achica → rumbo = 90° − euler (signo a validar en vuelo, como la brújula) */
   const actualizarTodo = (vuelo, dt = 0, { controles, SW } = {}) => {
     actualizar(vuelo);
+    if (controles) for (const [n, dur] of Object.entries(MOMENTANEOS)) {   /* llaves que vuelven solas: la acción al tocarlas, el retorno a los dur segundos */
+      const s = controles.switches.find(x => x.nombre === n); if (!s) continue;
+      if (s.estado) { if (!frds.t[n]) accionFRDS(n, s.estado, vuelo); frds.t[n] = (frds.t[n] || 0) + dt; if (frds.t[n] > dur) { s.estado = s.tres ? 0 : false; if (s.tres) s.paso = -(s.paso || 1); controles._aplicarSwitch(s); frds.t[n] = 0; } }
+      else frds.t[n] = 0;
+    }
+    frds.gate = vuelo.largando != null && vuelo.agua > 0;
+    if (frds.objetivo != null && (vuelo.agua <= frds.objetivo || vuelo.largando == null)) { if (vuelo.agua <= frds.objetivo) vuelo.largando = null; frds.objetivo = null; }
     if (!pantallas) return;
     const m = vuelo.motor, sw = n => (controles && SW && SW[n]) ? controles.estado(SW[n]) : undefined;
     const rumbo = ((90 - vuelo.euler.rumbo * 180 / Math.PI) % 360 + 360) % 360;
+    const armado = !!sw('FRDS');
     pantallas.actualizar(dt, { L: vuelo.lecturas(), rumbo, gs: vuelo.vel.length() * 2.237, bateria: !!m.bateria, avionica: sw('AVNC') ?? true, fuego: !!m.fuego, falla: !!m.falla,
-      generador: !!m.generador, encendido: !!m.encendido, enTierra: !!vuelo.enTierra, armado: !!sw('FRDS'), test: !!(controles && controles.estado('swTEST')), estrellado: !!vuelo.estrellado });
+      generador: !!m.generador, encendido: !!m.encendido, enTierra: !!vuelo.enTierra, armado, test: !!(controles && controles.estado('swTEST')), estrellado: !!vuelo.estrellado,
+      frds: { power: !!(controles && controles.estado('swFRDS')), galones: frds.galones, cobertura: frds.cobertura, gate: frds.gate, armado, hopperGal: vuelo.agua / 3.785 } });
   };
-  return { exterior: e.scene, actualizar: actualizarTodo, instrumentos, pantallas, tablero: tab || null };
+  return { exterior: e.scene, actualizar: actualizarTodo, instrumentos, pantallas, rotulos, frds, tablero: tab || null };
 }
 
 /* el casco por dentro, como líneas: la referencia común de todas las zonas mientras no está el cascarón */

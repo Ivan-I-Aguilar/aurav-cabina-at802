@@ -26,7 +26,7 @@ export class Pantallas {
   /** raiz: grupo de la cabina; tab: userData.tablero de la chapa ({pantallas: {g5, garmin_rumbo, mvp50: [cx, cy, z, ancho, alto]}, anunciadores: [[cx, cy, z, w, h]…]}) */
   constructor(raiz, tab) {
     this.raiz = raiz; this.t = 0; this.estado = {}; this.pantallas = {};
-    const defs = { g5: [420, 348, 1 / 30, this._g5], garmin_rumbo: [384, 360, 1 / 30, this._hsi], mvp50: [492, 424, 1 / 5, this._mvp] };
+    const defs = { g5: [420, 348, 1 / 30, this._g5], garmin_rumbo: [384, 360, 1 / 30, this._hsi], mvp50: [492, 424, 1 / 5, this._mvp], frds: [288, 192, 1 / 5, this._frds] };
     for (const [k, d] of Object.entries(tab.pantallas || {})) {
       const [cx, cy, z, w, h] = d; const [W, H, periodo, dibujar] = defs[k] || [384, 320, 1 / 5, this._apagada];
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
@@ -54,9 +54,10 @@ export class Pantallas {
   actualizar(dt, estado) {
     this.t += dt; Object.assign(this.estado, estado);
     const on = !!(estado.bateria && estado.avionica !== false);
-    for (const p of Object.values(this.pantallas)) {
+    for (const [k, p] of Object.entries(this.pantallas)) {
       if (this.t < p.prox) continue; p.prox = this.t + p.periodo;
-      if (!on) { if (p.encendida !== false) { p.encendida = false; this._apagada(p); p.tex.needsUpdate = true; } continue; }
+      const onK = k === 'frds' ? !!(estado.bateria && estado.frds && estado.frds.power) : on;   /* el FRDS tiene su propia llave FRDS POWER */
+      if (!onK) { if (p.encendida !== false) { p.encendida = false; this._apagada(p); p.tex.needsUpdate = true; } continue; }
       p.encendida = true; p.dibujar(p); p.tex.needsUpdate = true;
     }
     const e = this.estado, parpadeo = Math.floor(this.t * 2.5) % 2 === 0;
@@ -68,6 +69,15 @@ export class Pantallas {
     pon('ARMED', test || (bat && !!e.armado));
   }
   _apagada(p) { const { c, W, H } = p; c.fillStyle = NEGRO; c.fillRect(0, 0, W, H); }
+
+  /* ---- display del FRDS GEN III: galones a largar, nivel de cobertura, compuerta, armado y lo que queda en la tolva ---- */
+  _frds(p) {
+    const { c, W, H } = p, f = this.estado.frds || {}; c.fillStyle = '#0a1a0c'; c.fillRect(0, 0, W, H);
+    c.textBaseline = 'middle'; c.font = 'bold 26px Arial';
+    const fila = (y, a, b, col) => { c.textAlign = 'left'; c.fillStyle = '#9ef08a'; c.fillText(a, 10, y); c.textAlign = 'right'; c.fillStyle = col || '#ffffff'; c.fillText(b, W - 10, y); };
+    fila(26, 'GAL TO DUMP', String(f.galones ?? 0)); fila(66, 'COVERAGE', String(f.cobertura ?? 0)); fila(106, 'GATE', f.gate ? 'OPEN' : 'CLOSED', f.gate ? '#ffd24a' : '#ffffff');
+    fila(146, 'HOPPER', `${Math.round(f.hopperGal ?? 0)} GAL`); c.textAlign = 'center'; c.fillStyle = f.armado ? '#ff5a3a' : '#5a6a5a'; c.font = 'bold 24px Arial'; c.fillText(f.armado ? 'ARMED' : 'SAFE', W / 2, 178);
+  }
 
   /* ---- G5 de actitud: horizonte con escala de cabeceo, índice de alabeo, cintas de velocidad (izquierda) y altura (derecha), rumbo abajo ---- */
   _g5(p) {
@@ -160,5 +170,40 @@ export class Pantallas {
     /* combustible: no está modelado (el vuelo no gasta): muestra los tanques a 2/3, como los relojes de la cabina vieja */
     celda(10 + wC, y0 + 2 * hC, wC, hC, MVP.fuel, 84, false);
     c.fillStyle = '#c8ccd2'; c.font = '14px Arial'; c.textAlign = 'right'; c.fillText('L 84   R 84', 10 + 2 * wC - 8, y0 + 2 * hC + hC - 34);
+  }
+}
+
+/* ---- Rótulos (etapa 3, 8/11): cada placa del GLB con userData.panel (texto JSON escrito por herramientas/cab_llaves.py: marco c/u/v/n,
+   ancho, alto, títulos y piezas con su posición en metros desde la esquina de arriba a la izquierda) recibe un canvas transparente
+   0,3 mm por delante con los títulos, el recuadro de cada fila y el rótulo de cada llave o breaker. Así los textos se corrigen sin
+   Blender. PX píxeles por metro; letra mínima 4 mm (en el Quest no se lee: la lee el tutor). */
+const PX = 3000;
+export class Rotulos {
+  constructor(raiz) {
+    this.planos = [];
+    const objetos = []; raiz.traverse(o => { if (o.userData?.panel) objetos.push(o); });
+    for (const o of objetos) {
+      let d; try { d = JSON.parse(o.userData.panel); } catch (e) { console.warn('userData.panel ilegible en', o.name, e); continue; }
+      const W = Math.round(d.w * PX), H = Math.round(d.h * PX), cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+      const px = (s, t) => [s * PX, t * PX];
+      c.clearRect(0, 0, W, H); c.textAlign = 'center'; c.textBaseline = 'middle';
+      const rojo = o.name.startsWith('salvo'); const tinta = rojo ? '#ffffff' : '#e6e6e6';
+      const texto = (t, s, y, tam, negrita = true) => { if (!t) return; const lineas = String(t).split('\n'); c.fillStyle = tinta; c.font = `${negrita ? 'bold ' : ''}${tam}px Arial`; lineas.forEach((l, k) => c.fillText(l, ...px(s, y + (k - (lineas.length - 1) / 2) * 0.0042))); };
+      /* recuadro por fila (sólo en los paneles bajos): de 2,2 cm sobre las piezas a 3 cm debajo, con el título montado sobre la línea */
+      const filas = new Map(); for (const it of d.items) if (it.tipo !== 'display') { const k = it.t.toFixed(3); filas.set(k, (filas.get(k) || []).concat(it)); }
+      if (o.name.startsWith('panel_')) for (const [k, its] of filas) { const t = +k; c.strokeStyle = '#b8b8b8'; c.lineWidth = 2; c.strokeRect(...px(0.004, t - 0.021), W - 0.008 * PX, 0.048 * PX); }
+      for (const ti of d.titulos || []) { const tam = rojo ? 0.0085 * PX : 0.0062 * PX; c.font = `bold ${tam}px Arial`; const ancho = c.measureText(ti.t).width + 16; if (!rojo) { c.fillStyle = '#16171a'; c.fillRect(ti.s * PX - ancho / 2, ti.y * PX - tam * 0.7, ancho, tam * 1.4); } texto(ti.t, ti.s, ti.y, tam); }
+      for (const it of d.items) {
+        if (it.tipo === 'display') { texto('MARK', it.s - 0.024, it.t - 0.034, 0.0032 * PX); texto('DISTRESS', it.s, it.t - 0.038, 0.0032 * PX); texto('MENU', it.s + 0.024, it.t - 0.034, 0.0032 * PX); texto('MSG', it.s - 0.024, it.t + 0.034, 0.0032 * PX); texto('HOME', it.s + 0.024, it.t + 0.034, 0.0032 * PX); continue; }
+        const chica = 0.0036 * PX, media = 0.004 * PX;
+        if (it.tipo === 'cb') { texto(it.arriba, it.s, it.t - 0.011, chica); texto(it.rotulo, it.s, it.t + 0.0125, chica, false); }
+        else { texto(it.arriba, it.s, it.t - 0.011, media); const abajo = it.tipo === 'sw3' ? [it.rotulo, it.abajo] : [it.abajo, it.rotulo]; texto(abajo[0], it.s, it.t + 0.0115, media); texto(abajo[1], it.s, it.t + 0.0115 + 0.0042 * (1 + (String(abajo[0] || '').split('\n').length - 1) / 2 + (String(abajo[1] || '').split('\n').length - 1) / 2), chica, false); }
+      }
+      const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+      const u = new THREE.Vector3().fromArray(d.u), v = new THREE.Vector3().fromArray(d.v), n = new THREE.Vector3().fromArray(d.n);
+      m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(u, v, n)); m.position.fromArray(d.c).addScaledVector(n, 0.0003); m.renderOrder = 1; m.name = 'rotulos_' + o.name;
+      raiz.add(m); this.planos.push(m);
+    }
   }
 }

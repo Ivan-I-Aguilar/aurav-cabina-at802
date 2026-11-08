@@ -7,7 +7,7 @@
 #   · Borde de ARRIBA: plano en y 1,333 hasta x ±0,15, y de ahí baja en S («hombros») hasta la pared / el vidrio lateral
 #     (1,27 en ±0,33 · 1,17 en ±0,42 · 1,05 en ±0,59). En el eje queda a 1,7 cm del vidrio del parabrisas: no hay visera.
 #   · Borde de ABAJO (escalonado): 1,095 en el centro (x −0,14 … 0,16) = lo alto de la pared de la tolva; 1,065 en los tramos
-#     medios (−0,35 … −0,14 y 0,16 … 0,30); 0,87 a la izquierda de −0,35 (ahí cuelga el FRDS, etapa 3); 0,95 a la derecha de 0,30.
+#     medios (−0,31 … −0,14 y 0,16 … 0,26); 0,82 a la izquierda de −0,31 (ahí van el FRDS y el SALVO, etapa 3); 0,95 a la derecha de 0,26.
 #   · Centros (x, y): anemómetro (−0,092; 1,25) · G5 (0; 1,248) · altímetro (0,094; 1,25) · tapas ciegas (−0,094; 1,155) y
 #     (0,099; 1,152) · Garmin de rumbo (−0,006; 1,153) · MVP-50 (−0,264; 1,176), 12,3 × 10,6 de vidrio · anunciadores
 #     (−0,305 … −0,215; 1,251) · FUEL BOOST PUMP con guarda roja (−0,365; 1,149) · soporte del Garmin portátil (0,355; 1,047).
@@ -40,7 +40,7 @@ SALIDA = os.path.join(cc.SALIDA, 'cab_tablero.glb'); INFORME = os.path.join(cc.S
 Z_CARA = 0.96                                        # la cara del tablero (vertical, mira al piloto)
 Z_TOLVA = ca.Z_TOLVA                                 # la pared de la tolva (0,60): hasta ahí va la repisa
 Y_CENTRO = ca.Y_TOLVA_TOPE                           # borde de abajo del centro = lo alto de la pared de la tolva (1,095)
-SECCIONES = [(-9.0, -0.35, 0.87), (-0.35, -0.14, 1.065), (-0.14, 0.16, Y_CENTRO), (0.16, 0.30, 1.065), (0.30, 9.0, 0.95)]   # borde de abajo: (x0, x1, y)
+SECCIONES = [(-9.0, -0.31, 0.82), (-0.31, -0.14, 1.065), (-0.14, 0.16, Y_CENTRO), (0.16, 0.26, 1.065), (0.26, 9.0, 0.95)]   # borde de abajo: (x0, x1, y). Escalones medidos en la 360 el 8/11 (etapa 3): la chapa izquierda baja hasta 0,82 (SALVO) hasta x −0,31, donde empieza a verse la placa FLIGHT de la pared de la tolva; a la derecha el escalón está en 0,26
 HOMBRO_X = [0.0, 0.15, 0.21, 0.26, 0.30, 0.33, 0.36, 0.39, 0.42, 0.45, 0.49, 0.53, 0.57, 0.61]        # el borde de arriba, medido (|x| → y)
 HOMBRO_Y = [1.333, 1.330, 1.300, 1.285, 1.278, 1.270, 1.240, 1.195, 1.170, 1.150, 1.125, 1.095, 1.065, 1.040]
 def y_arriba(x): return float(np.interp(abs(x), HOMBRO_X, HOMBRO_Y))
