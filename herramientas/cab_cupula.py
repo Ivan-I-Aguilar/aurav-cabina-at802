@@ -188,7 +188,9 @@ if __name__ == '__main__':
     # en x hacia la chapa en el pie (de lleno en y 0,915, nada desde y 1,25), para que la cúpula asiente sobre el fuselaje.
     xD = lambda y, z: pd['punto'][0] - (ND_AD[1] * (y - pd['punto'][1]) + ND_AD[2] * (z - pd['punto'][2])) / ND_AD[0]
     def corr_piel(z):
-        h = piel_fsn(CINTURON - 0.008, float(z)); return (h[0][0] - 0.004 - xD(CINTURON - 0.008, z)) if h else 0.0
+        """Cuánto hay que correr D en x (en el cinturón) para que la PIEL de la puerta (9,4 mm por fuera de D) quede 1 mm por
+        FUERA de la chapa del FSN: a ras del zócalo (S1), que va 1 mm por fuera de la chapa (sin escalón; Iván, 7/11)."""
+        h = piel_fsn(CINTURON - 0.008, float(z)); return (h[0][0] - 0.00785 - xD(CINTURON - 0.008, z)) if h else 0.0
     taper = lambda y: max(0.0, 1 - (y - Y_BAJO) / (1.25 - Y_BAJO))
     bulto = lambda p: p + A([corr_piel(p[2]) * taper(p[1]), 0, 0])
     PA = lambda y: bulto(borde_A(y)); corrA = corr_piel(borde_A(Y_BAJO)[2])
@@ -278,7 +280,7 @@ if __name__ == '__main__':
         eje = []
         for z in np.linspace(0.80, 2.50, 14):
             h = piel_fsn(CINTURON - 0.008, float(z))
-            if h: eje.append(A([s * (h[0][0] - 0.018), CINTURON - R_LARGUERO - 0.002, z]))
+            if h: eje.append(A([s * (h[0][0] - 0.022), CINTURON - R_LARGUERO - 0.002, z]))   # 6 mm por dentro de la chapa (y del zócalo)
         tubo(f'larguero_antepecho_{lado}', eje, R_LARGUERO)
 
     # ---- J5 / J6 jaula del techo ----
@@ -485,11 +487,12 @@ if __name__ == '__main__':
     ojo_c = S('ojo_centro')
     # contornos (sobre la piel): abajo el cinturón, atrás el borde trasero del poste B, arriba el flanco, adelante el borde
     # delantero del poste A (donde termina el paño lateral). El forro, además, rodea los postes (1 cm por debajo de ellos).
-    yb, yf = CINTURON - 0.004, CINTURON + 0.001; uB = lambda y: unit(Et(y) - Er(y)); PBr_D = lambda y: PB_D(y) + 0.060 * uB(y)   # la piel solapa 4 mm sobre el FSN; el forro arranca sobre el corte
+    yb = yf = CINTURON + 0.001; uB = lambda y: unit(Et(y) - Er(y)); PBr_D = lambda y: PB_D(y) + 0.060 * uB(y)   # piel y forro arrancan sobre el corte (debajo sigue el zócalo)
     col0_puerta = remuestrear([enD(PBr_D(yb), D_PIEL), enD(PBr_D(1.25), D_PIEL), PBT], np.linspace(0, 1, NC - 1))   # del cinturón a PBT: también es la columna delantera del carenado
     borde_p = [enD(borde_A(yb), D_PIEL)] + col0_puerta + fb_der[::-1][1:] + [enD(borde_A(1.25), D_PIEL)]   # … PBT, DTR … r0[0]
     sA = POSTE_ANCHO - 0.010
-    borde_f = ([enD(borde_A(yf) + sA * wA, D_FORRO), enD(PB_D(yf) + 0.010 * uB(yf), D_FORRO), enD(PB_D(Y_TOPE_B - 0.01) + 0.010 * uB(Y_TOPE_B), D_FORRO),
+    yfA = yf - sA * wA[1]                                                          # el borde trasero del poste A baja con wA: se sube por el poste para que la esquina quede en yf
+    borde_f = ([enD(borde_A(yfA) + sA * wA, D_FORRO), enD(PB_D(yf) + 0.010 * uB(yf), D_FORRO), enD(PB_D(Y_TOPE_B - 0.01) + 0.010 * uB(Y_TOPE_B), D_FORRO),
                 enD(PBr_D(Y_TOPE_B - 0.01), D_FORRO)] + adentro(fb_der, FORRO)[::-1] +
                [enD(borde_A(Y_TOPE_A - 0.01), D_FORRO), enD(borde_A(Y_TOPE_A - 0.01) + sA * wA, D_FORRO)])
     def cara_plana(nombre, borde3, hueco3_, prof, mat, M, adentro_del_hueco=False):
@@ -555,7 +558,7 @@ if __name__ == '__main__':
         tope = en_borde_techo(z); h = fsn0.ray_cast(Vector((1.5, CINTURON - 0.008, float(z))), Vector((-1.0, 0.0, 0.0)), 1.6)
         if h[0] is None: h = casco.rayo((1.5, CINTURON - 0.008, float(z)), (-1.0, 0.0, 0.0), 1.6)
         assert h is not None and h[0] is not None, f'sin chapa del FSN en el cinturón, z {z:.2f}'
-        pie = A([h[0][0] + 0.0015, CINTURON - 0.004, z])                         # 4 mm por debajo del corte, 1,5 mm por fuera de la chapa del FSN
+        pie = A([h[0][0] + 0.001, CINTURON + 0.001, z])                          # en el corte, 1 mm por fuera de la chapa del FSN: a ras del zócalo
         th0, th1 = math.atan2(pie[1] - 1.25, pie[0]), math.atan2(tope[1] - 1.25, tope[0]); col = [pie]
         for th in np.linspace(th0, th1, NC)[1:-1]:
             d = A([math.cos(th), math.sin(th), 0.0]); q = fsn0.ray_cast(Vector((0.0, 1.25, float(z))), Vector(tuple(d)), 1.5)
@@ -568,7 +571,8 @@ if __name__ == '__main__':
     col0 = col0_puerta + [fa_sol[-1]]; colZ = columna_fsn(Z_CORTE)              # la columna delantera: los mismos vértices que la piel de la puerta y el flanco
     zs = [b2[0][2], (b2[0][2] + b25[0][2]) / 2, b25[0][2], (b25[0][2] + Z_CORTE) / 2, Z_CORTE]; cols = [col0]   # por la esquina del borde del techo en b25[0]
     for z in zs[1:-1]:                                                            # columnas del medio: reglada entre la puerta y el corte, con el tope sobre el borde del techo
-        t = (z - zs[0]) / (zs[-1] - zs[0]); lerp = [a_ + (c_ - a_) * t for a_, c_ in zip(col0, colZ)]; tope = solapa_techo(en_borde_techo(z))
+        t = (z - zs[0]) / (zs[-1] - zs[0]); t = t * t * (3 - 2 * t)                 # arranca tangente al plano de la puerta (sin quiebre en el poste B) y llega suave al corte
+        lerp = [a_ + (c_ - a_) * t for a_, c_ in zip(col0, colZ)]; tope = solapa_techo(en_borde_techo(z))
         cols.append([lerp[k] + (tope - lerp[-1]) * (k / (NC - 1)) for k in range(NC)])
     colZ[-1] = solapa_techo(colZ[-1]); cols.append(colZ)                          # arriba, 2 mm debajo de la chapa del techo (sin unión en T)
     adel = lambda y: PBr_D(y) - 0.010 * uB(y)                                     # 1 cm por delante del borde trasero del poste B: el forro se mete debajo del poste
@@ -577,6 +581,34 @@ if __name__ == '__main__':
         M = (lambda p: p) if s > 0 else esp
         grilla(f'carenado_{lado}', [[M(c[k]) for c in cols] for k in range(NC)], 'blanco')
         grilla(f'carenado_forro_{lado}', [[M(c[k]) for c in cols_f] for k in range(NC)], 'forro')
+    # ---- S1 zócalo: tira blanca de 10 cm que sigue la chapa del FSN 1,5 mm por fuera, justo debajo del corte del antepecho, del
+    #      capó al corte trasero: tapa la franja oscura que el FSN tiene pintada ahí (el burlete de sus ventanas) y deja la piel
+    #      de la puerta y el carenado a ras (Iván, 7/11: «falta una partecita… y mejorar esas uniones») ----
+    for s, lado in ((1, 'der'), (-1, 'izq')):
+        filas = []
+        for y in (CINTURON + 0.001, CINTURON - 0.024, CINTURON - 0.049, CINTURON - 0.074, CINTURON - 0.099):   # 10 cm: el FSN izquierdo no tiene chapa entre z 1,8 y 2,35 hasta y 0,85 (ahí iba el vidrio de su ventanilla)
+            fila = []
+            for z in np.linspace(0.95, Z_SOLAPA, 61):                              # desde detrás de la faja (adelante, el capó y la faja ya cierran); la chapa se mide justo debajo del corte
+                ys = min(y, CINTURON - 0.003); h = casco.rayo((s * 1.5, ys, float(z)), (-s, 0.0, 0.0), 1.6); lado_h = s
+                if h is None: h = casco.rayo((-s * 1.5, ys, float(z)), (s, 0.0, 0.0), 1.6); lado_h = -s   # sin chapa de este lado: la forma del otro, reflejada
+                if h is None: continue                                            # sin chapa en ninguno: la tira puentea entre vecinos
+                n_ = A(h[1]); n_ = n_ if n_[0] * lado_h > 0 else -n_; p_ = A(h[0]) + 0.0015 * unit(A([n_[0], n_[1], 0.0]))
+                if lado_h != s: p_ = esp(p_)
+                p_[1] = y; fila.append(p_)
+            assert len(fila) >= 2, f'zócalo {lado}: sin chapa en y {y:.3f}'
+            filas.append(remuestrear(fila, np.linspace(0, 1, 31)))
+        grilla(f'zocalo_{lado}', filas, 'blanco')
+    # ---- parche del lado izquierdo: el FSN no tiene chapa entre z 1,95 y 2,35 por debajo del antepecho, hasta y 0,65 (rotura del
+    #      modelo, sólo de ese lado). Chapa con la forma del lado DERECHO reflejada, 1,5 mm por fuera; arriba se mete debajo del zócalo ----
+    filas = []
+    for k, y in enumerate(np.arange(0.845, 0.62, -0.03)):
+        fila = []
+        for z in np.linspace(1.90, 2.42, 14):
+            h = casco.rayo((1.5, float(y), float(z)), (-1.0, 0.0, 0.0), 1.6)
+            assert h is not None, f'parche: sin chapa derecha en y {y:.3f} z {z:.2f}'
+            n_ = A(h[1]); n_ = n_ if n_[0] > 0 else -n_; fila.append(esp(A(h[0]) + (-0.001 if k == 0 else 0.0015) * unit(A([n_[0], n_[1], 0.0]))))   # la fila de arriba 1 mm por dentro de la chapa: 2,5 mm debajo del zócalo
+        filas.append(fila)
+    grilla('parche_izq', filas, 'blanco')
     print(f'carenado trasero: {len(cols)} columnas × {NC} puntos, de z {cols[0][0][2]:.2f} al corte del FSN en z {Z_CORTE}; en el corte, del cinturón (x {cols[-1][0][0]:.3f}) al borde del techo ({cols[-1][-1][0]:.3f}, {cols[-1][-1][1]:.3f})')
 
     # =====================================================================================================
@@ -690,7 +722,7 @@ if __name__ == '__main__':
         for nombre, desde, hacia, lente in (('01_frente', ojo, (0, 1.30, 0.6), 14), ('04_vano_izq', ojo, (-1.5, 1.25, 1.55), 14), ('05_vano_der', ojo, (1.5, 1.25, 1.55), 14), ('06_atras', ojo, (0, 1.30, 3.0), 14),
                                             ('techo', ojo, (0, 2.6, 1.55), 12), ('08_del_izq', (-2.6, 2.6, -1.0), (0, 1.15, 1.5), 24), ('09_del_der', (2.6, 2.6, -1.0), (0, 1.15, 1.5), 24),
                                             ('10_tras_izq', (-2.4, 1.9, 3.9), (0, 1.1, 1.5), 24), ('12_costado', (-3.0, 1.3, 1.55), (0, 1.15, 1.55), 28), ('frente_cerca', (-1.2, 1.55, -0.5), (0.1, 1.25, 1.0), 35),
-                                            ('esquina', (-1.5, 1.25, 0.45), (-0.45, 1.05, 0.95), 50)):
+                                            ('esquina', (-1.5, 1.25, 0.45), (-0.45, 1.05, 0.95), 50), ('13_tras_der_cerca', (1.9, 2.0, 3.1), (0.35, 1.25, 1.95), 32)):
             cc.vista(os.path.join(VISTAS, f'cup_{nombre}.png'), desde, hacia, lente=lente, res=(1100, 720)); print('  vista', nombre)
     # unir por material (3 llamadas de dibujo) y exportar
     tri = sum(cc.tri_count(o) for o in PIEZAS); unidos = []

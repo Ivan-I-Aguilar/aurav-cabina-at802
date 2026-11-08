@@ -1,9 +1,9 @@
 {
  "etapa": "1b.1",
- "piezas": 67,
- "triangulos": 6486,
+ "piezas": 70,
+ "triangulos": 7136,
  "llamadas": 5,
- "mb": 0.196,
+ "mb": 0.209,
  "chequeos": {
   "3 nada flotando": {
    "ok": true,
@@ -15,7 +15,7 @@
   },
   "6 presupuesto": {
    "ok": true,
-   "detalle": "6486 triángulos (máx. 12000) · 67 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+   "detalle": "7136 triángulos (máx. 12000) · 70 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
   }
  },
  "vidrio_contra_cano_mm": {
@@ -48,8 +48,8 @@
   ],
   "poste de puerta, borde delantero": [
    -1.5,
-   -0.5,
-   -0.5
+   0.5,
+   0.5
   ]
  },
  "estanqueidad_frente": {

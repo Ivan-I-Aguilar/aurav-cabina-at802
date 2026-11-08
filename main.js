@@ -877,6 +877,20 @@ window.__ronda = async n => {
   }
   await cuadros(3); return v.nombre;
 };
+/* __desde([x, y, z], [hx, hy, hz], hfov°): la cámara a pie en un punto cualquiera de AFUERA (marco cabina) mirando a otro:
+   para acercarse a un detalle del exterior (7/11). Sin argumentos vuelve al asiento. */
+window.__desde = async (desde, hacia, hfov = 50) => {
+  $('panel').hidden = true; panelVR.ocultar();
+  if (!desde) { if (aPie.modo === 'pie') { aPie.subir(); await cuadros(2); for (let i = 0; i < 300 && aPie.animando; i++) await cuadros(1); } jugador.position.copy(OJO_AVION); camara.position.set(0, 0, 0); camara.fov = 75; camara.updateProjectionMatrix(); yaw = 0; pitch = -0.15; await cuadros(3); return 'asiento'; }
+  if (aPie.modo === 'cabina') { aPie.bajar(); await cuadros(2); for (let i = 0; i < 300 && aPie.animando; i++) await cuadros(1); }
+  const d0 = cabina.localToWorld(new THREE.Vector3(...desde)), h0 = cabina.localToWorld(new THREE.Vector3(...hacia));
+  const suelo = ambiente.alturaTerreno(d0.x, d0.z);
+  escena.attach(jugador); jugador.position.set(d0.x, suelo, d0.z); jugador.scale.setScalar(1);
+  const d = h0.clone().sub(d0); jugador.rotation.set(0, Math.atan2(-d.x, -d.z), 0);
+  camara.position.set(0, d0.y - suelo, 0); yaw = 0; pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
+  camara.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hfov) / 2) / camara.aspect)); camara.updateProjectionMatrix();
+  await cuadros(3); return `a pie desde (${desde}) mirando a (${hacia}), hfov ${hfov}`;
+};
 /* __vista(x, y, z, yaw°, pitch°, hfov°): la cámara en un punto cualquiera de la cabina (marco cabina) mirando
    con ese yaw (positivo = derecha) y pitch (positivo = arriba) y ese campo horizontal: para comparar el juego
    con una foto desde el mismo punto (calcado de la 360, etapa 0). Sin argumentos vuelve al ojo del piloto. */

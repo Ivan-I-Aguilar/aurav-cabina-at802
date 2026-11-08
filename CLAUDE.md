@@ -77,6 +77,9 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 - **Lección (7/11): toda fila que llega al borde de otra chapa pasa por los VÉRTICES de ese borde y termina 2–3 mm por
   debajo** (`solapa_techo`): un remuestreo uniforme cortaba la esquina del nudo FR y dejaba un hueco de 1,6 cm por donde
   se colaban rayos. El chequeo de estanqueidad (0°–90°, 20.000 rayos) es el que los encuentra.
+- **El FSN está roto del lado IZQUIERDO debajo del antepecho** (z 1,95–2,35, hasta y 0,65: no hay chapa; el derecho está sano)
+  y tiene pintada una franja oscura (burlete) justo debajo del corte: lo tapan `zocalo_*` (10 cm, S1) y `parche_izq` en
+  `cab_cupula.py`. Para mirar un detalle de afuera de cerca: `await __desde([x, y, z], [hx, hy, hz], hfov°)` (a pie).
 - La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es
   razonable; se vuelve a mirar con el asiento nuevo (etapa 6).
 
