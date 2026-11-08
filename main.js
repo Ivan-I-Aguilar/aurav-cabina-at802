@@ -14,7 +14,7 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261107a';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261107b';
 
 /* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
    ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
@@ -82,7 +82,7 @@ jugador.add(camara); jugador.position.copy(OJO_AVION); jugador.rotation.y = -Mat
 // posición inicial: alineado en la cabecera de la pista 36 (la pista corre por x = 30 hacia −z), mirando a −z
 vuelo.pos.set(30, 0, 100); vuelo.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 
-let instrumentos = null, exterior = null, extras = null; const V_EXT = '20261102j';
+let instrumentos = null, exterior = null, extras = null, cabinaNueva = null; const V_EXT = '20261102j';
 const pedales = { mixer: null, accion: null, dur: 1, vis: 0 };   /* el clip va de timón a la izquierda (0) a la derecha (dur) */
 function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
@@ -105,8 +105,8 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261107a', V_EXT, OJO }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
-  exterior = r.exterior; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261107b', V_EXT, OJO }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+  exterior = r.exterior; cabinaNueva = r; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();
 }));
 else Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
   g.scene.traverse(o => {
@@ -1100,6 +1100,7 @@ renderer.setAnimationLoop(() => {
   if (modoCamara) cuidarSeguimiento();
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
+  if (cabinaNueva) cabinaNueva.actualizar(vuelo);   /* la mirilla de la tolva (etapa 1) */
   if (extras) extras.actualizar();
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;

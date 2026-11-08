@@ -201,7 +201,7 @@ Marco de la cabina: +x a la derecha del piloto, +y arriba, −z adelante. En Ble
 | Ojo del piloto | (0; 1,38; 1,64) |
 | Piso | y ≈ 0,26 |
 | Casco por dentro | x entre ±0,58 y ±0,66 según la altura |
-| Plano del parabrisas | z = 0,74 + 0,93·(y − 1,02) |
+| Plano W del parabrisas (cara de adentro; el vidrio va 4 cm más afuera) | z = 1,2057 + 1,1986·(y − 1,5) (corregido el 5/11; el de la etapa 0, z = 0,74 + 0,93·(y − 1,02), estaba mal) |
 | Tablero de hoy | z ≈ 0,86–0,95; y 0,70–1,25 |
 | Banqueta del asiento | arriba en y ≈ 0,64 |
 | Mamparo trasero de hoy | z 2,33 |
@@ -377,6 +377,15 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
 - Lo que gana Iván: se terminan los restos del FSX, las rajaduras, los dientes, la sierra y lo que
   asomaba por las ventanas.
 - **Lista cuando** el chequeo da cero vértices afuera y las 12 vistas salen limpias.
+- **MODELO HECHO el 7/11/2026 (v=20261107b, sin publicar; falta el ok de Iván):** `herramientas/cab_cascaron.py` →
+  `blender/cab_cascaron.glb` (2719 triángulos, 6 llamadas, 0,06 MB). H1 piso en y 0,26; H2 paredes = el casco 1,5 cm hacia
+  adentro, del piso al larguero del antepecho (donde el FSN está roto a la izquierda toma el lado derecho reflejado); H3 pared
+  de la tolva en z 0,60 (amarillo cromato) con la mirilla C1 en vivo (la placa `agua_tolva` se escala con `vuelo.agua`);
+  H4 forro del antepecho; H6 mamparo en z 2,42 ajustado al forro del carenado; tablero PROVISORIO oscuro hasta la faja del
+  parabrisas (la etapa 2 lo rehace). H5 y H8 ya estaban en la cúpula; H7 (caños de los costados) y H9 no van. Las escalas C2
+  y los rótulos quedan para `cab_rotulos.py` (etapa 3). Posiciones sin medida directa (el FSN no las tiene): pared de la
+  tolva, piso y mamparo son los números de referencia de §4; se afinan con las fotos en las etapas 2 y 6. Con esto
+  `?cabina=nueva` ya no carga nada del FSX ni dibuja el plano del casco.
 
 ### Etapa 2 — Tablero superior (2 sesiones)
 - 2a: chapa con el contorno real, perforaciones, biseles, placas y tapas ciegas.

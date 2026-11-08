@@ -1,0 +1,36 @@
+{
+ "etapa": "1",
+ "piezas": 14,
+ "triangulos": 2719,
+ "llamadas": 6,
+ "mb": 0.062,
+ "referencias": {
+  "piso": 0.26,
+  "tolva_z": 0.6,
+  "mamparo_z": 2.42,
+  "mirilla": [
+   -0.19,
+   0.19,
+   0.775,
+   0.865
+  ]
+ },
+ "chequeos": {
+  "1 nada afuera": {
+   "ok": true,
+   "detalle": "cero vértices afuera"
+  },
+  "3 nada flotando": {
+   "ok": true,
+   "detalle": "todas las piezas apoyan en otra o siguen al casco"
+  },
+  "4 nada superpuesto en el mismo plano": {
+   "ok": true,
+   "detalle": "sin caras coplanares encimadas"
+  },
+  "6 presupuesto": {
+   "ok": true,
+   "detalle": "2719 triángulos (máx. 6000) · 14 llamadas (máx. 8) · 0.00 MB (máx. 0.3) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+  }
+ }
+}

@@ -9,7 +9,7 @@
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
 
-export const PIEZAS = ['cab_cupula'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_cascaron', 'cab_tablero', … */
+export const PIEZAS = ['cab_cupula', 'cab_cascaron'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_tablero', … */
 const HOLGURA = 0.015, PISO = 0.26;
 const CUPULA = PIEZAS.includes('cab_cupula'), CINTURON = 0.93;   /* con la cúpula nueva, el FSN va cortado en el antepecho (y 0,93) */
 const vidrios = raiz => raiz.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) { o.renderOrder = 2; o.material.depthWrite = false; } } });
@@ -26,7 +26,11 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO }) {
     controles.armar(g.scene);   /* los controles viajan con sus datos (userData.piv, eje, ang, pos, perilla…) */
   }
   if (!PIEZAS.includes('cab_cascaron')) cabina.add(await planoCasco(V, OJO));
-  return { exterior: e.scene };
+  /* la mirilla de la tolva (etapa 1, 7/11): la placa «agua_tolva» (del cascarón) se escala en y según la carga; su userData.nivel
+     trae y0 (vacía) e y1 (llena), con la geometría horneada en el sitio: escalar alrededor de y0 */
+  const agua = cabina.getObjectByName('agua_tolva'); const nivel = agua?.userData?.nivel;
+  const actualizar = vuelo => { if (!agua || !nivel) return; const f = Math.max(0.02, Math.min(1, vuelo.agua / 2400)); agua.scale.y = f; agua.position.y = nivel.y0 * (1 - f); };
+  return { exterior: e.scene, actualizar };
 }
 
 /* el casco por dentro, como líneas: la referencia común de todas las zonas mientras no está el cascarón */
