@@ -2,8 +2,9 @@
 # medido (blender/calcado/cupula_puntos.json, bloque «simetrico»: lado derecho; el izquierdo es su espejo).
 #
 # Etapa 1b.1 (5/11): jaula de caños, parabrisas de 3 paños, faja del parabrisas. Etapa 1b.2 (7/11): el techo con sus dos
-# ventanas y el forro. Etapa 1b.3 (7/11): las puertas cerradas con su ventana y el ojo de buey. Va sobre el FSN cortado
-# (exterior_cupula.glb, de cab_cortar_fsn.py). Falta: carenado trasero con las ventanillas y solapas.
+# ventanas y el forro. Etapa 1b.3 (7/11): las puertas cerradas con su ventana y el ojo de buey, y el carenado trasero de
+# chapa lisa (Iván: detrás de la puerta no va ventanilla, es todo fuselaje). Va sobre el FSN cortado (exterior_cupula.glb,
+# de cab_cortar_fsn.py).
 #
 # Cómo está pensada (lo que mostraron las fotos de adentro y de afuera juntas):
 #   · Lo que se ve DESDE EL ASIENTO son las caras de adentro de la estructura: el plano W del parabrisas (por los ejes
@@ -29,6 +30,7 @@ from mathutils.geometry import delaunay_2d_cdt
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cab_comun as cc
+import cab_cortar_fsn as ccf
 
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 VISTAS = args[args.index('--vistas') + 1] if '--vistas' in args else None
@@ -329,6 +331,13 @@ if __name__ == '__main__':
     # Sobre esa bóveda se triangula la chapa (T1) con el recorte de las dos ventanas, y 7 mm hacia adentro el forro (T2) con
     # un canto oscuro alrededor de cada ventana; el vidrio son los mismos triángulos del hueco (mismos vértices: sin rendija).
     TV = cp['superficies']['techo_der']; PV, NTV = A(TV['punto']), unit(A(TV['normal']))
+    Z_SOLAPA = 2.58                                                               # la cúpula pasa 3 cm sobre el FSN detrás del corte (z 2,55)
+    def solapa_techo(P, largo=0.003, hundido=0.002):
+        """P, un punto del borde del techo: el mismo punto corrido `largo` hacia el centro del techo por la tangente de la bóveda y
+        `hundido` hacia adentro: las piezas que llegan al borde del techo (flancos, carenado) terminan DEBAJO de la chapa, sin
+        unión en T (por ahí se colaban rayos)."""
+        r = unit(A([P[0], P[1] - 1.25, 0.0])); t = A([-r[1], r[0], 0.0]) * (1 if P[0] >= 0 else -1)
+        return P + largo * t - hundido * r
     def punto_D(y, z): return A([pd['punto'][0] - (ND_AD[1] * (y - pd['punto'][1]) + ND_AD[2] * (z - pd['punto'][2])) / ND_AD[0], y, z])   # el plano de la puerta derecha
     DTF = punto_D(S('puerta_esq_del_sup')[1] + 0.03, S('puerta_esq_del_sup')[2]) + 0.0094 * ND      # borde de abajo del flanco: 3 cm sobre la ventana de puerta, en la piel
     DTR = punto_D(S('puerta_esq_tras_sup')[1] + 0.03, S('puerta_esq_tras_sup')[2]) + 0.0094 * ND
@@ -337,9 +346,9 @@ if __name__ == '__main__':
         b1 = remuestrear([fuera(p, fuera_m) for p in completo(arco_d)][::-1], fc)      # de derecha a izquierda, como r0
         b2 = remuestrear([fuera(p, fuera_m) for p in completo(arco_t)][::-1], fc)
         b3, faltan = [], 0
-        for p in b2:                                                              # el carenado del FSN justo detrás del corte, en las mismas direcciones
-            d = unit(A([p[0], p[1] - 1.25, 0])); h = casco.rayo((0.0, 1.25, 2.56), tuple(d), 1.2)
-            b3.append(A(h[0]) + 0.004 * d if h else None)
+        for p in b2:                                                              # el carenado del FSN 3 cm detrás del corte (solapa, 1 mm por fuera), en las mismas direcciones
+            d = unit(A([p[0], p[1] - 1.25, 0])); h = casco.rayo((0.0, 1.25, Z_SOLAPA), tuple(d), 1.2)
+            b3.append(A(h[0]) + 0.001 * d if h else None)
         for k in range(len(b3)):
             if b3[k] is None:                                                     # donde el FSN tiene un hueco: entre los vecinos
                 faltan += 1; vec = [q for q in (b3[k - 1] if k > 0 else None, b3[k + 1] if k + 1 < len(b3) else None) if q is not None]
@@ -421,15 +430,17 @@ if __name__ == '__main__':
 
     # ---- los flancos del techo: de la línea de los caños FR–RR bajan hasta la piel de la puerta (superficie reglada; como
     #      campo de alturas no se podía: atrás la línea de caños queda más afuera que el plano de la puerta y quedaba en voladizo) ----
-    PBr = lambda y: PB(y) + 0.060 * unit(Et(y) - Er(y))                          # borde trasero del poste B (donde empieza la ventanilla trasera)
+    NC = 9                                                                        # puntos por columna del carenado (y del borde trasero de la puerta)
+    PBr = lambda y: PB(y) + 0.060 * unit(Et(y) - Er(y))                          # borde trasero del poste B (atrás es todo fuselaje)
     PBT = PBr(1.59) + 0.0094 * ND                                                 # esquina trasera de abajo del flanco, en la piel
     entre = lambda P_, Q_, *fs: [P_ + (Q_ - P_) * f_ for f_ in fs]
     fb_der = [r0[0]] + entre(r0[0], DTF, 1 / 3, 2 / 3) + [DTF] + entre(DTF, DTR, 0.25, 0.5, 0.75) + [DTR] + entre(DTR, PBT, 0.5) + [PBT]   # pasa por las esquinas
-    fa_der = remuestrear([r0[0], b1[0], b2[0]], np.linspace(0, 1, len(fb_der)))
+    fa_der = [r0[0]] + entre(r0[0], b1[0], 0.5) + [b1[0]] + entre(b1[0], b2[0], *[k / 7 for k in range(1, 8)])   # ídem: por b1[0] (el nudo FR); un remuestreo uniforme cortaba esa esquina y dejaba un hueco
+    fa_sol = [fa_der[0], solapa_techo(fa_der[1], 0.003, 0.004)] + [solapa_techo(p) for p in fa_der[2:]]   # la fila de arriba termina 2 mm debajo de la chapa del techo (sin unión en T); el primer triángulo, más hundido (quedaba en el plano de la piel de la puerta)
     for s, lado in ((1, 'der'), (-1, 'izq')):
         M = (lambda p: p) if s > 0 else esp
         fa, fb = [M(p) for p in fa_der], [M(p) for p in fb_der]
-        grilla(f'flanco_{lado}', [fa, fb], 'blanco')
+        grilla(f'flanco_{lado}', [[M(p) for p in fa_sol], fb], 'blanco')
         grilla(f'flanco_forro_{lado}', [adentro(fa, FORRO), adentro(fb, FORRO)], 'forro')
 
     # ---- P / V3: las puertas (no abren, decisión del 24/10). Piel blanca a 9,4 mm por fuera del plano D (donde estaban las
@@ -474,10 +485,11 @@ if __name__ == '__main__':
     ojo_c = S('ojo_centro')
     # contornos (sobre la piel): abajo el cinturón, atrás el borde trasero del poste B, arriba el flanco, adelante el borde
     # delantero del poste A (donde termina el paño lateral). El forro, además, rodea los postes (1 cm por debajo de ellos).
-    yb = CINTURON + 0.001; uB = lambda y: unit(Et(y) - Er(y)); PBr_D = lambda y: PB_D(y) + 0.060 * uB(y)
-    borde_p = [enD(borde_A(yb), D_PIEL), enD(PBr_D(yb), D_PIEL), enD(PBr_D(1.25), D_PIEL)] + fb_der[::-1] + [enD(borde_A(1.25), D_PIEL)]   # PBT … r0[0]
+    yb, yf = CINTURON - 0.004, CINTURON + 0.001; uB = lambda y: unit(Et(y) - Er(y)); PBr_D = lambda y: PB_D(y) + 0.060 * uB(y)   # la piel solapa 4 mm sobre el FSN; el forro arranca sobre el corte
+    col0_puerta = remuestrear([enD(PBr_D(yb), D_PIEL), enD(PBr_D(1.25), D_PIEL), PBT], np.linspace(0, 1, NC - 1))   # del cinturón a PBT: también es la columna delantera del carenado
+    borde_p = [enD(borde_A(yb), D_PIEL)] + col0_puerta + fb_der[::-1][1:] + [enD(borde_A(1.25), D_PIEL)]   # … PBT, DTR … r0[0]
     sA = POSTE_ANCHO - 0.010
-    borde_f = ([enD(borde_A(yb) + sA * wA, D_FORRO), enD(PB_D(yb) + 0.010 * uB(yb), D_FORRO), enD(PB_D(Y_TOPE_B - 0.01) + 0.010 * uB(Y_TOPE_B), D_FORRO),
+    borde_f = ([enD(borde_A(yf) + sA * wA, D_FORRO), enD(PB_D(yf) + 0.010 * uB(yf), D_FORRO), enD(PB_D(Y_TOPE_B - 0.01) + 0.010 * uB(Y_TOPE_B), D_FORRO),
                 enD(PBr_D(Y_TOPE_B - 0.01), D_FORRO)] + adentro(fb_der, FORRO)[::-1] +
                [enD(borde_A(Y_TOPE_A - 0.01), D_FORRO), enD(borde_A(Y_TOPE_A - 0.01) + sA * wA, D_FORRO)])
     def cara_plana(nombre, borde3, hueco3_, prof, mat, M, adentro_del_hueco=False):
@@ -521,6 +533,51 @@ if __name__ == '__main__':
         anillo = [[M(enD(ojo_c + r_ * (math.cos(2 * math.pi * i / 24) * e1 + math.sin(2 * math.pi * i / 24) * e2), D_OJO)) for i in range(24)] for r_ in (0.045, 0.035)]
         pieza(f'ojo_de_buey_{lado}', anillo[0] + anillo[1], [(i, (i + 1) % 24, 24 + (i + 1) % 24, 24 + i) for i in range(24)], 'marco', suave=False)
     print(f'puertas: hueco de {len(hueco3)} puntos (esquinas {", ".join(f"({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})" for p in poli)}), ojo de buey en ({ojo_c[0]:.3f}, {ojo_c[1]:.3f}, {ojo_c[2]:.3f}); abultado en el pie {corr_piel(1.0) * 100:.1f} cm (z 1,0) y {corr_piel(1.9) * 100:.1f} cm (z 1,9)')
+
+    # ---- T3 carenado trasero: detrás del poste B es TODO fuselaje (Iván, 7/11: no va ventanilla). Chapa lisa lofteada entre
+    #      el borde trasero de la puerta (sobre D, con la arista del flanco hasta b2[0]) y la sección del FSN en el corte (z 2,56),
+    #      pasando por la forma del FSN ORIGINAL (exterior.glb, sin cortar) en las columnas del medio; arriba sigue el borde del
+    #      techo (b2[0] → b25[0] → b3[0]) y abajo el cinturón; forro a 7 mm, 1 cm por debajo del poste B. ----
+    j0, bin0 = ccf.leer_glb(os.path.join(cc.RAIZ, 'exterior.glb')); V0, T0 = [], []
+    for malla_ in j0['meshes']:
+        for prim in malla_['primitives']:
+            P0 = ccf.leer_accessor(j0, bin0, prim['attributes']['POSITION']); I0 = ccf.leer_accessor(j0, bin0, prim['indices']).reshape(-1, 3)
+            base = len(V0); V0 += [tuple(map(float, p)) for p in P0]; T0 += [tuple(int(k) + base for k in t) for t in I0]
+    fsn0 = BVHTree.FromPolygons(V0, T0)
+    Z_CORTE = Z_SOLAPA; borde_techo = [b2[0], b25[0], b3[0]]
+    def en_borde_techo(z):
+        for P_, Q_ in zip(borde_techo, borde_techo[1:]):
+            if P_[2] - 1e-9 <= z <= Q_[2] + 1e-9: return P_ + (Q_ - P_) * ((z - P_[2]) / (Q_[2] - P_[2]))
+        return borde_techo[-1]
+    def columna_fsn(z):
+        """Perfil del fuselaje en z, del cinturón al borde del techo: rayos desde el eje (0, 1,25, z) al FSN original, 0,5 mm por fuera.
+        (Sólo sirve en el corte, z 2,56: entre el poste B y ahí el FSN original tiene sus ventanillas rotas, sin chapa.)"""
+        tope = en_borde_techo(z); h = fsn0.ray_cast(Vector((1.5, CINTURON - 0.008, float(z))), Vector((-1.0, 0.0, 0.0)), 1.6)
+        if h[0] is None: h = casco.rayo((1.5, CINTURON - 0.008, float(z)), (-1.0, 0.0, 0.0), 1.6)
+        assert h is not None and h[0] is not None, f'sin chapa del FSN en el cinturón, z {z:.2f}'
+        pie = A([h[0][0] + 0.0015, CINTURON - 0.004, z])                         # 4 mm por debajo del corte, 1,5 mm por fuera de la chapa del FSN
+        th0, th1 = math.atan2(pie[1] - 1.25, pie[0]), math.atan2(tope[1] - 1.25, tope[0]); col = [pie]
+        for th in np.linspace(th0, th1, NC)[1:-1]:
+            d = A([math.cos(th), math.sin(th), 0.0]); q = fsn0.ray_cast(Vector((0.0, 1.25, float(z))), Vector(tuple(d)), 1.5)
+            col.append(A(q[0]) + 0.0015 * d if q[0] is not None else None)
+        col.append(tope)
+        for k in range(1, NC - 1):                                                 # donde el FSN no tiene chapa: entre los vecinos
+            if col[k] is None:
+                k2 = next(j for j in range(k + 1, NC) if col[j] is not None); col[k] = col[k - 1] + (col[k2] - col[k - 1]) / (k2 - k + 1)
+        return col
+    col0 = col0_puerta + [fa_sol[-1]]; colZ = columna_fsn(Z_CORTE)              # la columna delantera: los mismos vértices que la piel de la puerta y el flanco
+    zs = [b2[0][2], (b2[0][2] + b25[0][2]) / 2, b25[0][2], (b25[0][2] + Z_CORTE) / 2, Z_CORTE]; cols = [col0]   # por la esquina del borde del techo en b25[0]
+    for z in zs[1:-1]:                                                            # columnas del medio: reglada entre la puerta y el corte, con el tope sobre el borde del techo
+        t = (z - zs[0]) / (zs[-1] - zs[0]); lerp = [a_ + (c_ - a_) * t for a_, c_ in zip(col0, colZ)]; tope = solapa_techo(en_borde_techo(z))
+        cols.append([lerp[k] + (tope - lerp[-1]) * (k / (NC - 1)) for k in range(NC)])
+    colZ[-1] = solapa_techo(colZ[-1]); cols.append(colZ)                          # arriba, 2 mm debajo de la chapa del techo (sin unión en T)
+    adel = lambda y: PBr_D(y) - 0.010 * uB(y)                                     # 1 cm por delante del borde trasero del poste B: el forro se mete debajo del poste
+    cols_f = [adentro(remuestrear([enD(adel(yf), D_PIEL), enD(adel(1.25), D_PIEL), PBT - 0.010 * uB(1.59)], np.linspace(0, 1, NC - 1)) + [b2[0]], FORRO)] + [adentro(c, FORRO) for c in cols[1:]]
+    for s, lado in ((1, 'der'), (-1, 'izq')):
+        M = (lambda p: p) if s > 0 else esp
+        grilla(f'carenado_{lado}', [[M(c[k]) for c in cols] for k in range(NC)], 'blanco')
+        grilla(f'carenado_forro_{lado}', [[M(c[k]) for c in cols_f] for k in range(NC)], 'forro')
+    print(f'carenado trasero: {len(cols)} columnas × {NC} puntos, de z {cols[0][0][2]:.2f} al corte del FSN en z {Z_CORTE}; en el corte, del cinturón (x {cols[-1][0][0]:.3f}) al borde del techo ({cols[-1][-1][0]:.3f}, {cols[-1][-1][1]:.3f})')
 
     # =====================================================================================================
     # CHEQUEOS
@@ -595,9 +652,8 @@ if __name__ == '__main__':
             n_rayos += 1
             if todo.ray_cast(origen, d, 8.0)[0] is None and casco.bvh_todo.ray_cast(origen, d, 8.0)[0] is None: escapes.append((round(math.degrees(az), 1), round(math.degrees(el), 1)))
     print(('  OK   ' if not escapes else '  FALLA') + f' estanqueidad del frente → {len(escapes)} de {n_rayos} rayos salen sin tocar nada (±36° de acimut, −6° a +46° de altura)' + (f': {escapes[:12]}' if escapes else ''))
-    # estanqueidad del techo (1b.2): desde los mismos puntos, hacia arriba en todas las direcciones. Arranca en 50° de altura
-    # porque por debajo del flanco (y 1,52) los vanos de puerta y la zona trasera siguen ABIERTOS hasta la 1b.3: ahí bajar a 0°.
-    EL_TECHO = 50; escapes_t = []; n_t = 0
+    # estanqueidad del techo y los costados (1b.2/1b.3): desde los mismos puntos, todo alrededor, de 0° a 90° de altura
+    EL_TECHO = 0; escapes_t = []; n_t = 0                                        # con puertas y carenado (1b.3) la cabina está cerrada sobre el antepecho: de 0° a 90°
     for origen in (cc.OJO, Vector((0.0, 1.16, 1.58)), Vector((-0.15, 1.30, 1.55)), Vector((0.15, 1.30, 1.55)), Vector((0.0, 1.45, 1.75))):
         for _ in range(4000):
             az, el = math.radians(rng.uniform(-180, 180)), math.radians(rng.uniform(EL_TECHO, 90)); d = Vector((math.sin(az) * math.cos(el), math.sin(el), -math.cos(az) * math.cos(el)))
@@ -612,6 +668,14 @@ if __name__ == '__main__':
                 hits = sorted((round(h[3], 3), nombre) for nombre, arbol in arboles.items() for h in [arbol.ray_cast(origen, d, 8.0)] if h[0] is not None)
                 todo_h = todo.ray_cast(origen, d, 8.0)[0]
                 print(f'       escape az {az} el {el} desde ({origen.x:.2f}, {origen.y:.2f}, {origen.z:.2f}): todo={"toca" if todo_h is not None else "nada"} piezas={hits[:4]}')
+                if todo_h is None and not hits:                                   # por dónde pasa: el punto del rayo más cercano a alguna pieza
+                    mejor = None
+                    for t_ in np.arange(0.2, 1.6, 0.005):
+                        q_ = origen + d * float(t_)
+                        for nombre, arbol in arboles.items():
+                            h = arbol.find_nearest(q_, 0.05)
+                            if h[0] is not None and (mejor is None or h[3] < mejor[0]): mejor = (h[3], nombre, (round(q_.x, 3), round(q_.y, 3), round(q_.z, 3)))
+                    print(f'         pasa a {mejor[0] * 1000:.1f} mm de {mejor[1]} en {mejor[2]}' if mejor else '         lejos de todo')
 
     # =====================================================================================================
     # VISTAS de prueba (antes de unir), SALIDA y PRESUPUESTO

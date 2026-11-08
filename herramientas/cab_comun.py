@@ -285,6 +285,13 @@ def vista(ruta, desde, hacia, lente=16, res=(1280, 800), fondo=(0.55, 0.60, 0.66
 
 
 # ---------------- chequeos automáticos (§6), antes de mirar ----------------
+def _dist_a_bordes(p, verts):
+    """Distancia de p (Vector) al borde más cercano del polígono (lista de Vector)."""
+    m = 1e9
+    for a, b in zip(verts, verts[1:] + verts[:1]):
+        ab = b - a; t = max(0.0, min(1.0, (p - a).dot(ab) / max(ab.length_squared, 1e-12))); m = min(m, (p - (a + ab * t)).length)
+    return m
+
 def _bvh_de(o):
     return BVHTree.FromPolygons([tuple(v) for v in verts_cab(o)], [tuple(p.vertices) for p in o.data.polygons])
 
@@ -337,7 +344,7 @@ def chequear(piezas, casco, glbs=(), tri_max=60000, llamadas_max=40, mb_max=3.0,
     # 4. nada superpuesto en el mismo plano (parpadea): puntos de cada cara (centro y vértices corridos al
     #    centro) sobre otra pieza, con la normal en el MISMO sentido (las caras de contacto se miran de
     #    frente y no parpadean)
-    malos = {}
+    malos = {}; objetos = {o.name: o for o in piezas}
     for o in piezas:
         mw = o.matrix_world; n = 0
         for p in o.data.polygons:
@@ -346,9 +353,13 @@ def chequear(piezas, casco, glbs=(), tri_max=60000, llamadas_max=40, mb_max=3.0,
             hallada = False
             for nombre, arbol in arboles.items():
                 if nombre == o.name: continue
+                otro = objetos[nombre]; mwo = otro.matrix_world
                 for q0 in pts:
                     q = arbol.find_nearest(q0, 0.0008)
-                    if q[0] is not None and q[1].normalized().dot(nrm) > 0.995: hallada = True; break
+                    if q[0] is None or q[1].normalized().dot(nrm) <= 0.995: continue
+                    po = otro.data.polygons[q[2]]; vo = [cab(mwo @ otro.data.vertices[k].co) for k in po.vertices]
+                    if _dist_a_bordes(q[0], vo) < 0.0012: continue                 # el punto más cercano cae en el BORDE de la otra cara: son caras vecinas (comparten arista o vértice), no encimadas (7/11)
+                    hallada = True; break
                 if hallada: break
             n += hallada
         if n: malos[o.name] = n

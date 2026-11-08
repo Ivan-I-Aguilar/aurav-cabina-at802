@@ -1,9 +1,9 @@
 {
  "etapa": "1b.1",
- "piezas": 63,
- "triangulos": 6212,
+ "piezas": 67,
+ "triangulos": 6486,
  "llamadas": 5,
- "mb": 0.188,
+ "mb": 0.196,
  "chequeos": {
   "3 nada flotando": {
    "ok": true,
@@ -15,7 +15,7 @@
   },
   "6 presupuesto": {
    "ok": true,
-   "detalle": "6212 triángulos (máx. 12000) · 63 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+   "detalle": "6486 triángulos (máx. 12000) · 67 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
   }
  },
  "vidrio_contra_cano_mm": {
