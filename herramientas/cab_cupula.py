@@ -2,8 +2,8 @@
 # medido (blender/calcado/cupula_puntos.json, bloque «simetrico»: lado derecho; el izquierdo es su espejo).
 #
 # Etapa 1b.1 (5/11): jaula de caños, parabrisas de 3 paños, faja del parabrisas. Etapa 1b.2 (7/11): el techo con sus dos
-# ventanas y el forro, hasta el borde de arriba de las puertas. Va sobre el FSN cortado (exterior_cupula.glb, de
-# cab_cortar_fsn.py). Falta (1b.3): puertas con sus ventanas, carenado trasero con las ventanillas y solapas.
+# ventanas y el forro. Etapa 1b.3 (7/11): las puertas cerradas con su ventana y el ojo de buey. Va sobre el FSN cortado
+# (exterior_cupula.glb, de cab_cortar_fsn.py). Falta: carenado trasero con las ventanillas y solapas.
 #
 # Cómo está pensada (lo que mostraron las fotos de adentro y de afuera juntas):
 #   · Lo que se ve DESDE EL ASIENTO son las caras de adentro de la estructura: el plano W del parabrisas (por los ejes
@@ -182,9 +182,14 @@ if __name__ == '__main__':
     pd = cp['superficies']['puerta_der']; ND_AD = unit(A(pd['normal'])); ND_AD = ND_AD if ND_AD[0] < 0 else -ND_AD; ND = -ND_AD   # hacia adentro · hacia afuera
     pa0, pa1 = S('lateral_base_visible'), S('lateral_esq_sup_posteA'); dirA = unit(pa1 - pa0); wA = unit(np.cross(ND, dirA)); wA = wA if wA[2] > 0 else -wA
     def borde_A(y): return pa0 + (pa1 - pa0) * ((y - pa0[1]) / (pa1[1] - pa0[1]))               # borde delantero del poste de puerta (donde termina el paño lateral)
-    base = piel_fsn(CINTURON - 0.008, borde_A(Y_BAJO)[2]); corrA = (base[0][0] - 0.004 - borde_A(Y_BAJO)[0]) if base else 0.0
-    def PA(y):                                                                   # ídem, llevado en el pie hasta la chapa del FSN (el plano D queda 1–2 cm adentro ahí)
-        return borde_A(y) + A([corrA * max(0.0, 1 - (y - Y_BAJO) / (1.25 - Y_BAJO)), 0, 0])
+    # El plano D queda 1 a 2 cm ADENTRO de la chapa del FSN en el cinturón: todo lo que va sobre D (postes, puerta) se «abulta»
+    # en x hacia la chapa en el pie (de lleno en y 0,915, nada desde y 1,25), para que la cúpula asiente sobre el fuselaje.
+    xD = lambda y, z: pd['punto'][0] - (ND_AD[1] * (y - pd['punto'][1]) + ND_AD[2] * (z - pd['punto'][2])) / ND_AD[0]
+    def corr_piel(z):
+        h = piel_fsn(CINTURON - 0.008, float(z)); return (h[0][0] - 0.004 - xD(CINTURON - 0.008, z)) if h else 0.0
+    taper = lambda y: max(0.0, 1 - (y - Y_BAJO) / (1.25 - Y_BAJO))
+    bulto = lambda p: p + A([corr_piel(p[2]) * taper(p[1]), 0, 0])
+    PA = lambda y: bulto(borde_A(y)); corrA = corr_piel(borde_A(Y_BAJO)[2])
     # El borde delantero del poste de puerta (donde termina el paño lateral) también es lo que ve la cámara de la 360, que lo
     # mira muy de costado: el frente de la caja oscura va en chaflán sobre el plano cámara–borde (RETIRO_A = cuánto más atrás
     # queda su arista interior). Con el frente a escuadra, desde el asiento tapaba 2,5 cm de vidrio.
@@ -200,39 +205,22 @@ if __name__ == '__main__':
         tap = lambda y: [X(WI(y, D_POSTE + 0.0003)), X(WE(y, D_POSTE + 0.0003)), X(WE(y, D_TAPA)), X(WI(y, D_TAPA))]
         solido(f'parante_tapa_{lado}', [tap(Y_PIE_VIDRIO - 0.012), tap(Y_CAB_TOPE)], 'blanco')
         # ---- J2 poste de puerta delantero (A) y J3 trasero (B): caja sobre el plano de la puerta + tapa blanca ----
-        def caja_poste(nombre, frente, ancho, y0, y1, n_ad, retiro=0.0, canto='atras'):
-            """Poste de puerta: tapa blanca por fuera del plano D, del borde `frente` hacia atrás (sin pestañas: se verían desde
-            adentro), y caja oscura por dentro; `retiro` = cuánto más atrás queda la arista interior delantera (chaflán);
-            `canto` = de qué lado está el vano de la puerta: ahí va un canto oscuro que tapa el espesor de la tapa blanca
-            (desde el asiento se veía como una raya clara en el borde del vano)."""
-            cuerpo, tapa = [], []
+        def caja_poste(nombre, frente_D, ancho, y0, y1, n_ad, retiro=0.0):
+            """Poste de puerta: la caja oscura por dentro del plano D (la piel blanca de afuera es la de la puerta, más abajo);
+            `frente_D` da el borde delantero SOBRE D (sin abultar: acá se abulta cada vértice con su propio (y, z), como la piel);
+            `retiro` = cuánto más atrás queda la arista interior delantera (chaflán sobre el plano cámara–borde)."""
+            cuerpo = []
             for y in (y0, 1.25, y1):
-                f, w = frente(y), ancho(y); wu = unit(w); r = f + w + 0.0015 * wu          # la caja, 1,5 mm más ancha que la tapa: sin caras en el mismo plano
-                if retiro == 0: f = f - 0.0015 * wu
-                cuerpo.append([X(f), X(r), X(r + POSTE_FONDO * n_ad), X(f + retiro * wu + POSTE_FONDO * n_ad)])
-            def en(y, a):
-                """Punto del plano D: el borde delantero a la altura y, más `a` veces el ancho. El poste se inclina y el ancho va a
-                escuadra de él, así que hacia atrás baja: en el pie se sube por el poste hasta dejar el punto en y (corte a ras
-                del cinturón; a escuadra, la punta de atrás de la tapa quedaba 5 cm por debajo, sobre la chapa del FSN)."""
-                ys = y - a * ancho(y)[1] if y < CINTURON + 0.01 else y
-                return frente(ys) + a * ancho(ys)
-            for y in (CINTURON + 0.001, 1.25, y1):                               # la tapa blanca arranca en el cinturón (el pie del poste queda detrás de la chapa)
-                f, r = en(y, 0.0), en(y, 1.0)
-                tapa.append([X(f - 0.0003 * n_ad), X(r - 0.0003 * n_ad), X(r - 0.010 * n_ad), X(f - 0.010 * n_ad)])
-            solido(f'{nombre}_{lado}', cuerpo, 'marco'); solido(f'{nombre}_tapa_{lado}', tapa, 'blanco')
-            largo = float(np.linalg.norm(ancho(1.25))); filo = []                # el canto: 2,3 mm de ancho, pegado al borde de la tapa del lado del vano
-            a0, a1 = (1 + 0.0002 / largo, 1 + 0.0025 / largo) if canto == 'atras' else (-0.0025 / largo, -0.0002 / largo)
-            for y in (CINTURON + 0.0022, 1.25, y1 - 0.0015):
-                p0, p1 = en(y, a0), en(y, a1)
-                filo.append([X(p0 + 0.0005 * n_ad), X(p1 + 0.0005 * n_ad), X(p1 - 0.0112 * n_ad), X(p0 - 0.0112 * n_ad)])
-            solido(f'{nombre}_canto_{lado}', filo, 'marco')
-        caja_poste('posteA', PA, lambda y: POSTE_ANCHO * wA, Y_BAJO, 1.555, ND_AD, RETIRO_A, 'atras')   # termina debajo del flanco del techo
+                f, w = frente_D(y), ancho(y); r = f + w
+                cuerpo.append([X(bulto(f)), X(bulto(r)), X(bulto(r) + POSTE_FONDO * n_ad), X(bulto(f + retiro * unit(w)) + POSTE_FONDO * n_ad)])
+            solido(f'{nombre}_{lado}', cuerpo, 'marco')
+        Y_POSTE0, Y_TOPE_A, Y_TOPE_B = CINTURON + 0.005, 1.505, 1.56             # los pies, por encima del larguero del antepecho; las cabezas, debajo del flanco del techo
+        caja_poste('posteA', borde_A, lambda y: POSTE_ANCHO * wA, Y_POSTE0, Y_TOPE_A, ND_AD, RETIRO_A)
         er0, er1 = S('puerta_esq_tras_inf'), S('puerta_esq_tras_sup'); et0, et1 = A(af['trasera_esq_del_inf']['p3d_der']), A(af['trasera_esq_del_sup']['p3d_der'])
         Er = lambda y: er0 + (er1 - er0) * ((y - er0[1]) / (er1[1] - er0[1])); Et = lambda y: et0 + (et1 - et0) * ((y - et0[1]) / (et1[1] - et0[1]))
         medio = lambda y: (Er(y) + Et(y)) / 2
-        baseB = piel_fsn(CINTURON - 0.008, medio(Y_BAJO)[2]); corrB = (baseB[0][0] - 0.004 - medio(Y_BAJO)[0]) if baseB else 0.0
-        PB = lambda y: medio(y) - 0.030 * unit(Et(y) - Er(y)) + A([corrB * max(0.0, 1 - (y - Y_BAJO) / (1.25 - Y_BAJO)), 0, 0])
-        caja_poste('posteB', PB, lambda y: 0.060 * unit(Et(y) - Er(y)), Y_BAJO, 1.590, ND_AD, 0.0, 'adelante')
+        PB_D = lambda y: medio(y) - 0.030 * unit(Et(y) - Er(y)); PB = lambda y: bulto(PB_D(y))
+        caja_poste('posteB', PB_D, lambda y: 0.060 * unit(Et(y) - Er(y)), Y_POSTE0, Y_TOPE_B, ND_AD)
 
     # ---- travesaño sobre el paño central (cabezal): gris por dentro, tapa blanca por fuera; entra 3 mm en cada parante ----
     ext = lambda s, y, d, mas: A([s * (xi(y, d) + mas), 0, 0]) + W(0, y, d)        # hasta la cara del parante a esa profundidad, y `mas` adentro de él
@@ -360,12 +348,6 @@ if __name__ == '__main__':
         filas = [remuestrear(r0, fc), b1, b2, b25, b3]
         verts = [tuple(p) for f_ in filas for p in f_]; n = columnas
         caras = [(k * n + i, k * n + i + 1, (k + 1) * n + i + 1, (k + 1) * n + i) for k in range(len(filas) - 1) for i in range(n - 1)]
-        for s in (1, -1):                                                         # los dos flancos: entre la línea de los caños y el borde de arriba de la puerta
-            X = lambda p: A([s * p[0], p[1], p[2]])
-            arriba_f = [X(p) for p in (r0[0], b1[0], b2[0])]; abajo_f = [X(p) for p in (r0[0], DTF, DTR, b2[0])]
-            fa, fb = remuestrear(arriba_f, np.linspace(0, 1, 9)), remuestrear(abajo_f, np.linspace(0, 1, 9)); base = len(verts)
-            verts += [tuple(p) for p in fa] + [tuple(p) for p in fb]
-            caras += [(base + i, base + i + 1, base + 9 + i + 1, base + 9 + i) for i in range(8)]
         return filas, BVHTree.FromPolygons(verts, caras), faltan
     def altura(bvh, x, z):
         h = bvh.ray_cast(Vector((float(x), 2.2, float(z))), Vector((0.0, -1.0, 0.0)), 1.6)
@@ -386,7 +368,7 @@ if __name__ == '__main__':
         contorno = [q for k in range(len(contorno)) for q in (0.75 * contorno[k] + 0.25 * contorno[(k + 1) % len(contorno)], 0.25 * contorno[k] + 0.75 * contorno[(k + 1) % len(contorno)])]
     contorno = contorno[::2] if len(contorno) > 70 else contorno
     ventanas = [contorno, [esp(p) for p in contorno][::-1]]
-    borde = list(r0) + [esp(DTF), esp(DTR), b2[-1], b25[-1]] + b3[::-1] + [b25[0], b2[0], DTR, DTF]
+    borde = list(r0) + [b1[-1], b2[-1], b25[-1]] + b3[::-1] + [b25[0], b2[0], b1[0]]          # la chapa termina en la línea de los caños FR–RR; el flanco va aparte
     def dentro(poly, px, pz):
         c = False
         for i in range(len(poly)):
@@ -437,6 +419,109 @@ if __name__ == '__main__':
         pieza(f'ventana_techo_canto_{lado}', verts, [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)], 'marco', suave=False)
     print(f'techo: {len(tri_techo)} triángulos de chapa (+ forro), ventanas de {len(tri_vent[0])} y {len(tri_vent[1])} triángulos; {len(P3)} puntos, paso {PASO * 100:.0f} cm')
 
+    # ---- los flancos del techo: de la línea de los caños FR–RR bajan hasta la piel de la puerta (superficie reglada; como
+    #      campo de alturas no se podía: atrás la línea de caños queda más afuera que el plano de la puerta y quedaba en voladizo) ----
+    PBr = lambda y: PB(y) + 0.060 * unit(Et(y) - Er(y))                          # borde trasero del poste B (donde empieza la ventanilla trasera)
+    PBT = PBr(1.59) + 0.0094 * ND                                                 # esquina trasera de abajo del flanco, en la piel
+    entre = lambda P_, Q_, *fs: [P_ + (Q_ - P_) * f_ for f_ in fs]
+    fb_der = [r0[0]] + entre(r0[0], DTF, 1 / 3, 2 / 3) + [DTF] + entre(DTF, DTR, 0.25, 0.5, 0.75) + [DTR] + entre(DTR, PBT, 0.5) + [PBT]   # pasa por las esquinas
+    fa_der = remuestrear([r0[0], b1[0], b2[0]], np.linspace(0, 1, len(fb_der)))
+    for s, lado in ((1, 'der'), (-1, 'izq')):
+        M = (lambda p: p) if s > 0 else esp
+        fa, fb = [M(p) for p in fa_der], [M(p) for p in fb_der]
+        grilla(f'flanco_{lado}', [fa, fb], 'blanco')
+        grilla(f'flanco_forro_{lado}', [adentro(fa, FORRO), adentro(fb, FORRO)], 'forro')
+
+    # ---- P / V3: las puertas (no abren, decisión del 24/10). Piel blanca a 9,4 mm por fuera del plano D (donde estaban las
+    #      tapas de los postes), forro oscuro a 4 mm por fuera, SÓLO entre los postes (que quedan a la vista por dentro) y
+    #      por encima de ellos hasta el forro del flanco; el vidrio entre los dos y un canto oscuro alrededor del hueco. El hueco
+    #      es el MARCO medido desde el asiento (cuatro esquinas sobre D; la esquina de arriba atrás redondeada; el borde de abajo
+    #      recortado 1 cm sobre el cinturón, porque atrás la medida cae debajo del corte del FSN): cada contorno va sobre los
+    #      rayos de la cámara a la profundidad de su chapa (abanico), así que desde el asiento el hueco mide lo medido y desde
+    #      afuera el vidrio se ve un poco más grande (como en las 360 de afuera). Todo abultado hacia la chapa del FSN en el
+    #      pie (`bulto`). El ojo de buey: anillo oscuro de 7 a 9 cm, 1 mm por dentro del vidrio. ----
+    D_PIEL, D_FORRO, D_VIDRIO, D_OJO = -0.0094, -0.0040, -0.0065, -0.0055       # profundidades hacia adentro de D (negativo = hacia afuera)
+    def abanico_D(E, prof):
+        v = CAM - E; return E + (prof / float(v @ ND_AD)) * v
+    e1 = unit(wA); e2 = unit(np.cross(ND_AD, e1)); O_D = A(pd['punto'])
+    a2 = lambda p: (float((p - O_D) @ e1), float((p - O_D) @ e2))
+    de2 = lambda q, prof: bulto(O_D + q[0] * e1 + q[1] * e2 + prof * ND_AD)
+    enD = lambda p, prof: bulto(p + prof * ND_AD)                                 # p sobre D (sin abultar)
+    # el hueco: esquinas medidas → recorte sobre el cinturón → esquinas redondeadas (en 2D sobre D)
+    esq = [S('puerta_esq_del_inf'), S('puerta_esq_tras_inf'), S('puerta_esq_tras_sup'), S('puerta_esq_del_sup')]
+    Y_HUECO = CINTURON + 0.010; poli, radios = [], []
+    for k in range(4):
+        P_, Q_ = esq[k], esq[(k + 1) % 4]
+        if P_[1] >= Y_HUECO: poli.append(P_); radios.append(0.08 if k == 2 else 0.02)
+        if (P_[1] >= Y_HUECO) != (Q_[1] >= Y_HUECO):
+            t = (Y_HUECO - P_[1]) / (Q_[1] - P_[1]); poli.append(P_ + (Q_ - P_) * t); radios.append(0.0)
+    def redondear(P2, R):
+        out = []
+        for i, (p, r) in enumerate(zip(P2, R)):
+            if r <= 0: out.append(p); continue
+            a_, b_ = P2[i - 1], P2[(i + 1) % len(P2)]; u1, u2 = unit(a_ - p), unit(b_ - p)
+            th = math.acos(max(-1.0, min(1.0, float(u1 @ u2)))); d = r / math.tan(th / 2)
+            tope = 0.45 * min(np.linalg.norm(a_ - p), np.linalg.norm(b_ - p))
+            if d > tope: d = tope; r = d * math.tan(th / 2)
+            c = p + unit(u1 + u2) * (r / math.sin(th / 2)); t1, t2 = p + u1 * d, p + u2 * d
+            a1, a2_ = math.atan2(*(t1 - c)[::-1]), math.atan2(*(t2 - c)[::-1]); da = (a2_ - a1 + math.pi) % (2 * math.pi) - math.pi
+            n = max(3, int(abs(da) / math.radians(12)) + 1)
+            out += [c + r * A([math.cos(a1 + da * j / n), math.sin(a1 + da * j / n)]) for j in range(n + 1)]
+        return out
+    hueco2 = redondear([A(a2(p)) for p in poli], radios)
+    hueco3 = [O_D + q[0] * e1 + q[1] * e2 for q in hueco2]                      # sobre D, sin abultar: lo que ve la cámara
+    hueco_a = lambda prof: [abanico_D(p, prof + corr_piel(p[2]) * taper(p[1]) * ND_AD[0]) for p in hueco3]   # sobre los rayos de la cámara, a la profundidad de la chapa abultada
+    ojo_c = S('ojo_centro')
+    # contornos (sobre la piel): abajo el cinturón, atrás el borde trasero del poste B, arriba el flanco, adelante el borde
+    # delantero del poste A (donde termina el paño lateral). El forro, además, rodea los postes (1 cm por debajo de ellos).
+    yb = CINTURON + 0.001; uB = lambda y: unit(Et(y) - Er(y)); PBr_D = lambda y: PB_D(y) + 0.060 * uB(y)
+    borde_p = [enD(borde_A(yb), D_PIEL), enD(PBr_D(yb), D_PIEL), enD(PBr_D(1.25), D_PIEL)] + fb_der[::-1] + [enD(borde_A(1.25), D_PIEL)]   # PBT … r0[0]
+    sA = POSTE_ANCHO - 0.010
+    borde_f = ([enD(borde_A(yb) + sA * wA, D_FORRO), enD(PB_D(yb) + 0.010 * uB(yb), D_FORRO), enD(PB_D(Y_TOPE_B - 0.01) + 0.010 * uB(Y_TOPE_B), D_FORRO),
+                enD(PBr_D(Y_TOPE_B - 0.01), D_FORRO)] + adentro(fb_der, FORRO)[::-1] +
+               [enD(borde_A(Y_TOPE_A - 0.01), D_FORRO), enD(borde_A(Y_TOPE_A - 0.01) + sA * wA, D_FORRO)])
+    def cara_plana(nombre, borde3, hueco3_, prof, mat, M, adentro_del_hueco=False):
+        """Triangula una cara (borde y hueco como restricciones; puntos interiores cada 4 cm) y la crea; devuelve el 3D de los puntos
+        de salida y el índice de salida de cada punto del hueco."""
+        P3_ = list(borde3) + list(hueco3_); n_b, n_h = len(borde3), len(hueco3_)
+        E_ = [(i, (i + 1) % n_b) for i in range(n_b)] + [(n_b + i, n_b + (i + 1) % n_h) for i in range(n_h)]
+        b2_ = [a2(p) for p in borde3]; h2_ = [a2(p) for p in hueco3_]; region = h2_ if adentro_del_hueco else b2_
+        us, vs = [q[0] for q in region], [q[1] for q in region]
+        for u in np.arange(min(us) + 0.01, max(us), 0.04):
+            for v in np.arange(min(vs) + 0.01, max(vs), 0.04):
+                if adentro_del_hueco:
+                    if not dentro(h2_, u, v) or dist_borde(h2_, u, v) < 0.02: continue
+                elif not dentro(b2_, u, v) or dist_borde(b2_, u, v) < 0.02 or dist_borde(h2_, u, v) < 0.02 or dentro(h2_, u, v): continue
+                P3_.append(de2((u, v), prof))
+        vo_, eo_, fo_, ov_, oe_, of2 = delaunay_2d_cdt([Vector(a2(p)) for p in P3_], E_, [], 0, 1e-6)
+        X3_ = [P3_[o[0]] for o in ov_]; sal = {i: k for k, o in enumerate(ov_) for i in o}
+        tris = []
+        for f_ in fo_:
+            c = sum((A(a2(X3_[i])) for i in f_), A([0.0, 0.0])) / len(f_)
+            if adentro_del_hueco:
+                if dentro(h2_, c[0], c[1]): tris.append(tuple(f_))
+            elif dentro(b2_, c[0], c[1]) and not dentro(h2_, c[0], c[1]): tris.append(tuple(f_))
+        n0_ = np.cross(X3_[tris[0][1]] - X3_[tris[0][0]], X3_[tris[0][2]] - X3_[tris[0][0]])
+        if float(n0_ @ ND) < 0: tris = [t[::-1] for t in tris]
+        usados = sorted({i for t in tris for i in t}); nuevo = {i: k for k, i in enumerate(usados)}
+        pieza(nombre, [M(X3_[i]) for i in usados], [tuple(nuevo[i] for i in t) for t in tris], mat, suave=False)
+        return X3_, [sal[n_b + i] for i in range(n_h)]
+    for s, lado in ((1, 'der'), (-1, 'izq')):
+        M = (lambda p: p) if s > 0 else esp
+        h_piel, h_forro, h_vid = hueco_a(D_PIEL), hueco_a(D_FORRO), hueco_a(D_VIDRIO)
+        cara_plana(f'puerta_piel_{lado}', borde_p, h_piel, D_PIEL, 'blanco', M)
+        cara_plana(f'puerta_forro_{lado}', borde_f, h_forro, D_FORRO, 'forro', M)
+        cara_plana(f'vidrio_puerta_{lado}', [], h_vid, D_VIDRIO, 'vidrio_cup', M, adentro_del_hueco=True)
+        n = len(hueco3); verts = [M(p) for p in h_piel] + [M(p) for p in h_forro]
+        pieza(f'puerta_canto_{lado}', verts, [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)], 'marco', suave=False)
+        # tiras que cierran el espesor de la piel (de la piel al plano D): abajo en el cinturón, adelante en el borde del poste A, atrás en el del B
+        for nombre, fila_D, mat in (('abajo', [borde_A(yb), PBr_D(yb)], 'blanco'), ('atras', [PBr_D(yb), PBr_D(1.25), PBr_D(1.59)], 'marco'), ('adelante', [borde_A(1.50), borde_A(1.25), borde_A(yb)], 'blanco')):
+            m = len(fila_D); verts = [M(enD(p, D_PIEL)) for p in fila_D] + [M(enD(p, 0.0)) for p in fila_D]
+            pieza(f'puerta_tira_{nombre}_{lado}', verts, [(i, i + 1, m + i + 1, m + i) for i in range(m - 1)], mat, suave=False)
+        anillo = [[M(enD(ojo_c + r_ * (math.cos(2 * math.pi * i / 24) * e1 + math.sin(2 * math.pi * i / 24) * e2), D_OJO)) for i in range(24)] for r_ in (0.045, 0.035)]
+        pieza(f'ojo_de_buey_{lado}', anillo[0] + anillo[1], [(i, (i + 1) % 24, 24 + (i + 1) % 24, 24 + i) for i in range(24)], 'marco', suave=False)
+    print(f'puertas: hueco de {len(hueco3)} puntos (esquinas {", ".join(f"({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})" for p in poli)}), ojo de buey en ({ojo_c[0]:.3f}, {ojo_c[1]:.3f}, {ojo_c[2]:.3f}); abultado en el pie {corr_piel(1.0) * 100:.1f} cm (z 1,0) y {corr_piel(1.9) * 100:.1f} cm (z 1,9)')
+
     # =====================================================================================================
     # CHEQUEOS
     print(f'PIEZAS: {len(PIEZAS)} ({time.time() - t0:.0f} s)')
@@ -468,7 +553,13 @@ if __name__ == '__main__':
         for p in o.data.polygons:
             for a_, b_ in zip(p.vertices, list(p.vertices[1:]) + [p.vertices[0]]): n_bordes[tuple(sorted((a_, b_)))] = n_bordes.get(tuple(sorted((a_, b_))), 0) + 1
         borde_v = {i for e, c in n_bordes.items() if c == 1 for i in e}
-        d = [arbol.find_nearest(vs[i], 0.2)[3] or 0.2 for i in borde_v]; sueltos[o.name] = round(max(d) * 1000, 1)
+        d = []
+        for i in borde_v:
+            h = arbol.find_nearest(vs[i], 0.2); d.append(0.2 if h[0] is None else min(float(h[3]), 0.2))   # (ojo: una distancia 0,0 es «falsa» en Python; antes `or 0.2` la convertía en 20 cm)
+        sueltos[o.name] = round(max(d) * 1000, 1)
+        if max(d) > 0.05:                                                        # diagnóstico: dónde queda el vértice más suelto y qué hay cerca
+            i_max = list(borde_v)[int(np.argmax(d))]; p_ = vs[i_max]; cerca = sorted((round(h[3], 3), q.name) for q in opacas for h in [cc._bvh_de(q).find_nearest(p_, 0.5)] if h[0] is not None)[:3]
+            print(f'       {o.name}: el vértice más suelto ({p_.x:.3f}, {p_.y:.3f}, {p_.z:.3f}) → {cerca}')
     ok_v = max(sueltos.values()) <= 16.0
     print(('  OK   ' if ok_v else '  FALLA') + f' vidrio contra caño → borde de cada vidrio a no más de {max(sueltos.values())} mm de una pieza opaca {sueltos} (va metido 10 mm debajo de las tapas y de la faja)')
     # la silueta vista desde la cámara de la 360 del asiento: los bordes medidos son lo que ESA cámara ve, así que el modelo

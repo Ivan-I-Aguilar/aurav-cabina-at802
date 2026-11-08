@@ -1,9 +1,9 @@
 {
  "etapa": "1b.1",
- "piezas": 51,
- "triangulos": 4888,
+ "piezas": 63,
+ "triangulos": 6212,
  "llamadas": 5,
- "mb": 0.127,
+ "mb": 0.188,
  "chequeos": {
   "3 nada flotando": {
    "ok": true,
@@ -15,13 +15,15 @@
   },
   "6 presupuesto": {
    "ok": true,
-   "detalle": "4888 triángulos (máx. 12000) · 51 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+   "detalle": "6212 triángulos (máx. 12000) · 63 llamadas (máx. 8) · 0.00 MB (máx. 0.4) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
   }
  },
  "vidrio_contra_cano_mm": {
   "vidrio_central": 3.7,
   "vidrio_lateral_der": 12.4,
-  "vidrio_lateral_izq": 12.9
+  "vidrio_lateral_izq": 12.9,
+  "vidrio_puerta_der": 0.0,
+  "vidrio_puerta_izq": 0.0
  },
  "silueta_desde_la_360_mm": {
   "parante, borde al centro": [
@@ -47,7 +49,7 @@
   "poste de puerta, borde delantero": [
    -1.5,
    -0.5,
-   0.5
+   -0.5
   ]
  },
  "estanqueidad_frente": {
