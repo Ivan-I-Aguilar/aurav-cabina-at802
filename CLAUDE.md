@@ -68,9 +68,15 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 - **1b.2 (techo con sus dos ventanas y forro) MODELO HECHO el 7/11, v=20261107a, SIN publicar; falta el ok de Iván
   a las vistas.** Chapa triangulada sobre la bóveda medida (pasa por el plano de la ventana medido desde afuera) con las
   ventanas recortadas (mismos vértices: sin rendija), flanco hasta 3 cm sobre la ventana de puerta, forro a 7 mm y canto
-  oscuro en cada ventana; caños a la vista. 4888 triángulos, 5 llamadas. Sigue la 1b.3 (puertas, ventanillas traseras,
-  carenado, solapas). Provisorio hasta la 1b.3: zona trasera y vanos de puerta abiertos (las líneas finas y la franja azul
-  que se ven adentro son el casco de referencia y el interior del FSN: se van con el cascarón).
+  oscuro en cada ventana; caños a la vista. 4888 triángulos, 5 llamadas.
+- **1b.3 (puertas cerradas con su ventana y el ojo de buey + carenado trasero liso) MODELO HECHO el 7/11, v=20261107a,
+  SIN publicar; falta el ok de Iván.** Iván (7/11): «no va ventanilla atrás, es todo fuselaje»: lo medido como ventanilla
+  trasera se descarta. Con eso la cúpula queda CERRADA sobre el antepecho: 0 de 20.000 rayos escapan de 0° a 90° todo
+  alrededor. 6486 triángulos, 5 llamadas, 0,20 MB. Sigue la 1b.4 (Quest) y después la etapa 1 (cascarón). Las líneas finas
+  y la franja azul que se ven adentro son el casco de referencia y el interior del FSN: se van con el cascarón.
+- **Lección (7/11): toda fila que llega al borde de otra chapa pasa por los VÉRTICES de ese borde y termina 2–3 mm por
+  debajo** (`solapa_techo`): un remuestreo uniforme cortaba la esquina del nudo FR y dejaba un hueco de 1,6 cm por donde
+  se colaban rayos. El chequeo de estanqueidad (0°–90°, 20.000 rayos) es el que los encuentra.
 - La cámara de la 360 estuvo 22 cm más abajo que el ojo del juego (altura de pecho): el ojo (1,38) es
   razonable; se vuelve a mirar con el asiento nuevo (etapa 6).
 

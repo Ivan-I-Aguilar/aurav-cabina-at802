@@ -8,7 +8,8 @@ antes de modelar. Marco: el de la cabina (+x derecha del piloto, +y arriba, −z
 **Estado:** aprobado por Iván el 3/11. **1b.0 (medición) HECHA el 5/11**: Iván vio la lámina y dio el ok para
 modelar («Sí, arrancá»; §2b: lo medido, los hallazgos y lo que quedó sin resolver). **1b.1 (corte del FSN, jaula,
 parabrisas y faja) HECHA el 7/11** con el ok de Iván a la ronda de vistas («Sí, seguí»). **1b.2 (techo con sus ventanas y forro):
-modelo hecho el 7/11 (v=20261107a), falta el ok de Iván.** Sigue la 1b.3 (puertas, ventanillas traseras, carenado, solapas).
+modelo hecho el 7/11 (v=20261107a), falta el ok de Iván. 1b.3 (puertas cerradas con su ventana y el ojo de buey, carenado
+trasero liso: Iván, «no va ventanilla atrás»): modelo hecho el 7/11, falta el ok de Iván.** Sigue la 1b.4 (Quest).
 
 ## 1. Qué es «la cúpula» y qué se conserva
 - **Se rehace** todo lo que está POR ENCIMA del antepecho (y ≈ 0,93–0,95) entre el borde trasero del capó
@@ -70,9 +71,9 @@ precisión; el bloque `simetrico` es lo que se modela: lado derecho, el izquierd
    delantero a los dos nudos traseros, y un **marco trasero** (arco + travesaño recto) en z 2,04, sobre el poste
    entre la puerta y la ventanilla trasera. Del centro del travesaño bajan dos caños hacia atrás y afuera (su
    extremo lo tapa el asiento). Las ventanas del techo quedan entre la V y el dintel de cada puerta.
-4. **La ventanilla trasera es grande (73 × 55 cm) y llega a z ≈ 2,8** (el plan cortaba el FSN en z 2,55): detrás
-   del piloto hay más cabina. El FSN ahí ya se angosta: hay que rehacer el carenado hasta z ≈ 2,9. Es más
-   alcance que el aprobado: **lo decide Iván.**
+4. ~~**La ventanilla trasera es grande (73 × 55 cm) y llega a z ≈ 2,8**~~ **DESCARTADO el 7/11 (Iván: «no va ventanilla
+   atrás, es todo fuselaje»)**: lo que se leyó en las 360 de afuera no es una ventanilla de este avión. El carenado va
+   liso hasta el corte del FSN (z 2,55).
 5. **El techo real queda unos 5 cm por fuera del techo del FSN** (ventanas del techo trianguladas desde afuera).
 6. **Sin resolver con fotos:** (a) el ancho de la cabina sale del FSN (plano de la puerta: convergencia
    3,7°, caída 19,3°); la forma de la ventana de puerta vista de adentro y de afuera difiere 1,9 cm rms
@@ -194,7 +195,7 @@ Cada vidrio cierra EXACTO contra su caño: sus vértices se toman de los mismos 
 | 1b.0 | Medición (§4): `cupula_puntos.json` + lámina; asimetría resuelta; 360 de afuera refinadas | Iván revisa la lámina de puntos sobre la foto y da el ok. **HECHA el 5/11/2026** (sin cambios en el juego: sigue v=20261103a), con el ok de Iván a la lámina |
 | 1b.1 | Corte del FSN (§5) + jaula J + parabrisas V1/V2 + faja T4 | 12 vistas sin dientes delante; chequeo de estanqueidad (§7) con el techo provisorio. **HECHA el 7/11/2026 (v=20261105a, sin publicar), con el ok de Iván a la ronda («Sí, seguí»).** `cab_cortar_fsn.py` → `exterior_cupula.glb` (corte recto en y 0,93, z 0,76 a 2,55) y `cab_cupula.py` → `blender/cab_cupula.glb` (2622 triángulos, 5 llamadas, 0,07 MB; chequeos: nada flotando, nada coplanar, vidrio contra caño ≤ 13 mm, estanqueidad 0 de 20.000 rayos, silueta desde la 360 ±1,5 mm). Provisorio: techo liso, zona trasera y vanos de puerta abiertos. Hallazgos en §2b.8–9 |
 | 1b.2 | Techo T1/T2 con las ventanas V4, arcos y largueros | techo cerrado; forro sin sierra en los vanos (lección del 2/11). **MODELO HECHO el 7/11/2026 (v=20261107a, sin publicar); falta el ok de Iván a las vistas.** La chapa se triangula (Delaunay con los contornos como restricción) sobre la bóveda: arcos medidos + 4,1 cm (ajustado para que pase por el plano de la ventana medido desde afuera) y el carenado del FSN en z 2,56, más el flanco de cada lado hasta 3 cm por encima de la ventana de puerta; las dos ventanas son los mismos triángulos del hueco (contorno medido desde el asiento, redondeado; vidrio 1 mm hundido), el forro va a 7 mm con un canto oscuro en cada ventana. 4888 triángulos, 5 llamadas, 0,13 MB; estanqueidad del techo 0 de 20.000 rayos (de 50° a 90° de altura, hasta que estén las puertas). El larguero FR–RR pasa por debajo del tercio exterior de la ventana: desde el asiento su silueta coincide con el borde exterior que se marcó en la foto (es lo que se ve). Los caños quedan a la vista, 3 a 5 cm por debajo del forro |
-| 1b.3 | Puertas P + ventanas V3 + carenado T3 con ventanillas V5 + solapas S | estanqueidad total; 360 superpuesta de nuevo: iou ≥ 0,8 y mediana ≤ 1 cm en parantes y puertas. **Puertas HECHAS el 7/11/2026 (v=20261107a, sin publicar; falta el ok de Iván a las vistas):** cerradas (24/10): piel blanca a 9,4 mm por fuera del plano D (donde estaban las tapas de los postes), forro oscuro a 4 mm sólo entre los postes (que quedan a la vista), vidrio entre los dos, canto alrededor del hueco; el hueco es el marco medido desde el asiento con la esquina de arriba atrás redondeada (r 8 cm) y el borde de abajo 1 cm sobre el cinturón; cada contorno sobre los rayos de la cámara a su profundidad (desde afuera el vidrio se ve un poco más grande, como en las 360). Ojo de buey: anillo oscuro Ø 7–9 cm. Todo abultado hacia la chapa del FSN en el pie. Los flancos del techo pasaron a grillas regladas (de la línea FR–RR a la piel). 6212 triángulos, 5 llamadas. **Falta:** la ventanilla trasera con su carenado (decisión de §9.6) y las solapas si hicieran falta; después bajar el chequeo del techo a 0° |
+| 1b.3 | Puertas P + ventanas V3 + carenado T3 con ventanillas V5 + solapas S | estanqueidad total; 360 superpuesta de nuevo: iou ≥ 0,8 y mediana ≤ 1 cm en parantes y puertas. **Puertas HECHAS el 7/11/2026 (v=20261107a, sin publicar; falta el ok de Iván a las vistas):** cerradas (24/10): piel blanca a 9,4 mm por fuera del plano D (donde estaban las tapas de los postes), forro oscuro a 4 mm sólo entre los postes (que quedan a la vista), vidrio entre los dos, canto alrededor del hueco; el hueco es el marco medido desde el asiento con la esquina de arriba atrás redondeada (r 8 cm) y el borde de abajo 1 cm sobre el cinturón; cada contorno sobre los rayos de la cámara a su profundidad (desde afuera el vidrio se ve un poco más grande, como en las 360). Ojo de buey: anillo oscuro Ø 7–9 cm. Todo abultado hacia la chapa del FSN en el pie. Los flancos del techo pasaron a grillas regladas (de la línea FR–RR a la piel). **Carenado trasero HECHO el 7/11 (misma versión): Iván, 7/11: «no va ventanilla atrás, es todo fuselaje»** → chapa lisa lofteada entre el borde trasero de la puerta (plano D) y la sección del FSN 3 cm detrás del corte (solapada 1 mm sobre él), con el tope en el borde del techo y forro a 7 mm; las medidas de la «ventanilla trasera» de §2b quedan DESCARTADAS. Rendijas cerradas (solapas de 2–3 mm bajo la chapa del techo, filas por las esquinas FR y b25, piel 4 mm bajo el cinturón): **estanqueidad TOTAL sobre el antepecho, 0 de 20.000 rayos de 0° a 90° todo alrededor**. 6486 triángulos, 5 llamadas, 0,20 MB. Sin solapas S (el corte del FSN es recto; no hacen falta). La «360 superpuesta de nuevo» la reemplaza el chequeo de silueta desde la cámara (±1,5 mm en todos los bordes medidos); la superposición visual queda para la 1b.4 con Iván. **Falta el ok de Iván a las vistas** |
 | 1b.4 | Quest: Iván mira desde el asiento y por los vanos; ajuste de tinte y grosores | ok de Iván |
 Sesiones: 2 a 3. Después sigue la etapa 1 (cascarón), que ya se mide contra la cúpula nueva arriba y
 contra el FSN abajo.
@@ -225,5 +226,8 @@ contra el FSN abajo.
 4. Diámetro real de los caños si lo sabe (si no, se mide en la foto). (5/11: en la foto dan 3 a 4 cm.)
 5. (5/11) Tres medidas de cinta del avión real: de puerta a puerta en el antepecho, adelante y atrás de la
    puerta, y en el borde de arriba de la puerta (definen el ancho de la cabina: §2b.6).
-6. (5/11) Si se rehace el carenado hasta z ≈ 2,9 para que entre la ventanilla trasera entera (§2b.4).
-7. (5/11) Qué hay detrás del piloto en este avión (¿segundo asiento?): se ve por la ventanilla trasera.
+6. ~~(5/11) Si se rehace el carenado hasta z ≈ 2,9 para que entre la ventanilla trasera entera (§2b.4).~~ **Respondido el
+   7/11: no va ventanilla atrás, es todo fuselaje.** El carenado queda hasta el corte (z 2,55) y lo medido como «ventanilla
+   trasera» en las 360 de afuera (§2b) se descarta.
+7. ~~(5/11) Qué hay detrás del piloto en este avión (¿segundo asiento?): se ve por la ventanilla trasera.~~ Sin ventanilla,
+   no se ve: queda para el cascarón (mamparo trasero, etapa 1).
