@@ -1,18 +1,18 @@
 {
  "etapa": "1",
- "piezas": 14,
- "triangulos": 2719,
+ "piezas": 13,
+ "triangulos": 2693,
  "llamadas": 6,
- "mb": 0.062,
+ "mb": 0.061,
  "referencias": {
   "piso": 0.26,
   "tolva_z": 0.6,
   "mamparo_z": 2.42,
   "mirilla": [
-   -0.19,
-   0.19,
-   0.775,
-   0.865
+   -0.25,
+   0.25,
+   0.83,
+   1.0
   ]
  },
  "chequeos": {
@@ -30,7 +30,7 @@
   },
   "6 presupuesto": {
    "ok": true,
-   "detalle": "2719 triángulos (máx. 6000) · 14 llamadas (máx. 8) · 0.00 MB (máx. 0.3) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+   "detalle": "2693 triángulos (máx. 6000) · 13 llamadas (máx. 8) · 0.00 MB (máx. 0.3) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
   }
  }
 }

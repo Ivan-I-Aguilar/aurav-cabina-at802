@@ -395,6 +395,23 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
 - Borra `crearTablero`, la parte de tablero de `crearExtrasManual` y los otros 17 relojes.
 - Riesgo: que las pantallas no se lean en el Quest. Letra grande y prueba de Iván en el casco.
 - **Lista cuando** la ronda sale limpia y hay capturas de las pantallas en arranque, crucero y falla.
+- **2a HECHA el 8/11/2026 (v=20261108a, sin publicar; falta el ok de Iván):** `herramientas/cab_tablero.py` →
+  `blender/cab_tablero.glb` (1050 triángulos, 8 llamadas, 0,05 MB). MEDIDO en la 360 del asiento proyectando cada píxel con
+  la pose ajustada en la 1b.0 (`cab_foto360.rayo`): la cara del tablero es vertical en z 0,96 (62 cm delante de la cámara, por
+  el tamaño de los relojes de 3⅛"); borde de arriba plano en y 1,333 hasta x ±0,15 y «hombros» en S hasta la pared / el vidrio
+  lateral (1,27 en ±0,33 · 1,17 en ±0,42 · 1,05 en ±0,59); en el eje queda a 1,7 cm del vidrio: NO hay visera. Borde de abajo
+  escalonado: 1,095 en el centro (= lo alto de la pared de la tolva), 1,065 en los tramos medios, 0,87 a la izquierda de −0,35
+  (ahí cuelga el FRDS) y 0,95 a la derecha de 0,30. Centros: anemómetro (−0,092; 1,25), G5 (0; 1,248), altímetro (0,094; 1,25),
+  tapas ciegas (±0,095; 1,153), Garmin de rumbo (0; 1,153), MVP-50 (−0,264; 1,176), anunciadores (−0,305…−0,215; 1,251),
+  FUEL BOOST PUMP con guarda roja (−0,365; 1,149) = `swFPUMP` (3 posiciones), soporte del Garmin (0,355; 1,047). La REPISA
+  (cubretablero) va del borde de abajo de cada tramo a la pared de la tolva (z 0,60) con sus escalones: la del centro, en 1,095,
+  pasa 1,5 cm bajo el pie del parabrisas y es lo que se ve desde afuera por el vidrio. La chapa lleva en `userData.tablero` los
+  centros de relojes, pantallas y anunciadores; `cabina_nueva.js` crea con eso los `Instrumentos` (anemómetro y altímetro EN
+  VIVO, carátula en canvas + agujas, como en la cabina vieja). Las tres pantallas quedan como vidrio oscuro (2b). El cascarón
+  perdió el tablero provisorio y su pared de la tolva sube a 1,095 con la mirilla medida (x ±0,25, y 0,83–1,00). Lección: las
+  vistas planas de `vista360.py` NO corrigen el cabeceo de la cámara (5,6° arriba): leídas a ojo daban todo 6 cm más bajo.
+- Falta (2b): pantallas en vivo (G5 actitud, Garmin rumbo, MVP-50), anunciadores cableados, perillas de luz con función,
+  tablilla del tutor y placa MENÚ reubicadas, y borrar `crearTablero` y compañía de main.js cuando la cabina vieja se retire.
 
 ### Etapa 3 — FRDS, SALVO y paneles de llaves (2 a 3 sesiones; la delicada)
 - 3a: FRDS GEN III y MANUAL SALVO.

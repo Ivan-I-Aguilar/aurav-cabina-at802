@@ -9,12 +9,12 @@
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
 
-export const PIEZAS = ['cab_cupula', 'cab_cascaron'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_tablero', … */
+export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_frds', … */
 const HOLGURA = 0.015, PISO = 0.26;
 const CUPULA = PIEZAS.includes('cab_cupula'), CINTURON = 0.93;   /* con la cúpula nueva, el FSN va cortado en el antepecho (y 0,93) */
 const vidrios = raiz => raiz.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) { o.renderOrder = 2; o.material.depthWrite = false; } } });
 
-export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO }) {
+export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Instrumentos }) {
   const cargador = new GLTFLoader();
   const e = await cargador.loadAsync(CUPULA ? `./exterior_cupula.glb?v=${V}` : `./exterior.glb?v=${V_EXT}`);
   vidrios(e.scene);
@@ -30,7 +30,15 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO }) {
      trae y0 (vacía) e y1 (llena), con la geometría horneada en el sitio: escalar alrededor de y0 */
   const agua = cabina.getObjectByName('agua_tolva'); const nivel = agua?.userData?.nivel;
   const actualizar = vuelo => { if (!agua || !nivel) return; const f = Math.max(0.02, Math.min(1, vuelo.agua / 2400)); agua.scale.y = f; agua.position.y = nivel.y0 * (1 - f); };
-  return { exterior: e.scene, actualizar };
+  /* el tablero (etapa 2, 8/11): la chapa trae en userData.tablero los centros de los relojes (hueco de 8 cm, 7 mm detrás de la cara:
+     instrumentos.js dibuja la carátula 3 mm adentro y el bisel 1 mm afuera), de las pantallas y de los anunciadores. Los relojes
+     son los mismos Instrumentos de la cabina vieja (carátula en canvas + agujas), mirando a +z (hacia el piloto). */
+  const tab = cabina.getObjectByName('tablero_chapa_u')?.userData?.tablero; let instrumentos = null;
+  if (tab && Instrumentos) {
+    const datos = Object.entries(tab.relojes).map(([tipo, c]) => ({ tipo, c: [...c], r: tab.radio_reloj, n: [0, 0, 1], ex: [1, 0, 0], ey: [0, 1, 0] }));
+    instrumentos = new Instrumentos(cabina, datos);
+  }
+  return { exterior: e.scene, actualizar, instrumentos, tablero: tab || null };
 }
 
 /* el casco por dentro, como líneas: la referencia común de todas las zonas mientras no está el cascarón */

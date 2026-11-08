@@ -5,10 +5,11 @@
 #   H1 piso (y 0,26, de pared a pared) · H2 forro de las paredes (el casco 1,5 cm hacia adentro, del piso al larguero del
 #   antepecho; donde el FSN está roto toma la forma del otro lado reflejada) · H3 pared trasera de la tolva (amarillo cromato)
 #   con la mirilla C1 (ranura con el agua, que el juego mueve) · H4 forro del antepecho detrás del larguero · H6 mamparo trasero
-#   (ajustado al forro del carenado) · tablero PROVISORIO oscuro de la pared de la tolva a la faja del parabrisas, hasta la
-#   etapa 2. H5 (techo) y H8 (puertas por dentro) ya están en la cúpula; H7 (caños de los costados) y H9 (paño rojo) no van.
+#   (ajustado al forro del carenado). H5 (techo) y H8 (puertas por dentro) ya están en la cúpula; H7 (caños de los costados)
+#   y H9 (paño rojo) no van. El tablero (con la repisa que llega a la pared de la tolva) es cab_tablero.py (etapa 2).
 # Posiciones que NO salen del FSN (no las tiene): pared de la tolva en z 0,60, piso en y 0,26 y mamparo en z 2,42 son los
-# del plan (§4, «números de referencia») y se afinan con las fotos en las etapas 2 y 6.
+# del plan (§4, «números de referencia») y se afinan con las fotos en las etapas 2 y 6. Lo alto de la pared de la tolva (1,095)
+# y la mirilla (x ±0,25, y 0,83–1,00) se midieron en la 360 del asiento el 8/11 (etapa 2), suponiendo la pared en z 0,60.
 #
 # Uso: blender.exe -b --factory-startup --python herramientas/cab_cascaron.py [-- --vistas <carpeta>]
 import bpy, json, math, os, sys, time
@@ -27,10 +28,11 @@ VISTAS = args[args.index('--vistas') + 1] if '--vistas' in args else None
 SALIDA = os.path.join(cc.SALIDA, 'cab_cascaron.glb')
 INFORME = os.path.join(cc.SALIDA, 'cab_cascaron_informe.json')
 
-PISO, Z_TOLVA, Z_MAMPARO, Y_TOLVA_TOPE = 0.26, 0.60, 2.42, 1.02   # referencias del plan (§4)
+PISO, Z_TOLVA, Z_MAMPARO = 0.26, 0.60, 2.42                        # referencias del plan (§4)
+Y_TOLVA_TOPE = 1.095                                               # lo alto de la pared de la tolva = el borde de abajo del tablero, medido en la 360 (8/11; antes 1,02 del plan)
 HOLGURA = 0.015                                                    # el forro, hacia adentro de la chapa
 Y_FORRO_TOPE = 0.888                                               # hasta debajo del larguero del antepecho (0,896–0,928)
-MIRILLA = (-0.19, 0.19, 0.775, 0.865)                              # x0, x1, y0, y1 de la ranura de la tolva (C1), PROVISORIO
+MIRILLA = (-0.25, 0.25, 0.83, 1.00)                                # x0, x1, y0, y1 de la mirilla de la tolva (C1), medida en la 360 desde el asiento (8/11; si la pared está en z 0,60)
 cc.COLORES.update({'pared': ('#6b6e72', 0.90, 0.0), 'piso': ('#45474a', 0.95, 0.0), 'cromato': ('#c8b45a', 0.55, 0.0),
                    'agua': ('#4f9ad6', 0.25, 0.0), 'tolva_fondo': ('#2a2c2e', 0.9, 0.0)})
 
@@ -101,24 +103,7 @@ if __name__ == '__main__':
     agua['nivel'] = {'y0': y0 + 0.002, 'y1': y1 - 0.002, 'nota': 'el juego escala esta placa en y según la carga de la tolva (cabina_nueva.js)'}
     print(f'tolva: pared en z {Z_TOLVA}, de y {PISO} a {Y_TOLVA_TOPE}, ancho {der[0][0] - izq[0][0]:.2f} m abajo y {der[-1][0] - izq[-1][0]:.2f} arriba; mirilla x {x0}…{x1}, y {y0}…{y1}')
 
-    # ---- tablero PROVISORIO: una placa oscura de lo alto de la pared de la tolva hasta la faja del parabrisas (etapa 2 lo rehace) ----
-    fila_faja = []                                                                # de lo alto de la pared, hacia arriba y atrás, hasta la cara interior de la faja (o el capó)
-    for x in np.linspace(izq[-1][0] + 0.01, der[-1][0] - 0.01, 11):
-        o_ = Vector((float(x), Y_TOLVA_TOPE, Z_TOLVA)); primero = None
-        for th in np.arange(20, 76, 3):                                           # el rayo más tendido que toca la cúpula roza el borde de abajo de la faja; 6° más arriba la toca de lleno
-            d_ = A([0.0, math.sin(math.radians(th)), math.cos(math.radians(th))]); h = cupula.ray_cast(o_, Vector(tuple(d_)), 0.30)
-            if h[0] is not None: primero = th; break
-        if primero is not None:
-            th = primero + 6; d_ = A([0.0, math.sin(math.radians(th)), math.cos(math.radians(th))]); h = cupula.ray_cast(o_, Vector(tuple(d_)), 0.30)
-            fila_faja.append(A(h[0]) + 0.0015 * d_ if h[0] is not None else A(o_) + 0.14 * d_)   # 1,5 mm metido en la faja (con 4 mm, en las puntas salía del casco)
-        else:                                                                     # a los costados no hay faja: el capó por dentro, 4 mm antes
-            d_ = unit(A([0.0, 0.7, 0.714])); h = casco.bvh_todo.ray_cast(o_, Vector(tuple(d_)), 0.6)
-            fila_faja.append(A(h[0]) - 0.004 * d_ if h[0] is not None else A(o_) + A([0.0, 0.085, 0.11]))
-    for k, p in enumerate(fila_faja):                                            # nada afuera: si el punto quedó del otro lado de la chapa, se trae 5 mm adentro de ella
-        eje = A([0.0, p[1], p[2]]); d_ = p - eje; L = float(np.linalg.norm(d_)); h = casco.rayo(tuple(eje), tuple(d_ / L), L + 0.05)
-        if h is not None and h[2] < L: fila_faja[k] = eje + (d_ / L) * (h[2] - 0.005); print(f'   tablero provisorio: punto {k} afuera del casco, metido ({fila_faja[k][0]:.3f}, {fila_faja[k][1]:.3f}, {fila_faja[k][2]:.3f})')
-    fila_pared = [A([x, Y_TOLVA_TOPE, Z_TOLVA]) for x in np.linspace(izq[-1][0] + 0.01, der[-1][0] - 0.01, 11)]
-    grilla('tablero_provisorio', [fila_pared, fila_faja], 'pared')
+    # (el tablero provisorio que iba de acá a la faja se fue el 8/11: el tablero es cab_tablero.py, etapa 2, con su repisa hasta esta pared)
 
     # ---- H6 mamparo trasero: la sección del forro del carenado y de las paredes en z 2,42, 1 cm hacia adentro ----
     sec = []

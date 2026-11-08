@@ -75,10 +75,19 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   → `blender/cab_cascaron.glb`: piso (y 0,26), paredes (el casco 1,5 cm adentro), pared de la tolva (z 0,60, cromato) con la
   mirilla en vivo (`agua_tolva` escalada con `vuelo.agua` en `cabina_nueva.js`), forro del antepecho, mamparo (z 2,42) y un
   tablero provisorio oscuro hasta la faja. Pared de la tolva, piso y mamparo son los números de referencia del plan (el FSN
-  no los tiene): se afinan con las fotos en las etapas 2 y 6. Sigue la etapa 2 (tablero). Iván (7/11): «no va ventanilla atrás, es todo fuselaje»: lo medido como ventanilla
+  no los tiene): se afinan con las fotos en las etapas 2 y 6. Iván (7/11): «no va ventanilla atrás, es todo fuselaje»: lo medido como ventanilla
   trasera se descarta. Con eso la cúpula queda CERRADA sobre el antepecho: 0 de 20.000 rayos escapan de 0° a 90° todo
   alrededor. 6486 triángulos, 5 llamadas, 0,20 MB. Sigue la 1b.4 (Quest) y después la etapa 1 (cascarón). Las líneas finas
   y la franja azul que se ven adentro son el casco de referencia y el interior del FSN: se van con el cascarón.
+- **Etapa 2a (chapa del tablero) HECHA el 8/11, v=20261108a, SIN publicar; falta el ok de Iván:** `herramientas/cab_tablero.py`
+  → `blender/cab_tablero.glb`: chapa vertical en z 0,96 medida en la 360 del asiento CON LA POSE (`cab_foto360.rayo`; las vistas
+  planas de `vista360.py` no corrigen los 5,6° de cabeceo de la cámara y daban todo 6 cm más bajo), borde de arriba plano en
+  y 1,333 con hombros hasta el vidrio lateral, borde de abajo escalonado (1,095 en el centro = lo alto de la pared de la tolva,
+  que subió de 1,02; 0,87 a la izquierda para el FRDS; 0,95 a la derecha), huecos de anemómetro y altímetro (EN VIVO con
+  `Instrumentos`, por `userData.tablero` de la chapa), G5 / Garmin de rumbo / MVP-50 como vidrio oscuro (2b), tapas ciegas,
+  anunciadores apagados, `swFPUMP` con guarda roja, soporte del Garmin, perillas y la REPISA hasta la pared de la tolva (sin
+  visera: el borde de arriba queda a 1,7 cm del vidrio). La mirilla del cascarón pasó a lo medido (x ±0,25, y 0,83–1,00).
+  Sigue la 2b (pantallas en vivo). Detalle en `PLAN_CABINA_NUEVA.md`, etapa 2.
 - **Lección (7/11): toda fila que llega al borde de otra chapa pasa por los VÉRTICES de ese borde y termina 2–3 mm por
   debajo** (`solapa_techo`): un remuestreo uniforme cortaba la esquina del nudo FR y dejaba un hueco de 1,6 cm por donde
   se colaban rayos. El chequeo de estanqueidad (0°–90°, 20.000 rayos) es el que los encuentra.
@@ -143,8 +152,9 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `herramientas/cab_cupula_*.py`, `cab_foto360.py`, `cab_borde360.py`, `cab_costura360.py` | **Medición de la cúpula** (1b.0, 5/11). `cab_cupula_marcas.py`: todo lo leído en las tres 360 (asiento y dos de afuera) y su afinado → `blender/calcado/marcas54.json` y `marcas_afuera.json`. `cab_borde360.py`: afina un borde recto en una 360 (arco de círculo máximo, escalón marco→vidrio por tramos, 1–2 px). `cab_foto360.py`: geometría de la KeyMission 360 (dos lentes, rayos, proyección) y de planos y rectas, sin Blender. `cab_cupula_puntos.py` (Blender): marcas → puntos 3D (`--ajustar`: pose de la cámara por simetría) → `cupula_puntos.json`. `cab_cupula_afuera.py` (Blender): ajuste conjunto de las dos 360 de afuera (ventanillas traseras, techo) → `cupula_afuera.json`. `cab_cupula_lamina.py`: lámina con foto (fuera del repo) y `cupula_plano.png`. `cab_costura360.py`: desalineación de las dos lentes medida con el hangar. Orden y comandos en `PLAN_CUPULA.md` §2b. |
 | `herramientas/cab_cortar_fsn.py`, `exterior_cupula.glb` | **Corte del FSN** (1b.1, 5/11), sin Blender: lee `exterior.glb`, PARTE sobre los planos y 0,93 (antepecho), z 0,76 (capó) y z 2,55 (carenado) los triángulos que los cruzan (borde recto, ningún vértice se mueve) y borra lo que queda dentro de la caja de la cúpula más todo el vidrio mat22 de la zona; recorta sólo la punta del cable deflector (mat08). Imprime caras por material y verifica «SIN DIENTES». `python -E -P -X utf8 herramientas/cab_cortar_fsn.py`. |
 | `herramientas/cab_cupula.py`, `blender/cab_cupula.glb` | **La cúpula nueva** (1b.1, 5/11; Blender): parantes del parabrisas, cabezal, postes de puerta A y B, 3 paños (central plano, laterales CURVOS: superficie reglada entre el borde del capó y el borde de arriba), faja, largueros del antepecho, jaula del techo (arco delantero, diagonales, V, marco trasero) y techo provisorio con forro. Todo por vértices y medido con rayos contra `exterior_cupula.glb`. Las caras de parantes y postes van sobre el plano cámara–borde («abanico»). Chequeos propios: vidrio contra caño, estanqueidad del frente (20.000 rayos) y silueta desde la cámara de la 360; `-- --vistas <carpeta>` renderiza con Eevee. Une por material (5 llamadas) y escribe `blender/cab_cupula_informe.json`. |
-| `herramientas/cab_cascaron.py`, `blender/cab_cascaron.glb` | **El cascarón** (etapa 1, 7/11; Blender): piso, paredes medidas con rayos contra `exterior_cupula.glb` (1,5 cm adentro; el lado roto del FSN toma el otro reflejado), pared de la tolva con la mirilla (cajón abierto, vidrio y placa `agua_tolva` con `userData.nivel`), forro del antepecho, mamparo medido contra `blender/cab_cupula.glb` y tablero provisorio. Importa los ayudantes de `cab_cupula.py`. |
-| `cabina_nueva.js` | Carga la cabina nueva con `?cabina=nueva`: `PIEZAS = ['cab_cupula', 'cab_cascaron']`; el exterior es `exterior_cupula.glb`; devuelve `actualizar(vuelo)` (la mirilla) que main.js llama en el bucle. Con `?cabina=vieja` (o nada) sigue la FSX con sus parches. |
+| `herramientas/cab_cascaron.py`, `blender/cab_cascaron.glb` | **El cascarón** (etapa 1, 7/11; Blender): piso, paredes medidas con rayos contra `exterior_cupula.glb` (1,5 cm adentro; el lado roto del FSN toma el otro reflejado), pared de la tolva con la mirilla (cajón abierto, vidrio y placa `agua_tolva` con `userData.nivel`), forro del antepecho y mamparo medido contra `blender/cab_cupula.glb`. Importa los ayudantes de `cab_cupula.py`. |
+| `herramientas/cab_tablero.py`, `blender/cab_tablero.glb` | **El tablero superior** (etapa 2a, 8/11; Blender): chapa plana en z 0,96 triangulada con `delaunay_2d_cdt` (contorno medido, huecos de relojes y pantallas), fondos de relojes, tapas, marcos y vidrios de pantallas, anunciadores, `swFPUMP` + guarda, soporte Garmin, perillas y la repisa hasta la pared de la tolva (ancho medido con rayos, `x_pared`). Escribe `userData.tablero` (centros) en la chapa y `blender/cab_tablero_informe.json`. Medidas con `cab_foto360.rayo` y la pose de `cupula_puntos.json`. |
+| `cabina_nueva.js` | Carga la cabina nueva con `?cabina=nueva`: `PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero']`; el exterior es `exterior_cupula.glb`; devuelve `actualizar(vuelo)` (la mirilla) e `instrumentos` (anemómetro y altímetro, con la clase `Instrumentos` que main.js le pasa). Con `?cabina=vieja` (o nada) sigue la FSX con sus parches. |
 | `blender/` | Piezas hechas en Blender por scripts (Lichi): `pedales.glb` (clip `pedales_timon`: 0 = timón izquierda, 1 s = derecha; sigue a la variable `pedal`; recorrido ±0,2 rad, confirmado por Iván 22/10), y `butaca.glb`, `marco_ventana.glb` y `techo.glb`, parches provisorios hasta la cabina nueva. |
 | `servidor.py` | Servidor local sin caché (puerto 8765). |
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
@@ -236,6 +246,8 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
   descartar triángulos enteros.
 - **Al repintar, dejar afuera los materiales transparentes** (los vidrios quedaban opacos); al ocultar,
   sólo `visible = false` (nunca volver a prender algo al reindexar).
+- **Leer la 360 siempre con la pose** (`cab_foto360.rayo` + `pose` de `cupula_puntos.json`): la cámara estaba 5,6° inclinada
+  hacia arriba y las vistas planas de `vista360.py` no lo corrigen (el tablero salió 6 cm más bajo el 8/11 hasta proyectar bien).
 - **Medir, no adivinar:** vértices contra el plano del parabrisas; triángulos proyectados a píxeles
   para saber qué se ve.
 - **Verificar el MISMO lado que la captura de Iván** y mandarle las vistas.
