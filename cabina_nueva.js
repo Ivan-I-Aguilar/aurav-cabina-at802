@@ -8,6 +8,7 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
+import { Pantallas } from './pantallas.js?v=20261108b';
 
 export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_frds', … */
 const HOLGURA = 0.015, PISO = 0.26;
@@ -33,12 +34,23 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
   /* el tablero (etapa 2, 8/11): la chapa trae en userData.tablero los centros de los relojes (hueco de 8 cm, 7 mm detrás de la cara:
      instrumentos.js dibuja la carátula 3 mm adentro y el bisel 1 mm afuera), de las pantallas y de los anunciadores. Los relojes
      son los mismos Instrumentos de la cabina vieja (carátula en canvas + agujas), mirando a +z (hacia el piloto). */
-  const tab = cabina.getObjectByName('tablero_chapa_u')?.userData?.tablero; let instrumentos = null;
+  const tab = cabina.getObjectByName('tablero_chapa_u')?.userData?.tablero; let instrumentos = null, pantallas = null;
   if (tab && Instrumentos) {
     const datos = Object.entries(tab.relojes).map(([tipo, c]) => ({ tipo, c: [...c], r: tab.radio_reloj, n: [0, 0, 1], ex: [1, 0, 0], ey: [0, 1, 0] }));
     instrumentos = new Instrumentos(cabina, datos);
   }
-  return { exterior: e.scene, actualizar, instrumentos, tablero: tab || null };
+  if (tab) pantallas = new Pantallas(cabina, tab);   /* 2b (8/11): G5, Garmin de rumbo, MVP-50 y los cuatro anunciadores */
+  /* el bucle llama actualizar(vuelo, dt, { controles, SW }) cada cuadro: mirilla, pantallas y anunciadores.
+     Rumbo: el avión arranca en la pista 36 con euler.rumbo = π/2 (mirando a −z); girar a la derecha lo achica → rumbo = 90° − euler (signo a validar en vuelo, como la brújula) */
+  const actualizarTodo = (vuelo, dt = 0, { controles, SW } = {}) => {
+    actualizar(vuelo);
+    if (!pantallas) return;
+    const m = vuelo.motor, sw = n => (controles && SW && SW[n]) ? controles.estado(SW[n]) : undefined;
+    const rumbo = ((90 - vuelo.euler.rumbo * 180 / Math.PI) % 360 + 360) % 360;
+    pantallas.actualizar(dt, { L: vuelo.lecturas(), rumbo, gs: vuelo.vel.length() * 2.237, bateria: !!m.bateria, avionica: sw('AVNC') ?? true, fuego: !!m.fuego, falla: !!m.falla,
+      generador: !!m.generador, encendido: !!m.encendido, enTierra: !!vuelo.enTierra, armado: !!sw('FRDS'), test: !!(controles && controles.estado('swTEST')), estrellado: !!vuelo.estrellado });
+  };
+  return { exterior: e.scene, actualizar: actualizarTodo, instrumentos, pantallas, tablero: tab || null };
 }
 
 /* el casco por dentro, como líneas: la referencia común de todas las zonas mientras no está el cascarón */

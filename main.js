@@ -14,7 +14,7 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261108a';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261108b';
 
 /* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
    ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
@@ -105,9 +105,14 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261108a', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261108b', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
+  if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula; la luz ENG FIRE vieja queda dentro de la chapa: la reemplaza MASTER WARN */
+    hudVR.malla.position.set(0.29, 1.37, 1.065); hudVR.malla.rotation.set(0.55, -0.15, 0);
+    botonSalir.malla.position.set(0.27, 1.21, r.tablero.z_cara + 0.002); botonSalir.malla.rotation.set(0, 0, 0);
+    luzFuego.visible = false; luzFuego.position.set(0, -5, 0);
+  }
 }));
 else Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
   g.scene.traverse(o => {
@@ -726,13 +731,17 @@ const SW = { BATT: 'sw62', ALTN: 'sw64', GEN: 'sw56', IGNTR: 'sw53', START: 'sw4
 const SW3 = ['swFPUMP', 'swFRDS_D', 'sw53'];   /* swFRDS_D: AUTO/MAN/OFF del FRDS · sw53 IGNTR: ON · OFF · CONTINUO (manual 26/10; los extremos encienden) */
 const levAng = n => { const p = controles.palancas.find(x => x.nombre === n); return p ? p.ang : 0; };
 const adelante = n => THREE.MathUtils.clamp(-levAng(n) / 0.9, 0, 1);   // palancas: adelante = ángulo negativo
+const hayLev = n => controles.palancas.some(x => x.nombre === n);
 function aplicarControles() {
   const m = vuelo.motor, c = vuelo.mando;
-  m.bateria = !!controles.estado(SW.BATT); m.generador = !!(controles.estado(SW.GEN) || controles.estado(SW.ALTN));
-  m.ignicion = !!controles.estado(SW.IGNTR); m.arrancador = !!controles.estado(SW.START) && m.bateria; m.bombaCombustible = !!controles.estado(SW.FPUMP);
-  m.extintor = !!controles.estado(SW.FIRE);
-  c.potencia = adelante('levPOT'); c.helice = adelante('levHEL'); c.condicion = adelante('levCOND');
-  c.reversa = THREE.MathUtils.clamp((levAng('levPOT') - 0.17) / 0.25, 0, 1);   /* palanca detrás del ralentí = beta/reversa */
+  /* la cabina nueva todavía no tiene todas las llaves ni las palancas (etapas 3 y 4): si un control falta, vale lo que puso reiniciarAvion (8/11) */
+  const est = (n, actual) => { const v = controles.estado(n); return v === null ? !!actual : !!v; };
+  m.bateria = est(SW.BATT, m.bateria); m.generador = controles.estado(SW.GEN) === null && controles.estado(SW.ALTN) === null ? !!m.generador : !!(controles.estado(SW.GEN) || controles.estado(SW.ALTN));
+  m.ignicion = est(SW.IGNTR, m.ignicion); m.arrancador = est(SW.START, m.arrancador) && m.bateria; m.bombaCombustible = est(SW.FPUMP, m.bombaCombustible);
+  m.extintor = est(SW.FIRE, m.extintor);
+  if (hayLev('levPOT')) { c.potencia = adelante('levPOT'); c.reversa = THREE.MathUtils.clamp((levAng('levPOT') - 0.17) / 0.25, 0, 1); }   /* palanca detrás del ralentí = beta/reversa */
+  if (hayLev('levHEL')) c.helice = adelante('levHEL');
+  if (hayLev('levCOND')) c.condicion = adelante('levCOND');
   if (controles.estado('swFUEL') === 0) c.condicion = 0;   /* válvula de combustible en OFF: sin combustible, el motor se corta (manual 26/10) */
   vuelo.colaLibre = !!controles.estado('swWRUD');   /* traba de cola: destrabada gira más cerrado en el piso */
   if (adelante('levEDUMP') > 0.85 && vuelo.agua > 0) vuelo.agua = 0;   /* manija E-DUMP adelante: salvo total (manual 26/10) */
@@ -1017,14 +1026,15 @@ function actualizarMarca(dt) {
 const hudVR = (() => {
   const W = 768, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
   const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.14), new THREE.MeshBasicMaterial({ map: tex, transparent: true })); m.renderOrder = 3; m.position.set(0.33, 1.29, 1.13);   /* con depthTest: ya no se dibuja a traves de la chapa (24/10) */ m.rotation.set(-0.12, -0.22, 0); cabina.add(m);   /* adentro del vidrio: a 0,78 atravesaba la cupula (24/10) */
-  return { texto(titulo, texto) { c.clearRect(0, 0, W, H); if (!texto) { tex.needsUpdate = true; return; } c.fillStyle = 'rgba(8,36,64,0.85)'; c.beginPath(); c.roundRect(0, 0, W, H, 28); c.fill(); c.fillStyle = '#c8e63a'; c.font = 'bold 30px Arial'; c.fillText(titulo || '', 28, 48);
+  return { malla: m, texto(titulo, texto) { c.clearRect(0, 0, W, H); if (!texto) { tex.needsUpdate = true; return; } c.fillStyle = 'rgba(8,36,64,0.85)'; c.beginPath(); c.roundRect(0, 0, W, H, 28); c.fill(); c.fillStyle = '#c8e63a'; c.font = 'bold 30px Arial'; c.fillText(titulo || '', 28, 48);
     c.fillStyle = '#fff'; c.font = '34px Arial'; let y = 100, l = ''; for (const p of texto.split(' ')) { const t = l ? l + ' ' + p : p; if (c.measureText(t).width > W - 56) { c.fillText(l, 28, y); y += 42; l = p; } else l = t; } c.fillText(l, 28, y); tex.needsUpdate = true; } };
 })();
 function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado = false } = {}) {
   const v = vuelo; v.vel.set(0, 0, 0); v.w.set(0, 0, 0); v.agua = agua; v.largando = null; v.estrellado = false; v.perdida = false; v.avisoVne = false; v.tiempoFuego = 0; v.eventos = [];
   Object.assign(v.motor, { falla: false, fuego: false, sinRearranque: false, cortado: false, extintor: false });
   mando.x = mando.z = 0; flaps = 0;
-  const pon = (n, ang) => { const p = controles.palancas.find(x => x.nombre === n); if (p) { p.ang = ang; p._aplicar?.(); p.grupo.rotation.x = ang; } };
+  const pon = (n, ang) => { const p = controles.palancas.find(x => x.nombre === n); if (p) { p.ang = ang; p._aplicar?.(); p.grupo.rotation.x = ang; }
+    else { const k = { levPOT: 'potencia', levHEL: 'helice', levCOND: 'condicion' }[n]; if (k) v.mando[k] = THREE.MathUtils.clamp(-ang / 0.9, 0, 1); } };   /* sin la palanca (cabina nueva hasta la etapa 4): el mando directo */
   const sw = (n, est) => { const s = controles.switches.find(x => x.nombre === SW[n]); if (s && s.estado !== est) { s.estado = est; controles._aplicarSwitch(s); } };
   if (enVuelo) {
     v.pos.set(30, 305, -300); v.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); v.vel.set(0, 0, -67); v.enTierra = false; v.tiempoAire = 10;
@@ -1101,7 +1111,7 @@ renderer.setAnimationLoop(() => {
   if (modoCamara) cuidarSeguimiento();
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
-  if (cabinaNueva) cabinaNueva.actualizar(vuelo);   /* la mirilla de la tolva (etapa 1) */
+  if (cabinaNueva) cabinaNueva.actualizar(vuelo, dt, { controles, SW });   /* la mirilla de la tolva (etapa 1), las pantallas y los anunciadores (etapa 2) */
   if (extras) extras.actualizar();
   mision.actualizar(dt * vel); luzFuego.visible = vuelo.motor.fuego && Math.floor(performance.now() / 400) % 2 === 0; actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;

@@ -410,8 +410,21 @@ Cada etapa dice qué se hace, qué se conecta, qué se borra y cuándo está lis
   VIVO, carátula en canvas + agujas, como en la cabina vieja). Las tres pantallas quedan como vidrio oscuro (2b). El cascarón
   perdió el tablero provisorio y su pared de la tolva sube a 1,095 con la mirilla medida (x ±0,25, y 0,83–1,00). Lección: las
   vistas planas de `vista360.py` NO corrigen el cabeceo de la cámara (5,6° arriba): leídas a ojo daban todo 6 cm más bajo.
-- Falta (2b): pantallas en vivo (G5 actitud, Garmin rumbo, MVP-50), anunciadores cableados, perillas de luz con función,
-  tablilla del tutor y placa MENÚ reubicadas, y borrar `crearTablero` y compañía de main.js cuando la cabina vieja se retire.
+- **2b HECHA el 8/11/2026 (v=20261108b, sin publicar; falta el ok de Iván):** `pantallas.js` (clase `Pantallas`): G5 de
+  actitud (horizonte con escala de cabeceo, índice de alabeo tipo «sky pointer», cintas de velocidad en mph y altura en ft con
+  su caja, variómetro y rumbo), Garmin de rumbo (HSI: rosa que gira, línea de fe, aguja de curso fija en la pista 36, rumbo en
+  grande, GS) y MVP-50 (TRQ · ITT · Ng · PROP en cajas grandes con barra de colores, y FF · OIL P · OIL T · VOLT · AMP · FUEL
+  chicas; los valores en rojo titilan). Cada pantalla es un canvas sobre un plano 0,5 mm delante del vidrio del GLB (centros
+  en `userData.tablero`); se apagan sin batería; G5 y HSI a 30 Hz, MVP-50 a 5 Hz. Anunciadores: MASTER WARN (fuego titila;
+  motor parado en vuelo o accidente, fija), MASTER CAUTION (generador fuera o ITT > 850), LOW FUEL (sólo en el push-to-test:
+  el combustible no está modelado), ARMED (llave FRDS, etapa 3). Rumbo = 90° − euler.rumbo (validado: virando a la derecha
+  sube). La tablilla del tutor va prendida al parante derecho del parabrisas (0,29; 1,37; 1,065, inclinada como el vidrio) y
+  la placa MENÚ · SALIR sobre el ala derecha del tablero (0,27; 1,21), donde el 802 lleva la matrícula; la luz ENG FIRE vieja
+  quedó dentro de la chapa y la reemplaza MASTER WARN. Puente hasta las etapas 3 y 4: `aplicarControles` y `reiniciarAvion`
+  (main.js) no pisan el estado del motor ni del mando cuando falta la llave o la palanca (la cabina nueva todavía no las
+  tiene), así las misiones corren. Capturas de arranque (apagado), crucero, falla y fuego en la ronda del 8/11.
+- Falta: perillas de luz con función (no hace falta para la misión), borrar `crearTablero` y compañía de main.js cuando la
+  cabina vieja se retire, y la prueba de legibilidad en el Quest (2b/1b.4, cuando Iván pida publicar).
 
 ### Etapa 3 — FRDS, SALVO y paneles de llaves (2 a 3 sesiones; la delicada)
 - 3a: FRDS GEN III y MANUAL SALVO.
