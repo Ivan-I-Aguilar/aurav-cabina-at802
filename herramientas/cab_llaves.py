@@ -10,7 +10,7 @@
 #     de su cara: borde de arriba en y 0,912 · z 0,90, 11 cm de alto por la pendiente (abajo: y 0,83 · z 0,97), de x −0,30 a −0,035
 #     (izquierdo) y de +0,055 a +0,295 (derecho), con el bastón en el medio; dos filas de llaves y breakers cada uno (a 2,6 y 8,2 cm
 #     del borde de arriba) con los títulos LANDING / WORKING LIGHTS · DISPERSAL SYSTEMS / MISC (izq.) y FLIGHT LIGHTS / GYROS /
-#     FLAPS · ENGINE OPERATION (der.). Entre el borde de arriba y la pared de la tolva, una repisa baja (y 0,912) cierra la vista.
+#     FLAPS · ENGINE OPERATION (der.). Del borde de arriba baja una repisa hasta la pared de la tolva (y 0,80, bajo la mirilla).
 #     La 360 sola no da la profundidad (una cámara): a z 0,60 (contra la pared de la tolva) los mismos píxeles daban paneles de
 #     39 cm × 14,5 cm en y 0,70–0,81; la profundidad y la inclinación salen de las fotos del amarillo (los paneles se ven delante de
 #     la mirilla, apenas metidos respecto de la cara del tablero), a ojo. Por encima de ellos queda la mirilla entera a la vista.
@@ -87,6 +87,15 @@ def llave(nombre, m, s, t, h0=0.0, largo=0.024):
 
 def breaker(nombre, m, s, t, h0=0.0): return cilindro(nombre, m, s, t, 0.0065, h0 - 0.002, h0 + 0.008, 'bisel', k=12)
 
+def aro(nombre, m, s, t, r0, r1, h0, h1, mat, k=28):
+    """Anillo (bisel) entre los radios r0 y r1, de h0 a h1: paredes de afuera y de adentro, tapa de arriba y de abajo (hueco en el medio)."""
+    a0, a1, b0, b1 = m.circulo(s, t, r1, h0, k), m.circulo(s, t, r1, h1, k), m.circulo(s, t, r0, h0, k), m.circulo(s, t, r0, h1, k)
+    verts = a0 + a1 + b0 + b1; caras = []
+    for i in range(k):
+        j = (i + 1) % k
+        caras += [(i, j, k + j, k + i), (2 * k + j, 2 * k + i, 3 * k + i, 3 * k + j), (k + i, k + j, 3 * k + j, 3 * k + i), (j, i, 2 * k + i, 2 * k + j)]
+    return pieza(nombre, verts, caras, mat, cerrada=True, suave=True)
+
 def datos_panel(m, w, alto, titulos, items, h=0.0):
     """Lo que el juego necesita para dibujar los rótulos sobre la placa (userData.panel)."""
     return json.dumps({'c': [round(float(x), 5) for x in m.p(w / 2, alto / 2, h)], 'u': [round(float(x), 5) for x in m.u], 'v': [round(float(x), 5) for x in m.v], 'n': [round(float(x), 5) for x in m.n],
@@ -111,7 +120,7 @@ if __name__ == '__main__':
             controles.append(llave(nombre, mF, cx - x0, y1 - t_y, h0=0.004, largo=0.022))
             items.append({'s': cx - x0, 't': y1 - t_y, 'tipo': 'sw3' if nombre in ('swFRDS_GAL', 'swFRDS_COV') else 'sw', 'nombre': nombre, 'rotulo': rot, 'arriba': arr, 'abajo': aba})
     cx, cy, r = FRDS_DISPLAY; sD, tD = cx - x0, y1 - cy
-    cilindro('frds_display_aro', mF, sD, tD, r, 0.004, 0.012, 'caratula', k=28)
+    aro('frds_display_aro', mF, sD, tD, r - 0.0038, r, 0.004, 0.012, 'caratula')   # ANILLO (con cilindro() salía un disco macizo que tapaba la pantallita, 11/11)
     pieza('frds_display_fondo', mF.circulo(sD, tD, r - 0.0038, 0.0085, 28), [tuple(range(28))], 'caratula', suave=False)
     pieza('pantalla_frds', mF.rect(sD, tD + 0.001, 0.036, 0.024, 0.0096), [(0, 1, 2, 3)], 'pantalla', suave=False)
     for ds, dt, bw, bh in ((-0.024, -0.026, 0.012, 0.006), (0.0, -0.030, 0.012, 0.006), (0.024, -0.026, 0.012, 0.006), (-0.024, 0.026, 0.012, 0.006), (0.024, 0.026, 0.012, 0.006)):   # MARK · DISTRESS · MENU · MSG · HOME
@@ -154,9 +163,10 @@ if __name__ == '__main__':
                 items.append({'s': s, 't': t, 'tipo': tipo, 'nombre': nombre, 'rotulo': rot, 'arriba': arr, 'abajo': aba})
         pl['panel'] = datos_panel(m, wl, ALTO, titulos, items, h=0.0)
         print(f'panel {lado}: de x {xl:.2f} a {xl + wl:.2f}; arriba (y {Y_TOP}, z {Z_TOP}), abajo (y {m.p(0, ALTO)[1]:.3f}, z {m.p(0, ALTO)[2]:.3f}); {len(items)} piezas')
-    # ---- repisa baja: del borde de arriba de los paneles (y 0,912, z 0,90) a la pared de la tolva (z 0,60), de un panel al otro: cierra la vista bajo la mirilla ----
+    # ---- repisa baja: del borde de arriba de los paneles (y 0,912, z 0,90) BAJA hasta la pared de la tolva (y 0,80, z 0,60), de un panel al otro: cierra
+    #      la vista bajo la mirilla sin taparla (horizontal en 0,912 escondía la mitad de abajo de la mirilla desde el ojo, 11/11) ----
     xa, xb = PANELES['izq'][0], PANELES['der'][0] + PANELES['der'][1]
-    grilla('repisa_baja', [[A([xa, Y_TOP, z]), A([xb, Y_TOP, z])] for z in (ca.Z_TOLVA + 0.001, Z_TOP + 0.001)], 'tablero', suave=False)
+    grilla('repisa_baja', [[A([xa, 0.80, ca.Z_TOLVA + 0.001]), A([xb, 0.80, ca.Z_TOLVA + 0.001])], [A([xa, Y_TOP, Z_TOP + 0.001]), A([xb, Y_TOP, Z_TOP + 0.001])]], 'tablero', suave=False)
     for lado, (xl, wl) in PANELES.items():                            # el canto trasero de cada panel, cerrado contra la repisa
         m = Marco((xl, Y_TOP, Z_TOP), u, v, n); grilla(f'panel_{lado}_canto', [[m.p(0, 0, -0.004), m.p(wl, 0, -0.004)], [A([xl, Y_TOP, Z_TOP + 0.001]), A([xl + wl, Y_TOP, Z_TOP + 0.001])]], 'tablero', suave=False)
 

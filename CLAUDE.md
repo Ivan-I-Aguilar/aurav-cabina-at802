@@ -93,16 +93,17 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   el test). Tablilla del tutor prendida al parante derecho del parabrisas y placa MENÚ sobre el ala derecha del tablero. Hasta
   las etapas 3 y 4, `aplicarControles` / `reiniciarAvion` no pisan motor ni mando cuando falta la llave o la palanca: las
   misiones corren en la cabina nueva. Con eso la etapa 2 está completa salvo la legibilidad en el Quest. Detalle en `PLAN_CABINA_NUEVA.md`, etapa 2.
-- **Etapa 3 (FRDS, SALVO y paneles de llaves) MODELO HECHO el 8/11, v=20261108c, SIN publicar; falta el ok de Iván y la ronda
-  completa (se cortó por límite de uso):** `herramientas/cab_llaves.py` → `blender/cab_llaves.glb` (2230 tris, 32 llamadas, 21
-  controles): placa FRDS GEN III con 6 llaves y display en vivo (pantalla `frds`), CB + FRDS POWER, placa y botón MANUAL SALVO, y
-  los dos paneles bajos inclinados 40° bajo el tablero (y 0,912 · z 0,90, 11 cm; la profundidad sale de las fotos del amarillo, no
-  de la 360) con sus filas LANDING/WORKING LIGHTS · DISPERSAL/MISC · FLIGHT LIGHTS/GYROS/FLAPS · ENGINE OPERATION. Los rótulos
-  NO van en el GLB: cada placa lleva `userData.panel` (JSON) y `pantallas.js` (`Rotulos`) los dibuja en canvas. main.js: tabla `SW`
-  nueva (`swBATT` MASTER, `swGEN`, `swIGN` 3 pos., `swSTART`, `swPITOT`, `swWIPER`, `swLDG_L`, `swSTRBNAV`, `swPULSE`, `swARMED`,
-  `swFRDS`; AVNC va PROVISORIAMENTE con el MASTER hasta el rack; FIRE espera la manija FUEL de la etapa 4). cabina_nueva.js: llaves
-  momentáneas que vuelven solas (SALVO larga todo; GATE larga los galones pedidos con el caudal del nivel de cobertura). FALTA:
-  probar la puesta en marcha completa con el tutor, mirar los rótulos de cerca y la ronda; luego docs del plan (etapa 3).
+- **Etapa 3 (FRDS, SALVO y paneles de llaves) HECHA el 8–11/11, v=20261108c, SIN publicar; falta el ok de Iván:**
+  `herramientas/cab_llaves.py` → `blender/cab_llaves.glb` (2230 tris, 32 llamadas, 21 controles): placa FRDS GEN III con 6 llaves y
+  display en vivo (pantalla `frds`), CB + FRDS POWER, placa y botón MANUAL SALVO, y los dos paneles bajos inclinados 40° que cuelgan
+  bajo el tablero (y 0,912 · z 0,90, 11 cm; la profundidad sale de las fotos del amarillo, no de la 360) con sus filas LANDING/WORKING
+  LIGHTS · DISPERSAL/MISC · FLIGHT LIGHTS/GYROS/FLAPS · ENGINE OPERATION, y una repisa que baja hasta la pared de la tolva bajo la
+  mirilla. Los rótulos NO van en el GLB: cada placa lleva `userData.panel` (JSON) y `pantallas.js` (`Rotulos`) los dibuja en canvas.
+  main.js: tabla `SW` nueva (`swBATT` MASTER, `swGEN`, `swIGN` 3 pos., `swSTART`, `swPITOT`, `swWIPER`, `swLDG_L`, `swSTRBNAV`,
+  `swPULSE`, `swARMED`, `swFRDS`; AVNC va PROVISORIAMENTE con el MASTER hasta el rack; FIRE espera la manija FUEL de la etapa 4).
+  cabina_nueva.js: llaves momentáneas que vuelven solas (SALVO larga todo; GATE larga los galones pedidos con el caudal del nivel de
+  cobertura). Probado el 11/11: puesta en marcha completa con el tutor marcando cada llave (100/100, emulando la palanca de condición),
+  GATE y SALVO. Sigue la etapa 4 (pared izquierda: cuadrante, manija FUEL, trims). Detalle en `PLAN_CABINA_NUEVA.md`, etapa 3.
 - **Lección (7/11): toda fila que llega al borde de otra chapa pasa por los VÉRTICES de ese borde y termina 2–3 mm por
   debajo** (`solapa_techo`): un remuestreo uniforme cortaba la esquina del nudo FR y dejaba un hueco de 1,6 cm por donde
   se colaban rayos. El chequeo de estanqueidad (0°–90°, 20.000 rayos) es el que los encuentra.
@@ -170,7 +171,8 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `herramientas/cab_cascaron.py`, `blender/cab_cascaron.glb` | **El cascarón** (etapa 1, 7/11; Blender): piso, paredes medidas con rayos contra `exterior_cupula.glb` (1,5 cm adentro; el lado roto del FSN toma el otro reflejado), pared de la tolva con la mirilla (cajón abierto, vidrio y placa `agua_tolva` con `userData.nivel`), forro del antepecho y mamparo medido contra `blender/cab_cupula.glb`. Importa los ayudantes de `cab_cupula.py`. |
 | `herramientas/cab_tablero.py`, `blender/cab_tablero.glb` | **El tablero superior** (etapa 2a, 8/11; Blender): chapa plana en z 0,96 triangulada con `delaunay_2d_cdt` (contorno medido, huecos de relojes y pantallas), fondos de relojes, tapas, marcos y vidrios de pantallas, anunciadores, `swFPUMP` + guarda, soporte Garmin, perillas y la repisa hasta la pared de la tolva (ancho medido con rayos, `x_pared`). Escribe `userData.tablero` (centros) en la chapa y `blender/cab_tablero_informe.json`. Medidas con `cab_foto360.rayo` y la pose de `cupula_puntos.json`. |
 | `cabina_nueva.js` | Carga la cabina nueva con `?cabina=nueva`: `PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero']`; el exterior es `exterior_cupula.glb`; devuelve `actualizar(vuelo, dt, { controles, SW })` (mirilla, pantallas y anunciadores), `instrumentos` (anemómetro y altímetro, con la clase `Instrumentos` que main.js le pasa), `pantallas` y `tablero` (el `userData.tablero` de la chapa). Con `?cabina=vieja` (o nada) sigue la FSX con sus parches. |
-| `pantallas.js` | **Pantallas en vivo del tablero nuevo** (2b, 8/11): clase `Pantallas(raiz, tablero)` con G5 de actitud, HSI de rumbo y MVP-50 dibujados en canvas (escalas iguales a `instrumentos.js`), más los cuatro anunciadores con textura apagada/prendida; `actualizar(dt, estado)` con lecturas, rumbo, batería, fuego, etc. |
+| `pantallas.js` | **Pantallas en vivo del tablero nuevo** (2b, 8/11): clase `Pantallas(raiz, tablero)` con G5 de actitud, HSI de rumbo, MVP-50 y el display del FRDS dibujados en canvas (escalas iguales a `instrumentos.js`), más los cuatro anunciadores con textura apagada/prendida; `actualizar(dt, estado)` con lecturas, rumbo, batería, fuego, frds, etc. Y la clase `Rotulos(raiz)` (etapa 3): dibuja en un canvas transparente los títulos, recuadros y rótulos de cada placa que trae `userData.panel`. |
+| `herramientas/cab_llaves.py`, `blender/cab_llaves.glb` | **FRDS GEN III, MANUAL SALVO y paneles de llaves bajos** (etapa 3, 8–11/11; Blender): placas, llaves (`llave()`: tuerca + palanca `sw…` con pivote en la base), breakers, display, repisa baja; marco local `Marco(o, u, v, n)` para las placas inclinadas; cada placa escribe `userData.panel` (JSON con marco, títulos y piezas) para los rótulos del juego. Tabla `FILAS` = qué va en cada fila (tipo, nombre del control, rótulo, textos arriba/abajo). |
 | `blender/` | Piezas hechas en Blender por scripts (Lichi): `pedales.glb` (clip `pedales_timon`: 0 = timón izquierda, 1 s = derecha; sigue a la variable `pedal`; recorrido ±0,2 rad, confirmado por Iván 22/10), y `butaca.glb`, `marco_ventana.glb` y `techo.glb`, parches provisorios hasta la cabina nueva. |
 | `servidor.py` | Servidor local sin caché (puerto 8765). |
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |

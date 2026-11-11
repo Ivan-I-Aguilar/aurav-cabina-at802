@@ -453,6 +453,33 @@ Borrador de la tabla de re-cableado (se completa con las fotos de cerca):
 Textos del tutor que cambian (y se regenera la voz): el paso de FUEGO («switch FIRE» pasa a «manija
 FUEL a OFF», a confirmar con Bruno) y los nombres que no coincidan con los rótulos reales.
 
+- **3a + 3b + 3c HECHAS el 8–11/11/2026 (v=20261108c, sin publicar; falta el ok de Iván):** `herramientas/cab_llaves.py` →
+  `blender/cab_llaves.glb` (2230 triángulos, 32 llamadas: 21 controles, 5 placas con rótulos, 0,13 MB). MEDIDO en la 360 con la
+  pose: placa FRDS GEN III de 21 × 13 cm en x −0,557…−0,348, y 0,962…1,090 (seis llaves a 2,9 cm en dos filas, y 1,050 y 1,004;
+  display Ø 7,8 en (−0,405; 1,028)); CB FRDS CONTROL y FRDS POWER debajo; placa roja MANUAL SALVO (−0,44; 0,886) y botón Ø 3,8
+  (−0,52; 0,878); la chapa del tablero baja hasta 0,82 a la izquierda de x −0,31 (escalones del borde de abajo corregidos). Los dos
+  paneles bajos cuelgan debajo del tablero: placas de 26,5 y 24 cm inclinadas 40°, borde de arriba en y 0,912 · z 0,90, 11 cm de
+  alto (abajo y 0,83 · z 0,97), en x −0,30…−0,035 y +0,055…+0,295 (el bastón en el medio), filas a 2,6 y 8,2 cm; del borde de
+  arriba una repisa baja hasta la pared de la tolva (y 0,80, debajo de la mirilla, que queda entera a la vista). La 360 sola no da
+  la profundidad de los paneles bajos (una cámara: contra la pared de la tolva daban 39 cm × 14,5 cm en y 0,70–0,81): la
+  profundidad y la inclinación salen de las fotos del amarillo, a ojo. Filas y rótulos (de las fotos, los que se leen): LANDING /
+  WORKING LIGHTS (6 CB + RETRACT/EXTEND MAIN L.A. y R.A. + WORKING LIGHTS) · DISPERSAL SYSTEMS / MISC (CB + WIPER + PITOT HEAT + CB)
+  · FLIGHT LIGHTS / GYROS / FLAPS (PULSE, PANEL LIGHTS, STROBE AND NAV, CB TURN COORD / ATTITUDE GYRO / FLAPS, llave FLAPS con
+  guarda roja) · ENGINE OPERATION (START, IGNITION ON·OFF·CONTINUOUS, CB OVER SPEED, MASTER, GENERATOR, CB ENGINE INSTRUMENTS /
+  START / GPS / FUEL BOOST PUMP). El MASTER es la cuarta llave de ENGINE OPERATION (en la foto tiene el llavero colgado). **Los
+  rótulos no van en el GLB:** cada placa lleva `userData.panel` (JSON: marco, títulos y piezas) y `pantallas.js` (`Rotulos`) los
+  dibuja en canvas (3000 px/m, letra mínima 4 mm; el recuadro por fila como en el avión). **Re-cableado (3c):** `SW` de main.js con
+  los nombres reales (`swBATT`, `swGEN`, `swIGN` 3 pos., `swSTART`, `swFPUMP`, `swPITOT`, `swWIPER`, `swLDG_L`, `swWORK`, `swPULSE`,
+  `swSTRBNAV`, `swFRDS` POWER, `swARMED`); ALTN, HYD y SPARE no existen en el 802; FIRE espera la manija FUEL (etapa 4); AVNC va
+  PROVISORIAMENTE con el MASTER hasta el rack (etapa 5). Momentáneas que vuelven solas (`cabina_nueva.js`): SALVO (larga todo),
+  GATE (larga los galones pedidos; en AUTO el caudal sigue al nivel de cobertura: de 11 s el 1 a 4 s el 8), FOAM, GALLONS ±50 y
+  COVERAGE ±1 (con cada toque alternan + y −); display del FRDS en vivo (galones, cobertura, GATE, HOPPER, ARMED/SAFE) con su llave
+  FRDS POWER. **Probado el 11/11 en el navegador:** la puesta en marcha completa con el tutor marcando cada llave nueva (100/100),
+  emulando la palanca de condición (`vuelo.mando.condicion = 0.8`: hasta la etapa 4 no hay palancas), el GATE y el SALVO. Quedan de
+  la etapa 3: las llaves de la cabina FSX siguen en main.js para `?cabina=vieja` (se borran cuando se retire la cabina vieja); los
+  rótulos que no se leen en las fotos van a ojo (TURN LIGHTS, GATE MOTOR, FOAM PUMP, INST LIGHTS: pedir fotos de cerca); la
+  simulación sin navegador (Node) no se hizo.
+
 ### Etapa 4 — Pared izquierda (1 a 2 sesiones)
 - Crea la zona D completa.
 - Conecta las 3 palancas, FUEL, FLAPS, el trim de timón (ya existe) y dos trims nuevos en la

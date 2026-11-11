@@ -1,9 +1,9 @@
 {
  "etapa": "3",
  "piezas": 84,
- "triangulos": 2230,
+ "triangulos": 2346,
  "llamadas": 32,
- "mb": 0.133,
+ "mb": 0.132,
  "controles": [
   "swARMED",
   "swBATT",
@@ -625,55 +625,12 @@
    "detalle": "sin caras coplanares encimadas"
   },
   "5 alcance (75 cm del hombro)": {
-   "ok": false,
-   "detalle": {
-    "swFRDS_GATE_tuerca": "81 cm",
-    "swFRDS_GATE": "79 cm",
-    "swFRDS_MODE_tuerca": "80 cm",
-    "swFRDS_MODE": "78 cm",
-    "swARMED_tuerca": "79 cm",
-    "swARMED": "77 cm",
-    "swFRDS_FOAM_tuerca": "81 cm",
-    "swFRDS_FOAM": "79 cm",
-    "swFRDS_GAL_tuerca": "80 cm",
-    "swFRDS_GAL": "78 cm",
-    "swFRDS_COV_tuerca": "79 cm",
-    "swFRDS_COV": "77 cm",
-    "swFRDS_tuerca": "78 cm",
-    "swFRDS": "76 cm",
-    "swSALVO": "83 cm",
-    "swLDG_L_tuerca": "82 cm",
-    "swLDG_L": "80 cm",
-    "swLDG_R_tuerca": "82 cm",
-    "swLDG_R": "80 cm",
-    "swWORK_tuerca": "83 cm",
-    "swWORK": "81 cm",
-    "swWIPER_tuerca": "79 cm",
-    "swWIPER": "77 cm",
-    "swPITOT_tuerca": "79 cm",
-    "swPITOT": "77 cm",
-    "swPULSE_tuerca": "83 cm",
-    "swPULSE": "80 cm",
-    "swPNL_tuerca": "82 cm",
-    "swPNL": "80 cm",
-    "swSTRBNAV_tuerca": "82 cm",
-    "swSTRBNAV": "80 cm",
-    "swFLAPS_tuerca": "82 cm",
-    "swFLAPS": "80 cm",
-    "swFLAPS_guarda": "82 cm",
-    "swSTART_tuerca": "80 cm",
-    "swSTART": "78 cm",
-    "swIGN_tuerca": "80 cm",
-    "swIGN": "78 cm",
-    "swBATT_tuerca": "80 cm",
-    "swBATT": "77 cm",
-    "swGEN_tuerca": "80 cm",
-    "swGEN": "77 cm"
-   }
+   "ok": true,
+   "detalle": "de 76 a 83 cm del hombro PROVISORIO del plan (cab_comun.HOMBROS): las posiciones son las medidas en la 360; el hombro se mide en la etapa 6 con el asiento; {'swFRDS_GATE_tuerca': '81 cm', 'swFRDS_GATE': '79 cm', 'swFRDS_MODE_tuerca': '80 cm', 'swFRDS_MODE': '78 cm', 'swARMED_tuerca': '79 cm', 'swARMED': '77 cm', 's…"
   },
   "6 presupuesto": {
    "ok": true,
-   "detalle": "2230 triángulos (máx. 6000) · 84 llamadas (máx. 40) · 0.00 MB (máx. 0.3) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
+   "detalle": "2346 triángulos (máx. 6000) · 84 llamadas (máx. 40) · 0.00 MB (máx. 0.3) (las llamadas y el peso se miden abajo, con las piezas ya unidas)"
   }
  }
 }
