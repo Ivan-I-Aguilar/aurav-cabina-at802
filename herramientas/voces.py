@@ -21,6 +21,8 @@ def hablado(t):
     return t
 
 frases = {}
+EXTRAS = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'coma', 'a', 'kilómetros.', 'nudos.', 'kilos.', 'Distancia:', 'Carga:', 'Cobertura:', 'Rumbo al foco:', 'Viento de los']   # la orden de vuelo del nivel 2 (mision.js frasesOrden) se arma con estos pedazos
+for t in EXTRAS: frases[clave(t)] = hablado(t)
 for nombre in ('mision.js', 'main.js'):
     src = open(os.path.join(RAIZ, nombre), encoding='utf-8').read()
     for m in re.finditer(r"'((?:[^'\\\n]|\\.)*)'", src):

@@ -7,7 +7,7 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas, Rotulos } from './pantallas.js?v=20261111d';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261112b';
 import { crearRadiosEn } from './radios.js?v=20261111d';
 
 export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola', 'cab_radios', 'cab_asiento', 'pedales', 'butaca'];   /* GLB por zona, en orden de carga (etapas 1b a 6). pedales.glb y butaca.glb son los de Lichi (22/10 y 1/11) */
@@ -91,7 +91,7 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
     const m = vuelo.motor, sw = n => (controles && SW && SW[n]) ? controles.estado(SW[n]) : undefined;
     const rumbo = ((90 - vuelo.euler.rumbo * 180 / Math.PI) % 360 + 360) % 360;
     const armado = !!sw('FRDS');
-    pantallas.actualizar(dt, { L: vuelo.lecturas(), rumbo, gs: vuelo.vel.length() * 2.237, bateria: !!m.bateria, avionica: sw('AVNC') ?? true, fuego: !!m.fuego, falla: !!m.falla,
+    pantallas.actualizar(dt, { L: vuelo.lecturas(), rumbo, curso: vuelo.cursoHSI ?? 360, gs: vuelo.vel.length() * 2.237, bateria: !!m.bateria, avionica: sw('AVNC') ?? true, fuego: !!m.fuego, falla: !!m.falla,
       generador: !!m.generador, encendido: !!m.encendido, enTierra: !!vuelo.enTierra, armado, test: !!(controles && controles.estado('swTEST')), estrellado: !!vuelo.estrellado,
       frds: { power: !!(controles && controles.estado('swFRDS')), galones: frds.galones, cobertura: frds.cobertura, gate: frds.gate, armado, hopperGal: vuelo.agua / 3.785 } });
   };

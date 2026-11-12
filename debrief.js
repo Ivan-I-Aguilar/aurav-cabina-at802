@@ -30,11 +30,30 @@ export function rubricaNivel1(registro, escenario, resultado) {
   return c;
 }
 
+/* Rúbrica del nivel 2: procedimientos (checklist, pista, pérdida) · navegación y descarga (la ventana y dónde cayó) · control (toque, velocidades, bajo) · decisión (largó sobre el foco, volvió) */
+export function rubricaNivel2(registro, escenario, resultado) {
+  const its = registro.items, c = { procedimientos: 100, reaccion: 100, control: 100, decision: 100 }; let descargas = 0;
+  for (const it of its) {
+    if (it.tipo === 'paso' && it.tarde) c.procedimientos -= 6;
+    if (it.tipo === 'paso' && it.anticipado) c.procedimientos -= 4;
+    if (it.tipo === 'descarga') { descargas++; if (!it.okAlt) c.reaccion -= 20; if (!it.okVel) c.reaccion -= 15; if (!it.okCob) c.reaccion -= 10; c.reaccion -= it.dm > 150 ? 60 : it.dm > 60 ? 25 : 0; c.decision -= it.dm > 150 ? 30 : it.dm > 60 ? 10 : 0; if (it.kg < 300) c.decision -= 15; }
+    if (it.tipo === 'observacion') { const t = it.texto;
+      if (/ventana 1|en vez de|menos de 300 kg|cayó a \d+ m del foco|del foco \(parcial\)/.test(t)) continue;   /* lo de la descarga ya se contó con el renglón «descarga» */
+      if (/pista|pérdida|rotó/.test(t)) c.procedimientos -= 15; else if (/toque|rápido|bajo de 100|sin flaps/.test(t)) c.control -= 15; else if (/sin largar|no se cumplió/.test(t)) c.decision -= 40; else c.procedimientos -= 5; }
+    if (it.tipo === 'exceso') c.control -= it.que === 'velocidad' ? 20 : 10;
+  }
+  if (!descargas) { c.reaccion = 0; c.decision -= 50; }
+  if (registro.fatal) { c.control = Math.min(c.control, 20); c.decision = Math.min(c.decision, 30); }
+  for (const k in c) c[k] = Math.max(0, Math.min(100, Math.round(c[k])));
+  return c;
+}
+export const NOMBRES_COMP = { 1: { procedimientos: 'Procedimientos', reaccion: 'Reacción', control: 'Control del avión', decision: 'Decisión' }, 2: { procedimientos: 'Procedimientos', reaccion: 'Navegación y descarga', control: 'Control del avión', decision: 'Decisión' } };
 export function notaFinal(comp) { let s = 0; for (const k in PESOS) s += (comp[k] ?? 0) * PESOS[k] / 100; return Math.round(s); }
 
 /* observaciones en texto para el instructor, generadas de la línea de tiempo */
 export function observaciones(registro, escenario, resultado) {
   const o = []; const its = registro.items;
+  for (const i of its.filter(i => i.tipo === 'descarga')) o.push(`Descarga: ${i.texto}.`);
   if (escenario.falla && escenario.falla !== 'normal') {
     o.push(`La situación era: ${FALLAS_ARRANQUE[escenario.falla]}.`);
     const f = its.find(i => i.tipo === 'falla'), r = its.find(i => i.tipo === 'reaccion');
@@ -50,7 +69,7 @@ export function observaciones(registro, escenario, resultado) {
 }
 
 export function armarResultado({ alumno, nivel, escenario, registro, resultado }) {
-  const comp = nivel === 1 ? rubricaNivel1(registro, escenario, resultado) : { procedimientos: resultado.nota, reaccion: resultado.nota, control: resultado.nota, decision: resultado.nota };
+  const comp = nivel === 1 ? rubricaNivel1(registro, escenario, resultado) : nivel === 2 || nivel === 3 ? rubricaNivel2(registro, escenario, resultado) : { procedimientos: resultado.nota, reaccion: resultado.nota, control: resultado.nota, decision: resultado.nota };
   const nota = notaFinal(comp), aprobado = nota >= APROBADO && !registro.fatal && resultado.exito !== false;
   const fecha = new Date().toISOString().slice(0, 16).replace('T', ' ');
   const base = `${alumno}|${nivel}|${escenario.semilla}|${fecha}|${nota}|${aprobado ? 'A' : 'N'}`;
@@ -70,7 +89,7 @@ export function mostrarDebrief(res, acciones) {
   guardar(res);
   const d = document.getElementById('debrief'); d.hidden = false;
   const barra = (k, v) => `<div class="comp"><span>${k}</span><div class="barra"><div style="width:${v}%;background:${v >= 70 ? '#2e7d32' : v >= 50 ? '#e0a020' : '#c0392b'}"></div></div><b>${v}</b></div>`;
-  const nombres = { procedimientos: 'Procedimientos', reaccion: 'Reacción', control: 'Control del avión', decision: 'Decisión' };
+  const nombres = NOMBRES_COMP[res.nivel] || NOMBRES_COMP[1];
   d.innerHTML = `<div class="caja">
     <h2>${res.titulo} · <span class="${res.aprobado ? 'ok' : 'no'}">${res.aprobado ? 'APROBADO' : 'NO APROBADO'}</span> · ${res.nota} / 100</h2>
     <p class="chico">${res.alumno} · ${res.fecha} · semilla ${res.semilla} · código ${res.codigo}<br>${res.escenario}</p>

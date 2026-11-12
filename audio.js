@@ -42,13 +42,23 @@ export class Audio {
     const v = speechSynthesis.getVoices().find(v => /es[-_](AR|MX|US|419)/i.test(v.lang)) || speechSynthesis.getVoices().find(v => v.lang.startsWith('es')); if (v) u.voice = v;
     speechSynthesis.speak(u);
   }
-  async _sonarVoz(k) {
+  async _sonarVoz(k, alTerminar) {
     const C = this.ctx; this._vozId = k; this._buf ??= new Map();
     let b = this._buf.get(k);
-    if (!b) { try { b = await C.decodeAudioData(await (await fetch(`./voz/${k}.wav`)).arrayBuffer()); this._buf.set(k, b); } catch { return; } }
-    if (this._vozId !== k) return;   /* llegó otra frase mientras se bajaba esta */
+    if (!b) { try { b = await C.decodeAudioData(await (await fetch(`./voz/${k}.wav`)).arrayBuffer()); this._buf.set(k, b); } catch { alTerminar?.(); return; } }
+    if (this._vozId !== k) { alTerminar?.(); return; }   /* llegó otra frase mientras se bajaba esta */
     try { this._voz?.stop(); } catch {}
     if (!this.gVoz) { this.gVoz = C.createGain(); this.gVoz.gain.value = 1.6; this.gVoz.connect(C.destination); }
-    const s = C.createBufferSource(); s.buffer = b; s.connect(this.gVoz); s.start(); this._voz = s;
+    const s = C.createBufferSource(); s.buffer = b; s.connect(this.gVoz); if (alTerminar) s.onended = alTerminar; s.start(); this._voz = s;
+  }
+  /* varias frases seguidas (la orden de vuelo por radio: pedazos fijos + dígitos sueltos, cada uno con su WAV); espera el fin de cada una */
+  decirVarias(lista) {
+    if (!this.vozOn || !lista?.length) return Promise.resolve();
+    const una = texto => new Promise(res => { const k = claveVoz(texto); const fin = () => setTimeout(res, 120);
+      if (this.ctx && FRASES?.[k]) { this._sonarVoz(k, fin); return; }
+      if (!('speechSynthesis' in window)) { fin(); return; }
+      const u = new SpeechSynthesisUtterance(texto); u.lang = 'es-AR'; u.rate = 1.05; u.onend = fin; u.onerror = fin; speechSynthesis.speak(u); });
+    this._cola = (this._cola || Promise.resolve()).then(async () => { for (const t of lista) await una(t); });
+    return this._cola;
   }
 }

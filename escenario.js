@@ -70,7 +70,7 @@ export function crearEscenario(escena) {
   // los dos juegos de AURAV compartan el mismo aeródromo. El avión queda estacionado en la plataforma
   // de hormigón, de frente a la pista.
   const skyMesh = cielo(); skyMesh.name = 'cielo'; escena.add(skyMesh);
-  escena.fog = new THREE.Fog(0xd3dfe0, 200, 1400);
+  escena.fog = new THREE.Fog(0xd3dfe0, 300, 6500);   /* 12/11: antes 1400 m; el foco de la misión está a 2,5–4,5 km y tiene que verse el humo */
   const M = (c, e = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.86, ...e });
   // Texturas CC0 de Poly Haven (1K, en ./tex): pasto con piedras, hormigón gastado, asfalto. Se cargan
   // de forma asíncrona; mientras tanto se ven los colores planos.
@@ -93,7 +93,7 @@ export function crearEscenario(escena) {
   const marca = ancho => { const s = cartel('AURAV / PLANO AÉREO', ancho, ancho * 0.572, '#ffffff', '#082440'); carteles.push(s); return s; };
 
   // Piso: plano grande con variación de color por vértice a gran escala (rompe el tileado del pasto).
-  { const gg = new THREE.PlaneGeometry(3200, 3200, 160, 160); const pa = gg.attributes.position, col = new Float32Array(pa.count * 3);
+  { const gg = new THREE.PlaneGeometry(12000, 12000, 160, 160); const pa = gg.attributes.position, col = new Float32Array(pa.count * 3);   /* 12/11: ±6 km (antes ±1,6) para la misión de incendio */
     for (let i = 0; i < pa.count; i++) { const x = pa.getX(i), y = pa.getY(i); const n = 0.5 + 0.5 * Math.sin(x * 0.021 + 1.3) * Math.cos(y * 0.017 - 0.4) + 0.25 * Math.sin(x * 0.083 + y * 0.061); const v = 0.82 + 0.26 * THREE.MathUtils.clamp(n, 0, 1); col.set([v, v * 0.98, v * 0.9], i * 3); }
     gg.setAttribute('color', new THREE.BufferAttribute(col, 3)); mats.ground.vertexColors = true;
     const ground = new THREE.Mesh(gg, mats.ground); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; escena.add(ground); }
@@ -119,21 +119,22 @@ export function crearEscenario(escena) {
   let seed = 721; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
   // Sierras: anillo de terreno con relieve (fbm) alrededor del aeródromo, plano hasta ~220 m, con textura de
   // pasto seco y color por altura/pendiente (verde abajo, ocre, roca gris arriba).
-  { const S = 2400, seg = 150, tg = new THREE.PlaneGeometry(S, S, seg, seg), pa = tg.attributes.position, col = new Float32Array(pa.count * 3);
+  { const S = 9000, seg = 180, tg = new THREE.PlaneGeometry(S, S, seg, seg), pa = tg.attributes.position, col = new Float32Array(pa.count * 3);   /* 12/11: ±4,5 km (antes ±1,2) para el foco del nivel 2; vértices cada 50 m */
     const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
     const noise = (x, y) => { const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
       return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(ix, iy), hash(ix + 1, iy), u), THREE.MathUtils.lerp(hash(ix, iy + 1), hash(ix + 1, iy + 1), u), v); };
     const fbm = (x, y) => { let a = 0.5, f = 1, t = 0; for (let i = 0; i < 5; i++) { t += a * noise(x * f, y * f); a *= 0.5; f *= 2.1; } return t; };
-    // (cabina) valle plano a lo largo de la pista y sus prolongaciones, para despegar, volar el circuito y hacer aterrizajes forzosos
+    // (cabina) valle plano a lo largo de la pista y sus prolongaciones, para despegar, volar el circuito y hacer aterrizajes forzosos;
+    // hacia el norte llega a 4,2 km (12/11): la final a la pista 18 del nivel 2 baja por el valle y no sobre las lomas de 80 m que había en z −2500…−3500
     const dRect = (x, z, x0, x1, z0, z1) => Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
-    const alt = (x, z) => { const r = Math.hypot(x, z - 60), lejos = THREE.MathUtils.smoothstep(r, 300, 650) * THREE.MathUtils.smoothstep(dRect(x, z, -250, 300, -2200, 500), 60, 320); const n = fbm(x * 0.0022 + 3.1, z * 0.0022 + 7.7); return lejos * (Math.pow(n, 1.6) * 150 + Math.max(0, n - 0.55) * 170); };
+    const alt = (x, z) => { const r = Math.hypot(x, z - 60), lejos = THREE.MathUtils.smoothstep(r, 300, 650) * THREE.MathUtils.smoothstep(dRect(x, z, -250, 300, -4200, 500), 60, 320); const n = fbm(x * 0.0022 + 3.1, z * 0.0022 + 7.7); return lejos * (Math.pow(n, 1.6) * 150 + Math.max(0, n - 0.55) * 170); };
     alturaTerreno = alt;
     for (let i = 0; i < pa.count; i++) { const x = pa.getX(i), z = -pa.getY(i); const h = alt(x, z); pa.setZ(i, h);
       const dh = Math.hypot(alt(x + 6, z) - alt(x - 6, z), alt(x, z + 6) - alt(x, z - 6)) / 12; const th = THREE.MathUtils.clamp(h / 170, 0, 1);
       const c = new THREE.Color('#7c8f60').lerp(new THREE.Color('#9aa070'), th).lerp(new THREE.Color('#8f958f'), THREE.MathUtils.clamp(dh * 1.6 - 0.25, 0, 1) * 0.7 + th * th * 0.45);
       col.set([c.r, c.g, c.b], i * 3); }
     tg.setAttribute('color', new THREE.BufferAttribute(col, 3)); tg.computeVertexNormals();
-    const terreno = new THREE.Mesh(tg, M('#ffffff', { map: tex('./tex/sierra.jpg', 90), vertexColors: true, roughness: 0.95 })); terreno.rotation.x = -Math.PI / 2; terreno.position.y = -0.5; escena.add(terreno); }
+    const terreno = new THREE.Mesh(tg, M('#ffffff', { map: tex('./tex/sierra.jpg', 340), vertexColors: true, roughness: 0.95 })); terreno.rotation.x = -Math.PI / 2; terreno.position.y = -0.5; escena.add(terreno); }
   const o = new THREE.Object3D();
   // Árboles: pinos y árboles de copa redonda como planos cruzados con textura pintada por código (alpha).
   // Mucho más real que los conos y barato para el Quest (2 quads por árbol, una sola InstancedMesh por tipo).

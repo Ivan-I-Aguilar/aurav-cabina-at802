@@ -4,18 +4,19 @@
 // Uso interno de prueba.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { crearEscenario } from './escenario.js?v=20261017a';
+import { crearEscenario } from './escenario.js?v=20261112b';
 import { Controles } from './controles.js?v=20261022e';
 import { Instrumentos } from './instrumentos.js?v=20261025e';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261026j';
 import { Mision } from './mision.js?v=20261022b';
-import { Audio } from './audio.js?v=20261018b';
+import { Audio } from './audio.js?v=20261112b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261112a';
-import { generar, semillaNueva, describir } from './escenario_azar.js?v=20261112a';
-import { Registro } from './registro.js?v=20261112a';
-import { armarResultado, mostrarDebrief, ocultarDebrief } from './debrief.js?v=20261112a';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261112b';
+import { generar, semillaNueva, describir } from './escenario_azar.js?v=20261112b';
+import { Registro } from './registro.js?v=20261112b';
+import { crearIncendio } from './incendio.js?v=20261112b';
+import { armarResultado, mostrarDebrief, ocultarDebrief } from './debrief.js?v=20261112b';
 
 /* Etapa 7 (11/11): la cabina FSX (cabina.glb) y todos sus parches se sacaron del juego; la única cabina es la nueva (cabina_nueva.js).
    La historia de la vieja está en TRASPASO.md y en git (hasta el commit anterior a éste). */
@@ -91,8 +92,8 @@ function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
   pedales.accion.time = (THREE.MathUtils.clamp(pedales.vis, -1, 1) + 1) / 2 * pedales.dur; pedales.mixer.update(0);
 }
-Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261111d', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
-  exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; document.getElementById('cargando').remove(); if (NIVEL) pantallaInicio(); else mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
+Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261112b', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+  exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; mision.frds = r.frds; document.getElementById('cargando').remove(); if (NIVEL) pantallaInicio(); else mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
   if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula */
     hudVR.malla.position.set(0.29, 1.37, 1.065); hudVR.malla.rotation.set(0.55, -0.15, 0);
@@ -380,7 +381,7 @@ const ui = {
     $('panel').hidden = false; ui._ultimo = [datos, cb]; if (renderer.xr.isPresenting) panelVR.mostrar(datos, cb, renderer.xr.getCamera()); else panelVR.ocultar();
   },
   ocultarPanel() { $('panel').hidden = true; panelVR.ocultar(); },
-  decir(t) { audio.decir(t); },
+  decir(t) { audio.decir(t); }, decirVarias(l) { return audio.decirVarias(l); },
   marcar(nombre) { marca.objetivo = nombre ? (controles.palancas.find(p => p.nombre === nombre) || controles.switches.find(s => s.nombre === nombre) || null) : null; },
 };
 // marcador del control que pide el paso actual: aro amarillo que titila + flecha, visible a través de todo
@@ -434,13 +435,15 @@ let modoPrevio = 'cabina';
 ui.aPie = () => { mision.fase = 'libre'; reiniciarAvion({ enPista: true, agua: 2400, apagado: true }); mision.ui.tareas([]); aPie.bajar(false);
   mision.decir('Recorrido a pie', 'Caminá alrededor del avión. Para subir, acercate al estribo debajo del ala izquierda.'); };
 const mision = new Mision({ vuelo, controles, SW, ui, obtener: { terreno: (x, z) => ambiente.alturaTerreno(x, z) }, reiniciarAvion, fuegoConFuel: true });   /* el paso de FUEGO es la manija FUEL a OFF (no hay switch FIRE en el 802) */
+const incendio = crearIncendio(escena); mision.incendio = incendio; window.__incendio = incendio;   /* el foco del nivel 2 (incendio.js) */
 /* ---- niveles: pantalla de inicio (nombre del alumno), partida con semilla y debrief al terminar ---- */
 function pantallaInicio() {
   const ini = $('inicio'); ini.hidden = false; ocultarDebrief(); $('tutor').hidden = true; $('tareas').hidden = true;
   const nombres = { 1: 'Nivel 1 · Puesta en marcha', 2: 'Nivel 2 · Misión de incendio', 3: 'Nivel 3 · Salida con emergencia' };
   $('inicio-titulo').textContent = `Cabina AT-802 · ${nombres[NIVEL]}`;
   $('inicio-texto').textContent = NIVEL === 1 ? 'Poné el motor en marcha siguiendo el checklist de AAXOD (lo tenés en la tablilla). El tutor no dicta: anota todo lo que hacés y cuándo. Puede pasar algo en el arranque: resolvelo.'
-    : 'Este nivel todavía corre la secuencia completa de práctica (J2 / J3 del plan): se registra y se devuelve igual.';
+    : NIVEL === 2 ? 'Con el motor en marcha en la cabecera, la torre te pasa la orden de vuelo por radio: foco, rumbo, distancia, viento, carga y cobertura. Despegá, navegá al foco con el Garmin (CRS), largá en la ventana correcta y volvé a aterrizar en la 36. El tutor no dicta.'
+    : 'La misión del nivel 2; en algún momento puede pasar algo que no está en el plan (J3: todavía no se inyecta la emergencia).';
   const inp = $('inicio-nombre'); inp.value = PARAMS.get('alumno') || localStorage.getItem('aurav_alumno') || '';
   $('inicio-semilla').textContent = semillaActual ? `Situación ${semillaActual} (fijada en el link)` : 'Situación al azar';
   $('inicio-empezar').onclick = () => { const nombre = inp.value.trim() || 'Alumno/a'; try { localStorage.setItem('aurav_alumno', nombre); } catch (e) {} ini.hidden = true; $('tareas').hidden = false; $('tutor').hidden = false; audio.iniciar(); empezarNivel(nombre, semillaActual || semillaNueva()); };
@@ -513,7 +516,7 @@ renderer.setAnimationLoop(() => {
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
   if (cabinaNueva) cabinaNueva.actualizar(vuelo, dt, { controles, SW });   /* la mirilla de la tolva (etapa 1), las pantallas y los anunciadores (etapa 2) */
   if (registro && mision.fase !== 'resultado' && mision.fase !== 'intro') { registro.tic(dt * vel); registro.muestrear(vuelo); }
-  mision.actualizar(dt * vel); actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
+  mision.actualizar(dt * vel); actualizarHumo(dt); incendio.actualizar(dt); actualizarMarca(dt); actualizarPedales(dt);
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;
   if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
   botonSalir.malla.visible = renderer.xr.isPresenting;

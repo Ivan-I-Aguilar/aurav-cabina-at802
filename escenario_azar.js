@@ -17,7 +17,7 @@ export function generar(nivel, semilla) {
   const r = mulberry32(semilla); const elegir = lista => lista[Math.floor(r() * lista.length)];
   const e = { nivel, semilla, viento: { dir: Math.floor(r() * 360), kt: Math.round(r() * 15) }, hora: elegir(['mañana', 'mediodía', 'tarde']) };
   if (nivel === 1) { e.falla = elegir(['normal', 'normal', 'hot', 'hung', 'bateria']); e.ittInicial = 15 + Math.round(r() * 25); }
-  if (nivel >= 2) { e.foco = { rumbo: 30 + Math.floor(r() * 300), km: +(3 + r() * 5).toFixed(1) }; e.carga = 2000 + Math.round(r() * 11) * 100; e.cobertura = 1 + Math.floor(r() * 4); }
+  if (nivel >= 2) { e.foco = { rumbo: 30 + Math.floor(r() * 300), km: +(2.5 + r() * 2).toFixed(1) }; e.carga = 2000 + Math.round(r() * 11) * 100; e.cobertura = 1 + Math.floor(r() * 4); }   /* el terreno llega a 4,5 km */
   if (nivel === 3) { e.emergencia = elegir(['falla', 'fuego', 'fallaDespegue', 'generador', 'compuerta']); e.momento = elegir(['despegue', 'ida', 'descarga', 'vuelta']); e.senales = r() < 0.5; }
   return e;
 }

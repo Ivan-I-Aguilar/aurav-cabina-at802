@@ -121,7 +121,7 @@ export class Pantallas {
 
   /* ---- Garmin de rumbo (HSI): rosa que gira, línea de fe, aguja de curso en el rumbo de la pista (36), rumbo en grande y velocidad sobre el suelo ---- */
   _hsi(p) {
-    const { c, W, H } = p, rumbo = this.estado.rumbo ?? 0, cx = W / 2, cy = H / 2 + 12, R = Math.min(W, H) * 0.40;
+    const { c, W, H } = p, rumbo = this.estado.rumbo ?? 0, curso = this.estado.curso ?? 360, cx = W / 2, cy = H / 2 + 12, R = Math.min(W, H) * 0.40;
     c.fillStyle = NEGRO; c.fillRect(0, 0, W, H);
     c.save(); c.translate(cx, cy); c.rotate(-rumbo * Math.PI / 180);
     c.strokeStyle = BLANCO; c.fillStyle = BLANCO; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, R, 0, 7); c.stroke();
@@ -131,8 +131,8 @@ export class Pantallas {
       if (d % 30 === 0) { const t = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' }[d] || String(d / 10); c.font = `bold ${t.length === 1 && isNaN(t) ? 34 : 26}px Arial`; c.fillText(t, 0, -R + 46); }
       c.restore();
     }
-    /* aguja de curso (CDI) fija a la pista 36 */
-    c.save(); c.rotate(0); c.fillStyle = '#d0d0d0'; c.fillRect(-4, -R + 6, 8, R * 0.45); c.fillRect(-4, R * 0.55, 8, R * 0.45 - 6); c.beginPath(); c.moveTo(0, -R + 2); c.lineTo(-14, -R + 30); c.lineTo(14, -R + 30); c.closePath(); c.fill(); c.restore();
+    /* aguja de curso (CDI): la pista 36, o el curso que pide la misión (al foco en la ida) */
+    c.save(); c.rotate(curso * Math.PI / 180); c.fillStyle = '#d0d0d0'; c.fillRect(-4, -R + 6, 8, R * 0.45); c.fillRect(-4, R * 0.55, 8, R * 0.45 - 6); c.beginPath(); c.moveTo(0, -R + 2); c.lineTo(-14, -R + 30); c.lineTo(14, -R + 30); c.closePath(); c.fill(); c.restore();
     c.restore();
     /* avioncito y línea de fe */
     c.fillStyle = '#f2c200'; c.fillRect(cx - 34, cy - 3, 68, 6); c.fillRect(cx - 3, cy - 26, 6, 44); c.fillRect(cx - 14, cy + 14, 28, 5);
@@ -141,7 +141,7 @@ export class Pantallas {
     const caja = (x, y, w, h, txt, tam) => { c.fillStyle = NEGRO; c.strokeStyle = BLANCO; c.lineWidth = 3; c.beginPath(); c.rect(x, y, w, h); c.fill(); c.stroke(); c.fillStyle = BLANCO; c.font = `bold ${tam}px Arial`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x + w / 2, y + h / 2 + 1); };
     caja(cx - 60, 4, 120, 46, String(Math.round(rumbo) || 360).padStart(3, '0') + '°', 38);
     caja(6, H - 44, 150, 40, `GS ${Math.round(this.estado.gs || 0)} MPH`, 24);
-    caja(W - 118, H - 44, 112, 40, 'CRS 360°', 24);
+    caja(W - 118, H - 44, 112, 40, `CRS ${String(Math.round(curso) || 360).padStart(3, '0')}°`, 24);
   }
 
   /* ---- MVP-50: cuatro cajas grandes (TRQ · ITT · Ng · PROP) con su barra y seis chicas (FF · OIL P · OIL T · VOLT · AMP · FUEL) ---- */

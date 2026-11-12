@@ -27,7 +27,110 @@ export class Mision {
       this.reiniciarAvion({ enPista: true, agua: 2400, apagado: true });
       const m = this.vuelo.motor; m.fallaArranque = escenario.falla || 'normal'; m.tFalla = 0; m.itt = escenario.ittInicial || 15;
       this.faseArranque();
-    } else this.empezar('arranque');   /* niveles 2 y 3: por ahora la secuencia completa (J2 y J3 del plan) */
+    } else if (n === 2 || n === 3) {   /* nivel 2 (J2): misión de incendio; nivel 3 por ahora igual (J3 le suma la emergencia) */
+      this.reiniciarAvion({ enPista: true, agua: escenario.carga || 2400, apagado: false });
+      for (const n of ['levHEL', 'levCOND']) { const p = this.controles.palancas.find(x => x.nombre === n); if (p) { p.ang = -0.45; this.controles._aplicarPalanca(p); } }   /* en la cabecera, de rodaje: hélice y condición a mitad (ground idle); el checklist las pide adelante */
+      const th = escenario.foco.rumbo * Math.PI / 180, p = this.lugarLlano(30 + escenario.foco.km * 1000 * Math.sin(th), -escenario.foco.km * 1000 * Math.cos(th));   /* desde el aeródromo: norte = −z, este = +x */
+      this.incendio?.poner(p.x, p.z, this.obtener.terreno(p.x, p.z) + 0.5, escenario.viento);
+      this.faseMisionIncendio();
+    } else this.empezar('arranque');
+  }
+  /* el foco va en el lugar más llano a menos de 300 m del punto sorteado (determinista: mismo terreno, mismo lugar): la pasada a 100–200 ft
+     tiene que poder hacerse sin una loma en el medio (12/11: el piloto de prueba chocó una a 1 km del foco) */
+  lugarLlano(x0, z0) {
+    const T = (x, z) => this.obtener.terreno(x, z); let mejor = null;
+    for (let dx = -300; dx <= 300; dx += 100) for (let dz = -300; dz <= 300; dz += 100) {
+      const x = x0 + dx, z = z0 + dz; let mn = T(x, z), mx = mn;
+      for (let a = 0; a < 8; a++) for (const r of [120, 250, 400]) { const h = T(x + r * Math.cos(a * Math.PI / 4), z + r * Math.sin(a * Math.PI / 4)); mn = Math.min(mn, h); mx = Math.max(mx, h); }
+      const relieve = mx - mn + Math.hypot(dx, dz) * 0.01;   /* a igual relieve, el más cercano al sorteado */
+      if (!mejor || relieve < mejor.relieve) mejor = { x, z, relieve };
+    }
+    return mejor;
+  }
+  /* la orden de vuelo por radio, en pedazos con WAV propio (dígitos sueltos: herramientas/voces.py los genera) */
+  frasesOrden(e) {
+    const D = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+    const dig = n => String(n).split('').map(ch => ch === '.' || ch === ',' ? 'coma' : D[+ch]);
+    return ['Torre a Air Tractor: foco de incendio.', 'Rumbo al foco:', ...dig(String(e.foco.rumbo).padStart(3, '0')), 'Distancia:', ...dig(String(e.foco.km)), 'kilómetros.',
+      'Viento de los', ...dig(String(e.viento.dir).padStart(3, '0')), 'a', ...dig(e.viento.kt), 'nudos.', 'Carga:', ...dig(e.carga), 'kilos.', 'Cobertura:', ...dig(e.cobertura), 'Autorizado a despegar.'];
+  }
+  faseMisionIncendio() {
+    const v = this.vuelo, e = this.escenario, foco = this.incendio?.pos, p3 = n => String(Math.round(n)).padStart(3, '0');
+    this.vRot = null; this.maxDesvio = 0; this.salioPista = false; this.perdidaAnotada = false; this.descarga = null; this.descargas = []; this.volando = false; this.bajoAnotado = false; this.alContacto = null;
+    const rumboA = p => ((Math.atan2(p.x - v.pos.x, -(p.z - v.pos.z)) * 180 / Math.PI) % 360 + 360) % 360;   /* rumbo desde el avión a p (norte = −z, este = +x) */
+    const rumboAvion = () => ((90 - v.euler.rumbo * 180 / Math.PI) % 360 + 360) % 360;
+    const difRumbo = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+    const dist = p => Math.hypot(p.x - v.pos.x, p.z - v.pos.z);
+    const pista = { x: 30, z: -500 }, aprox = { x: 30, z: -3000 };   /* centro de la pista y el punto de aproximación: al NORTE (el valle sigue la pista hacia el norte; al sur hay sierras), final a la 18 */
+    const pesado = (3200 + v.agua) * 2.20462 > 12500;
+    this.definir('mision', [
+      { id: 'orden', texto: `Orden de vuelo: foco a ${e.foco.km} km rumbo ${p3(e.foco.rumbo)}°, viento ${p3(e.viento.dir)}°/${e.viento.kt} kt, carga ${e.carga} kg, cobertura ${e.cobertura}`, listo: () => this.tPaso > 6, marca: null },
+      { id: 'hel', texto: 'Hélice: TODA ADELANTE', listo: () => this.lev('levHEL') > 0.8 },
+      { id: 'cond', texto: 'Palanca de condición: FLIGHT (adelante)', listo: () => this.lev('levCOND') > 0.8 },
+      pesado ? { id: 'flaps', texto: 'Flaps 10° (más de 12.500 lb)', listo: () => v.mando.flaps >= 0.5 && v.mando.flaps < 1 } : { id: 'flaps', texto: 'Flaps arriba (hasta 12.500 lb)', listo: () => v.mando.flaps === 0 },
+      { id: 'pot', texto: 'Potencia de despegue, pedales para el eje', listo: () => v.motor.torque > 85 },
+      { id: 'rot', texto: 'Rotá suave y montada inicial', listo: () => !v.enTierra && this.alt > 100 },
+      { id: 'rumbo', texto: `Rumbo al foco ${p3(e.foco.rumbo)}° (CRS en el Garmin), trepando a 500 ft`, listo: () => foco && difRumbo(rumboAvion(), rumboA(foco)) < 12 && this.alt > 300 },
+      { id: 'foco', texto: 'Llegar al foco (el humo, adelante)', listo: () => foco && dist(foco) < 600 },
+      { id: 'desc', texto: `Descarga sobre el foco: 100–200 ft, 110–130 mph, cobertura ${e.cobertura} (GATE o SALVO)`, listo: () => this.descargas.length > 0 },
+      { id: 'vuelta', texto: 'Vuelta: al norte del aeródromo por el valle y final a la pista 18 (CRS 180)', listo: () => this.descargas.length > 0 && difRumbo(rumboAvion(), rumboA(aprox)) < 20 && dist(foco) > 800 },
+      { id: 'aprox', texto: 'Aproximación: flaps, 100 mph, alineado con la pista', listo: () => this.alt < 300 && Math.abs(v.pos.x - 30) < 80 && v.pos.z > -3300 && v.pos.z < 300 },
+      { id: 'tierra', texto: 'Aterrizar en la pista', listo: () => v.enTierra && this.volando },
+      { id: 'parar', texto: 'Frenar y detenerse en la pista', listo: () => v.enTierra && this.volando && v.vIAS < 5 },   /* la misión cierra con el avión detenido: la carrera de aterrizaje también cuenta */
+    ].filter(Boolean), 'Misión de incendio');
+    this.rodando = false; this.salioAterrizando = false; this.textoToque = null;
+    this.ui.decirVarias?.(this.frasesOrden(e));
+    this.vigilar = () => {
+      if (!v.enTierra && this.alt > 50 && !this.volando) { this.volando = true; this.alContacto = d => this.evaluarAterrizajeNormal(d); }
+      if (v.enTierra && !this.volando) { const d = Math.abs(v.pos.x - 30); this.maxDesvio = Math.max(this.maxDesvio, d); if (d > 8 && v.vIAS > 20 && !this.salioPista) { this.salioPista = true; this.puntos -= 40; this.detalle.push('se salió de la pista en el despegue'); } }
+      if (!v.enTierra && this.vRot == null) { this.vRot = v.vIAS; if (this.vRot < 78) { this.puntos -= 20; this.detalle.push(`rotó a ${this.vRot.toFixed(0)} mph (lento)`); } else if (this.vRot > 115) { this.puntos -= 10; this.detalle.push(`rotó a ${this.vRot.toFixed(0)} mph (tarde)`); } }
+      if (v.perdida && !this.perdidaAnotada) { this.perdidaAnotada = true; this.puntos -= 30; this.detalle.push('entró en pérdida'); }
+      const enValle = Math.abs(v.pos.x - 30) < 300 && v.pos.z > -4200 && v.pos.z < 500;   /* el eje de la pista y sus prolongaciones: ahí se baja para aterrizar */
+      if (this.volando && this.alt < 100 && foco && dist(foco) > 1500 && !enValle && !this.bajoAnotado) {   /* fuera de la pasada (1,5 km del foco) y del valle: bajo */ this.bajoAnotado = true; this.puntos -= 15; this.detalle.push('voló por debajo de 100 ft en ruta'); }
+      v.cursoHSI = this.descargas.length ? (dist(aprox) > 600 && v.pos.z > -2600 ? rumboA(aprox) : 180) : (foco ? rumboA(foco) : 360);   /* el CRS del Garmin: al foco en la ida; a la vuelta, al punto de aproximación y después la final 18 */
+      if (v.largando != null && v.agua > 0 && !this.descarga) { this.descarga = { t0: this.t, pos0: v.pos.clone(), vel0: v.vel.clone(), agl0: this.alt, ias0: v.vIAS, cob: this.frds?.cobertura ?? e.cobertura, agua0: v.agua }; this.registro?.anotar('evento', { nombre: 'descarga-inicio', detalle: `${this.alt.toFixed(0)} ft, ${v.vIAS.toFixed(0)} mph, a ${foco ? dist(foco).toFixed(0) : '?'} m del foco` }); }
+      if (this.descarga && (v.largando == null || v.agua <= 0)) this.evaluarDescarga();
+      if (this.rodando && v.enTierra && !this.salioAterrizando && (Math.abs(v.pos.x - 30) > 25 || v.pos.z > 200 || v.pos.z < -1200)) { this.salioAterrizando = true; this.puntos -= 30; this.detalle.push(`se salió de la pista en la carrera de aterrizaje (x ${v.pos.x.toFixed(0)}, z ${v.pos.z.toFixed(0)})`); }
+    };
+    this.alTerminar = () => {   /* la misión se cumple si alguna descarga llegó al foco (a menos de 150 m): si no, la nota puede dar pero no se aprueba */
+      const util = this.descargas.some(d => d.dm <= 150); if (!util && this.descargas.length) this.detalle.push('la misión no se cumplió: ninguna descarga llegó al foco (a menos de 150 m)');
+      this.cerrarFase('Misión de incendio', util, this.textoToque || 'Aterrizaste.');
+    };
+  }
+  evaluarDescarga() {
+    const v = this.vuelo, d = this.descarga, foco = this.incendio?.pos, e = this.escenario; this.descarga = null;
+    const caida = (p, vel, agl) => { const tc = Math.sqrt(2 * Math.max(5, agl / 3.281) / 9.8); return { x: p.x + vel.x * tc, z: p.z + vel.z * tc }; };   /* el agua cae unos 3 s desde 150 ft: adelante del avión */
+    const a = caida(d.pos0, d.vel0, d.agl0), b = caida(v.pos, v.vel, this.alt);
+    const distSeg = (p, a, b) => { const dx = b.x - a.x, dz = b.z - a.z, L2 = dx * dx + dz * dz; const t = L2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / L2)) : 0; return Math.hypot(p.x - a.x - t * dx, p.z - a.z - t * dz); };
+    const dm = foco ? distSeg(foco, a, b) : Infinity, largo = Math.hypot(b.x - a.x, b.z - a.z), kg = d.agua0 - v.agua;
+    const okAlt = d.agl0 >= 100 && d.agl0 <= 200, okVel = d.ias0 >= 110 && d.ias0 <= 130, okCob = d.cob === e.cobertura;
+    const texto = `${kg.toFixed(0)} kg desde ${d.agl0.toFixed(0)} ft a ${d.ias0.toFixed(0)} mph, línea de ${largo.toFixed(0)} m a ${dm.toFixed(0)} m del foco, cobertura ${d.cob}`;
+    this.descargas.push({ dm, agl: d.agl0, ias: d.ias0, cob: d.cob, kg, largo });
+    this.registro?.anotar('descarga', { texto, dm: +dm.toFixed(0), agl: +d.agl0.toFixed(0), ias: +d.ias0.toFixed(0), cob: d.cob, kg: +kg.toFixed(0), largo: +largo.toFixed(0), okAlt, okVel, okCob });
+    if (!okAlt) { this.puntos -= 15; this.detalle.push(`descarga a ${d.agl0.toFixed(0)} ft (ventana 100 a 200)`); }
+    if (!okVel) { this.puntos -= 10; this.detalle.push(`descarga a ${d.ias0.toFixed(0)} mph (ventana 110 a 130)`); }
+    if (!okCob) { this.puntos -= 10; this.detalle.push(`cobertura ${d.cob} en vez de ${e.cobertura}`); }
+    if (kg < 300) { this.puntos -= 10; this.detalle.push('descarga parcial (menos de 300 kg)'); }
+    if (dm > 150) { this.puntos -= 40; this.detalle.push(`la descarga cayó a ${dm.toFixed(0)} m del foco`); this.decir(this.titulo, 'Torre: la descarga cayó lejos del foco.'); }
+    else if (dm > 60) { this.puntos -= 15; this.detalle.push(`descarga a ${dm.toFixed(0)} m del foco (parcial)`); this.incendio?.controlar(0.5); this.decir(this.titulo, 'Torre: descarga cerca del foco, parcial. Volvé a la pista.'); }
+    else { this.incendio?.controlar(1); this.decir(this.titulo, 'Torre: foco controlado. Volvé a la pista.'); }
+  }
+  evaluarAterrizajeNormal(d) {
+    const v = this.vuelo; let texto;
+    if (v.estrellado) {   /* contra el terreno en ruta, con un ala o de panza: fatal, y no se le suma lo del aterrizaje */
+      const causa = d.terreno ? `chocó contra el terreno a ${d.v.toFixed(0)} mph` : d.bank > 0.25 ? 'tocó con un ala' : `toque muy fuerte (${d.vv.toFixed(1)} m/s de descenso)`;
+      this.puntos = Math.min(this.puntos, 30); this.registro?.marcarFatal(causa); texto = `${causa.charAt(0).toUpperCase() + causa.slice(1)}. El avión no quedó entero.`;
+    } else {
+      if (d.vv > 2) { this.puntos -= 15; this.detalle.push(`toque fuerte (${d.vv.toFixed(1)} m/s)`); }
+      if (Math.abs(v.pos.x - 30) > 20 || v.pos.z < -1250 || v.pos.z > 200) { this.puntos -= 30; this.detalle.push(`aterrizó fuera de la pista (x ${v.pos.x.toFixed(0)}, z ${v.pos.z.toFixed(0)})`); }
+      if (d.v > 115) { this.puntos -= 10; this.detalle.push(`tocó rápido (${d.v.toFixed(0)} mph)`); }
+      if (!this.descargas.length) { this.puntos -= 50; this.detalle.push('volvió sin largar sobre el foco'); }
+      if (v.mando.flaps < 0.5) { this.puntos -= 5; this.detalle.push('aterrizó sin flaps'); }
+      texto = `Aterrizaste: descenso ${d.vv.toFixed(1)} m/s a ${d.v.toFixed(0)} mph.`;
+    }
+    this.alContacto = null;
+    if (v.estrellado) this.cerrarFase('Misión de incendio', false, texto);
+    else { this.textoToque = texto; this.rodando = true; this.registro?.anotar('evento', { nombre: 'toque', detalle: texto }); }   /* el cierre lo da el último paso (detenerse en la pista) o un accidente en la carrera */
   }
   _nuevoDetalle() {   /* las observaciones (penalizaciones) también van al registro */
     const d = []; const reg = this.registro; if (!reg) return d;
@@ -262,7 +365,8 @@ export class Mision {
   }
   evento(tipo, d) {
     this.registro?.anotar('evento', { nombre: tipo, detalle: d && typeof d === 'object' ? Object.entries(d).map(([k, v]) => `${k} ${typeof v === 'number' ? +v.toFixed(1) : v}`).join(', ') : '' });
-    if (tipo === 'contacto' || tipo === 'accidente') { if (this.alContacto && (tipo === 'accidente' || this.vuelo.enTierra || true)) { const f = this.alContacto; this.alContacto = null; f(d); } else if (tipo === 'accidente' && this.fase !== 'pausa' && this.fase !== 'intro') { this.cerrarFase(this.titulo || 'Vuelo', false, 'Accidente. Repasemos qué pasó.'); } }
+    if (this.fase === 'resultado') return;   /* el nivel ya cerró: lo que pase después (p. ej. seguir rodando hasta la loma) no cambia el resultado */
+    if (tipo === 'contacto' || tipo === 'accidente') { if (this.alContacto && (tipo === 'accidente' || this.vuelo.enTierra || true)) { const f = this.alContacto; this.alContacto = null; f(d); } else if (tipo === 'accidente' && this.fase !== 'pausa' && this.fase !== 'intro') { if (this.modoNivel) this.registro?.marcarFatal(d?.terreno ? 'chocó contra el terreno' : 'accidente'); this.cerrarFase(this.titulo || 'Vuelo', false, 'Accidente. Repasemos qué pasó.'); } }
     if (tipo === 'vne') { this.puntos -= 10; this.detalle.push('superó la Vne'); }
     if (tipo === 'fuego-extinguido') this.decir(this.titulo, 'Fuego extinguido. Ahora, a aterrizar.');
     if (tipo === 'fuego-incontrolado' && this.fase !== 'pausa') { this.vuelo.estrellado = true; this.cerrarFase('Fuego de motor', false, this.fuegoConFuel ? 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FUEL a OFF.' : 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FIRE.'); }

@@ -91,6 +91,28 @@ Progresión: el nivel 2 se habilita con el 1 aprobado y el 3 con el 2; el instru
   práctica completa con registro y debrief genérico (J2/J3 pendientes). VR: el debrief es sólo HTML (J4).
 - Decisión tomada (sin respuesta a §5.5): el nombre lo escribe el alumno en la pantalla de inicio (queda guardado en el navegador); si el
   link trae `&alumno=`, se usa ése.
+- **J2 (12/11/2026, v=20261112b, commit local): nivel 2, misión de incendio, completo en PC.** `incendio.js` (el foco: frente de llamas
+  que titilan, resplandor, columna de humo que nace oscura y se aclara al subir, inclinada por el viento, parche quemado; con la descarga
+  encima pasa a vapor), `escenario_azar.js` (nivel ≥ 2: foco a 2,5–4,5 km rumbo 30–330°, carga 2000–3100 kg, cobertura 1–4, viento),
+  `escenario.js` (terreno hasta ±4,5 km y niebla a 6,5 km; el valle de la pista llega a 4,2 km al norte: la final a la 18 baja por el valle),
+  `mision.js` (`nivel(2)`: avión en la cabecera con el motor en marcha y hélice/condición a mitad; el foco va al lugar más llano a menos de
+  300 m del sorteado; `faseMisionIncendio`: la orden de vuelo por radio armada con WAV de dígitos, checklist de 13 pasos —hélice, condición,
+  flaps según peso, potencia, rotación, rumbo al foco con el CRS del Garmin, llegar, descarga en ventana 100–200 ft · 110–130 mph · cobertura
+  pedida, vuelta por el valle del norte y final a la 18, aproximación, aterrizar, frenar y detenerse—; `evaluarDescarga` mide dónde cayó el
+  agua: impactos con el tiempo de caída desde la altura y la velocidad, distancia del foco a la línea; el foco se controla si cayó a menos de
+  60 m, parcial hasta 150; toque fuerte, fuera de pista, rápido, sin flaps, salirse en la carrera; choque = fatal y cierra; después del cierre
+  nada cambia el resultado), `vuelo.js` (la compuerta queda cerrada al vaciarse —`largando` null— y el accidente se decide ANTES de avisar el
+  contacto: antes un choque en ruta cerraba como «aterrizaste»), `registro.js` (nombres legibles de los controles, los movimientos seguidos
+  de una palanca en un renglón: la potencia llenaba la línea de tiempo), `debrief.js` (`rubricaNivel2`: «navegación y descarga» en lugar de
+  reacción), `main.js` / `audio.js` (`decirVarias`: frases encadenadas; el foco en la escena; la cobertura del FRDS a la misión),
+  `herramientas/piloto_prueba.js` (vuela el nivel solo desde la consola: despegue, ida, descarga, circuito por el este, final a la 18,
+  aterrizaje y frenada). Probado el 12/11 con la semilla 100001 (foco a 3,5 km rumbo 134°, 2900 kg, cobertura 1, viento 214°/10 kt): el
+  piloto de prueba larga 2900 kg a 136 ft y 120 mph a 0 m del foco, vuelve, aterriza a 1 m/s y 71 mph y se detiene a 50 m del final de la
+  pista → APROBADO 100/100. Sus intentos fallidos sirvieron de prueba negativa: descarga a 259 ft → −20 en navegación; choque contra una
+  loma a 1 km del foco → FATAL «chocó contra el terreno a 61 mph», no aprobado; rodar hasta la loma del sur después de un toque bueno →
+  antes quedaba 100/100 «NO APROBADO» con dos cierres, ahora la misión cierra con el avión detenido y el accidente en la carrera es fatal.
+  Referencia visual del foco: los dos videos de Iván del 11/11 (Seedance, `Desktop/WAN_referencias/`, fuera del repo).
+  Queda: el humo y el frente en el Quest (rendimiento: ~46 sprites), las preguntas de §5.2 (ventana real de descarga y coberturas de AAXOD).
 
 ## 5. Qué hace falta saber (de Iván, AAXOD o el manual)
 

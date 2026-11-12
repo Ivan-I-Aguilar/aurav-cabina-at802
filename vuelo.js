@@ -87,7 +87,7 @@ export class Vuelo {
     if (this.estrellado) return;
     this.tiempo += dt; const c = this.mando, m = this.motor;
     this.pasoMotor(dt);
-    if (this.largando > 0 && this.agua > 0) { this.agua = Math.max(0, this.agua - AGUA_MAX / this.largando * dt); if (this.agua === 0) this.evento('tolva-vacia'); }
+    if (this.largando > 0 && this.agua > 0) { this.agua = Math.max(0, this.agua - AGUA_MAX / this.largando * dt); if (this.agua === 0) { this.largando = null; this.evento('tolva-vacia'); } }   /* vacía: la compuerta queda cerrada (largando null), si no el nivel 2 evaluaba la descarga en cada cuadro y la GATE no volvía a abrir */
     // velocidad en marco avión
     const qi = this.q.clone().invert(); const vb = this.vel.clone().applyQuaternion(qi);
     const V = vb.length(); const alfa = V > 2 ? Math.atan2(-vb.y, vb.x) : 0; this.alfa = alfa;
@@ -120,10 +120,10 @@ export class Vuelo {
     const aMundo = F.clone().applyQuaternion(this.q).divideScalar(this.masa); aMundo.y -= G;
     const suelo = this.suelo ? this.suelo(this.pos.x, this.pos.z) : 0;
     if (this.pos.y <= suelo + 0.001) {
-      if (!this.enTierra) {   // toma de contacto (si estuvo realmente en el aire)
+      if (!this.enTierra) {   // toma de contacto (si estuvo realmente en el aire): primero se decide si fue accidente y recién después se avisa (12/11: el aviso de contacto salía antes y la misión lo daba por aterrizaje bueno)
         const vv = -this.vel.y, bank = Math.abs(eu.alabeo);
-        if (this.tiempoAire > 1.5) this.evento('contacto', { vv, bank, v: this.vIAS });
         if (vv > 3.5 || bank > 0.25 || suelo > 3) { this.estrellado = true; this.evento('accidente', { vv, bank, v: this.vIAS, terreno: suelo > 3 }); return; }
+        if (this.tiempoAire > 1.5) this.evento('contacto', { vv, bank, v: this.vIAS });
         this.enTierra = true;
       }
       this.pos.y = suelo; if (this.vel.y < 0) this.vel.y = 0;
