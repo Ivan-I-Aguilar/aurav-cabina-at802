@@ -126,3 +126,15 @@ export function mostrarDebrief(res, acciones) {
   d.querySelector('#db-menu').onclick = () => acciones.menu();
 }
 export function ocultarDebrief() { const d = document.getElementById('debrief'); if (d) d.hidden = true; }
+
+/* el mismo resultado para el panel de VR (panelvr.js, J4): título, APROBADO/NO con la nota, las cuatro competencias en barras y las
+   observaciones más importantes (lo fatal y la emergencia primero); la devolución completa, la constancia y el JSON quedan en la página */
+export function resumenVR(res) {
+  const nombres = NOMBRES_COMP[res.nivel] || NOMBRES_COMP[1];
+  const peso = o => /^FATAL/.test(o) ? 0 : /emergencia preparada|La situación era/.test(o) ? 1 : /después\)|no hubo reacción|no abortó/.test(o) ? 2 : /^Descarga:/.test(o) ? 3 : 4;
+  const obs = res.observaciones.map((o, i) => [peso(o), i, o]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 4).map(x => '· ' + x[2]);
+  return { titulo: res.titulo, subtitulo: `${res.aprobado ? 'APROBADO' : 'NO APROBADO'} · ${res.nota} / 100`, colorSubtitulo: res.aprobado ? '#7be07b' : '#ff8a80',
+    barras: Object.keys(nombres).map(k => ({ nombre: nombres[k], valor: res.competencias[k] })),
+    texto: (obs.join('\n') || '· Sin observaciones.') + '\nLa devolución completa y la constancia están en la página: salí de VR para verlas.',
+    botones: [{ id: 'repetir', texto: 'Repetir' }, { id: 'otra', texto: 'Otra situación' }, { id: 'salir', texto: 'Salir de VR' }] };
+}

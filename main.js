@@ -4,19 +4,19 @@
 // Uso interno de prueba.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { crearEscenario } from './escenario.js?v=20261112c';
+import { crearEscenario } from './escenario.js?v=20261112d';
 import { Controles } from './controles.js?v=20261022e';
 import { Instrumentos } from './instrumentos.js?v=20261025e';
-import { Vuelo, MPH, FT } from './vuelo.js?v=20261112c';
-import { Mision } from './mision.js?v=20261112c';
-import { Audio } from './audio.js?v=20261112c';
+import { Vuelo, MPH, FT } from './vuelo.js?v=20261112d';
+import { Mision } from './mision.js?v=20261112d';
+import { Audio } from './audio.js?v=20261112d';
 import { crearAPie } from './apie.js?v=20261024a';
-import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261112c';
-import { generar, semillaNueva, describir } from './escenario_azar.js?v=20261112c';
-import { Registro } from './registro.js?v=20261112c';
-import { crearIncendio } from './incendio.js?v=20261112c';
-import { armarResultado, mostrarDebrief, ocultarDebrief } from './debrief.js?v=20261112c';
+import { crearPanelVR } from './panelvr.js?v=20261112d';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261112d';
+import { generar, semillaNueva, describir } from './escenario_azar.js?v=20261112d';
+import { Registro } from './registro.js?v=20261112d';
+import { crearIncendio } from './incendio.js?v=20261112d';
+import { armarResultado, mostrarDebrief, ocultarDebrief, resumenVR } from './debrief.js?v=20261112d';
 
 /* Etapa 7 (11/11): la cabina FSX (cabina.glb) y todos sus parches se sacaron del juego; la única cabina es la nueva (cabina_nueva.js).
    La historia de la vieja está en TRASPASO.md y en git (hasta el commit anterior a éste). */
@@ -24,7 +24,8 @@ const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco d
 /* Niveles del aula virtual (PLAN_JUEGO.md, 12/11): ?nivel=1|2|3[&semilla=123456][&alumno=Nombre] arranca directo en el nivel, sin menú; sin ?nivel, el
    menú de práctica libre de siempre. La semilla fija la situación (escenario_azar.js); el registro (registro.js) alimenta el debrief (debrief.js). */
 const PARAMS = new URLSearchParams(location.search); const NIVEL = Math.min(3, Math.max(0, parseInt(PARAMS.get('nivel') || '0', 10) || 0));
-let semillaActual = parseInt(PARAMS.get('semilla') || '0', 10) || 0, registro = null, escenarioActual = null;
+const SEMILLA_LINK = parseInt(PARAMS.get('semilla') || '0', 10) || 0;   /* la situación fijada por el instructor en el link (0 = al azar en cada partida) */
+let semillaActual = SEMILLA_LINK, registro = null, escenarioActual = null, nombreActual = '', debriefActual = null, congelado = false;   /* congelado: con el debrief a la vista el mundo se detiene */
 const ALTURA_CABINA = 1.9;                      // el marco de la cabina sobre el del avión: a 7,2° de 3 puntos las ruedas (y_cab −2 / −1,12) apoyan justo (24/10)
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); window.__renderer = renderer;   /* gancho de prueba: renderer.info (llamadas, triángulos) */   /* alpha: en modo cámara «lugar real» se ve la cámara detrás del avión */
@@ -92,12 +93,12 @@ function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
   pedales.accion.time = (THREE.MathUtils.clamp(pedales.vis, -1, 1) + 1) / 2 * pedales.dur; pedales.mixer.update(0);
 }
-Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261112c', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261112d', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; mision.frds = r.frds; document.getElementById('cargando').remove(); if (NIVEL) pantallaInicio(); else mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
-  if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula */
-    hudVR.malla.position.set(0.29, 1.37, 1.065); hudVR.malla.rotation.set(0.55, -0.15, 0);
-    botonSalir.malla.position.set(0.27, 1.21, r.tablero.z_cara + 0.002); botonSalir.malla.rotation.set(0, 0, 0);
+  if (r.tablero) {   /* J4 (12/11): la tablilla (tutor y checklist) recostada sobre el ala derecha del tablero y vuelta hacia el ojo, 7 cm por delante de la chapa; la placa MENÚ cuelga de su borde de abajo. (Del 8/11 al 12/11 iba prendida al parante derecho del parabrisas, que le tapaba un tercio del texto.) */
+    hudVR.malla.position.set(0.305, 1.135, r.tablero.z_cara + 0.07); hudVR.malla.rotation.set(-0.25, -0.2, 0);
+    hudVR.malla.add(botonSalir.malla); botonSalir.malla.position.set(0.085, -0.095 - 0.023, 0.001); botonSalir.malla.rotation.set(0, 0, 0);
   }
   for (const o of r.palanca || []) { o.position.sub(PIVOTE); palanca.add(o); }   /* etapa 6: el bastón nuevo (palanca_*) gira con el mando desde PIVOTE */
   Object.assign(pedales, r.pedales || {});                                        /* y los pedales de Lichi siguen al pedal */
@@ -306,16 +307,38 @@ window.__sonda = (u, v, n = 3) => {
 };
 
 // ---- VR ----
-const bVR = document.getElementById('vr');
-if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { bVR.hidden = !ok; });
-bVR.onclick = async () => {
+const bVR = document.getElementById('vr'); let vrDisponible = false;
+if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { vrDisponible = !!ok; bVR.hidden = !ok; const b = document.getElementById('inicio-vr'); if (b) { b.hidden = !ok; if (ok) document.getElementById('inicio-empezar').textContent = 'Empezar en pantalla'; } }).catch(() => {});
+/* entrar a VR: hay que llamarla desde un gesto del usuario (un clic). Pide la sesión, recentra el casco al ojo del piloto y muestra en el
+   casco el panel que estuviera abierto en la página. Si el casco se saca en medio de un nivel, el nivel queda en pausa (no sigue volando solo). */
+async function entrarVR() {
   audio.iniciar();
   const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
   renderer.xr.setReferenceSpaceType('local-floor'); await renderer.xr.setSession(s);
   recentrarPendiente = 72;   /* recentra a los 12 y a los 72 cuadros */
-  setTimeout(() => { if (!$('panel').hidden && ui._ultimo) panelVR.mostrar(ui._ultimo[0], ui._ultimo[1], renderer.xr.getCamera()); }, 800);
-  s.addEventListener('end', () => { if (aPie.modo === 'cabina') jugador.position.copy(OJO_AVION); else camara.position.y = 1.65; });
-};
+  setTimeout(panelVRPendiente, 800);
+  s.addEventListener('end', () => { if (aPie.modo === 'cabina') jugador.position.copy(OJO_AVION); else camara.position.y = 1.65; panelVR.ocultar();
+    if (NIVEL && registro && mision.fase !== 'resultado' && mision.fase !== 'intro') pausar(); });
+  return s;
+}
+bVR.onclick = () => entrarVR().catch(e => console.warn('VR', e));
+/* el panel de VR va frente al casco y, en la cabina, pegado al avión: si el avión sigue rodando, el panel va con él */
+function mostrarPanelVR(datos, cb) {
+  escena.add(panelVR.malla); escena.updateMatrixWorld(true); panelVR.mostrar(datos, cb, renderer.xr.isPresenting ? renderer.xr.getCamera() : camara);
+  if (aPie.modo === 'cabina') avion.attach(panelVR.malla);
+}
+/* el panel que toca mostrar en el casco: el que esté abierto en la página (menú, pausa, resultado de la práctica) o el debrief del nivel */
+function panelVRPendiente() {
+  if (!renderer.xr.isPresenting) return;
+  if (!$('panel').hidden && ui._ultimo) mostrarPanelVR(ui._ultimo[0], ui._ultimo[1]);
+  else if (debriefActual && !$('debrief').hidden) panelDebriefVR();
+}
+function panelDebriefVR(forzar = false) {   /* el debrief en el casco: resultado, competencias en barras, lo más importante y Repetir / Otra situación / Salir de VR */
+  if (!debriefActual || !(renderer.xr.isPresenting || forzar)) return; const a = debriefActual.acciones;
+  mostrarPanelVR(resumenVR(debriefActual.resultado), id => { if (id === 'repetir') a.repetir(); else if (id === 'otra') a.otra(); else if (id === 'salir') { panelVR.ocultar(); renderer.xr.getSession()?.end(); } });
+}
+function cerrarDebrief() { ocultarDebrief(); debriefActual = null; congelado = false; panelVR.ocultar(); }
+window.__debriefVR = () => panelDebriefVR(true);   /* gancho de prueba (PC): el panel de VR del debrief frente a la cámara */
 // ---- modo cámara (celular Android): WebXR AR que sigue el movimiento real del teléfono pero muestra sólo la escena virtual ----
 const bAR = document.getElementById('ar');
 if (navigator.xr) navigator.xr.isSessionSupported('immersive-ar').then(ok => { bAR.hidden = !ok; }).catch(() => {});
@@ -376,11 +399,13 @@ const $ = id => document.getElementById(id);
 const ui = {
   tutor(titulo, texto) { $('tutor').hidden = !texto; $('tutor-titulo').textContent = titulo || ''; $('tutor-texto').textContent = texto || ''; hudVR.texto(titulo, texto); },
   cartel(texto) { $('fase').textContent = texto || ''; },
-  tareas(lista) { const ul = $('tareas'); ul.innerHTML = ''; ul.hidden = !lista.length; for (const t of lista) { const li = document.createElement('li'); li.textContent = t.texto; if (t.ok) li.className = 'ok'; if (t.actual) li.className = 'actual'; ul.appendChild(li); } },
+  tareas(lista) { const ul = $('tareas'); ul.innerHTML = ''; ul.hidden = !lista.length; for (const t of lista) { const li = document.createElement('li'); li.textContent = t.texto; if (t.ok) li.className = 'ok'; if (t.actual) li.className = 'actual'; ul.appendChild(li); }
+    hudVR.lista(mision.modoNivel ? $('fase').textContent : null, lista, mision.fase === 'mision'); },   /* en los niveles la tablilla de la cabina lleva el checklist (en VR no hay otra lista a la vista); la orden de vuelo, sólo durante la misión (no en una emergencia) */
+  orden(texto) { hudVR.orden(texto); },   /* la orden de vuelo (niveles 2 y 3), fija arriba en la tablilla */
   panel(datos, cb) {
     $('panel-titulo').textContent = datos.titulo; $('panel-texto').textContent = datos.texto; const bs = $('panel-botones'); bs.innerHTML = '';
     for (const b of datos.botones) { const el = document.createElement('button'); el.textContent = b.texto; el.onclick = () => { audio.iniciar(); cb(b.id); }; bs.appendChild(el); }
-    $('panel').hidden = false; ui._ultimo = [datos, cb]; if (renderer.xr.isPresenting) panelVR.mostrar(datos, cb, renderer.xr.getCamera()); else panelVR.ocultar();
+    $('panel').hidden = false; ui._ultimo = [datos, cb]; if (renderer.xr.isPresenting) mostrarPanelVR(datos, cb); else panelVR.ocultar();
   },
   ocultarPanel() { $('panel').hidden = true; panelVR.ocultar(); },
   decir(t) { audio.decir(t); }, decirVarias(l) { return audio.decirVarias(l); },
@@ -403,11 +428,50 @@ function actualizarMarca(dt) {
   marca.g.quaternion.identity();
 }
 // texto flotante en VR (tutor): tablilla a la derecha del panel, fija a la cabina
+/* Dos vistas (J4, 12/11): el MENSAJE (título + texto: lo que dicta el tutor en la práctica, la torre y los avisos en los niveles) y, en los
+   niveles, el CHECKLIST: título de la fase con «paso i/n», la orden de vuelo fija (niveles 2 y 3), el próximo paso en grande (hasta 2 renglones)
+   y los que siguen más chicos, uno por renglón. En VR es la única lista a la vista (la de la página no se ve en el casco). Con el checklist
+   activo, un mensaje lo tapa 7 s y vuelve; si cambia la fase (una emergencia), el checklist nuevo sale en el acto. */
+/* Dónde va (12/11): sobre el ALA DERECHA del tablero, recostada contra la chapa y vuelta hacia el ojo del piloto (31 × 19 cm, a 0,72 m, 25° a la
+   derecha y 19° abajo: una mirada, como a un instrumento). Antes iba prendida al parante derecho del parabrisas y el parante, que es más grueso
+   que el vidrio, le tapaba un tercio del texto desde el ojo (medido con rayos); acá no tiene nada adelante y no tapa la vista de afuera. Tapa
+   las dos perillas y el soporte del Garmin del ala (decorado). La posición final la pone el bloque de carga de la cabina (más arriba). */
 const hudVR = (() => {
-  const W = 768, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.14), new THREE.MeshBasicMaterial({ map: tex, transparent: true })); m.renderOrder = 3; m.position.set(0.33, 1.29, 1.13);   /* con depthTest: ya no se dibuja a traves de la chapa (24/10) */ m.rotation.set(-0.12, -0.22, 0); cabina.add(m);   /* adentro del vidrio: a 0,78 atravesaba la cupula (24/10) */
-  return { malla: m, texto(titulo, texto) { c.clearRect(0, 0, W, H); if (!texto) { tex.needsUpdate = true; return; } c.fillStyle = 'rgba(8,36,64,0.85)'; c.beginPath(); c.roundRect(0, 0, W, H, 28); c.fill(); c.fillStyle = '#c8e63a'; c.font = 'bold 30px Arial'; c.fillText(titulo || '', 28, 48);
-    c.fillStyle = '#fff'; c.font = '34px Arial'; let y = 100, l = ''; for (const p of texto.split(' ')) { const t = l ? l + ' ' + p : p; if (c.measureText(t).width > W - 56) { c.fillText(l, 28, y); y += 42; l = p; } else l = t; } c.fillText(l, 28, y); tex.needsUpdate = true; } };
+  const W = 1024, H = 628, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.31, 0.19), new THREE.MeshBasicMaterial({ map: tex, transparent: true })); m.renderOrder = 3; m.name = 'tablilla'; m.rotation.order = 'YXZ';   /* con depthTest: no se dibuja a través de la chapa (24/10) */
+  m.position.set(0.305, 1.135, 1.03); m.rotation.set(-0.25, -0.2, 0); cabina.add(m);
+  const est = { lista: null, titulo: '', orden: null, msj: null, reloj: 0 };
+  const fondo = () => { c.clearRect(0, 0, W, H); c.fillStyle = 'rgba(8,36,64,0.94)'; c.beginPath(); c.roundRect(0, 0, W, H, 40); c.fill(); c.textBaseline = 'alphabetic'; c.textAlign = 'left'; };
+  const partir = (texto, ancho, max) => { const ls = []; let l = ''; for (const p of String(texto).split(' ')) { const t = l ? l + ' ' + p : p; if (c.measureText(t).width > ancho && l) { ls.push(l); l = p; } else l = t; } ls.push(l);
+    if (ls.length > max) { ls.length = max; let u = ls[max - 1]; while (u.length > 3 && c.measureText(u + '…').width > ancho) u = u.slice(0, -1); ls[max - 1] = u + '…'; } return ls; };
+  const dibMensaje = () => { const [titulo, texto] = est.msj; fondo(); c.fillStyle = '#c8e63a'; c.font = 'bold 44px Arial'; c.fillText(titulo || '', 36, 62, W - 72);
+    c.fillStyle = '#fff'; c.font = '56px Arial'; let y = 136; for (const l of partir(texto, W - 72, 8)) { c.fillText(l, 36, y); y += 67; } tex.needsUpdate = true; };
+  const dibLista = () => {
+    const ps = est.lista, i = ps.findIndex(p => !p.ok), n = ps.length; fondo();
+    c.fillStyle = '#c8e63a'; c.font = 'bold 44px Arial'; c.fillText(est.titulo || '', 34, 60, W - 280);
+    c.fillStyle = '#fff'; c.font = 'bold 38px Arial'; c.textAlign = 'right'; c.fillText(i < 0 ? `${n}/${n} ✓` : `paso ${i + 1}/${n}`, W - 34, 60); c.textAlign = 'left';
+    let y = 72;
+    if (est.orden && est.conOrden) { c.fillStyle = '#ffd98a'; c.font = 'bold 37px Arial'; c.fillText(est.orden, 34, y + 38, W - 68); y += 50; }
+    if (i < 0) { c.fillStyle = '#fff'; c.font = '56px Arial'; c.fillText('Checklist completo.', 34, y + 70); tex.needsUpdate = true; return; }
+    c.fillStyle = '#fff'; c.font = '56px Arial'; c.fillText('▸', 26, y + 62); for (const l of partir(ps[i].texto, W - 118, 3)) { y += 62; c.fillText(l, 84, y); }
+    c.fillStyle = 'rgba(255,255,255,0.76)'; c.font = '40px Arial'; y += 14;
+    for (let k = i + 1; k < n && y + 50 <= H - 14; k++) { y += 50; c.fillText(partir(ps[k].texto, W - 118, 1)[0], 84, y); c.fillRect(46, y - 17, 16, 4); }
+    tex.needsUpdate = true;
+  };
+  const redibujar = () => { if (est.msj && (!est.lista || est.reloj)) dibMensaje(); else if (est.lista) dibLista(); else { c.clearRect(0, 0, W, H); tex.needsUpdate = true; } };
+  return { malla: m,
+    texto(titulo, texto) {   /* mensaje: fijo si no hay checklist; con checklist, 7 s y vuelve */
+      clearTimeout(est.reloj); est.reloj = 0; est.msj = texto ? [titulo, texto] : null;
+      if (est.msj && est.lista) est.reloj = setTimeout(() => { est.reloj = 0; est.msj = null; redibujar(); }, 7000);
+      redibujar(); },
+    lista(titulo, pasos, conOrden = true) {   /* checklist del nivel (null o vacío: no hay) */
+      const habia = !!est.lista, cambio = titulo !== est.titulo; est.lista = titulo != null && pasos && pasos.length ? pasos : null; est.titulo = titulo || ''; est.conOrden = conOrden;
+      if (est.lista && (cambio || !habia) && est.reloj && habia) { clearTimeout(est.reloj); est.reloj = 0; est.msj = null; }   /* fase nueva con un mensaje en pantalla: manda el checklist */
+      if (!est.lista) { clearTimeout(est.reloj); est.reloj = 0; if (habia) est.msj = null; }
+      else if (est.msj && !est.reloj) est.reloj = setTimeout(() => { est.reloj = 0; est.msj = null; redibujar(); }, 7000);   /* había un mensaje fijo de antes: 7 s más y el checklist */
+      redibujar(); },
+    orden(texto) { est.orden = texto || null; redibujar(); },
+  };
 })();
 function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado = false } = {}) {
   const v = vuelo; v.vel.set(0, 0, 0); v.w.set(0, 0, 0); v.agua = agua; v.largando = null; v.estrellado = false; v.perdida = false; v.avisoVne = false; v.tiempoFuego = 0; v.eventos = [];
@@ -446,17 +510,29 @@ function pantallaInicio() {
   $('inicio-texto').textContent = NIVEL === 1 ? 'Poné el motor en marcha siguiendo el checklist de AAXOD (lo tenés en la tablilla). El tutor no dicta: anota todo lo que hacés y cuándo. Puede pasar algo en el arranque: resolvelo.'
     : NIVEL === 2 ? 'Con el motor en marcha en la cabecera, la torre te pasa la orden de vuelo por radio: foco, rumbo, distancia, viento, carga y cobertura. Despegá, navegá al foco con el Garmin (CRS), largá en la ventana correcta y volvé a aterrizar en la 36. El tutor no dicta.'
     : 'La misma misión del nivel 2 (orden por radio, foco, descarga, vuelta), pero en algún momento va a pasar algo que no está en el plan. Resolvelo como en el avión: el checklist de emergencia aparece en la tablilla. Si se puede, terminá la misión; si no, volvé entero.';
-  const inp = $('inicio-nombre'); inp.value = PARAMS.get('alumno') || localStorage.getItem('aurav_alumno') || '';
-  $('inicio-semilla').textContent = semillaActual ? `Situación ${semillaActual} (fijada en el link)` : 'Situación al azar';
-  $('inicio-empezar').onclick = () => { const nombre = inp.value.trim() || 'Alumno/a'; try { localStorage.setItem('aurav_alumno', nombre); } catch (e) {} ini.hidden = true; $('tareas').hidden = false; $('tutor').hidden = false; audio.iniciar(); empezarNivel(nombre, semillaActual || semillaNueva()); };
+  const inp = $('inicio-nombre'); inp.value = PARAMS.get('alumno') || nombreActual || localStorage.getItem('aurav_alumno') || '';
+  $('inicio-semilla').textContent = SEMILLA_LINK ? `Situación ${SEMILLA_LINK} (fijada en el link)` : 'Situación al azar';
+  const nota = $('inicio-nota'); nota.hidden = true;
+  const tomarNombre = () => { const nombre = inp.value.trim() || 'Alumno/a'; try { localStorage.setItem('aurav_alumno', nombre); } catch (e) {} ini.hidden = true; $('tutor').hidden = false; audio.iniciar(); return nombre; };
+  $('inicio-empezar').onclick = () => empezarNivel(tomarNombre(), SEMILLA_LINK || semillaNueva());
+  /* en el Quest: un solo toque entra a VR y arranca el nivel ya sentado (1,5 s después, con el casco recentrado); con la pantalla de inicio
+     abierta el botón «Entrar en VR» de la barra queda tapado, y arrancar en 2D dejaba el reloj corriendo antes de ponerse el casco */
+  const bv = $('inicio-vr'); bv.hidden = !vrDisponible; if (vrDisponible) $('inicio-empezar').textContent = 'Empezar en pantalla';
+  bv.onclick = () => { bv.disabled = true; entrarVR().then(() => { const nombre = tomarNombre(); setTimeout(() => empezarNivel(nombre, SEMILLA_LINK || semillaNueva()), 1500); })
+    .catch(e => { nota.hidden = false; nota.textContent = `No se pudo entrar en VR (${e?.message || e}). Probá de nuevo o empezá en pantalla.`; }).finally(() => { bv.disabled = false; }); };
 }
 function empezarNivel(nombre, semilla) {
+  cerrarDebrief(); nombreActual = nombre;
   semillaActual = semilla; escenarioActual = generar(NIVEL, semilla); registro = new Registro(); registro.anotar('inicio', { nivel: NIVEL, semilla, situacion: describir(escenarioActual) });
   const q = new URLSearchParams(location.search); q.set('nivel', String(NIVEL)); q.set('semilla', String(semilla)); history.replaceState(null, '', location.pathname + '?' + q);   /* el link de esta partida, para repetirla */
   mision.alCerrar = res => {
     const resultado = armarResultado({ alumno: nombre, nivel: NIVEL, escenario: escenarioActual, registro, resultado: res });
     console.log('resultado', resultado);
-    mostrarDebrief(resultado, { repetir: () => { ocultarDebrief(); empezarNivel(nombre, semilla); }, otra: () => { ocultarDebrief(); empezarNivel(nombre, semillaNueva()); }, menu: () => { ocultarDebrief(); registro = null; mision.modoNivel = 0; mision.menu(); } });
+    const acciones = { repetir: () => empezarNivel(nombre, semilla), otra: () => empezarNivel(nombre, semillaNueva()), menu: () => { cerrarDebrief(); registro = null; mision.modoNivel = 0; mision.menu(); } };
+    debriefActual = { resultado, acciones }; mostrarDebrief(resultado, acciones);
+    /* a los 3 s (un momento para ver cómo quedó): el mundo se detiene, la voz dice el resultado y, con el casco puesto, sale el debrief de VR */
+    setTimeout(() => { if (!debriefActual || debriefActual.resultado !== resultado) return; congelado = true;
+      if ('speechSynthesis' in window) speechSynthesis.cancel(); audio.decir(resultado.aprobado ? 'Nivel aprobado.' : 'Nivel no aprobado. Mirá la devolución.'); panelDebriefVR(); }, 3000);
   };
   mision.nivel(NIVEL, escenarioActual, registro);
 } window.__mision = mision;
@@ -465,17 +541,23 @@ $('menu').onclick = () => { audio.iniciar(); pausar(); };
 let pausado = false;
 function pausar() {
   if (pausado) return; pausado = true; const previo = $('panel').hidden ? null : ui._ultimo;
-  const botones = [{ id: 'seguir', texto: 'Seguir' }, { id: 'menu', texto: 'Menú principal' }];
-  if (aPie.modo === 'cabina' && vuelo.enTierra && vuelo.vel.length() < 1) botones.splice(1, 0, { id: 'bajar', texto: 'Bajar del avión' });
+  const enNivel = !!(NIVEL && registro);   /* en un nivel no hay menú de práctica ni paseo a pie: se sigue o se empieza de nuevo; la pausa queda anotada */
+  const botones = [{ id: 'seguir', texto: 'Seguir' }, enNivel ? { id: 'reiniciar', texto: 'Empezar de nuevo' } : { id: 'menu', texto: 'Menú principal' }];
+  if (!enNivel && aPie.modo === 'cabina' && vuelo.enTierra && vuelo.vel.length() < 1) botones.splice(1, 0, { id: 'bajar', texto: 'Bajar del avión' });
   if (aPie.modo === 'pie') botones.splice(1, 0, { id: 'subir', texto: 'Volver a la cabina' });
-  if (renderer.xr.isPresenting) botones.push({ id: 'salirVR', texto: 'Salir de VR' });
-  ui.panel({ titulo: 'Pausa', texto: 'El avión está detenido. Seguí donde estabas, volvé al menú o salí.', botones }, id => {
+  if (renderer.xr.isPresenting) botones.push({ id: 'salirVR', texto: 'Salir de VR' }); else if (vrDisponible) botones.push({ id: 'entrarVR', texto: 'Entrar en VR' });
+  if (enNivel && mision.fase !== 'resultado' && mision.fase !== 'intro') registro.anotar('evento', { nombre: 'pausa' });
+  ui.panel({ titulo: 'Pausa', texto: enNivel ? 'El nivel está en pausa (queda anotada). Seguí donde estabas o empezá de nuevo.' : 'El avión está detenido. Seguí donde estabas, volvé al menú o salí.', botones }, id => {
     pausado = false; ui.ocultarPanel();
-    if (id === 'seguir') { if (previo) ui.panel(previo[0], previo[1]); }
+    if (id === 'seguir') { if (previo) ui.panel(previo[0], previo[1]); else panelVRPendiente(); }
     else if (id === 'menu') mision.menu();
+    else if (id === 'reiniciar') {   /* otra partida (la semilla del link si la hay; si no, una situación nueva): en el casco arranca de una, en la página vuelve a la pantalla de inicio */
+      if (renderer.xr.isPresenting) empezarNivel(nombreActual || 'Alumno/a', SEMILLA_LINK || semillaNueva());
+      else { cerrarDebrief(); registro = null; mision.fase = 'intro'; ui.tareas([]); ui.tutor('', ''); ui.cartel(''); reiniciarAvion({ enPista: true, apagado: true }); pantallaInicio(); } }
     else if (id === 'bajar') { aPie.bajar(); if (modoCamara) setTimeout(() => aplicarEscalaCamara(true), 1200); }
     else if (id === 'subir') aPie.subir(true);
     else if (id === 'salirVR') { renderer.xr.getSession()?.end(); if (previo) ui.panel(previo[0], previo[1]); }
+    else if (id === 'entrarVR') { if (previo) ui.panel(previo[0], previo[1]); entrarVR().catch(e => console.warn('VR', e)); }
   });
 }
 const botonSalir = (() => {   /* placa «MENÚ · SALIR» debajo de la tablilla del tutor */
@@ -503,7 +585,7 @@ renderer.setAnimationLoop(() => {
   if (renderer.xr.isPresenting) { leerJoysticks(); for (const c of manos) controles.manoVR(c, c.userData.apretado > 0, false); }
   controles.actualizar(); aplicarControles();
   // física a paso fijo
-  const vel = pausado ? 0 : (window.__vel || 1); acumSim += dt * vel; const h = 1 / 120; let n = 0;
+  const vel = pausado || congelado ? 0 : (window.__vel || 1); acumSim += dt * vel; const h = 1 / 120; let n = 0;
   while (acumSim >= h && n < 400) {
     if (window.__auto) {   /* piloto automático de prueba (headless): mantiene cabeceo y alabeo pedidos en grados */
       const e = vuelo.euler, a = window.__auto, c = vuelo.mando;
@@ -522,6 +604,7 @@ renderer.setAnimationLoop(() => {
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;
   if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }
   botonSalir.malla.visible = renderer.xr.isPresenting;
+  hudVR.malla.visible = !(debriefActual && panelVR.visible);   /* con el debrief de VR a la vista la tablilla se guarda: el panel se dibuja encima de todo y se mezclaban los textos */
   audio.actualizar(dt, { ng: vuelo.motor.ng, rpm: vuelo.motor.rpmHel, fuego: vuelo.motor.fuego, bocina: vuelo.perdida });
   for (const c of manos) { const d = panelVR.visible ? panelVR.apuntar(c) : (renderer.xr.isPresenting ? (botonSalir.apuntado(c) ?? controles.impacto(rayoDe(c))?.distance ?? null) : null); c.userData.rayo.visible = d != null; if (d != null) c.userData.rayo.scale.z = d; }
   if (hud && !renderer.xr.isPresenting) { const L = vuelo.lecturas(), m = vuelo.motor; hud.textContent = `${L.asi.toFixed(0)} mph · ${L.alt.toFixed(0)} ft · ${L.vsi.toFixed(0)} fpm · TRQ ${m.torque.toFixed(0)}% · ITT ${m.itt.toFixed(0)} · Ng ${m.ng.toFixed(0)} · hél ${m.rpmHel.toFixed(0)} · flaps ${flaps * 20}° · agua ${vuelo.agua.toFixed(0)} kg${vuelo.perdida ? ' · PÉRDIDA' : ''}${vuelo.estrellado ? ' · ACCIDENTE' : ''}`; }

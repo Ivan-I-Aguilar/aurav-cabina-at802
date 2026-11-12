@@ -138,6 +138,33 @@ Progresión: el nivel 2 se habilita con el 1 aprobado y el 3 con el 2; el instru
   hacia abajo); el paso «Flaps arriba» de un avión liviano y los pasos de navegación salían «fuera de orden».
   Queda: todo en el Quest (J4), que el humo del capot/la campana se vean y oigan bien en VR, las preguntas de §5.3 (qué emergencias quieren
   AAXOD y si las señales previas van), y el piloto de prueba larga alto cuando el foco está entre lomas (sigue el terreno de adelante).
+- **J4, la parte de código (12/11/2026, v=20261112d, commit local): los tres niveles jugables de punta a punta DENTRO del casco.** Falta lo
+  que depende de Iván: su prueba en el Quest y publicar (sólo cuando lo pida).
+  - **Empezar en VR:** la pantalla de inicio suma el botón «Empezar en VR» (sólo si el navegador tiene VR): un toque entra al casco y el
+    nivel arranca 1,5 s después, ya sentado y recentrado. Antes, con la pantalla de inicio abierta, el «Entrar en VR» de la barra quedaba
+    tapado: había que empezar en 2D (con el reloj corriendo) y después entrar. `entrarVR()` en `main.js`.
+  - **La tablilla lleva el checklist** (`hudVR` en `main.js`): en los niveles muestra la fase con «paso i/n», la orden de vuelo fija en
+    amarillo (FOCO · km · COBERTURA · VIENTO; `ui.orden`, sólo durante la misión), el próximo paso en grande (hasta 3 renglones) y los que
+    siguen más chicos. Un mensaje (torre, avisos) la tapa 7 s y vuelve; si cambia la fase (emergencia), el checklist nuevo sale en el
+    acto. En VR es la única lista a la vista (la de la página no se ve en el casco).
+  - **La tablilla se mudó al ala derecha del tablero** (31 × 19 cm, recostada 7 cm por delante de la chapa y vuelta hacia el ojo; a
+    0,72 m, 25° a la derecha y 19° abajo): donde estaba (prendida al parante derecho del parabrisas, 8/11) el parante —más grueso que el
+    vidrio— le tapaba un tercio del texto desde el ojo del piloto; se veía en las capturas («Accidente. R▮▮▮mos qué pasó») y nadie lo
+    había notado. Verificado con rayos: 117 de 117 puntos de la tablilla visibles desde el ojo, desde cada ojo (±3,2 cm) y con la cabeza
+    corrida ±8 cm, arriba, abajo, adelante y atrás; no tapa el altímetro ni los paneles de llaves; tapa las dos perillas y el soporte del
+    Garmin del ala (decorado) y un triángulo de 11 × 9 cm del vidrio derecho, abajo. La placa roja MENÚ · SALIR cuelga de su borde.
+  - **Debrief en VR** (`panelvr.js` con subtítulo y barras, `resumenVR` en `debrief.js`, `panelDebriefVR` en `main.js`): a los 3 s del
+    cierre el mundo se detiene (`congelado`), la voz dice «Nivel aprobado.» / «Nivel no aprobado. Mirá la devolución.» y aparece el panel:
+    nivel, APROBADO/NO con la nota, las cuatro competencias en barras, las cuatro observaciones más importantes (lo fatal y la emergencia
+    primero) y Repetir · Otra situación · Salir de VR (la devolución completa, la constancia y el JSON quedan en la página). El panel de
+    VR ahora viaja pegado al avión (`mostrarPanelVR`): antes quedaba fijo en el mundo y, si el avión seguía rodando, se iba para atrás.
+  - **Pausa de nivel:** Seguir · Empezar de nuevo (otra situación, o la del link si el instructor la fijó) · Salir de VR / Entrar en VR;
+    queda anotada en el registro. Si el casco se saca en medio de un nivel, el nivel queda en pausa (no sigue volando solo).
+  - **Regla corregida (salió de la prueba):** la altura de la descarga se mide sobre el terreno DONDE CAE el agua, no sobre lo que hay
+    justo debajo del avión al abrir (en la sierra difieren hasta 50 m: pasando a 150 ft sobre el foco se anotaban 298 ft).
+  - Probado en PC: tablilla en sus tres vistas, pausa y «Empezar de nuevo», nivel 2 entero con el piloto de prueba (APROBADO), mundo
+    detenido en el debrief, voz del resultado, «Repetir»; el panel de VR del debrief se ve en PC con `__debriefVR()`. **Nada de esto se
+    pudo probar en el casco** (acá no hay VR): entrar con «Empezar en VR», leer la tablilla, apuntar a los botones del panel con el rayo.
 
 ## 5. Qué hace falta saber (de Iván, AAXOD o el manual)
 

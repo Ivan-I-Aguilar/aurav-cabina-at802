@@ -23,7 +23,7 @@ export class Mision {
      registro y al terminar se llama alCerrar(resultado) en vez del panel Seguir/Repetir ---- */
   nivel(n, escenario, registro) {
     this.modoNivel = n; this.escenario = escenario; this.registro = registro; this.resultados = []; this.fase = 'intro'; this.abortado = false;
-    this.emergencia = null; this._mision = null; this._checklistDicho = false; Object.assign(this.vuelo.motor, { senal: null, fallaGen: false, genReset: false, carga: 1 });
+    this.emergencia = null; this._mision = null; this._checklistDicho = false; Object.assign(this.vuelo.motor, { senal: null, fallaGen: false, genReset: false, carga: 1 }); this.ui.orden?.(null);
     if (n === 1) {
       this.reiniciarAvion({ enPista: true, agua: 2400, apagado: true });
       const m = this.vuelo.motor; m.fallaArranque = escenario.falla || 'normal'; m.tFalla = 0; m.itt = escenario.ittInicial || 15;
@@ -122,6 +122,7 @@ export class Mision {
     const dist = p => Math.hypot(p.x - v.pos.x, p.z - v.pos.z);
     const pista = { x: 30, z: -500 }, aprox = { x: 30, z: -3000 };   /* centro de la pista y el punto de aproximación: al NORTE (el valle sigue la pista hacia el norte; al sur hay sierras), final a la 18 */
     const pesado = (3200 + v.agua) * 2.20462 > 12500;
+    this.ui.orden?.(`FOCO ${p3(e.foco.rumbo)}° · ${String(e.foco.km).replace('.', ',')} km · COBERTURA ${e.cobertura} · VIENTO ${p3(e.viento.dir)}°/${e.viento.kt} kt`);   /* queda fija arriba en la tablilla: en VR el primer paso (la orden) se va de la vista al avanzar */
     this.definir('mision', [
       { id: 'orden', texto: `Orden de vuelo: foco a ${e.foco.km} km rumbo ${p3(e.foco.rumbo)}°, viento ${p3(e.viento.dir)}°/${e.viento.kt} kt, carga ${e.carga} kg, cobertura ${e.cobertura}`, listo: () => this.tPaso > 6, marca: null },
       { id: 'hel', texto: 'Hélice: TODA ADELANTE', listo: () => this.lev('levHEL') > 0.8 },
@@ -160,12 +161,16 @@ export class Mision {
   }
   evaluarDescarga() {
     const v = this.vuelo, d = this.descarga, foco = this.incendio?.pos, e = this.escenario; this.descarga = null;
-    const caida = (p, vel, agl) => { const tc = Math.sqrt(2 * Math.max(5, agl / 3.281) / 9.8); return { x: p.x + vel.x * tc, z: p.z + vel.z * tc }; };   /* el agua cae unos 3 s desde 150 ft: adelante del avión */
-    const a = caida(d.pos0, d.vel0, d.agl0), b = caida(v.pos, v.vel, this.alt);
+    const T = (x, z) => this.obtener.terreno(x, z);
+    const caida = (p, vel, h) => { const tc = Math.sqrt(2 * Math.max(5, h) / 9.8); return { x: p.x + vel.x * tc, z: p.z + vel.z * tc }; };   /* el agua cae unos 3 s desde 150 ft: adelante del avión */
+    /* la altura que vale es sobre el terreno DONDE CAE el agua, no sobre lo que hay justo debajo del avión al abrir: en la sierra difieren hasta
+       50 m (12/11: el piloto de prueba pasaba a 150 ft sobre el foco y, por abrir sobre una quebrada, se le anotaban 298 ft) */
+    const impacto = (p, vel) => { let q = caida(p, vel, p.y - T(p.x, p.z)); q = caida(p, vel, p.y - T(q.x, q.z)); return { x: q.x, z: q.z, h: p.y - T(q.x, q.z) }; };
+    const a = impacto(d.pos0, d.vel0), b = impacto(v.pos, v.vel); d.agl0 = a.h * 3.28084;
     const distSeg = (p, a, b) => { const dx = b.x - a.x, dz = b.z - a.z, L2 = dx * dx + dz * dz; const t = L2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / L2)) : 0; return Math.hypot(p.x - a.x - t * dx, p.z - a.z - t * dz); };
     const dm = foco ? distSeg(foco, a, b) : Infinity, largo = Math.hypot(b.x - a.x, b.z - a.z), kg = d.agua0 - v.agua;
     const okAlt = d.agl0 >= 100 && d.agl0 <= 200, okVel = d.ias0 >= 110 && d.ias0 <= 130, okCob = d.cob === e.cobertura;
-    const texto = `${kg.toFixed(0)} kg desde ${d.agl0.toFixed(0)} ft a ${d.ias0.toFixed(0)} mph, línea de ${largo.toFixed(0)} m a ${dm.toFixed(0)} m del foco, cobertura ${d.cob}`;
+    const texto = `${kg.toFixed(0)} kg desde ${d.agl0.toFixed(0)} ft sobre el terreno a ${d.ias0.toFixed(0)} mph, línea de ${largo.toFixed(0)} m a ${dm.toFixed(0)} m del foco, cobertura ${d.cob}`;
     this.descargas.push({ dm, agl: d.agl0, ias: d.ias0, cob: d.cob, kg, largo });
     this.registro?.anotar('descarga', { texto, dm: +dm.toFixed(0), agl: +d.agl0.toFixed(0), ias: +d.ias0.toFixed(0), cob: d.cob, kg: +kg.toFixed(0), largo: +largo.toFixed(0), okAlt, okVel, okCob });
     if (!okAlt) { this.puntos -= 15; this.detalle.push(`descarga a ${d.agl0.toFixed(0)} ft (ventana 100 a 200)`); }
@@ -267,7 +272,7 @@ export class Mision {
     this.ui.decir(texto);
   }
   menu() {
-    this.fase = 'intro'; this.ui.tareas([]); this.ui.cartel(''); this.ui.marcar?.(null);
+    this.fase = 'intro'; this.ui.tareas([]); this.ui.cartel(''); this.ui.marcar?.(null); this.ui.orden?.(null);
     this.ui.panel({ titulo: 'Cabina AT-802 · AURAV', texto: 'Práctica de puesta en marcha, despegue y emergencias. Elegí por dónde empezar.',
       botones: [{ id: 'arranque', texto: 'Todo desde el arranque' }, { id: 'despegue', texto: 'Despegue' }, { id: 'falla', texto: 'Falla de motor en vuelo' }, { id: 'fuego', texto: 'Fuego de motor' }, { id: 'fallaDespegue', texto: 'Falla en el despegue' }, { id: 'libre', texto: 'Vuelo libre' }, { id: 'apie', texto: 'Recorrer el avión (a pie)' }] },
       id => { this.ui.ocultarPanel(); if (id === 'apie') { this.ui.aPie?.(); return; } if (id === 'libre') { this.fase = 'libre'; this.reiniciarAvion({ enPista: true, agua: 2400, apagado: false }); this.ui.tareas([]); this.decir('Vuelo libre', 'Volá tranquilo. Menú para volver.'); } else this.empezar(id); });

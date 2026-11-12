@@ -23,18 +23,18 @@ export function volarNivel2(o = {}) {
   const flapsA = f => { if (Math.abs(V.mando.flaps - f) > 0.01) tocar('swFLAPS'); };   /* cicla 0 → 10° → 20° → 0: un toque por tic hasta llegar */
   let teclaAbajo = null; const tecla = k => { if (k === teclaAbajo) return; if (teclaAbajo) dispatchEvent(new KeyboardEvent('keyup', { key: teclaAbajo })); if (k) dispatchEvent(new KeyboardEvent('keydown', { key: k })); teclaAbajo = k; };
   /* leyes de control: rumbo → alabeo; altura sobre el terreno (ft) y variómetro → cabeceo; velocidad (mph) → potencia */
-  let iV = 0;
+  let iV = 0, mira = 1000, errFijo = null;   /* mira: cuántos metros de terreno adelante se tienen en cuenta; errFijo: error de altura (ft) dado desde afuera (la pasada, referida a la cota del foco) */
   const terreno = (x, z) => M.obtener.terreno(x, z);
   const aglAdelante = () => {   /* altura sobre lo más alto del terreno en los próximos 700 m de la trayectoria (ft): no chocar la loma de adelante */
     let mx = terreno(V.pos.x, V.pos.z); const vh = Math.max(1, Math.hypot(V.vel.x, V.vel.z));
-    for (let s = 100; s <= 1000; s += 100) mx = Math.max(mx, terreno(V.pos.x + V.vel.x * s / vh, V.pos.z + V.vel.z * s / vh));
+    for (let s = 100; s <= mira; s += 100) mx = Math.max(mx, terreno(V.pos.x + V.vel.x * s / vh, V.pos.z + V.vel.z * s / vh));
     return (V.pos.y - mx) * 3.281;
   };
   const volar = (hdg, altFt, vMph, cabMax = 10, alabMax = 25, cabMin = -6, potMax = 1, vyCmd = null) => {
     const alabeo = clamp(wrap(hdg - rumbo()) * 1.2, -alabMax, alabMax);
     /* en ruta: altura sobre lo más alto de adelante; en la final (vyCmd): el variómetro que lleva al punto de toque */
-    const err = vyCmd == null ? altFt - aglAdelante() : 0;   /* por debajo de lo pedido (loma adelante) reacciona el doble */
-    const cabeceo = vyCmd == null ? clamp(2 + err * (err > 0 ? 0.04 : 0.02) - V.vel.y * 1.5, cabMin, cabMax) : clamp(2 + (vyCmd - V.vel.y) * 4, cabMin, cabMax);
+    const err = vyCmd != null ? 0 : errFijo != null ? errFijo : altFt - aglAdelante();   /* por debajo de lo pedido (loma adelante) reacciona el doble */
+    const cabeceo = vyCmd == null ? clamp(2 + err * (err > 0 || errFijo != null ? 0.04 : 0.02) - V.vel.y * 1.5, cabMin, cabMax) : clamp(2 + (vyCmd - V.vel.y) * 4, cabMin, cabMax);
     iV = clamp(iV + (vMph - V.vIAS) * 0.0006, -0.3, 0.3);
     const pot = clamp(0.45 + (vMph - V.vIAS) * 0.02 + cabeceo * 0.035 + iV, 0, potMax);
     lev('levPOT', 0.15 - 1.05 * pot); window.__auto = { cabeceo, alabeo };
@@ -116,14 +116,20 @@ export function volarNivel2(o = {}) {
         const d = dist(foco), cerca = d < 900 + (crucero - op.aglDescarga) * 3.3;   /* bajar a unos 5 m/s a 120 mph: 3,3 m por cada ft */
         if (M.alt > 300) flapsA(0);
         const altObj = d < 800 ? op.aglDescarga : cerca ? Math.max(op.aglDescarga, 300) : crucero;   /* la pasada baja a 150 ft recién en los últimos 800 m: antes, 300 sobre las lomas */
-        volar(rumboA(foco), altObj, cerca ? op.vDescarga : 130, 10, 25, -8);
-        const tc = Math.sqrt(2 * Math.max(5, M.alt / 3.281) / 9.8), lead = V.vIAS * 0.447 * tc + 40;   /* el agua cae tc segundos: se larga lead metros antes */
+        /* la pasada (últimos 1700 m): la altura se refiere a la COTA DEL FOCO (150 ft por encima de donde va a caer el agua), con un piso de
+           20 m sobre lo más alto de los próximos 400 m, y se lleva con el variómetro (hasta −6 m/s y los últimos metros de a poco): con
+           «altura sobre lo más alto de adelante» y la ley de cabeceo por error de altura, llegaba 15 a 45 m alto y largaba fuera de la ventana */
+        let vyPasada = null;
+        if (d < 1700 && I?.pos) { mira = 400; const piso = V.pos.y - aglAdelante() / 3.281 + 20, yObj = Math.max(I.pos.y + op.aglDescarga / 3.281, piso); vyPasada = clamp((yObj - V.pos.y) * 0.25, -6, 4); }
+        else mira = 1000;
+        volar(rumboA(foco), altObj, cerca || vyPasada != null ? op.vDescarga : 130, 10, 25, -9, 1, vyPasada);
+        const tc = Math.sqrt(2 * Math.max(5, I?.pos ? V.pos.y - I.pos.y : M.alt / 3.281) / 9.8), lead = V.vIAS * 0.447 * tc + 40;   /* el agua cae tc segundos (desde la altura sobre el foco): se larga lead metros antes */
         if (cerca && d < lead && d <= dPrev) { tocar(op.modo === 'gate' ? 'swFRDS_GATE' : 'swSALVO'); tDescarga = M.t; fase = 'largando'; anotar(`${op.modo.toUpperCase()} a ${d.toFixed(0)} m del foco, ${M.alt.toFixed(0)} ft, ${V.vIAS.toFixed(0)} mph`); }
         dPrev = d; return;
       }
       if (fase === 'largando') {   /* sigue derecho y nivelado hasta que la misión evaluó la descarga */
         volar(rumboA({ x: V.pos.x + V.vel.x * 100, z: V.pos.z + V.vel.z * 100 }), op.aglDescarga, op.vDescarga);
-        if (M.descargas?.length || M.t - tDescarga > 20) { anotar('descarga evaluada: ' + JSON.stringify(M.descargas?.[M.descargas.length - 1] || null)); fase = op.aterrizar ? 'vuelta' : 'crucero'; }
+        mira = 1000; errFijo = null; if (M.descargas?.length || M.t - tDescarga > 20) { anotar('descarga evaluada: ' + JSON.stringify(M.descargas?.[M.descargas.length - 1] || null)); fase = op.aterrizar ? 'vuelta' : 'crucero'; }
         return;
       }
       if (fase === 'crucero') { volar(rumboA(VIENTO1), crucero, 130); return; }
@@ -145,16 +151,16 @@ export function volarNivel2(o = {}) {
       if (fase === 'final') {
         const hdg = 180 + clamp((V.pos.x - 30) * 0.08 + V.vel.x * 0.8, -30, 30);   /* eje de pista: al este del eje, más rumbo (hacia el oeste) */
         if (V.vIAS < 112) flapsA(1);
-        const dT = Math.max(150, TOQUE.z - 200 - V.pos.z), vh = Math.max(20, Math.hypot(V.vel.x, V.vel.z));   /* se apunta 200 m antes del toque: el flare lo corre */
+        const dT = Math.max(150, TOQUE.z - 350 - V.pos.z), vh = Math.max(20, Math.hypot(V.vel.x, V.vel.z));   /* se apunta 350 m antes del toque (pasado el umbral norte): el flare flota unos 600 m */
         const vyCmd = clamp(-(M.alt / 3.281) * vh / dT, -7, -0.5);   /* el descenso que llega justo al punto de toque (3° si viene bien; más si viene alto) */
         if (vyCmd < -3 && iV > 0) iV = 0;
         volar(hdg, 0, 100, V.vIAS < 92 ? 2 : 6, 20, V.vIAS > 110 ? -1 : -9, V.vIAS < 95 ? 1 : clamp(0.6 + (vyCmd + 2.3) * 0.15, 0.05, 0.6), vyCmd);   /* alto: potencia afuera y nariz abajo, sin pasar de 110 mph (flota y se va larga) ni bajar de 95 (se cae) */
-        if (M.alt < 25) { fase = 'flare'; flareHdg = 180; anotar(`flare a ${V.vIAS.toFixed(0)} mph, x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}`); }
+        if (M.alt < 18) { fase = 'flare'; flareHdg = 180; anotar(`flare a ${V.vIAS.toFixed(0)} mph, x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}`); }
         else if ((V.pos.z > -1150 && M.alt > 250) || V.pos.z > 0 || Math.abs(V.pos.x - 30) > 400) { fase = 'vuelta'; flapsA(0); anotar(`motor y al aire: final mal armada (x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}, ${M.alt.toFixed(0)} ft); otro circuito`); }
         return;
       }
       if (fase === 'flare') {   /* motor al ralentí y el descenso a −0,8 m/s hasta tocar (con la nariz fija flotaba 800 m y se iba de pista) */
-        const vyCmd = M.alt > 12 ? -1.5 : -0.8; window.__auto = { cabeceo: clamp(3 + (vyCmd - V.vel.y) * 4, -2, 9), alabeo: clamp(wrap(flareHdg - rumbo()) * 1.2, -5, 5) }; lev('levPOT', 0.15);
+        const vyCmd = M.alt > 8 ? -2 : -1; window.__auto = { cabeceo: clamp(3 + (vyCmd - V.vel.y) * 4, -2, 9), alabeo: clamp(wrap(flareHdg - rumbo()) * 1.2, -5, 5) }; lev('levPOT', 0.15);
         if (V.enTierra) { fase = 'tierra'; tecla('b'); window.__auto = null; anotar(`toque: x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}, ${V.vIAS.toFixed(0)} mph`); }
         return;
       }

@@ -7,7 +7,7 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas, Rotulos } from './pantallas.js?v=20261112c';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261112d';
 import { crearRadiosEn } from './radios.js?v=20261111d';
 
 export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola', 'cab_radios', 'cab_asiento', 'pedales', 'butaca'];   /* GLB por zona, en orden de carga (etapas 1b a 6). pedales.glb y butaca.glb son los de Lichi (22/10 y 1/11) */

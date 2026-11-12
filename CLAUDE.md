@@ -38,11 +38,15 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 - **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván): TODAVÍA la cabina FSX.
 - **Local, SIN publicar: toda la cabina nueva, v=20261111d** (commits del 3/11 al 11/11; el último, la etapa 7: limpieza). Se prueba
   en `http://localhost:8765/` a secas (ya no hace falta `?cabina=nueva`). En el Quest no se probó NADA de la cabina nueva.
-- **Local, SIN publicar: los niveles del aula virtual J0–J3 (12/11, v=20261112c, `PLAN_JUEGO.md` §7):** `?nivel=1` (puesta en marcha con
-  fallas al azar), `?nivel=2` (misión de incendio: orden por radio, foco con humo, descarga medida, vuelta y aterrizaje) y `?nivel=3` (la
-  misma misión con una emergencia sorpresa: falla de motor en vuelo con o sin rearranque, fuego, falla en el despegue a 150 ft, generador,
-  compuerta trabada; momento y señales previas por semilla) completos en PC. Probados con `herramientas/piloto_prueba.js` (nivel 2, semilla
-  100001: APROBADO 100/100; nivel 3, una semilla por emergencia) y a mano (nivel 1). En el Quest, nada probado; el debrief es sólo HTML (J4).
+- **Local, SIN publicar: los niveles del aula virtual J0–J3 y el código de la J4 (12/11, v=20261112d, `PLAN_JUEGO.md` §7):** `?nivel=1`
+  (puesta en marcha con fallas al azar), `?nivel=2` (misión de incendio: orden por radio, foco con humo, descarga medida, vuelta y
+  aterrizaje) y `?nivel=3` (la misma misión con una emergencia sorpresa: falla de motor en vuelo con o sin rearranque, fuego, falla en el
+  despegue a 150 ft, generador, compuerta trabada; momento y señales previas por semilla) completos en PC. Probados con
+  `herramientas/piloto_prueba.js` (nivel 2, semilla 100001; nivel 3, una semilla por emergencia) y a mano (nivel 1).
+- **J4 (12/11), para jugarlos DENTRO del casco:** botón «Empezar en VR» en la pantalla de inicio del nivel, el checklist en la tablilla
+  (que se mudó al ala derecha del tablero: en el parante del parabrisas el parante le tapaba un tercio del texto), debrief en un panel de
+  VR (resultado, barras, Repetir · Otra situación · Salir de VR), pausa de nivel y pausa automática si se saca el casco. **En el Quest no
+  se probó NADA de esto ni de los niveles** (acá no hay VR): es lo primero que tiene que mirar Iván cuando publique.
 - Pendiente de Iván: el ok a las vistas de las etapas 3 a 6 (capturas mandadas el 11/11), confirmar con Bruno que el paso de
   FUEGO sea «manija FUEL a OFF», el Quest (legibilidad de pantallas, alcance, ojo) y publicar.
 - **Rendimiento (11/11, Chrome en PC, ventana de 800 px, escena entera con el aeródromo):** 296 llamadas de dibujo, 191 k triángulos,
@@ -190,7 +194,7 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `voz/` + `herramientas/voces.py` + `voces.ps1` | Frases del tutor → WAV con la voz Sabina de Windows. **Cada vez que cambie un texto de mision.js/main.js:** `python -I herramientas/voces.py` y `powershell -ExecutionPolicy Bypass -File herramientas/voces.ps1` (sólo genera las nuevas). Pronunciaciones en `PRONUNCIA`. |
 | `apie.js` | Modo a pie (22/10): caminar alrededor del avión (VR: joystick izq. camina, der. gira 30°; PC: WASD/flechas + mouse; celular: joystick en pantalla + arrastrar para mirar + tocar), colisión simple con fuselaje y hélice, cartel «SUBIR» junto al estribo (izquierda, bajo la cabina) → animación estribo → raíz del ala → asiento (en VR: fundido). «Bajar del avión» / «Volver a la cabina» en la pausa; «Recorrer el avión (a pie)» en el menú. |
 | (celular) | **Modo cámara** (botón `#ar`, Android/Chrome con WebXR AR): el teléfono es una cámara dentro de la escena con 6 grados de libertad (caminás de verdad); botón `#entorno` alterna **pista virtual / lugar real** (en lugar real se oculta el entorno; renderer con `alpha`). **Escala** (`#escala`, `aplicarEscalaCamara`): el jugador se agranda k veces (1:5 por defecto; 1:10, 1:20, real). `cuidarSeguimiento`: compensa saltos de >12 cm por cuadro y avisa si el seguimiento se pierde (`emulatedPosition`) → el avión se ve como maqueta a altura de mesa y tus pasos rinden k veces; al subir a la cabina vuelve a 1. Pensado para usarlo dentro de una casa. Tocar la pantalla = gatillo (subir, switches). **Giroscopio** (botón `#giro`, cualquier celular incl. iPhone): mirar moviendo el teléfono; para desplazarse, joystick a la **derecha**. No probado en celular real. |
-| `panelvr.js` | Panel de botones para VR (igual que en aurav-senales). |
+| `panelvr.js` | Panel de botones para VR (igual que en aurav-senales). Desde la J4 (12/11) también dibuja el debrief de los niveles: `subtitulo` + `colorSubtitulo` (APROBADO · 97 / 100) y `barras` (las competencias). En el juego se muestra con `mostrarPanelVR` (main.js), que lo deja pegado al avión. |
 | `escenario.js`, `tex/`, `autobomba.glb` | Aeródromo de AURAV copiado de aurav-sector, con valle plano a lo largo de la pista (`dRect`) y `alturaTerreno`. |
 | `exterior.glb` | **AT-802 TERRESTRE real** (22-23/10, Lichi): sale del OBJ de Metasequoia en `Documents\aurav-cabina\fsx\rar_terrestre\Air Tractor AT-802\files\AT802-4.obj` (familia FSN, tren de ballesta, ruedas y hélice de 5 palas de fábrica). Se regenera con `herramientas/exterior_terrestre2.py`: aplica la matriz del importador (¡clave!), orienta (deriva a −y, envergadura ±9,03), alinea (ruedas al piso −2, cúpula centrada en la nuestra), blanquea el AMARILLO de sus texturas conservando remaches y deja TAL CUAL la pintura AZUL de fábrica (franjas convergentes y deriva; decisión de Iván 24/10: «respetar el modelo base, pintado azul, sin volverse loco»), borra el «493» de la deriva (relleno con el azul de alrededor) y el «RESTRICTED» (quedaba espejado), pinta por geometría SOLO las ruedas (goma negra, medidas del modelo) y en textura las palas Hartzell negras con banda roja (cajas PALA/PALA_BANDA en at_01), borra su interior; su cúpula queda entera pero SIN sus vidrios en la zona de cabina (los vidrios y la vista interior los pone la cabina). **Todo a doble cara y SIN recalcular normales**: las normales del OBJ vienen mezcladas y el recálculo global dio vuelta chapas (alas/cúpula desaparecían según el ángulo). Suma el estribo. El atlas del OBJ comparte texels: NO hornear librea por posición ahí. Versión `V_EXT` en main.js. (Después, 27/10: repintado liso total con la franja y la cola azules por geometría; ver TRASPASO.) |
 | `herramientas/` | `exterior_terrestre2.py` (regenera el exterior), scripts de Blender `*_blender.py`, `vista360.py` (vista plana desde una foto 360), `voces.py` / `voces.ps1`, `mapa_cabina.md` (notas del manual) y los de la cabina FSX vieja (`mdl2glb.py`, `relojes.py`, `instrumentos.py`). |
@@ -251,6 +255,13 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   posición, altura, paso del checklist y lo anotado; `ap.parar()`. Opciones: `modo: 'gate'`, `aglDescarga`, `vDescarga`, `desvio` (m, para
   una descarga lejos), `aterrizar: false`. Una partida entera tarda unos 2 min reales a ×3. Las esperas dentro de `javascript_tool` no pueden
   pasar de 45 s (la herramienta corta): consultar `ap.estado()` de a 30 s.
+- **Paneles de VR en PC (J4):** `__debriefVR()` muestra frente a la cámara el panel de VR del debrief (con un nivel terminado); la
+  tablilla se ve siempre (es una malla de la cabina, `name = 'tablilla'`). «Empezar en VR», el rayo sobre los botones y la pausa al sacarse
+  el casco sólo se pueden probar en el Quest.
+- **Las capturas del panel del navegador pueden ser un RECORTE, no la ventana entera** (12/11: 800 × 600 de arriba a la izquierda de una
+  ventana de 1024 × 768): antes de usar `__sonda(u, v)` con coordenadas sacadas de una captura, poner una marca HTML en un (u, v) conocido
+  y mirar dónde cae (ese día: u ≈ x/1009, v ≈ y/757). Y si el panel no está a la vista el juego no avanza (no hay cuadros) hasta la
+  primera captura.
 - La barra del juego muestra la versión (vAAAAMMDDx): preguntarle a Iván cuál ve antes de diagnosticar.
 
 ## Controles y simulación (re-cableado el 8–11/11 con los nombres de la cabina nueva)
@@ -285,9 +296,18 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 - **`controles.js`:** tipos switch, 3 posiciones (`SW3` → `hacerTresPosiciones`; estado 1 / 0 / −1),
   varias posiciones (`pos`, `eje`) y perilla (`perilla: paso`). Lee de `userData`: `piv`, `pivBase`,
   `pivY`, `eje`, `ang`, `pos`, `perilla`, `suave`.
+- **La tablilla (`hudVR`, main.js; J4, 12/11):** un plano de 31 × 19 cm recostado sobre el ALA DERECHA del tablero y vuelto hacia el ojo
+  (posición (0,305; 1,135; z_cara + 0,07), giro YXZ −0,25 / −0,2). Dos vistas: MENSAJE (lo que dicta el tutor en la práctica; la torre y
+  los avisos en los niveles) y CHECKLIST (sólo en los niveles: fase y «paso i/n», la orden de vuelo fija —`ui.orden`—, el próximo paso en
+  grande y los que siguen). Con el checklist activo un mensaje dura 7 s. La placa roja MENÚ · SALIR cuelga de su borde de abajo. Antes
+  (8/11) iba prendida al parante derecho del parabrisas y el parante le tapaba un tercio del texto: **toda placa nueva se verifica con rayos
+  desde el ojo (0; 1,38; 1,64) y con la cabeza corrida ±8 cm antes de darla por buena.**
 - **Tutor:** marca con un aro amarillo el control de cada paso (`ui.marcar`; `marca` en el paso o
   inferido de `listo`). Los procedimientos siguen el **checklist normal de AAXOD** (CHECK LIST 802 NORM
   ed2 Rev01, propiedad de Nueva Frontera SpA: NO subirlo al repo público).
+- **Niveles en VR (J4):** se entra con «Empezar en VR» desde la pantalla de inicio (`entrarVR()`: tiene que llamarse desde un clic); al
+  cerrar, a los 3 s el mundo se detiene (`congelado`) y sale el panel del debrief; B/Y o la placa roja = pausa (Seguir · Empezar de nuevo ·
+  Salir de VR); si la sesión de VR termina con el nivel en curso, queda en pausa.
 - **VR:** cualquier switch o palanca se acciona también apuntándolo con el rayo + gatillo
   (`controles.impacto`, tolerancia 2,5 cm); agarre a menos de 6 cm (switches) o 10 cm (palancas). El
   audio se reanuda en cada gesto (el Quest lo suspende al entrar en VR).
@@ -329,8 +349,10 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 - **Verificar el MISMO lado que la captura de Iván** y mandarle las vistas.
 
 ## Pendientes (en orden)
-0. **El juego por niveles (`PLAN_JUEGO.md`):** J4 (debrief en VR, Quest, publicar cuando Iván lo pida), J5 (POST al aula cuando exista). Y las
-   preguntas de §5 (límites de arranque, ventana de descarga y coberturas, emergencias que quieren, umbral, Bruno). J0–J3 hechos el 12/11.
+0. **El juego por niveles (`PLAN_JUEGO.md`):** de la J4 queda lo de Iván: probar los tres niveles en el Quest (entrar con «Empezar en VR»,
+   leer la tablilla del ala derecha, el debrief en el casco, la pausa) y publicar cuando lo pida; después J5 (POST al aula cuando exista). Y
+   las preguntas de §5 (límites de arranque, ventana de descarga y coberturas, emergencias que quieren, umbral, Bruno). J0–J3 y el código de
+   la J4, hechos el 12/11.
 0b. **Pedido de Iván (11/11): el mismo AT-802 (exterior y cabina nueva) en los otros juegos de AURAV** (rampa/señaleros `aurav-senales`,
    apoyos terrestres «MOE», …) para que se vea siempre la misma aeronave: tarea aparte, después de los niveles.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas

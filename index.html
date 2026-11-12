@@ -33,7 +33,7 @@
   #inicio h2, #debrief h2 { margin: 0 0 10px; font-size: 22px; } #debrief h3 { margin: 14px 0 6px; font-size: 15px; color: #345; }
   #inicio input { font: inherit; font-size: 18px; padding: 8px 12px; border: 1px solid #9ab; border-radius: 10px; width: 100%; box-sizing: border-box; margin: 8px 0 12px; }
   #inicio .chico, #debrief .chico { font-size: 13px; color: #567; margin: 0 0 10px; line-height: 1.4; }
-  #debrief .ok { color: #2e7d32; } #debrief .no { color: #c0392b; }
+  #debrief .ok { color: #2e7d32; } #debrief .no, #inicio .no { color: #c0392b; }
   #debrief .comps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 22px; }
   #debrief .comp { display: grid; grid-template-columns: 150px 1fr 36px; align-items: center; gap: 8px; font-size: 14px; }
   #debrief .barra { height: 12px; background: #e3e7ea; border-radius: 6px; overflow: hidden; } #debrief .barra div { height: 100%; }
@@ -52,13 +52,13 @@
 <div id="tutor" hidden><b id="tutor-titulo"></b><span id="tutor-texto"></span></div>
 <ul id="tareas" hidden></ul>
 <div id="panel" hidden><div class="caja"><h2 id="panel-titulo"></h2><div id="panel-texto"></div><div id="panel-botones"></div></div></div>
-<div id="inicio" hidden><div class="caja"><h2 id="inicio-titulo"></h2><p class="chico" id="inicio-texto"></p><label>Nombre y apellido del alumno<input id="inicio-nombre" autocomplete="name" placeholder="Nombre y apellido"></label><p class="chico" id="inicio-semilla"></p><div class="botones"><button id="inicio-empezar">Empezar</button></div></div></div>
+<div id="inicio" hidden><div class="caja"><h2 id="inicio-titulo"></h2><p class="chico" id="inicio-texto"></p><label>Nombre y apellido del alumno<input id="inicio-nombre" autocomplete="name" placeholder="Nombre y apellido"></label><p class="chico" id="inicio-semilla"></p><p class="chico no" id="inicio-nota" hidden></p><div class="botones"><button id="inicio-vr" hidden>Empezar en VR</button><button id="inicio-empezar">Empezar</button></div></div></div>
 <div id="debrief" hidden></div>
 <script>/* si el navegador guardó un index viejo, recargar con la versión publicada (GitHub Pages cachea 10 min) */
-const VERSION_PAGINA = '20261112c'; document.getElementById('version-vista').textContent = 'v' + VERSION_PAGINA;
+const VERSION_PAGINA = '20261112d'; document.getElementById('version-vista').textContent = 'v' + VERSION_PAGINA;
 const chequearVersion = () => fetch('./version.txt?' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => { v = v.trim(); if (v && v !== VERSION_PAGINA && !sessionStorage.getItem('recargado-' + v)) { sessionStorage.setItem('recargado-' + v, '1'); const q = new URLSearchParams(location.search); q.set('v', v); location.replace(location.pathname + '?' + q); } }).catch(() => {});   /* conserva ?cabina=nueva y demás (7/11) */
 chequearVersion(); setInterval(chequearVersion, 10000);   /* periódico (1/11): la pestaña abierta se recarga SOLA al publicar una build; antes chequeaba una única vez al cargar y una pestaña vieja nunca se enteraba */
 </script>
-<script type="module" src="./main.js?v=20261112c"></script>
+<script type="module" src="./main.js?v=20261112d"></script>
 </body>
 </html>

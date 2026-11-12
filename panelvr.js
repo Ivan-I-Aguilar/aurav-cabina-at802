@@ -1,4 +1,6 @@
 // Panel flotante para VR: título, texto y botones, dibujado en un canvas. Se apunta con el rayo del control y se elige con el gatillo.
+// datos: { titulo, texto, botones: [{ id, texto }] } y, para el debrief de los niveles (J4, 12/11), además subtitulo + colorSubtitulo
+// (APROBADO · 97 / 100) y barras: [{ nombre, valor 0–100 }] (las competencias); con eso el texto va más chico y llega hasta los botones.
 import * as THREE from './three.module.js';
 
 export function crearPanelVR() {
@@ -15,11 +17,23 @@ export function crearPanelVR() {
   function dibujar() {
     g.clearRect(0, 0, W, H);
     g.fillStyle = 'rgba(8,36,64,0.92)'; g.beginPath(); g.roundRect(0, 0, W, H, 36); g.fill();
-    g.fillStyle = '#c8e63a'; g.font = 'bold 44px Arial'; g.textBaseline = 'top'; g.fillText(datos.titulo || '', 40, 32);
-    g.fillStyle = '#ffffff'; g.font = '32px Arial'; let y = 100;
-    for (const l of envolver(datos.texto || '', W - 80)) { g.fillText(l, 40, y); y += 40; if (y > 380) break; }
+    g.fillStyle = '#c8e63a'; g.font = 'bold 44px Arial'; g.textBaseline = 'top'; g.fillText(datos.titulo || '', 40, 32, W - 80);
     rects = []; const bs = datos.botones || [], cols = bs.length > 4 ? 4 : bs.length || 1, bw = (W - 80 - (cols - 1) * 14) / cols, bh = bs.length > 4 ? 56 : 80;
     const y0 = bs.length > 4 ? H - 30 - Math.ceil(bs.length / cols) * (bh + 12) : H - 120;
+    let y = 100;
+    if (datos.subtitulo) { g.fillStyle = datos.colorSubtitulo || '#ffffff'; g.font = 'bold 52px Arial'; g.fillText(datos.subtitulo, 40, 88, W - 80); y = 164; }   /* el debrief del nivel: APROBADO · 97 / 100 */
+    if (datos.barras) {   /* competencias: nombre, barra y valor, en dos columnas */
+      const cw = (W - 80 - 30) / 2;
+      datos.barras.forEach((b, i) => { const x = 40 + (i % 2) * (cw + 30), yy = y + Math.floor(i / 2) * 46, v = Math.max(0, Math.min(100, b.valor || 0)), bx = x + 268, bwid = cw - 268 - 62;
+        g.fillStyle = '#ffffff'; g.font = '25px Arial'; g.fillText(b.nombre, x, yy + 3, 258);
+        g.fillStyle = 'rgba(255,255,255,0.22)'; g.beginPath(); g.roundRect(bx, yy + 8, bwid, 18, 9); g.fill();
+        g.fillStyle = v >= 70 ? '#5ed35e' : v >= 50 ? '#f0b030' : '#ff6f61'; if (v > 0) { g.beginPath(); g.roundRect(bx, yy + 8, Math.max(18, bwid * v / 100), 18, 9); g.fill(); }
+        g.fillStyle = '#ffffff'; g.font = 'bold 27px Arial'; g.textAlign = 'right'; g.fillText(String(v), x + cw, yy + 2); g.textAlign = 'left'; });
+      y += Math.ceil(datos.barras.length / 2) * 46 + 12;
+    }
+    const chico = !!(datos.subtitulo || datos.barras), paso = chico ? 35 : 40, tope = chico ? y0 - paso - 4 : 380;
+    g.fillStyle = '#ffffff'; g.font = chico ? '27px Arial' : '32px Arial';
+    for (const l of envolver(datos.texto || '', W - 80)) { g.fillText(l, 40, y); y += paso; if (y > tope) break; }
     bs.forEach((b, i) => { const c = i % cols, r = Math.floor(i / cols), x = 40 + c * (bw + 14), yy = y0 + r * (bh + 12);
       rects.push([x, yy, bw, bh]); g.fillStyle = i === hover ? '#c8e63a' : '#ffffff'; g.beginPath(); g.roundRect(x, yy, bw, bh, 14); g.fill();
       g.fillStyle = '#082440'; g.font = `bold ${bs.length > 4 ? 22 : 30}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle';
