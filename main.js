@@ -508,7 +508,7 @@ function pantallaInicio() {
   const nombres = { 1: 'Nivel 1 · Puesta en marcha', 2: 'Nivel 2 · Misión de incendio', 3: 'Nivel 3 · Salida con emergencia' };
   $('inicio-titulo').textContent = `Cabina AT-802 · ${nombres[NIVEL]}`;
   $('inicio-texto').textContent = NIVEL === 1 ? 'Poné el motor en marcha siguiendo el checklist de AAXOD (lo tenés en la tablilla). El tutor no dicta: anota todo lo que hacés y cuándo. Puede pasar algo en el arranque: resolvelo.'
-    : NIVEL === 2 ? 'Con el motor en marcha en la cabecera, la torre te pasa la orden de vuelo por radio: foco, rumbo, distancia, viento, carga y cobertura. Despegá, navegá al foco con el Garmin (CRS), largá en la ventana correcta y volvé a aterrizar en la 36. El tutor no dicta.'
+    : NIVEL === 2 ? 'Con el motor en marcha en la cabecera, la torre te pasa la orden de vuelo por radio: foco, rumbo, distancia, viento, carga y cobertura. Despegá, navegá al foco con el Garmin (CRS), largá en la ventana correcta y volvé a aterrizar por el valle del norte, final a la pista 18. El tutor no dicta.'
     : 'La misma misión del nivel 2 (orden por radio, foco, descarga, vuelta), pero en algún momento va a pasar algo que no está en el plan. Resolvelo como en el avión: el checklist de emergencia aparece en la tablilla. Si se puede, terminá la misión; si no, volvé entero.';
   const inp = $('inicio-nombre'); inp.value = PARAMS.get('alumno') || nombreActual || localStorage.getItem('aurav_alumno') || '';
   $('inicio-semilla').textContent = SEMILLA_LINK ? `Situación ${SEMILLA_LINK} (fijada en el link)` : 'Situación al azar';

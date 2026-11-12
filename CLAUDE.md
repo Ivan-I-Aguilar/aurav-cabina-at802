@@ -6,7 +6,7 @@ https://ivan-i-aguilar.github.io/aurav-cabina-at802/
 
 **Ahora mismo (12/11): la cabina nueva de Blender está COMPLETA (etapas 0 a 6 de `PLAN_CABINA_NUEVA.md`) y es la
 ÚNICA cabina del juego: la FSX (`cabina.glb`) y todos sus parches se sacaron el 11/11 (etapa 7). PUBLICADA el 12/11 junto con los
-tres niveles del aula virtual (v=20261112d, con el ok de Iván).** Falta el ok de Iván a las vistas y su prueba en el Quest (de la
+tres niveles del aula virtual (v=20261112e, con el ok de Iván).** Falta el ok de Iván a las vistas y su prueba en el Quest (de la
 cabina nueva y de los niveles no se probó NADA en el casco). La historia de los parches de la cabina FSX y del exterior
 (16/10 al 2/11) está en `TRASPASO.md`; los GLB retirados quedaron en git (hasta f051b6f) y en `Documents/aurav-cabina/retirados_11_11/`.
 
@@ -33,15 +33,19 @@ en git con el mismo nombre. Y después de subir, abrir la página publicada y mi
 ```
 git add -A
 git -c user.name="Ivan I. Aguilar" -c user.email="aguivanig@gmail.com" commit -m "..."
-git push origin main
+git -c credential.https://github.com.username=Ivan-I-Aguilar push origin main
 ```
 **Versión de la página:** `version.txt` y `VERSION_PAGINA` en index.html tienen que coincidir con el `?v=` de main.js; si el navegador guardó un index viejo, se recarga solo. **Siempre subir la versión** de los imports (`?v=AAAAMMDDx`) en `index.html` (main.js) y en `main.js` para cada módulo o
 GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no cambió», casi siempre es caché.
 
 ## Estado (12/11)
-- **Publicado el 12/11 (con el ok de Iván: «Sí, publicá»):** Pages sirve v=20261112d: la cabina nueva entera y los tres niveles
-  (J0–J4), todos los commits del 31/10 al 12/11 subidos de una vez. Lo publicado antes era v=20261028d (push 6433ea7 del 28/10),
-  todavía la cabina FSX. Links: la raíz (práctica con el tutor) y `?nivel=1`, `?nivel=2`, `?nivel=3`. **En el Quest no se probó NADA.**
+- **Publicado el 12/11 (con el ok de Iván: «Sí, publicá»):** Pages sirve v=20261112e: la cabina nueva entera y los tres niveles
+  (J0–J4), todos los commits del 31/10 al 12/11 subidos de una vez (push 6dbcbfb, v=20261112d). Lo publicado antes era v=20261028d
+  (push 6433ea7 del 28/10), todavía la cabina FSX. Links: la raíz (práctica con el tutor) y `?nivel=1`, `?nivel=2`, `?nivel=3`.
+  Verificado en la página publicada con el navegador de PC: la raíz y los tres niveles cargan sin errores ni archivos faltantes, y el
+  nivel 2 arranca (orden por radio con sus WAV, checklist en la tablilla). Al verificar salió un error de texto y se subió corregido
+  (v=20261112e): la pantalla de inicio del nivel 2 decía «volvé a aterrizar en la 36» y el checklist manda final a la pista 18.
+  **En el Quest no se probó NADA.**
 - **La cabina nueva, v=20261111d** (commits del 3/11 al 11/11; el último, la etapa 7: limpieza). En local se prueba
   en `http://localhost:8765/` a secas (ya no hace falta `?cabina=nueva`). En el Quest no se probó NADA de la cabina nueva.
 - **Los niveles del aula virtual J0–J3 y el código de la J4 (12/11, v=20261112d, `PLAN_JUEGO.md` §7):** `?nivel=1`
@@ -371,7 +375,7 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 4. Certificado final estilo AAXOD como en los otros juegos (`constancia.js` de aurav-senales).
 
 ## Trampas conocidas
-- `git push` NUNCA en segundo plano: el gestor de credenciales de Windows necesita la terminal (falla con exit 128 «could not read Username»). Siempre en primer plano.
+- `git push` NUNCA en segundo plano: el gestor de credenciales de Windows necesita la terminal (falla con exit 128 «could not read Username»). Siempre en primer plano. **Y siempre indicando la cuenta (12/11):** en esta PC hay DOS cuentas de GitHub guardadas (Ivan-I-Aguilar, la de AURAV, y otra de Iván para otro proyecto); con `git push` a secas el gestor abre una ventana «Select an account» que queda escondida y el push se cuelga sin decir nada (así se perdieron 5 min al publicar el 12/11). Usar el comando de «Publicar» (`git -c credential.https://github.com.username=Ivan-I-Aguilar push origin main`). Si igual se cuelga, `Get-Process git-credential-manager | Select MainWindowTitle` (PowerShell) dice qué ventana está esperando; antes de reintentar, matar el árbol del push (`taskkill /PID <pid de git push> /T /F`).
 - `node --check` no detecta todos los errores de sintaxis de estos módulos: probar también `new Function(src sin imports)` o cargar la página.
 - Nunca meter un comentario `//` en medio de una línea al hacer reemplazos de texto: ya se tragó código tres veces. Usar `/* */`.
 - `controles.armar` asume mallas con transform identidad (posición horneada en la geometría); para agregar un control nuevo, trasladar la geometría (`geometry.translate`) y nombrarlo `sw…` o `lev…` antes de `armar`. **Un control = UNA malla con UN material:** con dos materiales el exportador glTF parte la malla en `nombre_1` / `nombre_2` y `armar` ve dos controles (11/11, palancas del cuadrante). Al hornear geometría desde JS (la llave `swAVNC`) usar `grupo.matrix`, no `matrixWorld` (ésa mete el giro del GLB y la posición del avión).

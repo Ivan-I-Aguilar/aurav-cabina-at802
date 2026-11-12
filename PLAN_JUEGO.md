@@ -7,7 +7,7 @@ cada uno como actividad independiente del aula virtual de AURAV (dominio propio,
 entrega su resultado. El cruce de datos con el aula se hace cuando exista; el juego ya deja el resultado listo para eso.
 
 Estado: **aprobado por Iván el 11/11** («Aprobado, arrancá»). **J0 a J3 y el código de la J4 HECHOS el 12/11 y PUBLICADOS ese
-día (v=20261112d, con el ok de Iván: «Sí, publicá»); falta su prueba en el Quest**: ver §7.
+día (Pages sirve v=20261112e, con el ok de Iván: «Sí, publicá»); falta su prueba en el Quest**: ver §7.
 
 ## 1. Los tres niveles
 
@@ -168,7 +168,10 @@ Progresión: el nivel 2 se habilita con el 1 aprobado y el 3 con el 2; el instru
     pudo probar en el casco** (acá no hay VR): entrar con «Empezar en VR», leer la tablilla, apuntar a los botones del panel con el rayo.
   - **Publicación (12/11):** antes de subir se corrió `herramientas/prevuelo_pages.py` (nuevo): todo lo que el juego carga está en git
     con las mismas mayúsculas (Pages distingue, el servidor local no) y cada frase tiene su WAV. Links para el Quest: la página con
-    `?nivel=1`, `?nivel=2` y `?nivel=3`; la barra tiene que decir v20261112d.
+    `?nivel=1`, `?nivel=2` y `?nivel=3`; la barra tiene que decir v20261112e. Verificado en la página publicada (navegador de PC): la raíz
+    y los tres niveles cargan sin errores ni 404 y el nivel 2 arranca con la orden por radio y el checklist en la tablilla.
+  - **Corregido al verificar la publicación (v=20261112e):** la pantalla de inicio del nivel 2 decía «volvé a aterrizar en la 36»; la
+    vuelta es por el valle del norte con final a la pista 18 (lo que pide el checklist y vuela el piloto de prueba).
 
 ## 5. Qué hace falta saber (de Iván, AAXOD o el manual)
 
