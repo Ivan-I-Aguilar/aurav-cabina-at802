@@ -8,10 +8,10 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas, Rotulos } from './pantallas.js?v=20261111b';
-import { crearRadiosEn } from './radios.js?v=20261111b';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261111c';
+import { crearRadiosEn } from './radios.js?v=20261111c';
 
-export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola', 'cab_radios'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_asiento' */
+export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola', 'cab_radios', 'cab_asiento', 'pedales', 'butaca'];   /* GLB por zona, en orden de carga (etapas 1b a 6). pedales.glb y butaca.glb son los de Lichi (22/10 y 1/11) */
 const HOLGURA = 0.015, PISO = 0.26;
 const CUPULA = PIEZAS.includes('cab_cupula'), CINTURON = 0.93;   /* con la cúpula nueva, el FSN va cortado en el antepecho (y 0,93) */
 const vidrios = raiz => raiz.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) { o.renderOrder = 2; o.material.depthWrite = false; } } });
@@ -21,11 +21,22 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
   const e = await cargador.loadAsync(CUPULA ? `./exterior_cupula.glb?v=${V}` : `./exterior.glb?v=${V_EXT}`);
   vidrios(e.scene);
   e.scene.name = 'exterior'; cabina.add(e.scene);
+  const pedales = { mixer: null, accion: null, dur: 1 }, palanca = [];
   for (const nombre of PIEZAS) {
     const g = await cargador.loadAsync(`./blender/${nombre}.glb?v=${V}`);
     vidrios(g.scene);
     g.scene.name = nombre; cabina.add(g.scene);
     controles.armar(g.scene);   /* los controles viajan con sus datos (userData.piv, eje, ang, pos, perilla…) */
+    if (nombre === 'pedales') {   /* etapa 6: los pedales de Lichi, todo gris metal (31/10) y el clip pedales_timon que main.js mueve con el pedal */
+      const matPed = new THREE.MeshStandardMaterial({ color: 0x3b3c40, metalness: 0.35, roughness: 0.55 }); g.scene.traverse(o => { if (o.isMesh) o.material = matPed; });
+      pedales.mixer = new THREE.AnimationMixer(g.scene); const clip = THREE.AnimationClip.findByName(g.animations, 'pedales_timon');
+      if (clip) { pedales.accion = pedales.mixer.clipAction(clip); pedales.accion.play(); pedales.accion.paused = true; pedales.dur = clip.duration; }
+    }
+    if (nombre === 'butaca') g.scene.traverse(o => {   /* etapa 6: la butaca de Lichi recoloreada al 802 real (malla roja, arnés negro); el asiento de malla de verdad queda para más adelante */
+      if (!o.isMesh) return; const n = (o.material?.name || '').toLowerCase(); o.material = o.material.clone();
+      if (n.includes('correa')) o.material.color.set(0x141414); else if (n.includes('metal')) o.material.color.set(0x9a9c9f); else { o.material.color.set(0xa3221d); o.material.roughness = 0.9; }
+    });
+    if (nombre === 'cab_asiento') g.scene.traverse(o => { if (o.isMesh && o.name.startsWith('palanca_')) palanca.push(o); });   /* el bastón: main.js lo cuelga del grupo palanca */
   }
   if (!PIEZAS.includes('cab_cascaron')) cabina.add(await planoCasco(V, OJO));
   /* la mirilla de la tolva (etapa 1, 7/11): la placa «agua_tolva» (del cascarón) se escala en y según la carga; su userData.nivel
@@ -85,7 +96,7 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
       generador: !!m.generador, encendido: !!m.encendido, enTierra: !!vuelo.enTierra, armado, test: !!(controles && controles.estado('swTEST')), estrellado: !!vuelo.estrellado,
       frds: { power: !!(controles && controles.estado('swFRDS')), galones: frds.galones, cobertura: frds.cobertura, gate: frds.gate, armado, hopperGal: vuelo.agua / 3.785 } });
   };
-  return { exterior: e.scene, actualizar: actualizarTodo, instrumentos, pantallas, rotulos, radios, frds, tablero: tab || null };
+  return { exterior: e.scene, actualizar: actualizarTodo, instrumentos, pantallas, rotulos, radios, frds, pedales, palanca, tablero: tab || null };
 }
 
 /* el casco por dentro, como líneas: la referencia común de todas las zonas mientras no está el cascarón */

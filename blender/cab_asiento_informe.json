@@ -1,0 +1,34 @@
+{
+ "etapa": "6",
+ "triangulos": 554,
+ "llamadas": 6,
+ "mb": 0.024,
+ "pivote": [
+  0.0,
+  0.28,
+  1.15
+ ],
+ "tope": [
+  0.0,
+  1.06,
+  1.11
+ ],
+ "chequeos": {
+  "1 nada afuera": {
+   "ok": true,
+   "detalle": "cero vértices afuera"
+  },
+  "3 nada flotando": {
+   "ok": true,
+   "detalle": "todas las piezas apoyan en otra o siguen al casco"
+  },
+  "4 nada superpuesto en el mismo plano": {
+   "ok": true,
+   "detalle": "sin caras coplanares encimadas"
+  },
+  "6 presupuesto": {
+   "ok": true,
+   "detalle": "554 triángulos (máx. 6000) · 11 llamadas (máx. 40) · 0.00 MB (máx. 0.3)"
+  }
+ }
+}

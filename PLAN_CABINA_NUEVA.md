@@ -529,6 +529,17 @@ FUEL a OFF», a confirmar con Bruno) y los nombres que no coincidan con los rót
   clip) y el botón del bastón. Se revisa la altura del ojo con el asiento nuevo y el recorrido de
   subida de `apie.js`.
 - Borra el bastón del FSX (`palanca_*`), la butaca de cuerina y `PEDAL_VIEJO`.
+- **PRIMERA VERSIÓN HECHA el 11/11/2026 (v=20261111c, sin publicar; tanda autónoma, falta el ok de Iván):**
+  `herramientas/cab_asiento.py` → `blender/cab_asiento.glb` (554 triángulos, 6 llamadas): bastón cromado recto con empuñadura negra
+  y botón rojo (tres mallas `palanca_*` horneadas en el marco de la cabina; main.js las cuelga del grupo `palanca` con
+  PIVOTE (0; 0,28; 1,15) e inclinación neutra 0: en la cabina nueva nace derecho), fuelle negro en la base, parches antideslizantes
+  del piso y el varillaje rojo en V entre los pedales. Medido en la 360 con la pose: fuelle en (−0,01; 0,26; 1,15), botón rojo en
+  y 1,05–1,08, empuñadura de 0,90 a 1,06, caña casi vertical; pedales de x ±0,18 a ±0,33 con el borde de abajo en z 0,91. Los
+  pedales son `blender/pedales.glb` (Lichi, clip `pedales_timon`; `cabina_nueva.js` arma el mixer y main.js lo mueve con el pedal)
+  y el asiento `blender/butaca.glb` (Lichi, 1/11) RECOLOREADO en el juego: cuerina → malla roja (0xa3221d), correa → arnés negro,
+  hebilla metal. **Queda para la versión definitiva** (con Iván): el asiento de malla de verdad (`butaca_blender.py` nuevo: la 360 no
+  lo ve bien porque la cámara estaba contra el respaldo), la altura del ojo con ese asiento (se mantiene 1,38), la placa AIR TRACTOR
+  de los pedales y el conducto de aire gris (F4).
 
 ### Etapa 7 — Limpieza, rendimiento y Quest (1 sesión)
 - Se saca `cabina.glb` del juego (queda en la historia de git) junto con todo el código de parches.

@@ -6,7 +6,7 @@ import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
 import { mergeGeometries } from './BufferGeometryUtils.js';
 import { crearEscenario } from './escenario.js?v=20261017a';
-import { crearRadios } from './radios.js?v=20261111b';
+import { crearRadios } from './radios.js?v=20261111c';
 import { Controles } from './controles.js?v=20261022e';
 import { Instrumentos } from './instrumentos.js?v=20261025e';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261026j';
@@ -14,7 +14,7 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261111b';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261111c';
 
 /* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
    ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
@@ -105,7 +105,7 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261111b', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261111c', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
   if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula; la luz ENG FIRE vieja queda dentro de la chapa: la reemplaza MASTER WARN */
@@ -113,6 +113,8 @@ if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ ca
     botonSalir.malla.position.set(0.27, 1.21, r.tablero.z_cara + 0.002); botonSalir.malla.rotation.set(0, 0, 0);
     luzFuego.visible = false; luzFuego.position.set(0, -5, 0);
   }
+  for (const o of r.palanca || []) { o.position.sub(PIVOTE); palanca.add(o); }   /* etapa 6: el bastón nuevo (palanca_*) gira con el mando desde PIVOTE */
+  Object.assign(pedales, r.pedales || {});                                        /* y los pedales de Lichi siguen al pedal */
 }));
 else Promise.all([new GLTFLoader().loadAsync(`./cabina.glb?v=${V}`), fetch(`./instrumentos.json?v=${V}`).then(r => r.json())]).then(([g, datosInst]) => {
   g.scene.traverse(o => {
@@ -761,8 +763,8 @@ let pedal = 0, frenos = 0, flaps = 0;
 controles.alCambiar = (nombre, valor) => { console.log('control', nombre, valor); if (nombre === 'swFLAPS') flaps = flaps >= 1 ? 0 : flaps + 0.5; };   /* switch de flaps: 0° → 10° → 20° → 0° */
 
 // ---- bastón de mando ----
-const PIVOTE = new THREE.Vector3(0.004, 0.22, 0.969);          // base del bastón (marco del modelo)
-const INCL_NEUTRA = -0.25;                                      // el modelo lo trae inclinado a la izquierda: se endereza
+const PIVOTE = MODO_CABINA === 'nueva' ? new THREE.Vector3(0, 0.28, 1.15) : new THREE.Vector3(0.004, 0.22, 0.969);   // base del bastón: cabina nueva (etapa 6, medida en la 360) / marco del modelo FSX
+const INCL_NEUTRA = MODO_CABINA === 'nueva' ? 0 : -0.25;       // el modelo FSX lo traía inclinado a la izquierda: se enderezaba; el nuevo nace derecho
 const palanca = new THREE.Group(); palanca.position.copy(PIVOTE); palanca.rotation.order = 'ZXY'; palanca.rotation.z = INCL_NEUTRA; cabina.add(palanca);
 const PUNIO = new THREE.Vector3(0, 0.6, 0);
 const LIMITE = 0.3;
