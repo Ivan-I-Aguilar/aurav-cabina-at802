@@ -37,7 +37,14 @@ export class Vuelo {
   pasoMotor(dt) {
     const m = this.motor, c = this.mando;
     // batería / generador alimentan los instrumentos eléctricos
-    m.volt = m.generador && m.ng > 50 ? 28 : m.bateria ? 24 : 0;
+    /* nivel 3 (J3): falla del generador —m.fallaGen 'fija' o 'recuperable' con un ciclo OFF→ON de la llave (m.genSw lo pone main.js)— y la batería
+       que se agota sin generador (m.carga 1 → 0 en unos 8 min; main.js suma la carga eléctrica en m.consumo). Señal previa: el generador parpadea. */
+    if (m.fallaGen) { if (m.genSw === false) m.genReset = true; else if (m.genReset && m.genSw) { m.genReset = false; if (m.fallaGen === 'recuperable') { m.fallaGen = false; this.evento('generador-repuesto'); } } if (m.fallaGen) m.generador = false; }
+    if (m.senal && m.senal.tipo === 'generador' && Math.sin(this.tiempo * 1.3) > 0.97) m.generador = false;
+    if (m.carga == null) m.carga = 1;
+    if (m.bateria && !m.generador && m.encendido) m.carga = Math.max(0, m.carga - dt / 480 * (1 + (m.consumo || 0))); else if (m.generador && m.ng > 50) m.carga = Math.min(1, m.carga + dt / 600);
+    m.volt = m.generador && m.ng > 50 ? 28 : m.bateria && m.carga > 0 ? 22 + 2 * m.carga : 0;
+    const senalFalla = m.senal && /falla/.test(m.senal.tipo) ? Math.min(1, (this.tiempo - m.senal.t0) / 22) : 0, senalFuego = m.senal && m.senal.tipo === 'fuego' ? Math.min(1, (this.tiempo - m.senal.t0) / 20) : 0;   /* señales previas: aceite que cae y torque que tiembla; ITT que sube */
     // arranque: con batería, arrancador sube Ng; con combustible (condición adelante) e ignición, enciende a Ng > 12 %
     const girandoArrancador = m.arrancador && m.bateria && !m.falla && !m.encendido;
     /* fallas de arranque del nivel 1 (PLAN_JUEGO.md): 'bateria' (Ng no pasa de 9 %), 'hung' (enciende pero Ng se clava en 24 % y la ITT sube
@@ -58,10 +65,10 @@ export class Vuelo {
       if (m.tApagando > 5) { m.fuego = false; this.evento('fuego-extinguido'); }
       else if (this.tiempoFuego > 45 && !m.fuegoFatal) { m.fuegoFatal = true; this.evento('fuego-incontrolado'); }
     }
-    const torqueObj = m.encendido ? Math.max(0, (m.ng - 58) / 43) * 100 * (m.fuego ? Math.max(0.3, 1 - this.tiempoFuego * 0.05) : 1) : 0;
+    const torqueObj = m.encendido ? Math.max(0, (m.ng - 58) / 43) * 100 * (m.fuego ? Math.max(0.3, 1 - this.tiempoFuego * 0.05) : 1) * (1 - 0.05 * senalFalla * (1 + Math.sin(this.tiempo * 9))) : 0;   /* tiembla hacia abajo: no pasa del límite por la señal */
     m.torque += (torqueObj - m.torque) * Math.min(1, dt / 1.2);
     // ITT: sube con torque; en el arranque pico breve; con fuego se dispara
-    let ittObj = m.encendido ? 420 + 3.8 * m.torque + (m.fuego ? 300 : 0) : (m.arrancador && m.ng > 8 ? 200 : 15), tauItt = m.encendido ? 2.5 : 6;
+    let ittObj = m.encendido ? 420 + 3.8 * m.torque + (m.fuego ? 300 : 0) + 90 * senalFuego : (m.arrancador && m.ng > 8 ? 200 : 15), tauItt = m.encendido ? 2.5 : 6;
     if (m.encendido && m.fallaArranque === 'hot') { ittObj = 1120; tauItt = 10; }                /* hot start: la ITT sube ~35 °C/s; desde el síntoma (750 °C) hay unos 8 s para cortar antes de 1000 */
     if (m.encendido && m.fallaArranque === 'hung') { ittObj = 1100; tauItt = 30; }                /* hung start: sube despacio, 1000 °C a los ~40 s */
     m.itt += (ittObj - m.itt) * Math.min(1, dt / tauItt);
@@ -72,7 +79,7 @@ export class Vuelo {
     const rpmObj = c.helice < 0.15 ? 0 : (m.encendido ? 1000 + 700 * Math.min(1, m.ng / 85) * c.helice : Math.min(1400, this.vIAS * 9) * c.helice);
     m.rpmHel += (rpmObj - m.rpmHel) * Math.min(1, dt / 2);
     m.ff = m.encendido ? 90 + 5 * m.torque : 0;
-    m.oilp += ((m.ng > 20 ? 95 : 0) - m.oilp) * Math.min(1, dt / 2); m.oilt += ((m.encendido ? 75 : 20) - m.oilt) * Math.min(1, dt / 30);
+    m.oilp += ((m.ng > 20 ? 95 : 0) * (1 - 0.45 * senalFalla) - m.oilp) * Math.min(1, dt / 2); m.oilt += ((m.encendido ? 75 + 20 * senalFalla : 20) - m.oilt) * Math.min(1, dt / 30);
     if (m.fuego) this.tiempoFuego = (this.tiempoFuego || 0) + dt;
     // empuje: potencia de eje por rendimiento de hélice, limitado a punto fijo; en bandera o apagado, nada
     const pot = P_MAX * m.torque / 100 * Math.min(1, m.rpmHel / 1500);

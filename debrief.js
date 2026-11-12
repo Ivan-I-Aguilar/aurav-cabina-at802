@@ -2,7 +2,7 @@
 // competencia, la línea de tiempo con lo malo en rojo y las observaciones; se descarga la constancia (PNG) y el resultado (JSON),
 // que además queda en localStorage (aurav_cabina_resultados) listo para mandarlo al aula virtual cuando exista (mismo JSON).
 import { Constancia } from './constancia.js';
-import { describir, FALLAS_ARRANQUE } from './escenario_azar.js';
+import { describir, FALLAS_ARRANQUE, EMERGENCIAS, MOMENTOS } from './escenario_azar.js';
 
 export const PESOS = { procedimientos: 40, reaccion: 25, control: 20, decision: 15 };
 export const APROBADO = 70;
@@ -42,12 +42,27 @@ export function rubricaNivel2(registro, escenario, resultado) {
       if (/pista|pérdida|rotó/.test(t)) c.procedimientos -= 15; else if (/toque|rápido|bajo de 100|sin flaps/.test(t)) c.control -= 15; else if (/sin largar|no se cumplió/.test(t)) c.decision -= 40; else c.procedimientos -= 5; }
     if (it.tipo === 'exceso') c.control -= it.que === 'velocidad' ? 20 : 10;
   }
-  if (!descargas) { c.reaccion = 0; c.decision -= 50; }
+  const cortada = its.some(i => i.tipo === 'falla' && /motor|Fuego/.test(i.texto));   /* nivel 3: una falla de motor o un fuego cortan la misión: sin descarga no hay castigo */
+  if (!descargas && !cortada) { c.reaccion = 0; c.decision -= 50; }
   if (registro.fatal) { c.control = Math.min(c.control, 20); c.decision = Math.min(c.decision, 30); }
   for (const k in c) c[k] = Math.max(0, Math.min(100, Math.round(c[k])));
   return c;
 }
-export const NOMBRES_COMP = { 1: { procedimientos: 'Procedimientos', reaccion: 'Reacción', control: 'Control del avión', decision: 'Decisión' }, 2: { procedimientos: 'Procedimientos', reaccion: 'Navegación y descarga', control: 'Control del avión', decision: 'Decisión' } };
+/* Rúbrica del nivel 3: la del 2 para procedimientos y control; «reacción» = la emergencia (segundos hasta la primera acción correcta, pasos de la
+   emergencia hechos tarde); «decisión» = lo decidido en la emergencia más la calidad de la descarga (a la mitad de peso) */
+export function rubricaNivel3(registro, escenario, resultado) {
+  const c = rubricaNivel2(registro, escenario, resultado), its = registro.items;
+  c.decision = Math.max(0, Math.round(c.decision - (100 - c.reaccion) * 0.5));
+  const f = its.find(i => i.tipo === 'falla'), r = its.find(i => i.tipo === 'reaccion');
+  if (!f) c.reaccion = resultado.exito === false ? 50 : 100;   /* la emergencia no llegó a darse (la partida terminó antes): no hay reacción que medir */
+  else if (!r) c.reaccion = 0;
+  else { const s = r.segundos; c.reaccion = 100 - (s <= 5 ? 0 : s <= 10 ? 15 : s <= 20 ? 40 : 70); for (const it of its) if (it.tipo === 'paso' && it.tarde && it.emergencia) c.reaccion -= 10; }
+  for (const it of its) if (it.tipo === 'observacion' && /volver a la pista|sin batería|condición no estaba|batería quedó/.test(it.texto)) c.decision -= 20;
+  for (const k in c) c[k] = Math.max(0, Math.min(100, Math.round(c[k])));
+  return c;
+}
+export const NOMBRES_COMP = { 1: { procedimientos: 'Procedimientos', reaccion: 'Reacción', control: 'Control del avión', decision: 'Decisión' }, 2: { procedimientos: 'Procedimientos', reaccion: 'Navegación y descarga', control: 'Control del avión', decision: 'Decisión' },
+  3: { procedimientos: 'Procedimientos', reaccion: 'Reacción a la emergencia', control: 'Control del avión', decision: 'Decisión y descarga' } };
 export function notaFinal(comp) { let s = 0; for (const k in PESOS) s += (comp[k] ?? 0) * PESOS[k] / 100; return Math.round(s); }
 
 /* observaciones en texto para el instructor, generadas de la línea de tiempo */
@@ -60,6 +75,11 @@ export function observaciones(registro, escenario, resultado) {
     if (f && r) o.push(`Síntoma a los ${f.t} s; ${r.texto} (${r.segundos} s después).`);
     else if (f) o.push(`Síntoma a los ${f.t} s y no abortó${registro.fatal ? ': ' + registro.fatal : ''}.`);
   } else if (escenario.falla === 'normal') o.push('Arranque normal, sin fallas preparadas.');
+  if (escenario.emergencia) {   /* nivel 3 */
+    o.push(`La emergencia preparada: ${EMERGENCIAS[escenario.emergencia] || escenario.emergencia} ${MOMENTOS[escenario.momento] || ''}${escenario.senales ? ', con señales previas' : ', sin aviso'}.`);
+    const f = its.find(i => i.tipo === 'falla'), r = its.find(i => i.tipo === 'reaccion');
+    if (f && r) o.push(`${f.texto} a los ${f.t} s; ${r.texto} (${r.segundos} s después).`); else if (f) o.push(`${f.texto} a los ${f.t} s y no hubo reacción${registro.fatal ? ': ' + registro.fatal : ''}.`); else o.push('La emergencia no llegó a presentarse.');
+  }
   const tardes = its.filter(i => i.tipo === 'paso' && i.tarde); if (tardes.length) o.push(`Pasos lentos: ${tardes.map(i => `${i.texto.split(':')[0]} (${i.tardo.toFixed(0)} s)`).join(', ')}.`);
   const antic = its.filter(i => i.tipo === 'paso' && i.anticipado); if (antic.length) o.push(`Hechos antes de que correspondiera (fuera de orden): ${antic.map(i => i.texto.split(':')[0]).join(', ')}.`);
   for (const i of its.filter(i => i.tipo === 'observacion')) o.push(i.texto.charAt(0).toUpperCase() + i.texto.slice(1) + '.');
@@ -69,7 +89,7 @@ export function observaciones(registro, escenario, resultado) {
 }
 
 export function armarResultado({ alumno, nivel, escenario, registro, resultado }) {
-  const comp = nivel === 1 ? rubricaNivel1(registro, escenario, resultado) : nivel === 2 || nivel === 3 ? rubricaNivel2(registro, escenario, resultado) : { procedimientos: resultado.nota, reaccion: resultado.nota, control: resultado.nota, decision: resultado.nota };
+  const comp = nivel === 1 ? rubricaNivel1(registro, escenario, resultado) : nivel === 2 ? rubricaNivel2(registro, escenario, resultado) : nivel === 3 ? rubricaNivel3(registro, escenario, resultado) : { procedimientos: resultado.nota, reaccion: resultado.nota, control: resultado.nota, decision: resultado.nota };
   const nota = notaFinal(comp), aprobado = nota >= APROBADO && !registro.fatal && resultado.exito !== false;
   const fecha = new Date().toISOString().slice(0, 16).replace('T', ' ');
   const base = `${alumno}|${nivel}|${escenario.semilla}|${fecha}|${nota}|${aprobado ? 'A' : 'N'}`;

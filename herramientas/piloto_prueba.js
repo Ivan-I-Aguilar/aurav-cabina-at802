@@ -27,13 +27,14 @@ export function volarNivel2(o = {}) {
   const terreno = (x, z) => M.obtener.terreno(x, z);
   const aglAdelante = () => {   /* altura sobre lo más alto del terreno en los próximos 700 m de la trayectoria (ft): no chocar la loma de adelante */
     let mx = terreno(V.pos.x, V.pos.z); const vh = Math.max(1, Math.hypot(V.vel.x, V.vel.z));
-    for (let s = 100; s <= 700; s += 100) mx = Math.max(mx, terreno(V.pos.x + V.vel.x * s / vh, V.pos.z + V.vel.z * s / vh));
+    for (let s = 100; s <= 1000; s += 100) mx = Math.max(mx, terreno(V.pos.x + V.vel.x * s / vh, V.pos.z + V.vel.z * s / vh));
     return (V.pos.y - mx) * 3.281;
   };
   const volar = (hdg, altFt, vMph, cabMax = 10, alabMax = 25, cabMin = -6, potMax = 1, vyCmd = null) => {
     const alabeo = clamp(wrap(hdg - rumbo()) * 1.2, -alabMax, alabMax);
     /* en ruta: altura sobre lo más alto de adelante; en la final (vyCmd): el variómetro que lleva al punto de toque */
-    const cabeceo = vyCmd == null ? clamp(2 + (altFt - aglAdelante()) * 0.02 - V.vel.y * 1.5, cabMin, cabMax) : clamp(2 + (vyCmd - V.vel.y) * 4, cabMin, cabMax);
+    const err = vyCmd == null ? altFt - aglAdelante() : 0;   /* por debajo de lo pedido (loma adelante) reacciona el doble */
+    const cabeceo = vyCmd == null ? clamp(2 + err * (err > 0 ? 0.04 : 0.02) - V.vel.y * 1.5, cabMin, cabMax) : clamp(2 + (vyCmd - V.vel.y) * 4, cabMin, cabMax);
     iV = clamp(iV + (vMph - V.vIAS) * 0.0006, -0.3, 0.3);
     const pot = clamp(0.45 + (vMph - V.vIAS) * 0.02 + cabeceo * 0.035 + iV, 0, potMax);
     lev('levPOT', 0.15 - 1.05 * pot); window.__auto = { cabeceo, alabeo };
@@ -45,11 +46,53 @@ export function volarNivel2(o = {}) {
   const VIENTO1 = { x: 1080, z: -1500 }, VIENTO2 = { x: 1080, z: -3700 }, APROX = { x: 30, z: -3700 }, TOQUE = { x: 30, z: -950 };   /* el tramo con el viento va sobre lomas: se llega alto a la final, por eso es larga (2,7 km) */
   const pesado = (3200 + (e?.carga ?? V.agua)) * 2.20462 > 12500;
   const crucero = foco0 ? clamp(Math.hypot(foco0.x - 30, foco0.z - 100) * 0.14, 500, op.alturaCrucero) : op.alturaCrucero;   /* con el foco cerca no da para subir a 1000 ft y volver a bajar */
-  let fase = 'orden', dPrev = Infinity, tDescarga = null, reloj;
+  let fase = 'orden', dPrev = Infinity, tDescarga = null, reloj, flareHdg = 180;
   const paso = () => M.pasos?.[M.i]?.texto || '(terminado)';
+  /* ---- nivel 3: las emergencias. El piloto hace lo que dice el checklist de cada una (como lo haría el alumno) y, sin motor, planea al
+     punto más cercano del valle de la pista y aterriza de frente. compuerta y generador no cortan la misión: resuelve y sigue. ---- */
+  let emFase = null, emT = 0, emPaso = 0;
+  const planear = (vObj = 105, rumboFijo = null) => {   /* sin motor: nariz por velocidad, rumbo al valle (o el fijo que se pida), flare a 25 ft */
+    lev('levPOT', 0.15);
+    const px = clamp(V.pos.x, -250, 300), pz = clamp(V.pos.z, -4200, 500), dentro = px === V.pos.x && pz === V.pos.z;
+    const hdg = rumboFijo != null ? rumboFijo : dentro ? rumbo() : rumboA({ x: px + (px - V.pos.x) * 0.3, z: pz + (pz - V.pos.z) * 0.3 });
+    if (M.alt < 25) { if (fase !== 'flare') { fase = 'flare'; flareHdg = rumbo(); anotar(`flare forzoso a ${V.vIAS.toFixed(0)} mph, x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}`); } const vyCmd = M.alt > 12 ? -1.5 : -0.8; window.__auto = { cabeceo: clamp(3 + (vyCmd - V.vel.y) * 4, -2, 9), alabeo: clamp(wrap(flareHdg - rumbo()) * 1.2, -5, 5) }; return; }
+    window.__auto = { cabeceo: clamp(-3 + (V.vIAS - vObj) * 0.25, -12, 4), alabeo: clamp(wrap(hdg - rumbo()) * 1.2, -20, 20) };
+  };
+  const manejarEmergencia = () => {   /* true: la emergencia lleva el avión; false: la misión sigue y el piloto también */
+    const m = V.motor, tE = (M.registro?.t ?? 0) - emT;
+    if (emFase === 'compuerta') { if (V.agua > 0 && V.largando == null) lev('levEDUMP', -0.9); return false; }
+    if (emFase === 'generador') { if (emPaso === 0) { poner('swGEN', false); emPaso = 1; } else if (emPaso === 1) { poner('swGEN', true); emPaso = 2; anotar(`GEN reset (${m.fallaGen ? 'no volvió' : 'volvió'})`); } return false; }
+    if (V.enTierra && emPaso > 0) { if (fase !== 'tierra') { fase = 'tierra'; tecla('b'); window.__auto = null; anotar(`toque forzoso: x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}, ${V.vIAS.toFixed(0)} mph`); } return false; }
+    if (emFase === 'fuego') {   /* ralentí, corte, FUEL OFF, carga, bandera; después planeo al valle */
+      if (emPaso === 0) { lev('levPOT', 0.15); emPaso = 1; } else if (emPaso === 1) { lev('levCOND', 0.1); emPaso = 2; } else if (emPaso === 2) { poner('swFUEL', 0); emPaso = 3; }
+      else if (emPaso === 3) { lev('levEDUMP', -0.9); emPaso = 4; } else if (emPaso === 4) { lev('levHEL', 0.1); emPaso = 5; }
+      if (M.alt < 80) lev('levCOND', 0.1); if (M.alt < 40) poner('swBATT', false); if (emPaso >= 5 && V.vIAS < 112) flapsA(1);
+      planear(); return true;
+    }
+    if (emFase === 'fallaDespegue') {   /* nariz abajo, carga afuera, de frente, flaps, corte y batería antes de tocar */
+      if (emPaso === 0) { lev('levEDUMP', -0.9); lev('levPOT', 0.15); emPaso = 1; } if (V.vIAS < 112) flapsA(1); if (M.alt < 80) lev('levCOND', 0.1); if (M.alt < 40) poner('swBATT', false);
+      planear(100, 360); return true;   /* de frente por el eje de la pista: el valle sigue 3 km al norte */
+    }
+    if (emFase === 'falla') {   /* planeo, carga, bandera, rearranque (corte → Ng < 30 → ignición y start → condición); si no arranca, forzoso */
+      if (emPaso === 0) { lev('levEDUMP', -0.9); lev('levPOT', 0.15); emPaso = 1; } else if (emPaso === 1) { lev('levHEL', 0.1); emPaso = 2; } else if (emPaso === 2) { lev('levCOND', 0.1); emPaso = 3; }
+      else if (emPaso === 3 && m.ng < 30) { poner('swIGN', 1); poner('swSTART', true); emPaso = 4; anotar(`rearranque a ${M.alt.toFixed(0)} ft: ignición y start`); }
+      else if (emPaso === 4 && m.ng > 13) { lev('levCOND', -0.9); emPaso = 5; }
+      else if (emPaso === 5 && m.encendido) { lev('levHEL', -0.9); poner('swIGN', 0); emPaso = 6; anotar('motor en marcha de nuevo'); }
+      if (emPaso >= 6 && m.encendido) { volar(rumbo(), 800, 120); return M.fase !== 'mision'; }   /* trepa hasta que la misión se retoma; entonces el piloto sigue con lo suyo */
+      if (M.fase === 'forzoso' || (emPaso >= 4 && tE > 40 && !m.encendido)) { if (M.alt < 80) lev('levCOND', 0.1); if (M.alt < 40) poner('swBATT', false); if (V.vIAS < 112) flapsA(1); }
+      planear(); return true;
+    }
+    return false;
+  };
   const tic = () => {
     try {
       if (M.fase === 'resultado' || V.estrellado) { anotar(V.estrellado ? 'ACCIDENTE' : 'misión cerrada: ' + paso()); return parar(); }
+      const E = M.emergencia;
+      if (op.emergencias !== false && E && E.estado === 'disparada') {
+        if (!emFase) { emFase = E.tipo; emT = M.registro?.t ?? 0; emPaso = 0; anotar(`EMERGENCIA: ${E.tipo} (misión en fase ${M.fase}, ${M.alt.toFixed(0)} ft, x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)})`); }
+        if (manejarEmergencia()) return;
+      } else if (emFase && E && E.estado === 'resuelta') { anotar('emergencia resuelta: ' + emFase + '; sigue la misión'); emFase = null; }
+      if (fase === 'tierra') { if (V.vIAS < 3) { tecla(null); anotar('detenido'); parar(); } return; }
       if (fase === 'orden') { if ((M.t || 0) > 7) { fase = 'config'; anotar('orden recibida; configuro'); } return; }
       if (fase === 'config') {   /* una cosa por tic, en el orden del checklist */
         if (M.lev('levHEL') < 0.8) return lev('levHEL', -0.9);
@@ -61,6 +104,7 @@ export function volarNivel2(o = {}) {
         fase = 'despegue'; anotar(`listo: flaps ${V.mando.flaps}, cobertura ${M.frds?.cobertura}; potencia`); return;
       }
       if (fase === 'despegue') {
+        if (op.abortarConSenales && V.enTierra && V.vIAS > 40 && V.motor.oilp < 80) { lev('levPOT', 0.15); tecla('b'); fase = 'tierra'; anotar(`aborta el despegue: aceite ${V.motor.oilp.toFixed(0)} psi a ${V.vIAS.toFixed(0)} mph`); return; }   /* nivel 3: leyó las señales */
         lev('levPOT', -0.9);
         const err = wrap(360 - rumbo()) + clamp((30 - V.pos.x) * 0.3, -8, 8); tecla(err > 1 ? 'd' : err < -1 ? 'a' : null);   /* pedales por teclado */
         window.__auto = V.vIAS > 92 ? { cabeceo: 9, alabeo: 0 } : null;
@@ -71,7 +115,8 @@ export function volarNivel2(o = {}) {
         if (!foco) { fase = 'crucero'; return; }
         const d = dist(foco), cerca = d < 900 + (crucero - op.aglDescarga) * 3.3;   /* bajar a unos 5 m/s a 120 mph: 3,3 m por cada ft */
         if (M.alt > 300) flapsA(0);
-        volar(rumboA(foco), cerca ? op.aglDescarga : crucero, cerca ? op.vDescarga : 130, 10, 25, -8);
+        const altObj = d < 800 ? op.aglDescarga : cerca ? Math.max(op.aglDescarga, 300) : crucero;   /* la pasada baja a 150 ft recién en los últimos 800 m: antes, 300 sobre las lomas */
+        volar(rumboA(foco), altObj, cerca ? op.vDescarga : 130, 10, 25, -8);
         const tc = Math.sqrt(2 * Math.max(5, M.alt / 3.281) / 9.8), lead = V.vIAS * 0.447 * tc + 40;   /* el agua cae tc segundos: se larga lead metros antes */
         if (cerca && d < lead && d <= dPrev) { tocar(op.modo === 'gate' ? 'swFRDS_GATE' : 'swSALVO'); tDescarga = M.t; fase = 'largando'; anotar(`${op.modo.toUpperCase()} a ${d.toFixed(0)} m del foco, ${M.alt.toFixed(0)} ft, ${V.vIAS.toFixed(0)} mph`); }
         dPrev = d; return;
@@ -104,21 +149,20 @@ export function volarNivel2(o = {}) {
         const vyCmd = clamp(-(M.alt / 3.281) * vh / dT, -7, -0.5);   /* el descenso que llega justo al punto de toque (3° si viene bien; más si viene alto) */
         if (vyCmd < -3 && iV > 0) iV = 0;
         volar(hdg, 0, 100, V.vIAS < 92 ? 2 : 6, 20, V.vIAS > 110 ? -1 : -9, V.vIAS < 95 ? 1 : clamp(0.6 + (vyCmd + 2.3) * 0.15, 0.05, 0.6), vyCmd);   /* alto: potencia afuera y nariz abajo, sin pasar de 110 mph (flota y se va larga) ni bajar de 95 (se cae) */
-        if (M.alt < 25) { fase = 'flare'; anotar(`flare a ${V.vIAS.toFixed(0)} mph, x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}`); }
+        if (M.alt < 25) { fase = 'flare'; flareHdg = 180; anotar(`flare a ${V.vIAS.toFixed(0)} mph, x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}`); }
         else if ((V.pos.z > -1150 && M.alt > 250) || V.pos.z > 0 || Math.abs(V.pos.x - 30) > 400) { fase = 'vuelta'; flapsA(0); anotar(`motor y al aire: final mal armada (x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}, ${M.alt.toFixed(0)} ft); otro circuito`); }
         return;
       }
       if (fase === 'flare') {   /* motor al ralentí y el descenso a −0,8 m/s hasta tocar (con la nariz fija flotaba 800 m y se iba de pista) */
-        const vyCmd = M.alt > 12 ? -1.5 : -0.8; window.__auto = { cabeceo: clamp(3 + (vyCmd - V.vel.y) * 4, -2, 9), alabeo: clamp(wrap(180 - rumbo()) * 1.2, -5, 5) }; lev('levPOT', 0.15);
+        const vyCmd = M.alt > 12 ? -1.5 : -0.8; window.__auto = { cabeceo: clamp(3 + (vyCmd - V.vel.y) * 4, -2, 9), alabeo: clamp(wrap(flareHdg - rumbo()) * 1.2, -5, 5) }; lev('levPOT', 0.15);
         if (V.enTierra) { fase = 'tierra'; tecla('b'); window.__auto = null; anotar(`toque: x ${V.pos.x.toFixed(0)}, z ${V.pos.z.toFixed(0)}, ${V.vIAS.toFixed(0)} mph`); }
         return;
       }
-      if (fase === 'tierra') { if (V.vIAS < 3) { tecla(null); anotar('detenido'); parar(); } return; }
     } catch (err) { anotar('ERROR ' + err.message); parar(); }
   };
   const parar = () => { clearInterval(reloj); tecla(null); window.__auto = null; fase = 'parado'; };
   const estado = () => ({ fase, t: +(M.t || 0).toFixed(0), pos: [V.pos.x, V.pos.y, V.pos.z].map(n => +n.toFixed(0)), agl: +M.alt.toFixed(0), rumbo: +rumbo().toFixed(0), ias: +V.vIAS.toFixed(0), vy: +V.vel.y.toFixed(1),
-    agua: +V.agua.toFixed(0), flaps: V.mando.flaps, paso: paso(), dFoco: foco ? +dist(foco).toFixed(0) : null, descargas: M.descargas, misionFase: M.fase, log: log.slice(-6) });
+    agua: +V.agua.toFixed(0), flaps: V.mando.flaps, paso: paso(), dFoco: foco ? +dist(foco).toFixed(0) : null, descargas: M.descargas, misionFase: M.fase, emergencia: M.emergencia && { tipo: M.emergencia.tipo, estado: M.emergencia.estado, piloto: emFase, paso: emPaso }, motor: { enc: V.motor.encendido, ng: +V.motor.ng.toFixed(0), fuego: V.motor.fuego, gen: V.motor.generador, fallaGen: V.motor.fallaGen }, log: log.slice(-6) });
   window.__vel = op.vel; reloj = setInterval(tic, 100); anotar(`piloto de prueba: ${op.modo}, vel ×${op.vel}, foco ${foco ? `${foco.x.toFixed(0)}, ${foco.z.toFixed(0)}` : 'no hay'}`);
   return { estado, parar, log };
 }

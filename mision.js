@@ -23,12 +23,15 @@ export class Mision {
      registro y al terminar se llama alCerrar(resultado) en vez del panel Seguir/Repetir ---- */
   nivel(n, escenario, registro) {
     this.modoNivel = n; this.escenario = escenario; this.registro = registro; this.resultados = []; this.fase = 'intro'; this.abortado = false;
+    this.emergencia = null; this._mision = null; this._checklistDicho = false; Object.assign(this.vuelo.motor, { senal: null, fallaGen: false, genReset: false, carga: 1 });
     if (n === 1) {
       this.reiniciarAvion({ enPista: true, agua: 2400, apagado: true });
       const m = this.vuelo.motor; m.fallaArranque = escenario.falla || 'normal'; m.tFalla = 0; m.itt = escenario.ittInicial || 15;
       this.faseArranque();
-    } else if (n === 2 || n === 3) {   /* nivel 2 (J2): misión de incendio; nivel 3 por ahora igual (J3 le suma la emergencia) */
+    } else if (n === 2 || n === 3) {   /* nivel 2 (J2): misión de incendio; nivel 3 (J3): la misma misión con una emergencia sorpresa */
       this.reiniciarAvion({ enPista: true, agua: escenario.carga || 2400, apagado: false });
+      this.emergencia = n === 3 && escenario.emergencia ? { tipo: escenario.emergencia, momento: escenario.momento, senales: !!escenario.senales, estado: 'latente' } : null;
+      if (this.frds) { this.frds.trabada = this.emergencia?.tipo === 'compuerta'; this.frds.avisoTrabada = false; }   /* la compuerta trabada se descubre al querer largar */
       for (const n of ['levHEL', 'levCOND']) { const p = this.controles.palancas.find(x => x.nombre === n); if (p) { p.ang = -0.45; this.controles._aplicarPalanca(p); } }   /* en la cabecera, de rodaje: hélice y condición a mitad (ground idle); el checklist las pide adelante */
       const th = escenario.foco.rumbo * Math.PI / 180, p = this.lugarLlano(30 + escenario.foco.km * 1000 * Math.sin(th), -escenario.foco.km * 1000 * Math.cos(th));   /* desde el aeródromo: norte = −z, este = +x */
       this.incendio?.poner(p.x, p.z, this.obtener.terreno(p.x, p.z) + 0.5, escenario.viento);
@@ -46,6 +49,62 @@ export class Mision {
       if (!mejor || relieve < mejor.relieve) mejor = { x, z, relieve };
     }
     return mejor;
+  }
+  /* ---- nivel 3 (J3): la emergencia sorpresa. Se arma en nivel(3) con el escenario (tipo, momento, señales) y la vigila la misión: cuando se abre
+     la ventana del momento elegido empiezan las señales previas (si las hay) y, 25 s después —o en el acto—, se dispara. Las que dejan sin
+     motor (falla, fuego) esperan a que el avión pueda planear hasta el valle de la pista: si no, no sería examen sino trampa. La falla en el
+     despegue va a 150 ft, salvo que el alumno lea las señales y aborte en la carrera. La compuerta trabada la dispara el propio intento de
+     largar (evento compuerta-trabada). Falla, fuego y falla en el despegue cortan la misión y pasan a sus fases (las de la práctica, con el
+     checklist a la vista); generador y compuerta meten sus pasos en el checklist y la misión sigue. La reacción (segundos hasta la primera
+     acción correcta) se anota para la rúbrica. ---- */
+  vigilarEmergencia() {
+    const E = this.emergencia, v = this.vuelo, m = v.motor, foco = this.incendio?.pos, T = this.registro?.t ?? this.t; if (!E || E.tipo === 'compuerta' || E.estado === 'disparada' || E.estado === 'resuelta') return;
+    const dist = p => Math.hypot(p.x - v.pos.x, p.z - v.pos.z);
+    const dRect = (x, z, x0, x1, z0, z1) => Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
+    if (E.estado === 'latente') {   /* ¿se abrió la ventana del momento elegido? */
+      E.d0 ??= foco ? Math.hypot(foco.x - 30, foco.z - 100) : 3000;
+      const abierta = { despegue: v.enTierra && m.torque > 85, ida: !v.enTierra && this.alt > 250 && !!foco && dist(foco) < 0.75 * E.d0, descarga: !!foco && dist(foco) < 1200, vuelta: this.descargas.length > 0 && !!foco && dist(foco) > 700 }[E.momento];
+      if (!abierta) return;
+      E.estado = 'ventana'; E.tVentana = T;
+      if (E.senales) { m.senal = { tipo: E.tipo, t0: v.tiempo }; this.registro?.anotar('evento', { nombre: 'senal-previa', detalle: E.tipo }); }
+    }
+    if (E.estado === 'ventana') {
+      if (E.senales && E.tipo === 'fallaDespegue' && v.enTierra && v.vIAS > 30 && this.lev('levPOT') < 0.2) {   /* leyó las señales y abortó el despegue: resuelta */
+        E.estado = 'resuelta'; m.senal = null; this.registro?.anotar('falla', { texto: 'Señales de falla de motor en la carrera de despegue (aceite, torque)', t: +E.tVentana.toFixed(1) });
+        this.registro?.anotar('reaccion', { texto: 'abortó el despegue', segundos: +(T - E.tVentana).toFixed(1) });
+        this.cerrarFase('Misión de incendio', true, 'Abortaste el despegue por las señales de falla. Bien: se reporta y no se vuela.'); return;
+      }
+      if (T - E.tVentana < (E.senales ? 25 : 0)) return;
+      if (E.tipo === 'fallaDespegue') { if (v.enTierra || this.alt < 150) return; }
+      else if (E.tipo === 'falla' || E.tipo === 'fuego') { const agl = v.pos.y - this.obtener.terreno(v.pos.x, v.pos.z); if (agl * 7 < dRect(v.pos.x, v.pos.z, -250, 300, -4200, 500) + 250) return; }   /* planeando 9:1 (con margen) tiene que llegar al valle */
+      this.dispararEmergencia();
+    }
+  }
+  dispararEmergencia() {
+    const E = this.emergencia, v = this.vuelo, m = v.motor, e = this.escenario; if (!E || E.estado === 'disparada') return;
+    E.estado = 'disparada'; E.tDisparo = this.registro?.t ?? this.t; E.reaccionHecha = false; m.senal = null;
+    this.registro?.anotar('falla', { texto: { falla: 'Falla de motor en vuelo', fuego: 'Fuego de motor', fallaDespegue: 'Falla de motor en el despegue', generador: 'Falla del generador (CAUTION)', compuerta: 'Compuerta de la tolva trabada' }[E.tipo] });
+    this._mision = { pasos: this.pasos, i: this.i, vigilar: this.vigilar, alTerminar: this.alTerminar, titulo: this.titulo };   /* para retomar la misión si la emergencia se resuelve en vuelo */
+    const reaccion = (texto, listo) => { E.reaccion = { texto, listo }; };
+    if (E.tipo === 'fallaDespegue') { m.falla = true; m.sinRearranque = true; reaccion('nariz abajo y carga largada', () => v.largando != null || v.agua < 200); this.faseFallaDespegue(); }
+    else if (E.tipo === 'falla') { m.falla = true; m.sinRearranque = !e.rearranque; m.causaFalla = e.rearranque ? 'combustible' : 'mecanica'; reaccion('carga largada', () => v.largando != null || v.agua < 100); this.faseFalla(); }
+    else if (E.tipo === 'fuego') { m.fuego = true; v.tiempoFuego = 0; reaccion('potencia a ralentí', () => this.lev('levPOT') < 0.15); this.faseFuego(); }
+    else if (E.tipo === 'generador') {
+      m.fallaGen = e.genVuelve ? 'recuperable' : 'fija'; m.genReset = false; reaccion('reset del generador', () => m.genReset || !m.fallaGen);
+      this.insertarPasos([
+        { id: 'genReset', texto: 'MASTER CAUTION: generador fuera. GEN a OFF y de nuevo a ON (un intento)', listo: () => !m.fallaGen || !!m.genReset, emergencia: true },
+        { id: 'genCarga', texto: 'Si no vuelve: luces y pitot OFF (la batería dura unos minutos) y seguir', listo: () => !m.fallaGen || (m.consumo || 0) < 0.3, emergencia: true },
+      ]);
+    } else if (E.tipo === 'compuerta') { reaccion('manija E-DUMP', () => v.largando != null || v.agua < 100); this.insertarPasos([{ id: 'edump', texto: 'La compuerta no abre (trabada): manija E-DUMP sobre el foco', listo: () => v.largando != null || v.agua < 100, emergencia: true }]); }
+  }
+  insertarPasos(nuevos) {   /* los pasos de una emergencia que no corta la misión van delante del paso actual */
+    this.pasos.splice(this.i, 0, ...nuevos); this.tPaso = 0; if (nuevos[0]) nuevos[0]._yaEstaba = !!nuevos[0].listo(); this.mostrarPaso();
+  }
+  retomarMision() {   /* la emergencia se resolvió en vuelo (motor rearrancado): sigue la misión donde estaba */
+    const g = this._mision; if (!g) return; this.emergencia.estado = 'resuelta'; this._mision = null;
+    this.fase = 'mision'; this.pasos = g.pasos; this.i = g.i; this.vigilar = g.vigilar; this.alTerminar = g.alTerminar; this.titulo = g.titulo; this.tPaso = 0;
+    this.alContacto = this.volando ? d => this.evaluarAterrizajeNormal(d) : null; this.ui.cartel(this.titulo); this.mostrarPaso();
+    this.decir(this.titulo, 'Torre: copiado el rearranque. Seguí la misión o volvé, a tu criterio.');
   }
   /* la orden de vuelo por radio, en pedazos con WAV propio (dígitos sueltos: herramientas/voces.py los genera) */
   frasesOrden(e) {
@@ -67,7 +126,7 @@ export class Mision {
       { id: 'orden', texto: `Orden de vuelo: foco a ${e.foco.km} km rumbo ${p3(e.foco.rumbo)}°, viento ${p3(e.viento.dir)}°/${e.viento.kt} kt, carga ${e.carga} kg, cobertura ${e.cobertura}`, listo: () => this.tPaso > 6, marca: null },
       { id: 'hel', texto: 'Hélice: TODA ADELANTE', listo: () => this.lev('levHEL') > 0.8 },
       { id: 'cond', texto: 'Palanca de condición: FLIGHT (adelante)', listo: () => this.lev('levCOND') > 0.8 },
-      pesado ? { id: 'flaps', texto: 'Flaps 10° (más de 12.500 lb)', listo: () => v.mando.flaps >= 0.5 && v.mando.flaps < 1 } : { id: 'flaps', texto: 'Flaps arriba (hasta 12.500 lb)', listo: () => v.mando.flaps === 0 },
+      pesado ? { id: 'flaps', texto: 'Flaps 10° (más de 12.500 lb)', listo: () => v.mando.flaps >= 0.5 && v.mando.flaps < 1 } : { id: 'flapsChk', texto: 'Flaps arriba (hasta 12.500 lb)', listo: () => v.mando.flaps === 0 },   /* liviano: es un chequeo (ya están arriba), no cuenta como «fuera de orden» */
       { id: 'pot', texto: 'Potencia de despegue, pedales para el eje', listo: () => v.motor.torque > 85 },
       { id: 'rot', texto: 'Rotá suave y montada inicial', listo: () => !v.enTierra && this.alt > 100 },
       { id: 'rumbo', texto: `Rumbo al foco ${p3(e.foco.rumbo)}° (CRS en el Garmin), trepando a 500 ft`, listo: () => foco && difRumbo(rumboAvion(), rumboA(foco)) < 12 && this.alt > 300 },
@@ -88,9 +147,11 @@ export class Mision {
       const enValle = Math.abs(v.pos.x - 30) < 300 && v.pos.z > -4200 && v.pos.z < 500;   /* el eje de la pista y sus prolongaciones: ahí se baja para aterrizar */
       if (this.volando && this.alt < 100 && foco && dist(foco) > 1500 && !enValle && !this.bajoAnotado) {   /* fuera de la pasada (1,5 km del foco) y del valle: bajo */ this.bajoAnotado = true; this.puntos -= 15; this.detalle.push('voló por debajo de 100 ft en ruta'); }
       v.cursoHSI = this.descargas.length ? (dist(aprox) > 600 && v.pos.z > -2600 ? rumboA(aprox) : 180) : (foco ? rumboA(foco) : 360);   /* el CRS del Garmin: al foco en la ida; a la vuelta, al punto de aproximación y después la final 18 */
-      if (v.largando != null && v.agua > 0 && !this.descarga) { this.descarga = { t0: this.t, pos0: v.pos.clone(), vel0: v.vel.clone(), agl0: this.alt, ias0: v.vIAS, cob: this.frds?.cobertura ?? e.cobertura, agua0: v.agua }; this.registro?.anotar('evento', { nombre: 'descarga-inicio', detalle: `${this.alt.toFixed(0)} ft, ${v.vIAS.toFixed(0)} mph, a ${foco ? dist(foco).toFixed(0) : '?'} m del foco` }); }
+      if (v.largando != null && v.agua > 0 && !this.descarga) { this.descarga = { t0: this.t, pos0: v.pos.clone(), vel0: v.vel.clone(), agl0: this.alt, ias0: v.vIAS, cob: this.frds?.cobertura ?? e.cobertura, agua0: Math.max(v.agua, this._aguaPrev ?? v.agua) };   /* lo que había antes de abrir (la compuerta abre entre cuadros) */ this.registro?.anotar('evento', { nombre: 'descarga-inicio', detalle: `${this.alt.toFixed(0)} ft, ${v.vIAS.toFixed(0)} mph, a ${foco ? dist(foco).toFixed(0) : '?'} m del foco` }); }
       if (this.descarga && (v.largando == null || v.agua <= 0)) this.evaluarDescarga();
+      if (!this.descarga) this._aguaPrev = v.agua;
       if (this.rodando && v.enTierra && !this.salioAterrizando && (Math.abs(v.pos.x - 30) > 25 || v.pos.z > 200 || v.pos.z < -1200)) { this.salioAterrizando = true; this.puntos -= 30; this.detalle.push(`se salió de la pista en la carrera de aterrizaje (x ${v.pos.x.toFixed(0)}, z ${v.pos.z.toFixed(0)})`); }
+      if (this.emergencia) this.vigilarEmergencia();
     };
     this.alTerminar = () => {   /* la misión se cumple si alguna descarga llegó al foco (a menos de 150 m): si no, la nota puede dar pero no se aprueba */
       const util = this.descargas.some(d => d.dm <= 150); if (!util && this.descargas.length) this.detalle.push('la misión no se cumplió: ninguna descarga llegó al foco (a menos de 150 m)');
@@ -146,6 +207,7 @@ export class Mision {
   // pasos: [{ id, texto, listo: () => bool, tiempo?: s límite, alFallar?: texto }]
   definir(fase, pasos, titulo) {
     this.fase = fase; this.pasos = pasos; this.i = 0; this.tPaso = 0; this.t = 0; this.titulo = titulo; if (pasos[0]) pasos[0]._yaEstaba = false;
+    if (this.modoNivel && this.emergencia?.estado === 'disparada') for (const p of pasos) p.emergencia = true;   /* nivel 3: los pasos de la emergencia, para la rúbrica */
     if (!fase.startsWith('forzoso') && fase !== 'fallaDespegue') { this.puntos = 100; this.detalle = this._nuevoDetalle(); }   /* el forzoso hereda los puntos de la emergencia */
     this.forzoso = false; this.volvio = false; this.perdidaAnotada = false; this.salioPista = false; this.tApagando = null; this.fuegoFatal = false; this.alContacto = null;
     this.ui.cartel(titulo); this.mostrarPaso();
@@ -154,7 +216,7 @@ export class Mision {
     const p = this.pasos[this.i]; if (!p) return;
     if (this.modoNivel) {   /* sin dictado: el checklist a la vista (los hechos tachados), sin el paso actual resaltado, sin voz ni aro amarillo */
       this.ui.tareas(this.pasos.map((q, k) => ({ texto: q.texto, ok: k < this.i, actual: false })));
-      if (this.i === 0) this.decir(this.titulo, 'Seguí el checklist de la tablilla. El tutor no dicta: anota.'); this.ui.marcar?.(null); return;
+      if (this.i === 0 && !this._checklistDicho) { this._checklistDicho = true; this.decir(this.titulo, 'Seguí el checklist de la tablilla. El tutor no dicta: anota.'); } this.ui.marcar?.(null); return;
     }
     this.ui.tareas(this.pasos.map((q, k) => ({ texto: q.texto, ok: k < this.i, actual: k === this.i })));
     this.decir(this.titulo, p.texto, p.voz ?? p.texto);
@@ -168,9 +230,9 @@ export class Mision {
   }
   avanzarPaso() {
     const p = this.pasos[this.i];
-    const tarde = !!(p.tiempo && this.tPaso > p.tiempo), anticipado = !!p._yaEstaba && this.i > 0 && this.t > 1.5 && !['off', 'libre', 'chk', 'acel', 'boostOff', 'soltar'].includes(p.id);   /* ya estaba hecho cuando el paso pasó a ser el actual: fuera de orden (salvo los pasos de espera o de «dejar», y los del estado inicial en el primer segundo y medio) */
-    if (tarde) { this.puntos -= p.penal ?? 10; this.detalle.push(`${p.texto}: tarde (${this.tPaso.toFixed(0)} s)`); }
-    this.registro?.anotar('paso', { id: p.id, texto: p.texto, tardo: +this.tPaso.toFixed(1), tarde, anticipado });   /* anticipado: ya estaba hecho cuando correspondió (fuera de orden) */
+    const tarde = !!(p.tiempo && this.tPaso > p.tiempo), anticipado = !!p._yaEstaba && this.i > 0 && this.t > 1.5 && !['off', 'libre', 'chk', 'acel', 'boostOff', 'soltar', 'flapsChk', 'orden', 'rot', 'asc', 'nivel', 'rumbo', 'foco', 'desc', 'vuelta', 'aprox', 'tierra', 'parar', 'genCarga', 'rearr', 'fin', 'frente', 'conf', 'campo', 'planeo', 'nariz', 'dump', 'bandera'].includes(p.id);   /* sólo cuentan los pasos que son una acción sobre un control, no los de navegación o espera */   /* ya estaba hecho cuando el paso pasó a ser el actual: fuera de orden (salvo los pasos de espera o de «dejar», y los del estado inicial en el primer segundo y medio) */
+    if (tarde) { this.puntos -= p.penal ?? 10; if (!this.modoNivel) this.detalle.push(`${p.texto}: tarde (${this.tPaso.toFixed(0)} s)`); }   /* en los niveles ya queda en el paso del registro */
+    this.registro?.anotar('paso', { id: p.id, texto: p.texto, tardo: +this.tPaso.toFixed(1), tarde, anticipado, emergencia: !!p.emergencia });   /* anticipado: ya estaba hecho cuando correspondió (fuera de orden) */
     this.i++; this.tPaso = 0;
     const q = this.pasos[this.i]; if (q) q._yaEstaba = !!q.listo();   /* se mira en el acto: si ya está, el alumno lo hizo antes de que correspondiera */
     if (this.i < this.pasos.length) this.mostrarPaso(); else { this.ui.tareas(this.pasos.map(q => ({ texto: q.texto, ok: true }))); this.ui.marcar?.(null); }
@@ -302,11 +364,11 @@ export class Mision {
     this.rearrancado = false;
     this.vigilar = () => {
       // el motor se apagó por combustible: ciclar condición a corte y volver a arrancar lo recupera
-      if (m.falla && this.lev('levCOND') < 0.1 && m.ng < 30) { m.falla = false; }
+      if (m.falla && !m.sinRearranque && this.lev('levCOND') < 0.1 && m.ng < 30) { m.falla = false; }   /* mecánica (sinRearranque): no vuelve */
       if (!m.encendido && this.alt < 350 && this.fase === 'falla' && !this.forzoso) { this.forzoso = true; this.faseForzoso('Sin motor: aterrizaje forzoso'); }
       if (m.encendido && !this.rearrancado && this.i >= 3) { this.rearrancado = true; this.decir(this.titulo, 'Arrancó. Hélice adelante y potencia.'); }
     };
-    this.alTerminar = () => this.cerrarFase('Falla de motor en vuelo', true, 'Rearranque logrado. El motor está en marcha.');
+    this.alTerminar = () => { if (this.modoNivel && this._mision) this.retomarMision(); else this.cerrarFase('Falla de motor en vuelo', true, 'Rearranque logrado. El motor está en marcha.'); };
   }
   faseFuego() {
     const v = this.vuelo, m = v.motor; this.tFuego = 0;
@@ -348,7 +410,7 @@ export class Mision {
   }
   evaluarAterrizaje(d, nombre) {
     const v = this.vuelo; let texto;
-    if (v.estrellado) { this.puntos = Math.min(this.puntos, 30); texto = `Toque muy fuerte (${d.vv.toFixed(1)} m/s de descenso). El avión no quedó entero.`; }
+    if (v.estrellado) { this.puntos = Math.min(this.puntos, 30); const causa = d.terreno ? `chocó contra el terreno a ${d.v.toFixed(0)} mph` : d.bank > 0.25 ? 'tocó con un ala' : `toque muy fuerte (${d.vv.toFixed(1)} m/s de descenso)`; this.registro?.marcarFatal(causa); texto = `${causa.charAt(0).toUpperCase() + causa.slice(1)}. El avión no quedó entero.`; }
     else { if (d.vv > 2) { this.puntos -= 15; this.detalle.push(`toque fuerte (${d.vv.toFixed(1)} m/s)`); } texto = `Aterrizaste. Descenso ${d.vv.toFixed(1)} m/s a ${d.v.toFixed(0)} mph.`; }
     if (this.lev('levCOND') > 0.1) { this.puntos -= 10; this.detalle.push('condición no estaba en corte'); }
     if (this.sw('BATT')) { this.puntos -= 10; this.detalle.push('batería quedó ON'); }
@@ -359,6 +421,8 @@ export class Mision {
   actualizar(dt) {
     this.dt = dt; if (!this.pasos.length || this.fase === 'pausa' || this.fase === 'intro' || this.fase === 'resultado' || this.fase === 'libre') return;
     this.t += dt; this.tPaso += dt; this.vigilar?.();
+    const E = this.emergencia;   /* nivel 3: la primera acción correcta ante la emergencia, con sus segundos */
+    if (E && E.estado === 'disparada' && E.reaccion && !E.reaccionHecha && E.reaccion.listo()) { E.reaccionHecha = true; this.registro?.anotar('reaccion', { texto: E.reaccion.texto, segundos: +((this.registro?.t ?? this.t) - E.tDisparo).toFixed(1) }); }
     if (this.fase === 'pausa') return;
     const p = this.pasos[this.i];
     if (p && p.listo()) { this.avanzarPaso(); if (this.i >= this.pasos.length) this.alTerminar?.(); }
@@ -369,6 +433,7 @@ export class Mision {
     if (tipo === 'contacto' || tipo === 'accidente') { if (this.alContacto && (tipo === 'accidente' || this.vuelo.enTierra || true)) { const f = this.alContacto; this.alContacto = null; f(d); } else if (tipo === 'accidente' && this.fase !== 'pausa' && this.fase !== 'intro') { if (this.modoNivel) this.registro?.marcarFatal(d?.terreno ? 'chocó contra el terreno' : 'accidente'); this.cerrarFase(this.titulo || 'Vuelo', false, 'Accidente. Repasemos qué pasó.'); } }
     if (tipo === 'vne') { this.puntos -= 10; this.detalle.push('superó la Vne'); }
     if (tipo === 'fuego-extinguido') this.decir(this.titulo, 'Fuego extinguido. Ahora, a aterrizar.');
-    if (tipo === 'fuego-incontrolado' && this.fase !== 'pausa') { this.vuelo.estrellado = true; this.cerrarFase('Fuego de motor', false, this.fuegoConFuel ? 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FUEL a OFF.' : 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FIRE.'); }
+    if (tipo === 'compuerta-trabada' && this.emergencia?.tipo === 'compuerta') this.dispararEmergencia();
+    if (tipo === 'fuego-incontrolado' && this.fase !== 'pausa') { this.vuelo.estrellado = true; if (this.modoNivel) this.registro?.marcarFatal('fuego de motor incontrolado'); this.cerrarFase('Fuego de motor', false, this.fuegoConFuel ? 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FUEL a OFF.' : 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FIRE.'); }
   }
 }

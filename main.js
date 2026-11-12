@@ -4,19 +4,19 @@
 // Uso interno de prueba.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { crearEscenario } from './escenario.js?v=20261112b';
+import { crearEscenario } from './escenario.js?v=20261112c';
 import { Controles } from './controles.js?v=20261022e';
 import { Instrumentos } from './instrumentos.js?v=20261025e';
-import { Vuelo, MPH, FT } from './vuelo.js?v=20261026j';
-import { Mision } from './mision.js?v=20261022b';
-import { Audio } from './audio.js?v=20261112b';
+import { Vuelo, MPH, FT } from './vuelo.js?v=20261112c';
+import { Mision } from './mision.js?v=20261112c';
+import { Audio } from './audio.js?v=20261112c';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261112b';
-import { generar, semillaNueva, describir } from './escenario_azar.js?v=20261112b';
-import { Registro } from './registro.js?v=20261112b';
-import { crearIncendio } from './incendio.js?v=20261112b';
-import { armarResultado, mostrarDebrief, ocultarDebrief } from './debrief.js?v=20261112b';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261112c';
+import { generar, semillaNueva, describir } from './escenario_azar.js?v=20261112c';
+import { Registro } from './registro.js?v=20261112c';
+import { crearIncendio } from './incendio.js?v=20261112c';
+import { armarResultado, mostrarDebrief, ocultarDebrief } from './debrief.js?v=20261112c';
 
 /* Etapa 7 (11/11): la cabina FSX (cabina.glb) y todos sus parches se sacaron del juego; la única cabina es la nueva (cabina_nueva.js).
    La historia de la vieja está en TRASPASO.md y en git (hasta el commit anterior a éste). */
@@ -92,7 +92,7 @@ function actualizarPedales(dt) {
   if (!pedales.accion) return; pedales.vis += (pedal - pedales.vis) * Math.min(1, dt * 10);   /* con teclado el pedal salta: suavizar */
   pedales.accion.time = (THREE.MathUtils.clamp(pedales.vis, -1, 1) + 1) / 2 * pedales.dur; pedales.mixer.update(0);
 }
-Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261112b', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261112c', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; mision.frds = r.frds; document.getElementById('cargando').remove(); if (NIVEL) pantallaInicio(); else mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
   if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula */
@@ -124,7 +124,9 @@ function aplicarControles() {
   if (hayLev('levCOND')) c.condicion = adelante('levCOND');
   if (controles.estado('swFUEL') === 0) c.condicion = 0;   /* válvula de combustible en OFF: sin combustible, el motor se corta (manual 26/10) */
   vuelo.colaLibre = !!controles.estado('swWRUD');   /* traba de cola: destrabada gira más cerrado en el piso */
-  if (adelante('levEDUMP') > 0.85 && vuelo.agua > 0) vuelo.agua = 0;   /* manija E-DUMP adelante: salvo total (manual 26/10) */
+  if (adelante('levEDUMP') > 0.85 && vuelo.agua > 0 && vuelo.largando == null) { vuelo.largarCarga(true); vuelo.evento('largado', { emergencia: true }); }   /* manija E-DUMP adelante: salvo total mecánico, abre aunque el FRDS esté trabado (manual 26/10; 12/11: por largando, así la misión lo ve) */
+  m.genSw = controles.estado(SW.GEN) === null ? undefined : !!controles.estado(SW.GEN);   /* para el reset del generador (vuelo.js, nivel 3) */
+  m.consumo = ['swLDG_L', 'swWORK', 'swPULSE', 'swSTRBNAV', 'swPITOT', 'swWIPER'].reduce((s, n) => s + (controles.estado(n) ? 0.25 : 0), 0) + (controles.estado(SW.AVNC) ? 0.2 : 0);   /* carga eléctrica: cuánto dura la batería sin generador */
   c.cabeceo = THREE.MathUtils.clamp(mando.x / LIMITE + (c.trimProf || 0), -1, 1); c.alabeo = THREE.MathUtils.clamp(-mando.z / LIMITE + (c.trimAler || 0), -1, 1);   /* + trims de la consola (etapa 4) */
 
   c.pedal = THREE.MathUtils.clamp(pedal + (c.trimTimon || 0), -1, 1); c.frenos = frenos; c.flaps = flaps;
@@ -443,7 +445,7 @@ function pantallaInicio() {
   $('inicio-titulo').textContent = `Cabina AT-802 · ${nombres[NIVEL]}`;
   $('inicio-texto').textContent = NIVEL === 1 ? 'Poné el motor en marcha siguiendo el checklist de AAXOD (lo tenés en la tablilla). El tutor no dicta: anota todo lo que hacés y cuándo. Puede pasar algo en el arranque: resolvelo.'
     : NIVEL === 2 ? 'Con el motor en marcha en la cabecera, la torre te pasa la orden de vuelo por radio: foco, rumbo, distancia, viento, carga y cobertura. Despegá, navegá al foco con el Garmin (CRS), largá en la ventana correcta y volvé a aterrizar en la 36. El tutor no dicta.'
-    : 'La misión del nivel 2; en algún momento puede pasar algo que no está en el plan (J3: todavía no se inyecta la emergencia).';
+    : 'La misma misión del nivel 2 (orden por radio, foco, descarga, vuelta), pero en algún momento va a pasar algo que no está en el plan. Resolvelo como en el avión: el checklist de emergencia aparece en la tablilla. Si se puede, terminá la misión; si no, volvé entero.';
   const inp = $('inicio-nombre'); inp.value = PARAMS.get('alumno') || localStorage.getItem('aurav_alumno') || '';
   $('inicio-semilla').textContent = semillaActual ? `Situación ${semillaActual} (fijada en el link)` : 'Situación al azar';
   $('inicio-empezar').onclick = () => { const nombre = inp.value.trim() || 'Alumno/a'; try { localStorage.setItem('aurav_alumno', nombre); } catch (e) {} ini.hidden = true; $('tareas').hidden = false; $('tutor').hidden = false; audio.iniciar(); empezarNivel(nombre, semillaActual || semillaNueva()); };

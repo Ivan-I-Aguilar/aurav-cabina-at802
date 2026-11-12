@@ -18,9 +18,15 @@ export function generar(nivel, semilla) {
   const e = { nivel, semilla, viento: { dir: Math.floor(r() * 360), kt: Math.round(r() * 15) }, hora: elegir(['mañana', 'mediodía', 'tarde']) };
   if (nivel === 1) { e.falla = elegir(['normal', 'normal', 'hot', 'hung', 'bateria']); e.ittInicial = 15 + Math.round(r() * 25); }
   if (nivel >= 2) { e.foco = { rumbo: 30 + Math.floor(r() * 300), km: +(2.5 + r() * 2).toFixed(1) }; e.carga = 2000 + Math.round(r() * 11) * 100; e.cobertura = 1 + Math.floor(r() * 4); }   /* el terreno llega a 4,5 km */
-  if (nivel === 3) { e.emergencia = elegir(['falla', 'fuego', 'fallaDespegue', 'generador', 'compuerta']); e.momento = elegir(['despegue', 'ida', 'descarga', 'vuelta']); e.senales = r() < 0.5; }
+  if (nivel === 3) {   /* la emergencia sorpresa (J3): cuál, cuándo (la falla en el despegue siempre a 150 ft; la compuerta se descubre al largar) y si avisa antes */
+    e.emergencia = elegir(['falla', 'fuego', 'fallaDespegue', 'generador', 'compuerta']);
+    e.momento = e.emergencia === 'fallaDespegue' ? 'despegue' : e.emergencia === 'compuerta' ? 'descarga' : elegir(['ida', 'descarga', 'vuelta']);
+    e.senales = r() < 0.5; e.rearranque = r() < 0.6; e.genVuelve = r() < 0.5;   /* la falla en vuelo rearranca (corte de combustible) 6 de 10; el generador vuelve con un reset 1 de 2 */
+  }
   return e;
 }
+export const EMERGENCIAS = { falla: 'falla de motor en vuelo', fuego: 'fuego de motor', fallaDespegue: 'falla de motor a 150 ft', generador: 'falla del generador', compuerta: 'compuerta de la tolva trabada' };
+export const MOMENTOS = { despegue: 'en el despegue', ida: 'en la ida al foco', descarga: 'en la pasada de descarga', vuelta: 'en la vuelta' };
 
 /* texto para el instructor (la constancia y el debrief): qué tenía preparada la partida */
 export function describir(e) {
@@ -28,6 +34,6 @@ export function describir(e) {
   const partes = [`semilla ${e.semilla}`];
   if (e.nivel === 1) partes.push(FALLAS_ARRANQUE[e.falla] || e.falla);
   if (e.foco) partes.push(`foco a ${e.foco.km} km rumbo ${String(e.foco.rumbo).padStart(3, '0')}°, carga ${e.carga} kg, cobertura ${e.cobertura}, viento ${String(e.viento.dir).padStart(3, '0')}°/${e.viento.kt} kt`);
-  if (e.emergencia) partes.push(`emergencia: ${e.emergencia} en ${e.momento}${e.senales ? ' con señales previas' : ''}`);
+  if (e.emergencia) partes.push(`emergencia: ${EMERGENCIAS[e.emergencia] || e.emergencia} ${MOMENTOS[e.momento] || e.momento}${e.senales ? ', con señales previas' : ', sin aviso'}`);
   return partes.join(' · ');
 }

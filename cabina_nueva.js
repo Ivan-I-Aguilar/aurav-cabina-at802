@@ -7,7 +7,7 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas, Rotulos } from './pantallas.js?v=20261112b';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261112c';
 import { crearRadiosEn } from './radios.js?v=20261111d';
 
 export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola', 'cab_radios', 'cab_asiento', 'pedales', 'butaca'];   /* GLB por zona, en orden de carga (etapas 1b a 6). pedales.glb y butaca.glb son los de Lichi (22/10 y 1/11) */
@@ -62,12 +62,13 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
   try { if (bloqueR?.userData?.radios) { radios = crearRadiosEn(JSON.parse(bloqueR.userData.radios), cabina); controles.armar(radios.grupoControles); } } catch (e) { console.warn('radios_bloque sin datos', e); }
   /* FRDS GEN III y SALVO (etapa 3): llaves momentáneas que vuelven solas, galones a largar y nivel de cobertura, compuerta que larga (en AUTO
      el caudal sigue al nivel de cobertura: de 11 s el 1 a 4 s el 8) y corta al llegar a los galones pedidos; el SALVO vacía la tolva de una */
-  const frds = { galones: 800, cobertura: 3, gate: false, objetivo: null, t: {} };
+  const frds = { galones: 800, cobertura: 3, gate: false, objetivo: null, t: {}, trabada: false, avisoTrabada: false };
   const MOMENTANEOS = { swSALVO: 0.4, swFRDS_GATE: 0.6, swFRDS_FOAM: 0.6, swFRDS_GAL: 0.35, swFRDS_COV: 0.35, swTRIMALERON: 0.35 };
   /* trims (etapa 4): el volante de profundidad y el dial de timón son posiciones (índice → desplazamiento); el de alerón es una llave
      momentánea que suma un paso por toque. Van a vuelo.mando.trimProf / trimAler / trimTimon y aplicarControles (main.js) los suma al mando */
   const trims = { aler: 0 };
   const accionFRDS = (nombre, estado, vuelo) => {
+    if ((nombre === 'swSALVO' || nombre === 'swFRDS_GATE') && frds.trabada) { if (!frds.avisoTrabada) { frds.avisoTrabada = true; vuelo.evento('compuerta-trabada'); } return; }   /* nivel 3: la compuerta no abre; queda la manija E-DUMP */
     if (nombre === 'swTRIMALERON') trims.aler = Math.max(-0.3, Math.min(0.3, trims.aler + (estado > 0 ? -0.05 : 0.05)));   /* arriba = ala izquierda abajo = alabeo negativo */
     if (nombre === 'swSALVO' && vuelo.agua > 0) { vuelo.largarCarga(true); frds.objetivo = null; vuelo.evento('largado'); }
     if (nombre === 'swFRDS_GAL') frds.galones = Math.max(50, Math.min(800, frds.galones + 50 * (estado > 0 ? 1 : -1)));
@@ -91,7 +92,7 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
     const m = vuelo.motor, sw = n => (controles && SW && SW[n]) ? controles.estado(SW[n]) : undefined;
     const rumbo = ((90 - vuelo.euler.rumbo * 180 / Math.PI) % 360 + 360) % 360;
     const armado = !!sw('FRDS');
-    pantallas.actualizar(dt, { L: vuelo.lecturas(), rumbo, curso: vuelo.cursoHSI ?? 360, gs: vuelo.vel.length() * 2.237, bateria: !!m.bateria, avionica: sw('AVNC') ?? true, fuego: !!m.fuego, falla: !!m.falla,
+    pantallas.actualizar(dt, { L: vuelo.lecturas(), rumbo, curso: vuelo.cursoHSI ?? 360, gs: vuelo.vel.length() * 2.237, bateria: !!m.bateria && m.volt !== 0, avionica: sw('AVNC') ?? true, fuego: !!m.fuego, falla: !!m.falla,
       generador: !!m.generador, encendido: !!m.encendido, enTierra: !!vuelo.enTierra, armado, test: !!(controles && controles.estado('swTEST')), estrellado: !!vuelo.estrellado,
       frds: { power: !!(controles && controles.estado('swFRDS')), galones: frds.galones, cobertura: frds.cobertura, gate: frds.gate, armado, hopperGal: vuelo.agua / 3.785 } });
   };

@@ -113,6 +113,31 @@ Progresión: el nivel 2 se habilita con el 1 aprobado y el 3 con el 2; el instru
   antes quedaba 100/100 «NO APROBADO» con dos cierres, ahora la misión cierra con el avión detenido y el accidente en la carrera es fatal.
   Referencia visual del foco: los dos videos de Iván del 11/11 (Seedance, `Desktop/WAN_referencias/`, fuera del repo).
   Queda: el humo y el frente en el Quest (rendimiento: ~46 sprites), las preguntas de §5.2 (ventana real de descarga y coberturas de AAXOD).
+- **J3 (12/11/2026, v=20261112c, commit local): nivel 3, la misión del 2 con una emergencia sorpresa, completo en PC.**
+  `escenario_azar.js` (nivel 3: `emergencia` ∈ falla · fuego · fallaDespegue · generador · compuerta; `momento` ∈ ida · descarga · vuelta
+  —la falla en el despegue siempre a 150 ft, la compuerta siempre al largar—; `senales` 1 de 2; `rearranque` 6 de 10 para la falla en
+  vuelo; `genVuelve` 1 de 2; `EMERGENCIAS` y `MOMENTOS` legibles), `vuelo.js` (`motor.senal`: señales previas —aceite que cae a la mitad
+  y torque que tiembla hacia abajo en 22 s, ITT +90 °C en 20 s, generador que parpadea—; `fallaGen` fija o recuperable con GEN OFF→ON
+  —`genSw` de main.js—; `carga` de batería 1 → 0 en ~8 min sin generador según `consumo` —luces, pitot, aviónica—, a 0 V se apagan las
+  pantallas; `sinRearranque` = falla mecánica), `cabina_nueva.js` (`frds.trabada`: GATE y SALVO no abren y sale `compuerta-trabada`),
+  `main.js` (la manija E-DUMP larga por `largarCarga(true)`, así la misión la ve como descarga; `genSw`, `consumo`), `mision.js`
+  (`vigilarEmergencia`: la ventana del momento, las señales, la espera a que un planeo 9:1 llegue al valle para las que dejan sin motor, el
+  aborto del despegue si el alumno lee las señales; `dispararEmergencia`: falla / fuego / falla en el despegue pasan a las fases de la
+  práctica con el checklist a la vista —y `retomarMision` si el motor rearranca—, generador y compuerta meten sus pasos con `insertarPasos`
+  y la misión sigue; la reacción —segundos hasta la primera acción correcta— y los pasos de la emergencia hechos tarde quedan en el
+  registro; «fuera de orden» ya sólo cuenta los pasos que son una acción sobre un control), `debrief.js` (`rubricaNivel3`: procedimientos
+  y control como el 2, «reacción a la emergencia» por segundos y pasos tarde, «decisión y descarga»; sin castigo por no largar cuando una
+  falla de motor o un fuego cortaron la misión), `herramientas/piloto_prueba.js` (resuelve las cinco emergencias; `abortarConSenales`).
+  Probado el 12/11 con el piloto de prueba, una semilla por caso: compuerta 100004 (E-DUMP a 0,3 s, descarga a 0 m) APROBADO 97 ·
+  generador 100021 (reset a 0,3 s, volvió) 95 · falla en el despegue 100024 (nariz abajo, carga, de frente, toque a 1,2 m/s en el valle)
+  APROBADO 77 (la rúbrica castigaba «sin descarga»: corregido) · la misma con señales 100005 y aborto en la carrera (aceite a 80 psi)
+  APROBADO 90 · fuego 100007 en la vuelta (procedimiento en 1,5 s, apagado, planeo y toque en el valle a 1,1 m/s) 99 · falla en vuelo
+  con rearranque 100002 (carga a 0 s, bandera, rearranque a 552 ft, la misión se retoma, descarga y aterriza) 97 · falla mecánica con
+  señales 100008 (aviso a los 138 s, falla a los 174 cuando ya llegaba planeando al valle, rearranque fallido, forzoso en el valle a
+  1,1 m/s) 99. Bugs que aparecieron: las señales de torque pasaban de 100 % (ahora tiemblan
+  hacia abajo); el paso «Flaps arriba» de un avión liviano y los pasos de navegación salían «fuera de orden».
+  Queda: todo en el Quest (J4), que el humo del capot/la campana se vean y oigan bien en VR, las preguntas de §5.3 (qué emergencias quieren
+  AAXOD y si las señales previas van), y el piloto de prueba larga alto cuando el foco está entre lomas (sigue el terreno de adelante).
 
 ## 5. Qué hace falta saber (de Iván, AAXOD o el manual)
 

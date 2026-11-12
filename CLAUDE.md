@@ -38,10 +38,11 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 - **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván): TODAVÍA la cabina FSX.
 - **Local, SIN publicar: toda la cabina nueva, v=20261111d** (commits del 3/11 al 11/11; el último, la etapa 7: limpieza). Se prueba
   en `http://localhost:8765/` a secas (ya no hace falta `?cabina=nueva`). En el Quest no se probó NADA de la cabina nueva.
-- **Local, SIN publicar: los niveles del aula virtual J0–J2 (12/11, v=20261112b, `PLAN_JUEGO.md` §7):** `?nivel=1` (puesta en marcha con
-  fallas al azar) y `?nivel=2` (misión de incendio: orden por radio, foco con humo, descarga medida, vuelta y aterrizaje) completos en PC;
-  `?nivel=3` corre por ahora la misión del 2 sin emergencia (J3). Probados con `herramientas/piloto_prueba.js` (nivel 2, semilla 100001:
-  APROBADO 100/100) y a mano (nivel 1). En el Quest, nada probado; el debrief es sólo HTML (J4).
+- **Local, SIN publicar: los niveles del aula virtual J0–J3 (12/11, v=20261112c, `PLAN_JUEGO.md` §7):** `?nivel=1` (puesta en marcha con
+  fallas al azar), `?nivel=2` (misión de incendio: orden por radio, foco con humo, descarga medida, vuelta y aterrizaje) y `?nivel=3` (la
+  misma misión con una emergencia sorpresa: falla de motor en vuelo con o sin rearranque, fuego, falla en el despegue a 150 ft, generador,
+  compuerta trabada; momento y señales previas por semilla) completos en PC. Probados con `herramientas/piloto_prueba.js` (nivel 2, semilla
+  100001: APROBADO 100/100; nivel 3, una semilla por emergencia) y a mano (nivel 1). En el Quest, nada probado; el debrief es sólo HTML (J4).
 - Pendiente de Iván: el ok a las vistas de las etapas 3 a 6 (capturas mandadas el 11/11), confirmar con Bruno que el paso de
   FUEGO sea «manija FUEL a OFF», el Quest (legibilidad de pantallas, alcance, ojo) y publicar.
 - **Rendimiento (11/11, Chrome en PC, ventana de 800 px, escena entera con el aeródromo):** 296 llamadas de dibujo, 191 k triángulos,
@@ -210,10 +211,10 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
 | `PLAN_CABINA_NUEVA.md` | Plan de la cabina nueva de cero (2/11): etapas, piezas por zona, técnica, verificación. Marcar cada etapa HECHA con fecha y versión. |
 | `PLAN_CUPULA.md` | Plan detallado de la etapa 1b (3/11): la cúpula nueva (jaula, 3 paños de parabrisas, techo con ventanas, puertas, carenado), medidas desde la 360, corte del FSN, etapas 1b.0–1b.4 y verificación. |
-| `PLAN_JUEGO.md` | **El juego en tres niveles independientes** para el aula virtual de AURAV (aprobado por Iván el 11/11): 1 puesta en marcha con fallas al azar · 2 misión de incendio · 3 salida con emergencia sorpresa; semilla, registrador, devolución al instructor, constancia y JSON del resultado. J0, J1 y J2 hechas el 12/11 (§7); J3 pendiente. |
+| `PLAN_JUEGO.md` | **El juego en tres niveles independientes** para el aula virtual de AURAV (aprobado por Iván el 11/11): 1 puesta en marcha con fallas al azar · 2 misión de incendio · 3 salida con emergencia sorpresa; semilla, registrador, devolución al instructor, constancia y JSON del resultado. J0–J3 hechas el 12/11 (§7); quedan J4 (debrief en VR, Quest) y J5 (POST al aula). |
 | `escenario_azar.js`, `registro.js`, `debrief.js`, `constancia.js` | **Niveles (12/11):** la semilla → situación (`generar`, mulberry32), el registrador de la partida (los movimientos seguidos de una misma palanca se funden en un renglón; nombres legibles en `NOMBRES_CONTROL`), la rúbrica + pantalla de resultado + JSON (`localStorage` `aurav_cabina_resultados`) y la constancia con el logo de AAXOD (`aaxod-logo.png`). Links: `?nivel=1[&semilla=S][&alumno=N]`. Semillas de prueba del nivel 1: 100001 normal · 100000 hot start · 100008 hung start · 100002 batería baja. |
 | `incendio.js` | **Foco de incendio del nivel 2 (12/11):** frente de llamas (sprites aditivos que titilan), resplandor, columna de humo que nace oscura y se aclara al subir, inclinada por el viento, parche quemado; `poner(x, z, y, viento)`, `controlar(k)` (humo → vapor), `actualizar(dt)`. Unas 32 llamadas de dibujo sólo en los niveles 2 y 3. Referencia: los videos de Iván del 11/11 (`Desktop/WAN_referencias/seedance_prueba*.mp4`, fuera del repo). |
-| `herramientas/piloto_prueba.js` | **Piloto de prueba del nivel 2 (12/11):** vuela la misión solo desde la consola (palancas y llaves como el alumno + `__auto` para el bastón): despegue, ida, descarga en la ventana, circuito por el este, final a la 18 y aterrizaje. Ver «Probar sin casco». |
+| `herramientas/piloto_prueba.js` | **Piloto de prueba de los niveles 2 y 3 (12/11):** vuela la misión solo desde la consola (palancas y llaves como el alumno + `__auto` para el bastón): despegue, ida, descarga en la ventana, circuito por el este, final a la 18 y aterrizaje; en el nivel 3 resuelve las cinco emergencias según su checklist (sin motor planea al valle y aterriza de frente; `abortarConSenales: true` aborta el despegue si lee las señales). En focos con lomas larga alto (sigue el terreno de adelante). Ver «Probar sin casco». |
 
 ## Probar sin casco
 - Servidor local: **`python servidor.py`** en la carpeta del repo y abrir `http://localhost:8765/` (desde el 11/11 carga la
@@ -262,6 +263,11 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   (dial, 7 posiciones), `swK_TRIMPROF` (volante, 11), `swTRIMALERON` (3, vuelve sola): suman al mando (`vuelo.mando.trim*`). FRDS:
   `swFRDS_GATE / MODE / FOAM / GAL / COV` y `swSALVO` (momentáneas, las maneja `cabina_nueva.js`). `swFLAPS` (panel bajo derecho) cicla
   0°/10°/20°. Las demás llaves de los paneles bajos se mueven pero no hacen nada (luces).
+- **Nivel 3 (12/11):** en `vuelo.motor`: `senal` (señales previas: aceite que cae y torque que tiembla, ITT que sube, generador que parpadea),
+  `fallaGen` ('fija' | 'recuperable': vuelve con GEN OFF→ON; `genSw` lo pone main.js), `carga` (batería 1 → 0 en ~8 min sin generador;
+  `consumo` = luces, pitot, aviónica; a 0 V se apagan las pantallas), `falla` + `sinRearranque` (mecánica: no rearranca). `frds.trabada`
+  (cabina_nueva.js): GATE y SALVO no abren y sale el evento `compuerta-trabada`. **La manija E-DUMP larga por `largarCarga(true)`** (1,5 s),
+  así la misión la ve como descarga (antes ponía `agua = 0` de golpe y el nivel 2 decía «volvió sin largar»).
 - (Lo de abajo es de la cabina FSX; vale sólo como historia del cableado.)
 - **Manual** (26/10): `Desktop/AURAV/AT-802-802A_Pilot_Training_Course.pdf` (77 págs., NO subirlo al
   repo). Notas en `herramientas/mapa_cabina.md`.
@@ -323,9 +329,8 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 - **Verificar el MISMO lado que la captura de Iván** y mandarle las vistas.
 
 ## Pendientes (en orden)
-0. **El juego por niveles (`PLAN_JUEGO.md`):** J3 (nivel 3: emergencias inyectadas, generador y compuerta trabada), J4 (debrief en VR,
-   Quest), J5 (POST al aula cuando exista). Y las preguntas de §5 (límites de arranque, ventana de descarga y coberturas, emergencias, umbral,
-   Bruno). J0–J2 hechos el 12/11.
+0. **El juego por niveles (`PLAN_JUEGO.md`):** J4 (debrief en VR, Quest, publicar cuando Iván lo pida), J5 (POST al aula cuando exista). Y las
+   preguntas de §5 (límites de arranque, ventana de descarga y coberturas, emergencias que quieren, umbral, Bruno). J0–J3 hechos el 12/11.
 0b. **Pedido de Iván (11/11): el mismo AT-802 (exterior y cabina nueva) en los otros juegos de AURAV** (rampa/señaleros `aurav-senales`,
    apoyos terrestres «MOE», …) para que se vea siempre la misma aeronave: tarea aparte, después de los niveles.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
