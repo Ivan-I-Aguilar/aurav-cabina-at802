@@ -206,6 +206,7 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
 | `PLAN_CABINA_NUEVA.md` | Plan de la cabina nueva de cero (2/11): etapas, piezas por zona, técnica, verificación. Marcar cada etapa HECHA con fecha y versión. |
 | `PLAN_CUPULA.md` | Plan detallado de la etapa 1b (3/11): la cúpula nueva (jaula, 3 paños de parabrisas, techo con ventanas, puertas, carenado), medidas desde la 360, corte del FSN, etapas 1b.0–1b.4 y verificación. |
+| `PLAN_JUEGO.md` | **Borrador (11/11, pedido de Iván) del juego en tres niveles independientes** para el aula virtual de AURAV: 1 puesta en marcha con fallas al azar · 2 misión de incendio · 3 salida con emergencia sorpresa; semilla, registrador, devolución al instructor, constancia y JSON del resultado. Espera el ok de Iván antes de programar nada. |
 
 ## Probar sin casco
 - Servidor local: **`python servidor.py`** en la carpeta del repo y abrir `http://localhost:8765/` (desde el 11/11 carga la
