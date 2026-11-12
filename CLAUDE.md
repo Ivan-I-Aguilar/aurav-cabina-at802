@@ -206,7 +206,8 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
 | `PLAN_CABINA_NUEVA.md` | Plan de la cabina nueva de cero (2/11): etapas, piezas por zona, técnica, verificación. Marcar cada etapa HECHA con fecha y versión. |
 | `PLAN_CUPULA.md` | Plan detallado de la etapa 1b (3/11): la cúpula nueva (jaula, 3 paños de parabrisas, techo con ventanas, puertas, carenado), medidas desde la 360, corte del FSN, etapas 1b.0–1b.4 y verificación. |
-| `PLAN_JUEGO.md` | **Borrador (11/11, pedido de Iván) del juego en tres niveles independientes** para el aula virtual de AURAV: 1 puesta en marcha con fallas al azar · 2 misión de incendio · 3 salida con emergencia sorpresa; semilla, registrador, devolución al instructor, constancia y JSON del resultado. Espera el ok de Iván antes de programar nada. |
+| `PLAN_JUEGO.md` | **El juego en tres niveles independientes** para el aula virtual de AURAV (aprobado por Iván el 11/11): 1 puesta en marcha con fallas al azar · 2 misión de incendio · 3 salida con emergencia sorpresa; semilla, registrador, devolución al instructor, constancia y JSON del resultado. J0 y J1 hechas el 12/11 (§7); J2 y J3 pendientes. |
+| `escenario_azar.js`, `registro.js`, `debrief.js`, `constancia.js` | **Niveles (12/11):** la semilla → situación (`generar`, mulberry32), el registrador de la partida, la rúbrica + pantalla de resultado + JSON (`localStorage` `aurav_cabina_resultados`) y la constancia con el logo de AAXOD (`aaxod-logo.png`). Links: `?nivel=1[&semilla=S][&alumno=N]`. Semillas de prueba del nivel 1: 100001 normal · 100000 hot start · 100008 hung start · 100002 batería baja. |
 
 ## Probar sin casco
 - Servidor local: **`python servidor.py`** en la carpeta del repo y abrir `http://localhost:8765/` (desde el 11/11 carga la
@@ -311,6 +312,11 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 - **Verificar el MISMO lado que la captura de Iván** y mandarle las vistas.
 
 ## Pendientes (en orden)
+0. **El juego por niveles (`PLAN_JUEGO.md`):** J2 (nivel 2: foco en el terreno, orden de vuelo por radio, ventana de descarga, vuelta), J3
+   (nivel 3: emergencias inyectadas, generador y compuerta trabada), J4 (debrief en VR, Quest), J5 (POST al aula cuando exista). Y las seis
+   preguntas de §5 (límites de arranque, descarga, emergencias, umbral, alumno, Bruno).
+0b. **Pedido de Iván (11/11): el mismo AT-802 (exterior y cabina nueva) en los otros juegos de AURAV** (rampa/señaleros `aurav-senales`,
+   apoyos terrestres «MOE», …) para que se vea siempre la misma aeronave: tarea aparte, después de los niveles.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
    legibles, alcance de llaves y palancas, altura del ojo) y publicar cuando lo pida (subir `version.txt`, `VERSION_PAGINA` y los `?v=`).
 2. Versión definitiva de la etapa 6: asiento de malla roja de verdad (`butaca_blender.py` nuevo), placa AIR TRACTOR de los pedales,

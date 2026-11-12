@@ -12,11 +12,18 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261111d';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261112a';
+import { generar, semillaNueva, describir } from './escenario_azar.js?v=20261112a';
+import { Registro } from './registro.js?v=20261112a';
+import { armarResultado, mostrarDebrief, ocultarDebrief } from './debrief.js?v=20261112a';
 
 /* Etapa 7 (11/11): la cabina FSX (cabina.glb) y todos sus parches se sacaron del juego; la única cabina es la nueva (cabina_nueva.js).
    La historia de la vieja está en TRASPASO.md y en git (hasta el commit anterior a éste). */
 const OJO = new THREE.Vector3(0, 1.38, 1.64);  // vista del piloto en el marco del modelo (adelante = −z): ~0,78 m sobre el asiento (0,60), por encima del tablero (1,30) para ver el horizonte
+/* Niveles del aula virtual (PLAN_JUEGO.md, 12/11): ?nivel=1|2|3[&semilla=123456][&alumno=Nombre] arranca directo en el nivel, sin menú; sin ?nivel, el
+   menú de práctica libre de siempre. La semilla fija la situación (escenario_azar.js); el registro (registro.js) alimenta el debrief (debrief.js). */
+const PARAMS = new URLSearchParams(location.search); const NIVEL = Math.min(3, Math.max(0, parseInt(PARAMS.get('nivel') || '0', 10) || 0));
+let semillaActual = parseInt(PARAMS.get('semilla') || '0', 10) || 0, registro = null, escenarioActual = null;
 const ALTURA_CABINA = 1.9;                      // el marco de la cabina sobre el del avión: a 7,2° de 3 puntos las ruedas (y_cab −2 / −1,12) apoyan justo (24/10)
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); window.__renderer = renderer;   /* gancho de prueba: renderer.info (llamadas, triángulos) */   /* alpha: en modo cámara «lugar real» se ve la cámara detrás del avión */
@@ -85,7 +92,7 @@ function actualizarPedales(dt) {
   pedales.accion.time = (THREE.MathUtils.clamp(pedales.vis, -1, 1) + 1) / 2 * pedales.dur; pedales.mixer.update(0);
 }
 Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261111d', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
-  exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; document.getElementById('cargando').remove(); mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
+  exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; document.getElementById('cargando').remove(); if (NIVEL) pantallaInicio(); else mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
   if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula */
     hudVR.malla.position.set(0.29, 1.37, 1.065); hudVR.malla.rotation.set(0.55, -0.15, 0);
@@ -125,7 +132,7 @@ function aplicarControles() {
   if (m.encendido && controles.estado(SW.START)) { const s = controles.switches.find(x => x.nombre === SW.START); if (s) { s.estado = false; controles._aplicarSwitch(s); } }
 }
 let pedal = 0, frenos = 0, flaps = 0;
-controles.alCambiar = (nombre, valor) => { console.log('control', nombre, valor); if (nombre === 'swFLAPS') flaps = flaps >= 1 ? 0 : flaps + 0.5; };   /* switch de flaps: 0° → 10° → 20° → 0° */
+controles.alCambiar = (nombre, valor) => { console.log('control', nombre, valor); registro?.anotar('control', { nombre, valor: typeof valor === 'number' ? +valor.toFixed(2) : valor }); if (nombre === 'swFLAPS') flaps = flaps >= 1 ? 0 : flaps + 0.5; };   /* switch de flaps: 0° → 10° → 20° → 0° */
 
 // ---- bastón de mando ----
 const PIVOTE = new THREE.Vector3(0, 0.28, 1.15);               // base del bastón (etapa 6, medida en la 360; el bastón es blender/cab_asiento.glb, mallas palanca_*)
@@ -426,7 +433,28 @@ window.__aPie = aPie;
 let modoPrevio = 'cabina';
 ui.aPie = () => { mision.fase = 'libre'; reiniciarAvion({ enPista: true, agua: 2400, apagado: true }); mision.ui.tareas([]); aPie.bajar(false);
   mision.decir('Recorrido a pie', 'Caminá alrededor del avión. Para subir, acercate al estribo debajo del ala izquierda.'); };
-const mision = new Mision({ vuelo, controles, SW, ui, obtener: { terreno: (x, z) => ambiente.alturaTerreno(x, z) }, reiniciarAvion, fuegoConFuel: true });   /* el paso de FUEGO es la manija FUEL a OFF (no hay switch FIRE en el 802) */ window.__mision = mision;
+const mision = new Mision({ vuelo, controles, SW, ui, obtener: { terreno: (x, z) => ambiente.alturaTerreno(x, z) }, reiniciarAvion, fuegoConFuel: true });   /* el paso de FUEGO es la manija FUEL a OFF (no hay switch FIRE en el 802) */
+/* ---- niveles: pantalla de inicio (nombre del alumno), partida con semilla y debrief al terminar ---- */
+function pantallaInicio() {
+  const ini = $('inicio'); ini.hidden = false; ocultarDebrief(); $('tutor').hidden = true; $('tareas').hidden = true;
+  const nombres = { 1: 'Nivel 1 · Puesta en marcha', 2: 'Nivel 2 · Misión de incendio', 3: 'Nivel 3 · Salida con emergencia' };
+  $('inicio-titulo').textContent = `Cabina AT-802 · ${nombres[NIVEL]}`;
+  $('inicio-texto').textContent = NIVEL === 1 ? 'Poné el motor en marcha siguiendo el checklist de AAXOD (lo tenés en la tablilla). El tutor no dicta: anota todo lo que hacés y cuándo. Puede pasar algo en el arranque: resolvelo.'
+    : 'Este nivel todavía corre la secuencia completa de práctica (J2 / J3 del plan): se registra y se devuelve igual.';
+  const inp = $('inicio-nombre'); inp.value = PARAMS.get('alumno') || localStorage.getItem('aurav_alumno') || '';
+  $('inicio-semilla').textContent = semillaActual ? `Situación ${semillaActual} (fijada en el link)` : 'Situación al azar';
+  $('inicio-empezar').onclick = () => { const nombre = inp.value.trim() || 'Alumno/a'; try { localStorage.setItem('aurav_alumno', nombre); } catch (e) {} ini.hidden = true; $('tareas').hidden = false; $('tutor').hidden = false; audio.iniciar(); empezarNivel(nombre, semillaActual || semillaNueva()); };
+}
+function empezarNivel(nombre, semilla) {
+  semillaActual = semilla; escenarioActual = generar(NIVEL, semilla); registro = new Registro(); registro.anotar('inicio', { nivel: NIVEL, semilla, situacion: describir(escenarioActual) });
+  const q = new URLSearchParams(location.search); q.set('nivel', String(NIVEL)); q.set('semilla', String(semilla)); history.replaceState(null, '', location.pathname + '?' + q);   /* el link de esta partida, para repetirla */
+  mision.alCerrar = res => {
+    const resultado = armarResultado({ alumno: nombre, nivel: NIVEL, escenario: escenarioActual, registro, resultado: res });
+    console.log('resultado', resultado);
+    mostrarDebrief(resultado, { repetir: () => { ocultarDebrief(); empezarNivel(nombre, semilla); }, otra: () => { ocultarDebrief(); empezarNivel(nombre, semillaNueva()); }, menu: () => { ocultarDebrief(); registro = null; mision.modoNivel = 0; mision.menu(); } });
+  };
+  mision.nivel(NIVEL, escenarioActual, registro);
+} window.__mision = mision;
 $('menu').onclick = () => { audio.iniciar(); pausar(); };
 // ---- pausa / salir: siempre a mano (botón fijo en la cabina, B/Y, Esc o «Menú») ----
 let pausado = false;
@@ -484,6 +512,7 @@ renderer.setAnimationLoop(() => {
   const cielo = escena.getObjectByName('cielo'); if (cielo) cielo.position.set(vuelo.pos.x, 0, vuelo.pos.z);
   if (instrumentos) { instrumentos.fijar(vuelo.lecturas()); instrumentos.actualizar(dt); }
   if (cabinaNueva) cabinaNueva.actualizar(vuelo, dt, { controles, SW });   /* la mirilla de la tolva (etapa 1), las pantallas y los anunciadores (etapa 2) */
+  if (registro && mision.fase !== 'resultado' && mision.fase !== 'intro') { registro.tic(dt * vel); registro.muestrear(vuelo); }
   mision.actualizar(dt * vel); actualizarHumo(dt); actualizarMarca(dt); actualizarPedales(dt);
   aPie.actualizar(dt, teclas, renderer.xr.isPresenting ? ejesPie : null); ejesPie.girar = 0;
   if (aPie.modo !== modoPrevio) { modoPrevio = aPie.modo; if (!renderer.xr.isPresenting) { yaw = 0; pitch = aPie.modo === 'pie' ? 0 : -0.15; } }

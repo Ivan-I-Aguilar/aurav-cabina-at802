@@ -40,12 +40,15 @@ export class Vuelo {
     m.volt = m.generador && m.ng > 50 ? 28 : m.bateria ? 24 : 0;
     // arranque: con batería, arrancador sube Ng; con combustible (condición adelante) e ignición, enciende a Ng > 12 %
     const girandoArrancador = m.arrancador && m.bateria && !m.falla && !m.encendido;
-    if (girandoArrancador) m.ng = Math.min(m.ng + dt * 3, 25);
+    /* fallas de arranque del nivel 1 (PLAN_JUEGO.md): 'bateria' (Ng no pasa de 9 %), 'hung' (enciende pero Ng se clava en 24 % y la ITT sube
+       despacio), 'hot' (al encender la ITT se dispara). Se arman con m.fallaArranque; al cortar condición con el motor encendido la falla
+       se da por consumida (un segundo intento arranca normal). m.tFalla cuenta desde que aparece el síntoma (para la devolución). */
+    if (girandoArrancador) m.ng = Math.min(m.ng + dt * (m.fallaArranque === 'bateria' ? 1.2 : 3), m.fallaArranque === 'bateria' ? 9 : 25);
     const combustible = c.condicion > 0.3 && m.combustible && !m.cortado && !m.extintor;   /* el switch FIRE cierra el combustible */
     if (!m.encendido && combustible && m.ignicion && m.ng > 12 && !m.falla) { m.encendido = true; this.evento('motor-encendido'); }
-    if (m.encendido && (!combustible || m.falla)) { m.encendido = false; this.evento('motor-apagado'); }
-    // Ng objetivo según potencia; torque sigue a Ng
-    const ngObj = m.encendido ? 60 + 41 * c.potencia : 0;
+    if (m.encendido && (!combustible || m.falla)) { m.encendido = false; this.evento('motor-apagado'); if (m.fallaArranque && m.fallaArranque !== 'normal') { m.fallaArranque = 'normal'; this.evento('arranque-abortado'); } }
+    // Ng objetivo según potencia; torque sigue a Ng (hung start: se clava en 24 %)
+    const ngObj = m.encendido ? (m.fallaArranque === 'hung' ? 24 : 60 + 41 * c.potencia) : 0;
     if (m.encendido) m.ng += (ngObj - m.ng) * Math.min(1, dt / 1.6);
     else if (!girandoArrancador) m.ng = Math.max(0, m.ng - dt * 3);   /* sin arrancador ni motor, se frena solo */
     // fuego: se apaga a los 5 s de cortar combustible (condición a corte + FIRE) con potencia a ralentí; si dura 45 s, es fatal
@@ -58,8 +61,11 @@ export class Vuelo {
     const torqueObj = m.encendido ? Math.max(0, (m.ng - 58) / 43) * 100 * (m.fuego ? Math.max(0.3, 1 - this.tiempoFuego * 0.05) : 1) : 0;
     m.torque += (torqueObj - m.torque) * Math.min(1, dt / 1.2);
     // ITT: sube con torque; en el arranque pico breve; con fuego se dispara
-    const ittObj = m.encendido ? 420 + 3.8 * m.torque + (m.fuego ? 300 : 0) : (m.arrancador && m.ng > 8 ? 200 : 15);
-    m.itt += (ittObj - m.itt) * Math.min(1, dt / (m.encendido ? 2.5 : 6));
+    let ittObj = m.encendido ? 420 + 3.8 * m.torque + (m.fuego ? 300 : 0) : (m.arrancador && m.ng > 8 ? 200 : 15), tauItt = m.encendido ? 2.5 : 6;
+    if (m.encendido && m.fallaArranque === 'hot') { ittObj = 1120; tauItt = 10; }                /* hot start: la ITT sube ~35 °C/s; desde el síntoma (750 °C) hay unos 8 s para cortar antes de 1000 */
+    if (m.encendido && m.fallaArranque === 'hung') { ittObj = 1100; tauItt = 30; }                /* hung start: sube despacio, 1000 °C a los ~40 s */
+    m.itt += (ittObj - m.itt) * Math.min(1, dt / tauItt);
+    if (m.fallaArranque && m.fallaArranque !== 'normal') { const sintoma = m.fallaArranque === 'bateria' ? (m.arrancador && m.ng >= 8.5) : (m.encendido && (m.fallaArranque === 'hot' ? m.itt > 750 : m.ng > 20)); if (sintoma && !m.tFalla) { m.tFalla = 0.001; this.evento('sintoma-arranque', { falla: m.fallaArranque }); } if (m.tFalla) m.tFalla += dt; }
     if (m.encendido && this.arranqueReciente > 0) { m.itt = Math.max(m.itt, 700 - (3 - this.arranqueReciente) * 80); }
     this.arranqueReciente = m.encendido ? Math.max(0, (this.arranqueReciente ?? 3) - dt) : 3;
     // hélice: palanca adelante 1700 rpm, atrás bandera; sin motor queda en molinete salvo bandera

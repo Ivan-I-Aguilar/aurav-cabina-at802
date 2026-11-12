@@ -6,7 +6,7 @@ alumno sienta en VR el potencial de la práctica. Decidido: **tres juegos distin
 cada uno como actividad independiente del aula virtual de AURAV (dominio propio, ni Moodle ni Classroom): se juega, termina y
 entrega su resultado. El cruce de datos con el aula se hace cuando exista; el juego ya deja el resultado listo para eso.
 
-Estado: **borrador para el ok de Iván**. Nada de esto está programado.
+Estado: **aprobado por Iván el 11/11** («Aprobado, arrancá»). **J0 y J1 HECHAS el 12/11 (v=20261112a, sin publicar)**: ver §7.
 
 ## 1. Los tres niveles
 
@@ -71,6 +71,26 @@ Progresión: el nivel 2 se habilita con el 1 aprobado y el 3 con el 2; el instru
 | J3 | Nivel 3: inyección de emergencias (tabla con momentos y probabilidades), señales previas, generador y compuerta trabada, rúbrica combinada. | 1–2 |
 | J4 | Debrief en VR (panel), pulido de voces, prueba de Iván en el Quest de los tres niveles, publicar. | 1 |
 | J5 (cuando exista el aula) | `POST` del JSON al aula y lectura de la semilla/alumno desde el link. | ½ |
+
+## 7. Hecho
+
+- **J0 + J1 (12/11/2026, v=20261112a, commit local):** `escenario_azar.js` (semilla → variables; nivel 1: normal ×2, hot, hung,
+  batería baja, ITT inicial), `registro.js` (todo con el tiempo de misión: controles, pasos con «tarde» y «fuera de orden», observaciones,
+  excesos de ITT/torque/velocidad, síntoma de la falla, reacción, fatal), `debrief.js` (rúbrica del nivel 1 por competencias con los pesos
+  de §6, observaciones en texto, pantalla de resultado con barras, línea de tiempo con lo malo en rojo, botones constancia PNG · resultado
+  JSON · repetir misma semilla · otra situación · menú; guarda en `localStorage` `aurav_cabina_resultados`), `constancia.js` (la de
+  aurav-senales con los textos de este juego, semilla y código FNV-1a; `aaxod-logo.png` copiado), `index.html` (#inicio con el nombre
+  del alumno y #debrief), `main.js` (`?nivel=1|2|3[&semilla=S][&alumno=N]`: pantalla de inicio en vez del menú; el link de la partida se
+  reescribe con la semilla sorteada), `mision.js` (`nivel()`: sin dictado —la lista de tareas es el checklist, los hechos tachados—, sin aro
+  amarillo; `cerrarFase` va al debrief; detección exacta de «fuera de orden»: el paso ya estaba cumplido al pasar a ser el actual; starter
+  > 30 s), `vuelo.js` (`m.fallaArranque`: batería baja → Ng no pasa de 9 %; hung → enciende pero Ng se clava en 24 % y la ITT sube ~1000 °C
+  a los 40 s; hot → la ITT sube ~35 °C/s desde el encendido, 1000 °C unos 8 s después del síntoma de 750; al cortar condición la falla se
+  consume y el segundo intento es normal; `sintoma-arranque` y `arranque-abortado` como eventos). Semillas de prueba: 100001 normal,
+  100000 hot, 100008 hung, 100002 batería. Probado el 12/11: normal 96 aprobado; hot abortado a tiempo aprobado; hot sin abortar → ITT 1076,
+  FATAL, no aprobado; hung abortado a los 12 s → 85; batería abortada a los 6 s → 94. Los niveles 2 y 3 por ahora corren la secuencia de
+  práctica completa con registro y debrief genérico (J2/J3 pendientes). VR: el debrief es sólo HTML (J4).
+- Decisión tomada (sin respuesta a §5.5): el nombre lo escribe el alumno en la pantalla de inicio (queda guardado en el navegador); si el
+  link trae `&alumno=`, se usa ése.
 
 ## 5. Qué hace falta saber (de Iván, AAXOD o el manual)
 

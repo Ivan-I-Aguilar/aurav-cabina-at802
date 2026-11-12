@@ -17,7 +17,21 @@ export class Mision {
     Object.assign(this, { vuelo, controles, SW, ui, obtener, reiniciarAvion });
     this.fase = 'intro'; this.t = 0; this.pasos = []; this.i = 0; this.notas = {}; this.resultados = [];
     this.secuencia = ['arranque', 'despegue', 'falla', 'fuego', 'fallaDespegue'];
-    this.falladas = 0;
+    this.falladas = 0; this.modoNivel = 0; this.registro = null; this.escenario = null; this.alCerrar = null;
+  }
+  /* ---- niveles del aula virtual (PLAN_JUEGO.md): un nivel por link, el tutor no dicta (la lista de tareas es el checklist), todo queda en el
+     registro y al terminar se llama alCerrar(resultado) en vez del panel Seguir/Repetir ---- */
+  nivel(n, escenario, registro) {
+    this.modoNivel = n; this.escenario = escenario; this.registro = registro; this.resultados = []; this.fase = 'intro'; this.abortado = false;
+    if (n === 1) {
+      this.reiniciarAvion({ enPista: true, agua: 2400, apagado: true });
+      const m = this.vuelo.motor; m.fallaArranque = escenario.falla || 'normal'; m.tFalla = 0; m.itt = escenario.ittInicial || 15;
+      this.faseArranque();
+    } else this.empezar('arranque');   /* niveles 2 y 3: por ahora la secuencia completa (J2 y J3 del plan) */
+  }
+  _nuevoDetalle() {   /* las observaciones (penalizaciones) también van al registro */
+    const d = []; const reg = this.registro; if (!reg) return d;
+    d.push = (...xs) => { for (const x of xs) reg.anotar('observacion', { texto: x }); return Array.prototype.push.apply(d, xs); }; return d;
   }
   // ------------- utilidades -------------
   sw(n) { if (n === 'FIRE' && this.fuegoConFuel) return this.controles.estado(this.SW.FIRE) === 0; return !!this.controles.estado(this.SW[n]); }
@@ -28,13 +42,17 @@ export class Mision {
   anotar(clave, valor) { this.notas[clave] = valor; }
   // pasos: [{ id, texto, listo: () => bool, tiempo?: s límite, alFallar?: texto }]
   definir(fase, pasos, titulo) {
-    this.fase = fase; this.pasos = pasos; this.i = 0; this.tPaso = 0; this.t = 0; this.titulo = titulo;
-    if (!fase.startsWith('forzoso') && fase !== 'fallaDespegue') { this.puntos = 100; this.detalle = []; }   /* el forzoso hereda los puntos de la emergencia */
+    this.fase = fase; this.pasos = pasos; this.i = 0; this.tPaso = 0; this.t = 0; this.titulo = titulo; if (pasos[0]) pasos[0]._yaEstaba = false;
+    if (!fase.startsWith('forzoso') && fase !== 'fallaDespegue') { this.puntos = 100; this.detalle = this._nuevoDetalle(); }   /* el forzoso hereda los puntos de la emergencia */
     this.forzoso = false; this.volvio = false; this.perdidaAnotada = false; this.salioPista = false; this.tApagando = null; this.fuegoFatal = false; this.alContacto = null;
     this.ui.cartel(titulo); this.mostrarPaso();
   }
   mostrarPaso() {
     const p = this.pasos[this.i]; if (!p) return;
+    if (this.modoNivel) {   /* sin dictado: el checklist a la vista (los hechos tachados), sin el paso actual resaltado, sin voz ni aro amarillo */
+      this.ui.tareas(this.pasos.map((q, k) => ({ texto: q.texto, ok: k < this.i, actual: false })));
+      if (this.i === 0) this.decir(this.titulo, 'Seguí el checklist de la tablilla. El tutor no dicta: anota.'); this.ui.marcar?.(null); return;
+    }
     this.ui.tareas(this.pasos.map((q, k) => ({ texto: q.texto, ok: k < this.i, actual: k === this.i })));
     this.decir(this.titulo, p.texto, p.voz ?? p.texto);
     this.ui.marcar?.(this.marcaDe(p));
@@ -47,8 +65,11 @@ export class Mision {
   }
   avanzarPaso() {
     const p = this.pasos[this.i];
-    if (p.tiempo && this.tPaso > p.tiempo) { this.puntos -= p.penal ?? 10; this.detalle.push(`${p.texto}: tarde (${this.tPaso.toFixed(0)} s)`); }
+    const tarde = !!(p.tiempo && this.tPaso > p.tiempo), anticipado = !!p._yaEstaba && this.i > 0 && this.t > 1.5 && !['off', 'libre', 'chk', 'acel', 'boostOff', 'soltar'].includes(p.id);   /* ya estaba hecho cuando el paso pasó a ser el actual: fuera de orden (salvo los pasos de espera o de «dejar», y los del estado inicial en el primer segundo y medio) */
+    if (tarde) { this.puntos -= p.penal ?? 10; this.detalle.push(`${p.texto}: tarde (${this.tPaso.toFixed(0)} s)`); }
+    this.registro?.anotar('paso', { id: p.id, texto: p.texto, tardo: +this.tPaso.toFixed(1), tarde, anticipado });   /* anticipado: ya estaba hecho cuando correspondió (fuera de orden) */
     this.i++; this.tPaso = 0;
+    const q = this.pasos[this.i]; if (q) q._yaEstaba = !!q.listo();   /* se mira en el acto: si ya está, el alumno lo hizo antes de que correspondiera */
     if (this.i < this.pasos.length) this.mostrarPaso(); else { this.ui.tareas(this.pasos.map(q => ({ texto: q.texto, ok: true }))); this.ui.marcar?.(null); }
   }
   // ------------- flujo -------------
@@ -71,6 +92,10 @@ export class Mision {
   cerrarFase(nombre, exito, texto) {
     const nota = Math.max(0, Math.min(100, Math.round(this.puntos)));
     this.resultados.push({ nombre, nota: exito ? nota : Math.min(nota, 40), detalle: this.detalle.join(' · '), exito });
+    if (this.modoNivel) {   /* nivel: se interrumpe y va al debrief */
+      this.registro?.anotar('fin', { texto: `${nombre}: ${texto}`, exito, nota }); this.fase = 'resultado'; this.ui.tareas([]); this.ui.marcar?.(null);
+      this.decir(nombre, texto); this.alCerrar?.({ nombre, nota: exito ? nota : Math.min(nota, 40), exito, texto, abortado: this.abortado, detalle: this.detalle.slice() }); return;
+    }
     this.fase = 'pausa';
     this.ui.panel({ titulo: exito ? `${nombre}: ${nota} / 100` : `${nombre}: no superada`, texto: texto + (this.detalle.length ? '\n\nObservaciones: ' + this.detalle.join('; ') : ''), botones: [{ id: 'seguir', texto: 'Seguir' }, { id: 'repetir', texto: 'Repetir' }, { id: 'menu', texto: 'Menú' }] },
       id => { this.ui.ocultarPanel(); if (id === 'seguir') this.siguiente(); else if (id === 'repetir') { this.resultados.pop(); this.irA(this.secuencia[this.indice]); } else this.menu(); });
@@ -107,9 +132,23 @@ export class Mision {
       { id: 'gen', texto: 'Generador: ON · Aviónica: ON', listo: () => (this.sw('GEN') || this.sw('ALTN')) && this.sw('AVNC') },
       { id: 'chk', texto: 'Presión y temperatura de aceite: check', listo: () => this.tPaso > 4, marca: null },
     ], 'Puesta en marcha');
-    // vigilancia: condición adelante antes de Ng 12 → arranque caliente
+    // vigilancia: condición adelante antes de Ng 12 → arranque caliente; starter más de 30 s; y en el nivel 1, las fallas preparadas
+    this.tStarter = 0; this.starterAnotado = false; this.sintomaT = null;
     this.vigilar = () => {
-      if (!m.encendido && this.lev('levCOND') > 0.3 && m.arrancador && m.ng < 12 && !this.arranqueCaliente) { this.arranqueCaliente = true; this.puntos -= 30; this.detalle.push('condición adelante antes de Ng 12 % (riesgo de arranque caliente)'); this.decir('Puesta en marcha', '¡Muy pronto! Condición a corte, dejá girar y esperá Ng 12 %.'); }
+      if (!m.encendido && this.lev('levCOND') > 0.3 && m.arrancador && m.ng < 12 && !this.arranqueCaliente) { this.arranqueCaliente = true; this.puntos -= 30; this.detalle.push('condición adelante antes de Ng 12 % (riesgo de arranque caliente)'); if (!this.modoNivel) this.decir('Puesta en marcha', '¡Muy pronto! Condición a corte, dejá girar y esperá Ng 12 %.'); }
+      this.tStarter = m.arrancador && !m.encendido ? this.tStarter + this.dt : 0;
+      if (this.tStarter > 30 && !this.starterAnotado) { this.starterAnotado = true; this.puntos -= 20; this.detalle.push('starter más de 30 s'); this.registro?.anotar('starter', { segundos: 30 }); }
+      if (!this.modoNivel) return;
+      const falla = this.escenario?.falla; if (!falla || falla === 'normal' || this.abortado) return;
+      if (m.tFalla && this.sintomaT == null) { this.sintomaT = this.t; this.registro?.anotar('falla', { texto: { hot: 'la ITT se dispara (hot start)', hung: 'Ng se clava en 24 % y la ITT sube (hung start)', bateria: 'Ng no pasa de 9 % (batería baja)' }[falla], falla }); }
+      if (this.sintomaT != null) {
+        const corto = this.lev('levCOND') < 0.1 && !this.sw('START');
+        if (corto) { this.abortado = true; const s = +(this.t - this.sintomaT).toFixed(1); this.registro?.anotar('reaccion', { texto: 'cortó condición y starter', segundos: s });
+          if (s > 8) { this.puntos -= Math.min(40, Math.round(s * 2)); this.detalle.push(`tardó ${s} s en abortar`); }
+          this.cerrarFase('Puesta en marcha', true, { hot: 'Abortaste el hot start a tiempo. Bien: motoring para enfriar y reportar.', hung: 'Abortaste el hung start. Bien: dejá enfriar y repetí la secuencia.', bateria: 'Abortaste bien: batería baja, pedí fuente externa.' }[falla]); return; }
+        if (m.itt > 1000) { this.registro?.marcarFatal('ITT superó 1000 °C: motor dañado'); this.puntos -= 60; this.cerrarFase('Puesta en marcha', false, 'La ITT pasó los 1000 °C: el motor quedó dañado. Había que cortar condición y starter.'); return; }
+        if (falla === 'bateria' && this.lev('levCOND') > 0.3 && !this.condConBateriaBaja) { this.condConBateriaBaja = true; this.puntos -= 30; this.detalle.push('puso condición con Ng por debajo de 12 % (batería baja)'); }
+      }
     };
     this.alTerminar = () => this.cerrarFase('Puesta en marcha', true, 'Motor en marcha y estabilizado. Bien.');
   }
@@ -222,6 +261,7 @@ export class Mision {
     if (p && p.listo()) { this.avanzarPaso(); if (this.i >= this.pasos.length) this.alTerminar?.(); }
   }
   evento(tipo, d) {
+    this.registro?.anotar('evento', { nombre: tipo, detalle: d && typeof d === 'object' ? Object.entries(d).map(([k, v]) => `${k} ${typeof v === 'number' ? +v.toFixed(1) : v}`).join(', ') : '' });
     if (tipo === 'contacto' || tipo === 'accidente') { if (this.alContacto && (tipo === 'accidente' || this.vuelo.enTierra || true)) { const f = this.alContacto; this.alContacto = null; f(d); } else if (tipo === 'accidente' && this.fase !== 'pausa' && this.fase !== 'intro') { this.cerrarFase(this.titulo || 'Vuelo', false, 'Accidente. Repasemos qué pasó.'); } }
     if (tipo === 'vne') { this.puntos -= 10; this.detalle.push('superó la Vne'); }
     if (tipo === 'fuego-extinguido') this.decir(this.titulo, 'Fuego extinguido. Ahora, a aterrizar.');
