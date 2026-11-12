@@ -94,3 +94,30 @@ export function crearRadios() {
 
   return g;
 }
+
+/* Cabina nueva (etapa 5, 11/11): la consola compacta del avión blanco y rojo. El GLB (blender/cab_radios.glb) trae el bloque y en
+   userData.radios el marco de su cara (c, u, v, n, w, h: u = derecha del piloto al mirarla, v = arriba, n = hacia el piloto) y la
+   lista de unidades (id, alto). Acá se apilan los equipos (las mismas caras en canvas de arriba) desde el borde de arriba y se arma
+   la llave MASTER AVIONICS (swAVNC) con la geometría horneada en el marco de la cabina, como pide controles.armar. */
+export function crearRadiosEn(datos, cabina) {
+  const g = new THREE.Group(); g.name = 'radios_compactas';
+  const u = new THREE.Vector3().fromArray(datos.u), v = new THREE.Vector3().fromArray(datos.v), n = new THREE.Vector3().fromArray(datos.n);
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(u, v, n)); g.position.fromArray(datos.c); cabina.add(g); g.updateMatrix();   /* g.matrix: de la cara al marco de la CABINA (matrixWorld metía el giro del GLB y la posición del avión: el pivote caía fuera de la cabina) */
+  const A = datos.w - 0.02; let y = datos.h / 2 - 0.01;
+  const apilar = (e, alto, sep = 0.006) => { e.position.set(0, y - alto / 2, 0.002); g.add(e); y -= alto + sep; };
+  const caras = {
+    pac24: [0.040, (c, w, h) => { const n_ = ['COM1', 'COM2', 'COM3', 'COM4', 'NAV', 'MKR', 'SPKR']; n_.forEach((t, i) => { tecla(c, 14 + i * 52, 12, 44, 40, t); led(c, 28 + i * 52, 58, i < 1); });
+      txt(c, 'PAC24', w - 150, h / 2 - 14, 15, '#9a9a9a', 'right', true); txt(c, 'MASTER', w - 44, 20, 12, '#ddd', 'center'); txt(c, 'AVIONICS', w - 44, 34, 12, '#ddd', 'center'); txt(c, 'ON', w - 44, h - 42, 11, '#aaa', 'center'); txt(c, 'OFF', w - 44, h - 12, 11, '#aaa', 'center'); }, [[0.68, 0.5, 0.008]]],
+    com: [0.060, (c, w, h) => { pantalla(c, 90, 14, 330, h - 28, '#0a0906'); txt(c, 'COM 122.800', 100, h * 0.33, 26, '#ff9d3a', 'left', true); txt(c, '123.450', 300, h * 0.33, 22, '#ff9d3a'); txt(c, 'NAV 114.50', 100, h * 0.7, 26, '#ff9d3a', 'left', true); txt(c, '109.30', 300, h * 0.7, 22, '#ff9d3a'); }, [[0.08, 0.5, 0.012, true], [0.92, 0.5, 0.012, true]]],
+    xpdr: [0.050, (c, w, h) => { pantalla(c, 110, 14, 170, h - 28, '#0a0906'); txt(c, '7000', 130, h / 2, 34, '#ff9d3a', 'left', true); txt(c, 'ALT', 300, h / 2, 16, '#ff9d3a'); for (let i = 0; i < 4; i++) tecla(c, 330 + i * 38, 16, 30, h - 32, String(i)); txt(c, 'IDT', 495, h / 2, 12, '#ccc', 'right'); }, [[0.08, 0.5, 0.011]]],
+    fm: [0.060, (c, w, h) => { pantalla(c, 150, 16, 220, h - 32, '#0b1a0e'); txt(c, 'CH 12  AAXOD', 160, h * 0.4, 24, '#9ef08a', 'left', true); txt(c, 'FM  151.325', 160, h * 0.72, 20, '#9ef08a'); ['CALL', 'MR', 'VFO', 'MENU'].forEach((t, i) => tecla(c, 380 + i * 30, 20, 26, 22, '', '#333')); txt(c, 'KENWOOD', 60, h - 14, 12, '#aaa', 'center'); }, [[0.08, 0.5, 0.011, true], [0.92, 0.5, 0.009]]],
+  };
+  for (const un of datos.unidades || []) { const d = caras[un.id] || caras.com; apilar(equipo(A, un.alto || d[0], 0.05, d[1], d[2]), un.alto || d[0]); }
+  /* MASTER AVIONICS: palanquita en el PAC24 (arriba a la derecha de la cara), horneada en coordenadas de la cabina; gira sobre u (= z de la cabina) */
+  const alto0 = (datos.unidades?.[0]?.alto) || 0.04, cx = A / 2 - 0.085 * A / 0.23 - 0.004, cy = datos.h / 2 - 0.01 - alto0 / 2;
+  const base = new THREE.Vector3(cx, cy, 0.004).applyMatrix4(g.matrix), punta = new THREE.Vector3(cx, cy, 0.026).applyMatrix4(g.matrix);
+  const geo = new THREE.BoxGeometry(0.005, 0.005, 0.022).translate(cx, cy, 0.015).applyMatrix4(g.matrix);
+  const sw = new THREE.Mesh(geo, metal); sw.name = 'swAVNC'; sw.userData.piv = base.toArray(); sw.userData.eje = 'z'; sw.userData.punta = punta.toArray();
+  const grupoControles = new THREE.Group(); grupoControles.name = 'radios_controles'; grupoControles.add(sw); cabina.add(grupoControles);
+  return { grupo: g, grupoControles };
+}

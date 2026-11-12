@@ -511,6 +511,16 @@ FUEL a OFF», a confirmar con Bruno) y los nombres que no coincidan con los rót
 - Crea la zona E. Las caras se dibujan como hoy en `radios.js`, pero sobre el rack real.
 - Conecta MASTER AVIONICS. Las perillas quedan listas para la radio con la torre (pendiente viejo).
 - Borra el pedestal inventado.
+- **HECHA el 11/11/2026 (v=20261111b, sin publicar; tanda autónoma, falta el ok de Iván a las vistas):** es la consola COMPACTA del
+  avión blanco y rojo (el elegido), no el rack alto del amarillo. `herramientas/cab_radios.py` → `blender/cab_radios.glb` (48
+  triángulos, 2 llamadas): caja sobre la pared derecha, espejo de la consola izquierda (tope y 0,68, hasta x 0,42, z 1,00–1,80), y un
+  bloque inclinado 20° hacia arriba que mira al piloto con la cara de los equipos de 25 × 26 cm centrada en (0,46; 0,80; 1,06),
+  medida en la 360 con la pose suponiendo la cara en x 0,45 (arriba y 0,915, abajo 0,65–0,70; el borde de arriba está unos 10 cm
+  más atrás que el de abajo: se simplificó a filas horizontales). Las caras NO van en el GLB: el bloque lleva `userData.radios`
+  (marco de la cara y lista de unidades) y `radios.js` (`crearRadiosEn`) apila ahí los equipos en canvas (PAC24 con MASTER
+  AVIONICS, COM, transpondedor, FM Kenwood) con sus perillas y arma la llave `swAVNC` con la geometría horneada en el marco de la
+  cabina (gira sobre z = el eje horizontal de la cara). `SW.AVNC` pasa a `swAVNC` (ya no va con el MASTER). Queda: PULL FOR FRESH
+  AIR, toma de 12 V y fichas de la pared derecha (decorativas, E4), y borrar el pedestal viejo (`crearRadios`) con la cabina vieja.
 
 ### Etapa 6 — Asiento, pedales y bastón (1 a 2 sesiones)
 - Asiento de malla roja con arnés negro, pedales AIR TRACTOR, bastón cromado con empuñadura,

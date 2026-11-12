@@ -8,9 +8,10 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas, Rotulos } from './pantallas.js?v=20261111a';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261111b';
+import { crearRadiosEn } from './radios.js?v=20261111b';
 
-export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_radios', 'cab_asiento' */
+export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola', 'cab_radios'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_asiento' */
 const HOLGURA = 0.015, PISO = 0.26;
 const CUPULA = PIEZAS.includes('cab_cupula'), CINTURON = 0.93;   /* con la cúpula nueva, el FSN va cortado en el antepecho (y 0,93) */
 const vidrios = raiz => raiz.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) { o.renderOrder = 2; o.material.depthWrite = false; } } });
@@ -46,6 +47,9 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
   if (tab && disp) { const d = datosFRDS; tab.pantallas.frds = [d.c[0] - d.w / 2 + disp.s, d.c[1] + d.h / 2 - (disp.t + 0.001), d.c[2] + 0.0056 + 0.0005, 0.034, 0.022]; }
   if (tab) pantallas = new Pantallas(cabina, tab);   /* 2b (8/11): G5, Garmin de rumbo, MVP-50 y los cuatro anunciadores */
   const rotulos = new Rotulos(cabina);   /* etapa 3: los textos de los paneles de llaves, el FRDS y el SALVO, dibujados en canvas */
+  /* etapa 5 (11/11): los equipos de radio sobre la cara del bloque de la consola derecha (userData.radios del GLB) y la llave MASTER AVIONICS */
+  let radios = null; const bloqueR = cabina.getObjectByName('radios_bloque');
+  try { if (bloqueR?.userData?.radios) { radios = crearRadiosEn(JSON.parse(bloqueR.userData.radios), cabina); controles.armar(radios.grupoControles); } } catch (e) { console.warn('radios_bloque sin datos', e); }
   /* FRDS GEN III y SALVO (etapa 3): llaves momentáneas que vuelven solas, galones a largar y nivel de cobertura, compuerta que larga (en AUTO
      el caudal sigue al nivel de cobertura: de 11 s el 1 a 4 s el 8) y corta al llegar a los galones pedidos; el SALVO vacía la tolva de una */
   const frds = { galones: 800, cobertura: 3, gate: false, objetivo: null, t: {} };
@@ -81,7 +85,7 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
       generador: !!m.generador, encendido: !!m.encendido, enTierra: !!vuelo.enTierra, armado, test: !!(controles && controles.estado('swTEST')), estrellado: !!vuelo.estrellado,
       frds: { power: !!(controles && controles.estado('swFRDS')), galones: frds.galones, cobertura: frds.cobertura, gate: frds.gate, armado, hopperGal: vuelo.agua / 3.785 } });
   };
-  return { exterior: e.scene, actualizar: actualizarTodo, instrumentos, pantallas, rotulos, frds, tablero: tab || null };
+  return { exterior: e.scene, actualizar: actualizarTodo, instrumentos, pantallas, rotulos, radios, frds, tablero: tab || null };
 }
 
 /* el casco por dentro, como líneas: la referencia común de todas las zonas mientras no está el cascarón */

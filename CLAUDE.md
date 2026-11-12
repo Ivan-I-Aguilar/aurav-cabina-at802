@@ -111,7 +111,11 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   y 0,52 · z 1,45, pivote en la base, UN material por palanca: con dos, el GLB las parte en levX_1/_2), dial RUDDER TRIM
   (`swK_TRIMTIMON`), volante de trim de profundidad (`swK_TRIMPROF`) y llave AILERON TRIM (`swTRIMALERON`) que ya suman al mando,
   y la E-DUMP naranja (`levEDUMP`) en el piso. Probado: puesta en marcha con las palancas reales y la emergencia de fuego entera.
-  Sigue la etapa 5 (radios). Detalle en `PLAN_CABINA_NUEVA.md`, etapa 4.
+  Detalle en `PLAN_CABINA_NUEVA.md`, etapa 4.
+- **Etapa 5 (radios) HECHA el 11/11, v=20261111b, SIN publicar (tanda autónoma):** consola compacta del blanco y rojo:
+  `herramientas/cab_radios.py` → `blender/cab_radios.glb` (caja sobre la pared derecha + bloque inclinado con la cara de los equipos,
+  `userData.radios`) y `radios.js` `crearRadiosEn` (PAC24, COM, XPDR, FM en canvas + la llave `swAVNC` horneada en el marco de la
+  cabina; `SW.AVNC = 'swAVNC'`). Sigue la etapa 6 (bastón, pedales, asiento). Detalle en `PLAN_CABINA_NUEVA.md`, etapa 5.
 - **Lección (7/11): toda fila que llega al borde de otra chapa pasa por los VÉRTICES de ese borde y termina 2–3 mm por
   debajo** (`solapa_techo`): un remuestreo uniforme cortaba la esquina del nudo FR y dejaba un hueco de 1,6 cm por donde
   se colaban rayos. El chequeo de estanqueidad (0°–90°, 20.000 rayos) es el que los encuentra.
@@ -162,7 +166,7 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `mision.js` | Fases: arranque → despegue → crucero → falla de motor → crucero → fuego → despegue con tolva llena → falla a 150 ft. Puntaje y observaciones. `menu()`, `empezar(desde)`. |
 | `controles.js` | Switches (`sw*`) y palancas (`lev*`) del GLB con pivote; VR (gatillo/grip cerca, o pinchar) y clic en PC. |
 | `instrumentos.js` + `instrumentos.json` | Agujas 3D, horizonte y (25/10) carátulas dibujadas en vivo (`CARAS`) + biseles: el tablero nuevo no trae caras pintadas. Escalas iguales a `herramientas/relojes.py`. |
-| `radios.js` | Consola de radios derecha (pedestal 3D con canvas). |
+| `radios.js` | Consola de radios derecha: `crearRadios()` el pedestal 3D con canvas de la cabina vieja; `crearRadiosEn(datos, cabina)` (etapa 5) los equipos sobre la cara del bloque de `blender/cab_radios.glb` más la llave MASTER AVIONICS `swAVNC`. |
 | `audio.js` | Turbina/hélice sintetizadas, campana de fuego, bocina de pérdida. Voz: audios pregrabados `voz/<clave>.wav` (el Quest no tiene speechSynthesis); si falta la frase, voz del navegador. |
 | `voz/` + `herramientas/voces.py` + `voces.ps1` | Frases del tutor → WAV con la voz Sabina de Windows. **Cada vez que cambie un texto de mision.js/main.js:** `python -I herramientas/voces.py` y `powershell -ExecutionPolicy Bypass -File herramientas/voces.ps1` (sólo genera las nuevas). Pronunciaciones en `PRONUNCIA`. |
 | `apie.js` | Modo a pie (22/10): caminar alrededor del avión (VR: joystick izq. camina, der. gira 30°; PC: WASD/flechas + mouse; celular: joystick en pantalla + arrastrar para mirar + tocar), colisión simple con fuselaje y hélice, cartel «SUBIR» junto al estribo (izquierda, bajo la cabina) → animación estribo → raíz del ala → asiento (en VR: fundido). «Bajar del avión» / «Volver a la cabina» en la pausa; «Recorrer el avión (a pie)» en el menú. |

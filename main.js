@@ -6,7 +6,7 @@ import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
 import { mergeGeometries } from './BufferGeometryUtils.js';
 import { crearEscenario } from './escenario.js?v=20261017a';
-import { crearRadios } from './radios.js?v=20261017a';
+import { crearRadios } from './radios.js?v=20261111b';
 import { Controles } from './controles.js?v=20261022e';
 import { Instrumentos } from './instrumentos.js?v=20261025e';
 import { Vuelo, MPH, FT } from './vuelo.js?v=20261026j';
@@ -14,7 +14,7 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261111a';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261111b';
 
 /* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
    ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
@@ -105,7 +105,7 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261111a', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261111b', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
   if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula; la luz ENG FIRE vieja queda dentro de la chapa: la reemplaza MASTER WARN */
@@ -729,9 +729,9 @@ function crearExtrasManual() {
 const controles = new Controles(cabina); window.__controles = controles;
 /* Tabla lógica → malla. Cabina FSX: las llaves sw38…sw64 del modelo. Cabina nueva (etapa 3, 8/11): los nombres reales de cab_llaves.py; lo que todavía
    no existe apunta a una malla que no está (controles.estado da null y aplicarControles no lo pisa): FIRE → la manija FUEL (etapa 4), HYD y SPARE no
-   están en el 802 real; AVNC (MASTER AVIONICS, en el rack, etapa 5) va PROVISORIAMENTE con el MASTER para que la misión y las pantallas anden */
+   están en el 802 real; AVNC es la llave MASTER AVIONICS del PAC24 de la consola de radios (etapa 5, radios.js crearRadiosEn) */
 const SW = MODO_CABINA === 'nueva'
-  ? { BATT: 'swBATT', ALTN: 'swALTN', GEN: 'swGEN', IGNTR: 'swIGN', START: 'swSTART', FIRE: 'swFUEL', FPUMP: 'swFPUMP', HYD: 'swHYD', AVNC: 'swBATT', PITOT: 'swPITOT', HOPR: 'swFRDS', FRDS: 'swARMED', WIPER: 'swWIPER', LDG: 'swLDG_L', DOME: 'swWORK', BCN: 'swPULSE', NAV: 'swSTRBNAV', STRB: 'swSTRBNAV', SPARE: 'swSPARE' }
+  ? { BATT: 'swBATT', ALTN: 'swALTN', GEN: 'swGEN', IGNTR: 'swIGN', START: 'swSTART', FIRE: 'swFUEL', FPUMP: 'swFPUMP', HYD: 'swHYD', AVNC: 'swAVNC', PITOT: 'swPITOT', HOPR: 'swFRDS', FRDS: 'swARMED', WIPER: 'swWIPER', LDG: 'swLDG_L', DOME: 'swWORK', BCN: 'swPULSE', NAV: 'swSTRBNAV', STRB: 'swSTRBNAV', SPARE: 'swSPARE' }
   : { BATT: 'sw62', ALTN: 'sw64', GEN: 'sw56', IGNTR: 'sw53', START: 'sw47', FIRE: 'sw60', FPUMP: 'swFPUMP', HYD: 'sw54', AVNC: 'sw63', PITOT: 'sw50', HOPR: 'swHOPR', FRDS: 'swFRDS', WIPER: 'swWIPER', LDG: 'sw52', DOME: 'sw49', BCN: 'sw61', NAV: 'sw51', STRB: 'sw48', SPARE: 'sw38' };
 const SW3 = MODO_CABINA === 'nueva' ? ['swFPUMP', 'swIGN', 'swFRDS_GAL', 'swFRDS_COV', 'swTRIMALERON'] : ['swFPUMP', 'swFRDS_D', 'sw53'];   /* 3 posiciones: IGNITION ON · OFF · CONTINUOUS (los extremos encienden); GALLONS y COVERAGE + · 0 · − (vuelven solas) · FSX: swFRDS_D AUTO/MAN/OFF, sw53 IGNTR */
 const levAng = n => { const p = controles.palancas.find(x => x.nombre === n); return p ? p.ang : 0; };
