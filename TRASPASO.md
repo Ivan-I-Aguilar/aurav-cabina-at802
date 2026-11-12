@@ -481,3 +481,18 @@ tablero der. (llaves), consola izq. (cuadrante y trims), rack de radios der. Lo 
 - `controles.armar` asume mallas con transform identidad (posición horneada en la geometría); para agregar un control nuevo, trasladar la geometría (`geometry.translate`) y nombrarlo `sw…` o `lev…` antes de `armar`.
 - Las caras de los relojes se dibujan **sin** agujas (`SIN_AGUJAS=1`); las agujas son mallas de `instrumentos.js`.
 - El cielo es una esfera de 1500 m que sigue al avión; el terreno plano llega a ±1200 m y el pasto a ±1600 m. Las sierras empiezan a 300–650 m del aeródromo salvo el valle de la pista.
+
+
+## 11/11/2026 — La cabina nueva está completa y la FSX se retiró del juego
+- Entre el 3/11 y el 11/11 se hizo de cero la cabina en Blender (`PLAN_CABINA_NUEVA.md`, etapas 0 a 6): cúpula medida en la 360 del
+  asiento (`cab_cupula.py`), cascarón (`cab_cascaron.py`), tablero con pantallas en vivo (`cab_tablero.py`, `pantallas.js`), FRDS, SALVO
+  y paneles de llaves (`cab_llaves.py`), pared izquierda con cuadrante y trims (`cab_consola.py`), consola de radios compacta
+  (`cab_radios.py`, `radios.js`) y bastón/piso (`cab_asiento.py`) con los pedales y la butaca de Lichi. Todo medido con la pose de la
+  360 (`cab_foto360.rayo`): las vistas planas de `vista360.py` NO corrigen el cabeceo de la cámara (5,6°).
+- El 11/11 (etapa 7) se sacó del juego la cabina FSX: `cabina.glb`, `instrumentos.json`, `blender/marco_ventana.glb`, `blender/techo.glb`
+  y todo el código de parches de main.js (bloque de carga con recorte general, mamparos y faldones; `crearTablero`, `crearConsolas`,
+  `crearExtrasManual`, `recortarManija`; el pedestal de radios; la luz ENG FIRE; las tablas `SW` del FSX). Copias en git (hasta f051b6f) y
+  en `Documents/aurav-cabina/retirados_11_11/`. Lo que sigue valiendo de esta historia está en «Lecciones» de CLAUDE.md.
+- Decisiones tomadas en la tanda autónoma del 11/11 (Iván la aprobó de antemano): el paso de FUEGO es la manija FUEL a OFF (a confirmar
+  con Bruno); la consola de radios es la compacta del blanco y rojo; la butaca de Lichi recoloreada hasta tener el asiento de malla;
+  los paneles bajos y la consola izquierda con la profundidad de las fotos del amarillo (la 360 sola no la da).

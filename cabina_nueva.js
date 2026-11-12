@@ -1,6 +1,5 @@
-// Cabina nueva de cero (PLAN_CABINA_NUEVA.md). Se activa con ?cabina=nueva; con ?cabina=vieja (o nada) sigue
-// cargando la cabina FSX con sus parches. Carga el exterior, las piezas nuevas por zona (blender/cab_*.glb,
-// se van sumando etapa por etapa) y, mientras no hay cascarón, el «plano» del casco medido por dentro
+// Cabina nueva de cero (PLAN_CABINA_NUEVA.md), la única desde el 11/11 (etapa 7: la FSX se sacó del juego). Carga el exterior
+// recortado, las piezas por zona (blender/cab_*.glb + pedales.glb y butaca.glb) y, si faltara el cascarón, el «plano» del casco medido por dentro
 // (blender/casco_medido.json, etapa 0): el contorno interior cada 10 cm, 1,5 cm hacia adentro de la chapa,
 // gris donde hay chapa y celeste donde hay vidrio, más el piso de referencia (y 0,26) y el ojo del piloto.
 // Etapa 1b.1 (5/11): el exterior es el FSN SIN la cúpula (exterior_cupula.glb, de herramientas/cab_cortar_fsn.py) y
@@ -8,8 +7,8 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas, Rotulos } from './pantallas.js?v=20261111c';
-import { crearRadiosEn } from './radios.js?v=20261111c';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261111d';
+import { crearRadiosEn } from './radios.js?v=20261111d';
 
 export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola', 'cab_radios', 'cab_asiento', 'pedales', 'butaca'];   /* GLB por zona, en orden de carga (etapas 1b a 6). pedales.glb y butaca.glb son los de Lichi (22/10 y 1/11) */
 const HOLGURA = 0.015, PISO = 0.26;

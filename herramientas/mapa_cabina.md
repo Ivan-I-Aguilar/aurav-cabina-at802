@@ -3,6 +3,10 @@
 Notas propias del manual (`Desktop/AURAV/AT-802-802A_Pilot_Training_Course.pdf`, 77 págs.) para darle
 función real a cada control del juego. El manual NO va al repo.
 
+> 11/11: la cabina nueva usa los nombres reales de las llaves (tabla `SW` en main.js y en CLAUDE.md «Controles y simulación»); las
+> palancas siguen siendo `levPOT` / `levHEL` / `levCOND` y la válvula es `swFUEL` (en el juego hace también de corte de emergencia: no
+> hay switch FIRE en el 802; a confirmar con Bruno). Las notas de abajo siguen valiendo para la función de cada control.
+
 ## Palancas del cuadrante (lado izquierdo)
 | Nuestra | Real | Posiciones / función |
 |---|---|---|

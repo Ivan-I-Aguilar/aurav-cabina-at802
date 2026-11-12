@@ -546,6 +546,14 @@ FUEL a OFF», a confirmar con Bruno) y los nombres que no coincidan con los rót
 - Se actualizan CLAUDE.md, TRASPASO.md y `mapa_cabina.md`.
 - Medición de rendimiento y prueba de Iván en el Quest: pantallas, alcance de los controles, ojo.
 - Publicar, sólo con el ok de Iván.
+- **Limpieza HECHA el 11/11/2026 (v=20261111d, sin publicar):** `cabina.glb`, `instrumentos.json`, `blender/marco_ventana.glb` y
+  `blender/techo.glb` fuera del repo (quedan en git hasta f051b6f y en `Documents/aurav-cabina/retirados_11_11/`); main.js sin el
+  bloque de carga de la FSX, `crearTablero`, `crearConsolas`, `crearExtrasManual`, `recortarManija`, la luz ENG FIRE, el pedestal de
+  radios inventado (`crearRadios` también fuera de radios.js) ni las tablas `SW` viejas (de 1136 a 500 líneas); `MODO_CABINA` ya no existe:
+  la cabina nueva carga siempre. Rendimiento en PC (Chrome, ventana de 800 px): ver la nota del 11/11 en CLAUDE.md. **Quedan de la etapa 7
+  (con Iván):** la prueba en el Quest (pantallas, alcance, ojo) y publicar. Los scripts viejos de `herramientas/` (`mdl2glb.py`,
+  `instrumentos.py`, `relojes.py`, `pedales_blender.py`, `butaca_blender.py`, `techo_blender.py`…) necesitan `cabina.glb`: sacarlo de git si
+  hiciera falta volver a correrlos.
 
 ## 6. Verificación (en cada etapa)
 **Automática, antes de mirar:**

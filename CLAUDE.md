@@ -4,9 +4,10 @@ Cabina del Air Tractor AT-802 en WebXR (Three.js r180, sin bundler) para AURAV, 
 aeronáutica de Iván. Uso interno de prueba (AAXOD). Se abre en el Quest desde GitHub Pages:
 https://ivan-i-aguilar.github.io/aurav-cabina-at802/
 
-**Ahora mismo (2/11): se rehace la cabina de cero en Blender, según `PLAN_CABINA_NUEVA.md`.** Leerlo
-antes de tocar cualquier cosa de la cabina. La historia de los parches de la cabina FSX y del exterior
-(16/10 al 2/11) está en `TRASPASO.md`.
+**Ahora mismo (11/11): la cabina nueva de Blender está COMPLETA (etapas 0 a 6 de `PLAN_CABINA_NUEVA.md`) y es la
+ÚNICA cabina del juego: la FSX (`cabina.glb`) y todos sus parches se sacaron el 11/11 (etapa 7).** Falta el ok de Iván a las
+vistas, su prueba en el Quest y publicar (sólo cuando él lo pida). La historia de los parches de la cabina FSX y del exterior
+(16/10 al 2/11) está en `TRASPASO.md`; los GLB retirados quedaron en git (hasta f051b6f) y en `Documents/aurav-cabina/retirados_11_11/`.
 
 ## Cómo trabajar con Iván
 - Castellano rioplatense, «vos». Respuestas **breves**. Una cosa por vez.
@@ -33,8 +34,16 @@ git push origin main
 **Versión de la página:** `version.txt` y `VERSION_PAGINA` en index.html tienen que coincidir con el `?v=` de main.js; si el navegador guardó un index viejo, se recarga solo. **Siempre subir la versión** de los imports (`?v=AAAAMMDDx`) en `index.html` (main.js) y en `main.js` para cada módulo o
 GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no cambió», casi siempre es caché.
 
-## Estado (7/11)
-- **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván).
+## Estado (11/11)
+- **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván): TODAVÍA la cabina FSX.
+- **Local, SIN publicar: toda la cabina nueva, v=20261111d** (commits del 3/11 al 11/11; el último, la etapa 7: limpieza). Se prueba
+  en `http://localhost:8765/` a secas (ya no hace falta `?cabina=nueva`). En el Quest no se probó NADA de la cabina nueva.
+- Pendiente de Iván: el ok a las vistas de las etapas 3 a 6 (capturas mandadas el 11/11), confirmar con Bruno que el paso de
+  FUEGO sea «manija FUEL a OFF», el Quest (legibilidad de pantallas, alcance, ojo) y publicar.
+- **Rendimiento (11/11, Chrome en PC, ventana de 800 px, escena entera con el aeródromo):** 296 llamadas de dibujo, 191 k triángulos,
+  43 texturas, 144 fps. La cabina nueva pone unos 15 k triángulos y ~70 llamadas (los controles son mallas sueltas). En el Quest, a medir.
+- Historia por etapas (lo de abajo es el detalle de cada una):
+- **(viejo) Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván).
 - **Local, SIN publicar:** los arreglos del 31/10 al 2/11 sobre la cabina FSX (v=20261102j, superados:
   no seguir parchando la cabina FSX) y la **etapa 0 de la cabina nueva, HECHA el 3/11 (v=20261103a)**:
   `herramientas/cab_comun.py` (casco medido, chequeador), `cab_calcar.py` / `cab_superponer.py` /
@@ -166,11 +175,11 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | Archivo | Qué es |
 |---|---|
 | `index.html` | UI de PC: barra, tutor, lista de tareas, panel de botones, HUD de prueba. |
-| `main.js` | Arma la escena: `avion` (cuerpo que vuela, +x adelante) → `cabina` (GLB girado −90°, tren en el piso) + `jugador` (cámara / manos). Mapea controles→vuelo (`aplicarControles`, tabla `SW`), bastón de mando, manija E-DUMP `levEDUMP`, radios, humo/luz de fuego, UI, recentrado VR, bucle con física a 120 Hz. Hoy también sostiene la cabina FSX con sus parches de carga (recorte general, mamparos, faldones), que la cabina nueva elimina. |
+| `main.js` | Arma la escena: `avion` (cuerpo que vuela, +x adelante) → `cabina` (marco glTF girado −90°, tren en el piso) + `jugador` (cámara / manos). Llama a `cargarCabinaNueva`, mapea controles→vuelo (`aplicarControles`, tabla `SW`), bastón (grupo `palanca` desde PIVOTE con las mallas `palanca_*` del GLB), humo, UI, recentrado VR, ronda de prueba (`__ronda`, `__vista`, `__sonda`, `__desde`), bucle con física a 120 Hz. Desde el 11/11 ya no tiene nada de la cabina FSX (de 1136 líneas a 500). |
 | `vuelo.js` | Modelo de vuelo + motor PT6 simplificados. Eventos: despegue, contacto, accidente, largado, tolva-vacia, vne, fuego-extinguido, fuego-incontrolado. `suelo(x,z)` = terreno. |
 | `mision.js` | Fases: arranque → despegue → crucero → falla de motor → crucero → fuego → despegue con tolva llena → falla a 150 ft. Puntaje y observaciones. `menu()`, `empezar(desde)`. |
 | `controles.js` | Switches (`sw*`) y palancas (`lev*`) del GLB con pivote; VR (gatillo/grip cerca, o pinchar) y clic en PC. |
-| `instrumentos.js` + `instrumentos.json` | Agujas 3D, horizonte y (25/10) carátulas dibujadas en vivo (`CARAS`) + biseles: el tablero nuevo no trae caras pintadas. Escalas iguales a `herramientas/relojes.py`. |
+| `instrumentos.js` | Agujas 3D y carátulas dibujadas en vivo (`CARAS`) + biseles para el anemómetro y el altímetro (los centros vienen en `userData.tablero` de la chapa del tablero; `instrumentos.json` se retiró el 11/11). Escalas iguales a `herramientas/relojes.py`. |
 | `radios.js` | Consola de radios derecha: `crearRadios()` el pedestal 3D con canvas de la cabina vieja; `crearRadiosEn(datos, cabina)` (etapa 5) los equipos sobre la cara del bloque de `blender/cab_radios.glb` más la llave MASTER AVIONICS `swAVNC`. |
 | `audio.js` | Turbina/hélice sintetizadas, campana de fuego, bocina de pérdida. Voz: audios pregrabados `voz/<clave>.wav` (el Quest no tiene speechSynthesis); si falta la frase, voz del navegador. |
 | `voz/` + `herramientas/voces.py` + `voces.ps1` | Frases del tutor → WAV con la voz Sabina de Windows. **Cada vez que cambie un texto de mision.js/main.js:** `python -I herramientas/voces.py` y `powershell -ExecutionPolicy Bypass -File herramientas/voces.ps1` (sólo genera las nuevas). Pronunciaciones en `PRONUNCIA`. |
@@ -178,7 +187,6 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | (celular) | **Modo cámara** (botón `#ar`, Android/Chrome con WebXR AR): el teléfono es una cámara dentro de la escena con 6 grados de libertad (caminás de verdad); botón `#entorno` alterna **pista virtual / lugar real** (en lugar real se oculta el entorno; renderer con `alpha`). **Escala** (`#escala`, `aplicarEscalaCamara`): el jugador se agranda k veces (1:5 por defecto; 1:10, 1:20, real). `cuidarSeguimiento`: compensa saltos de >12 cm por cuadro y avisa si el seguimiento se pierde (`emulatedPosition`) → el avión se ve como maqueta a altura de mesa y tus pasos rinden k veces; al subir a la cabina vuelve a 1. Pensado para usarlo dentro de una casa. Tocar la pantalla = gatillo (subir, switches). **Giroscopio** (botón `#giro`, cualquier celular incl. iPhone): mirar moviendo el teléfono; para desplazarse, joystick a la **derecha**. No probado en celular real. |
 | `panelvr.js` | Panel de botones para VR (igual que en aurav-senales). |
 | `escenario.js`, `tex/`, `autobomba.glb` | Aeródromo de AURAV copiado de aurav-sector, con valle plano a lo largo de la pista (`dRect`) y `alturaTerreno`. |
-| `cabina.glb` | Interior del Fire Boss de FSX convertido (7 MB). **Se reemplaza por la cabina nueva** (`PLAN_CABINA_NUEVA.md`): no seguir parchándolo. Cómo se regeneraba y toda su historia: `TRASPASO.md`. |
 | `exterior.glb` | **AT-802 TERRESTRE real** (22-23/10, Lichi): sale del OBJ de Metasequoia en `Documents\aurav-cabina\fsx\rar_terrestre\Air Tractor AT-802\files\AT802-4.obj` (familia FSN, tren de ballesta, ruedas y hélice de 5 palas de fábrica). Se regenera con `herramientas/exterior_terrestre2.py`: aplica la matriz del importador (¡clave!), orienta (deriva a −y, envergadura ±9,03), alinea (ruedas al piso −2, cúpula centrada en la nuestra), blanquea el AMARILLO de sus texturas conservando remaches y deja TAL CUAL la pintura AZUL de fábrica (franjas convergentes y deriva; decisión de Iván 24/10: «respetar el modelo base, pintado azul, sin volverse loco»), borra el «493» de la deriva (relleno con el azul de alrededor) y el «RESTRICTED» (quedaba espejado), pinta por geometría SOLO las ruedas (goma negra, medidas del modelo) y en textura las palas Hartzell negras con banda roja (cajas PALA/PALA_BANDA en at_01), borra su interior; su cúpula queda entera pero SIN sus vidrios en la zona de cabina (los vidrios y la vista interior los pone la cabina). **Todo a doble cara y SIN recalcular normales**: las normales del OBJ vienen mezcladas y el recálculo global dio vuelta chapas (alas/cúpula desaparecían según el ángulo). Suma el estribo. El atlas del OBJ comparte texels: NO hornear librea por posición ahí. Versión `V_EXT` en main.js. (Después, 27/10: repintado liso total con la franja y la cola azules por geometría; ver TRASPASO.) |
 | `herramientas/` | `exterior_terrestre2.py` (regenera el exterior), scripts de Blender `*_blender.py`, `vista360.py` (vista plana desde una foto 360), `voces.py` / `voces.ps1`, `mapa_cabina.md` (notas del manual) y los de la cabina FSX vieja (`mdl2glb.py`, `relojes.py`, `instrumentos.py`). |
 | `herramientas/cab_*.py` | **Cabina nueva** (etapa 0, 3/11). `cab_comun.py`: lo común (marco cabina ↔ Blender, prismas por vértices, materiales, `Casco` = exterior.glb con BVH y rayos, `medir_casco` → `blender/casco_medido.json`, `Panorama` para calcar fotos 360, `control()` con propiedades → userData, `exportar()` con `export_extras`, `vista()` Eevee, `chequear()` = los 6 chequeos del plan; corrido directo mide el casco y prueba el chequeador). `cab_calcar.py` (pose de una 360 contra el FSN: `-- carpeta [--foto 54] [--afuera]`), `cab_superponer.py` (superposiciones y medidas en cm, Pillow), `cab_render_pose.py` (el FSN visto desde la pose), `cab_plano.py` (plano del casco). Poses y medidas en `blender/calcado/`; las imágenes con foto, FUERA del repo en `Documents/aurav-cabina/fotos/calcado_etapa0/`. |
@@ -193,14 +201,15 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `herramientas/cab_radios.py`, `blender/cab_radios.glb` | **Consola de radios compacta** (etapa 5, 11/11; Blender): caja sobre la pared derecha y bloque inclinado con la cara de los equipos (`userData.radios`); los equipos los dibuja `radios.js`. |
 | `herramientas/cab_consola.py`, `blender/cab_consola.glb` | **La pared izquierda** (etapa 4, 11/11; Blender): consola, panel de pared, cuadrante (3 palancas `lev…` de un solo material), FUEL, trims (dial, volante, llave), E-DUMP; placas con `userData.panel` para los rótulos. Importa `Marco`, `llave` y `aro` de `cab_llaves.py`. |
 | `herramientas/cab_llaves.py`, `blender/cab_llaves.glb` | **FRDS GEN III, MANUAL SALVO y paneles de llaves bajos** (etapa 3, 8–11/11; Blender): placas, llaves (`llave()`: tuerca + palanca `sw…` con pivote en la base), breakers, display, repisa baja; marco local `Marco(o, u, v, n)` para las placas inclinadas; cada placa escribe `userData.panel` (JSON con marco, títulos y piezas) para los rótulos del juego. Tabla `FILAS` = qué va en cada fila (tipo, nombre del control, rótulo, textos arriba/abajo). |
-| `blender/` | Piezas hechas en Blender por scripts (Lichi): `pedales.glb` (clip `pedales_timon`: 0 = timón izquierda, 1 s = derecha; sigue a la variable `pedal`; recorrido ±0,2 rad, confirmado por Iván 22/10), y `butaca.glb`, `marco_ventana.glb` y `techo.glb`, parches provisorios hasta la cabina nueva. |
+| `blender/` | Los GLB de la cabina nueva (`cab_*.glb`, uno por zona, con su `*_informe.json`) y las piezas de Lichi que siguen en uso: `pedales.glb` (clip `pedales_timon`: 0 = timón izquierda, 1 s = derecha; sigue a la variable `pedal`; recorrido ±0,2 rad, confirmado por Iván 22/10) y `butaca.glb` (recoloreada en el juego a malla roja y arnés negro hasta tener el asiento de malla). `marco_ventana.glb` y `techo.glb` (parches de la FSX) se retiraron el 11/11. |
 | `servidor.py` | Servidor local sin caché (puerto 8765). |
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
 | `PLAN_CABINA_NUEVA.md` | Plan de la cabina nueva de cero (2/11): etapas, piezas por zona, técnica, verificación. Marcar cada etapa HECHA con fecha y versión. |
 | `PLAN_CUPULA.md` | Plan detallado de la etapa 1b (3/11): la cúpula nueva (jaula, 3 paños de parabrisas, techo con ventanas, puertas, carenado), medidas desde la 360, corte del FSN, etapas 1b.0–1b.4 y verificación. |
 
 ## Probar sin casco
-- Servidor local: **`python servidor.py`** en la carpeta del repo y abrir `http://localhost:8765/`.
+- Servidor local: **`python servidor.py`** en la carpeta del repo y abrir `http://localhost:8765/` (desde el 11/11 carga la
+  cabina nueva sin parámetros; `?cabina=…` ya no hace nada).
   Manda `Cache-Control: no-store` en todo: cada F5 trae la última versión DE VERDAD. (Con
   `python -m http.server` pelado el navegador cacheaba index/main/GLB y se veían versiones viejas:
   así se perdió una hora el 1/11 con Iván viendo «vigas» de una build ya corregida.)
@@ -230,7 +239,17 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
   mejor mostrar el panel (`show_pane preview`) antes de la ronda.
 - La barra del juego muestra la versión (vAAAAMMDDx): preguntarle a Iván cuál ve antes de diagnosticar.
 
-## Controles y simulación (lo vigente, hasta re-cablear la cabina nueva)
+## Controles y simulación (re-cableado el 8–11/11 con los nombres de la cabina nueva)
+- **Tabla `SW` vigente (main.js):** BATT `swBATT` (MASTER, fila ENGINE OPERATION), GEN `swGEN`, IGNTR `swIGN` (3 posiciones: ON · OFF ·
+  CONTINUOUS; los extremos encienden), START `swSTART` (vuelve solo al encender), FPUMP `swFPUMP` (tablero, 3 posiciones), AVNC `swAVNC`
+  (MASTER AVIONICS del PAC24, radios), PITOT `swPITOT`, WIPER `swWIPER`, LDG `swLDG_L`, DOME `swWORK`, BCN `swPULSE`, NAV y STRB
+  `swSTRBNAV`, HOPR `swFRDS` (FRDS POWER), FRDS `swARMED`. ALTN, HYD y SPARE no existen en el 802 (quedan en la tabla apuntando a nada).
+  **FIRE = `swFUEL`** (manija FUEL: `pos` OFF · MAIN, estado 0 = OFF corta el combustible y hace de «FIRE» para la misión, `Mision.fuegoConFuel`;
+  a confirmar con Bruno). Palancas `levPOT / levHEL / levCOND` (cuadrante) y `levEDUMP` (adelante = larga todo). Trims: `swK_TRIMTIMON`
+  (dial, 7 posiciones), `swK_TRIMPROF` (volante, 11), `swTRIMALERON` (3, vuelve sola): suman al mando (`vuelo.mando.trim*`). FRDS:
+  `swFRDS_GATE / MODE / FOAM / GAL / COV` y `swSALVO` (momentáneas, las maneja `cabina_nueva.js`). `swFLAPS` (panel bajo derecho) cicla
+  0°/10°/20°. Las demás llaves de los paneles bajos se mueven pero no hacen nada (luces).
+- (Lo de abajo es de la cabina FSX; vale sólo como historia del cableado.)
 - **Manual** (26/10): `Desktop/AURAV/AT-802-802A_Pilot_Training_Course.pdf` (77 págs., NO subirlo al
   repo). Notas en `herramientas/mapa_cabina.md`.
 - **Tabla `SW` en main.js** (nombre lógico → malla): BATT `sw62`, ALTN `sw64`, GEN `sw56`, IGNTR `sw53`
@@ -291,8 +310,11 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 - **Verificar el MISMO lado que la captura de Iván** y mandarle las vistas.
 
 ## Pendientes (en orden)
-1. La cabina nueva (`PLAN_CABINA_NUEVA.md`).
-2. Probar en el Quest: altura del ojo, agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
+1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
+   legibles, alcance de llaves y palancas, altura del ojo) y publicar cuando lo pida (subir `version.txt`, `VERSION_PAGINA` y los `?v=`).
+2. Versión definitiva de la etapa 6: asiento de malla roja de verdad (`butaca_blender.py` nuevo), placa AIR TRACTOR de los pedales,
+   conducto de aire. Y lo anotado como «queda» en cada etapa del plan (fotos de cerca para rótulos, traba de cola, freno de estacionamiento).
+3. Probar en el Quest: altura del ojo, agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
 3. Voz guía más completa, sonido ambiente y radio con torre (pedido 18/10).
 4. Certificado final estilo AAXOD como en los otros juegos (`constancia.js` de aurav-senales).
 
@@ -300,7 +322,8 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 - `git push` NUNCA en segundo plano: el gestor de credenciales de Windows necesita la terminal (falla con exit 128 «could not read Username»). Siempre en primer plano.
 - `node --check` no detecta todos los errores de sintaxis de estos módulos: probar también `new Function(src sin imports)` o cargar la página.
 - Nunca meter un comentario `//` en medio de una línea al hacer reemplazos de texto: ya se tragó código tres veces. Usar `/* */`.
-- `controles.armar` asume mallas con transform identidad (posición horneada en la geometría); para agregar un control nuevo, trasladar la geometría (`geometry.translate`) y nombrarlo `sw…` o `lev…` antes de `armar`.
+- `controles.armar` asume mallas con transform identidad (posición horneada en la geometría); para agregar un control nuevo, trasladar la geometría (`geometry.translate`) y nombrarlo `sw…` o `lev…` antes de `armar`. **Un control = UNA malla con UN material:** con dos materiales el exportador glTF parte la malla en `nombre_1` / `nombre_2` y `armar` ve dos controles (11/11, palancas del cuadrante). Al hornear geometría desde JS (la llave `swAVNC`) usar `grupo.matrix`, no `matrixWorld` (ésa mete el giro del GLB y la posición del avión).
+- En los scripts de Blender, calcular los grupos a unir ANTES del primer `bpy.ops.object.join()`: los objetos unidos se borran y la lista `PIEZAS` queda con referencias muertas (`StructRNA … has been removed`).
 - El cielo es una esfera de 1500 m que sigue al avión; el terreno plano llega a ±1200 m y el pasto a ±1600 m. Las sierras empiezan a 300–650 m del aeródromo salvo el valle de la pista.
 - Python: Pillow y numpy están instalados con `--user`; con `python -I` no aparecen: usar `python -E -P`.
 - El conector de Google Drive no baja archivos de más de 10 MB: buscar primero la copia local.
