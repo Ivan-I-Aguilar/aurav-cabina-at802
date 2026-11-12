@@ -487,6 +487,25 @@ FUEL a OFF», a confirmar con Bruno) y los nombres que no coincidan con los rót
 - Borra `crearConsolas`, `MANIJAS`, `recortarManija` y la manija E-DUMP inventada.
 - Riesgo: el alcance en VR (la pared queda más abajo que el pedestal de hoy). Se mide la distancia
   desde el hombro y se prueba en el Quest.
+- **HECHA el 11/11/2026 (v=20261111a, sin publicar; tanda autónoma aprobada por Iván, falta su ok a las vistas):**
+  `herramientas/cab_consola.py` → `blender/cab_consola.glb` (936 triángulos, 18 llamadas, 8 controles, 0,05 MB). Consola negra
+  del piso al tope (y 0,68) desde la chapa hasta x −0,40, de z 1,00 a 1,80; panel negro en la pared hasta el antepecho con la
+  manija FUEL (`swFUEL`, pos OFF · MAIN sobre x, estado 0 = OFF; en y 0,76 · z 1,42) y la perilla naranja TURN TO LO… (decorativa);
+  cuadrante con ranura en el tope y tres palancas sobre un eje común en (y 0,52, z 1,45): CONDITION roja (x −0,425), PROP azul
+  (−0,465) y POWER plateada con manija (−0,505), `levCOND / levHEL / levPOT` con el pivote en la base (una sola malla y un solo
+  material cada una: con dos materiales el GLB las partía en levX_1 / levX_2 y controles.js veía dos palancas); dial RUDDER TRIM
+  (`swK_TRIMTIMON`, 7 posiciones sobre y) sobre el tope en z 1,62 con su placa de rótulos; volante del trim de profundidad
+  (`swK_TRIMPROF`, 11 posiciones sobre x) medio hundido en z 1,26; llave AILERON TRIM (`swTRIMALERON`, 3 posiciones, vuelve sola);
+  manija E-DUMP naranja (`levEDUMP`) en el piso junto a la rodilla izquierda (x −0,33, z 1,30). Medido en la 360 con la pose (largo
+  y altura del tope, orden de las piezas); el ANCHO de la consola y la x de las perillas quedan atados a la altura supuesta (una
+  cámara): se tomó x −0,40 para el borde interior, como la consola ancha del amarillo. **Simulación:** trims de profundidad, alerón
+  y timón sumados al mando (`vuelo.mando.trimProf / trimAler / trimTimon`, ±0,2 / ±0,3 / ±0,15). **Paso de FUEGO en la cabina
+  nueva:** no hay switch FIRE; la manija FUEL a OFF corta el combustible y vale como «FIRE» para la misión (`Mision.fuegoConFuel`,
+  texto «Corte de combustible: manija FUEL a OFF», voz regenerada): **a confirmar con Bruno**. Probado el 11/11 en el navegador: puesta
+  en marcha completa con las palancas reales y la emergencia de fuego completa (ralentí, corte, FUEL OFF, E-DUMP, bandera → forzoso).
+  Queda: la llave DOWN FLAPS / OFF de la consola (en la 360 no se distingue; la de FLAPS del panel bajo ya anda), la traba de la
+  rueda de cola y el freno de estacionamiento (no se ven en las fotos), y borrar `crearConsolas` y la E-DUMP inventada cuando se
+  retire la cabina vieja.
 
 ### Etapa 5 — Rack de radios (1 sesión)
 - Crea la zona E. Las caras se dibujan como hoy en `radios.js`, pero sobre el rack real.

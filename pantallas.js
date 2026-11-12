@@ -196,6 +196,7 @@ export class Rotulos {
       for (const it of d.items) {
         if (it.tipo === 'display') { texto('MARK', it.s - 0.024, it.t - 0.034, 0.0032 * PX); texto('DISTRESS', it.s, it.t - 0.038, 0.0032 * PX); texto('MENU', it.s + 0.024, it.t - 0.034, 0.0032 * PX); texto('MSG', it.s - 0.024, it.t + 0.034, 0.0032 * PX); texto('HOME', it.s + 0.024, it.t + 0.034, 0.0032 * PX); continue; }
         const chica = 0.0036 * PX, media = 0.004 * PX;
+        if (it.tipo === 'texto') { texto(it.rotulo, it.s, it.t, it.tam ? it.tam * PX : media); continue; }   /* un texto suelto (FUEL, MAIN/OFF, NOSE LEFT…) */
         if (it.tipo === 'cb') { texto(it.arriba, it.s, it.t - 0.011, chica); texto(it.rotulo, it.s, it.t + 0.0125, chica, false); }
         else { texto(it.arriba, it.s, it.t - 0.011, media); const abajo = it.tipo === 'sw3' ? [it.rotulo, it.abajo] : [it.abajo, it.rotulo]; texto(abajo[0], it.s, it.t + 0.0115, media); texto(abajo[1], it.s, it.t + 0.0115 + 0.0042 * (1 + (String(abajo[0] || '').split('\n').length - 1) / 2 + (String(abajo[1] || '').split('\n').length - 1) / 2), chica, false); }
       }

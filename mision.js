@@ -12,14 +12,15 @@ const deg = THREE.MathUtils.radToDeg;
 
 export class Mision {
   // ui: { tutor(titulo, texto), cartel(texto), tareas([{texto, ok}]), panel(datos, cb), ocultarPanel(), decir(texto) }
-  constructor({ vuelo, controles, SW, ui, obtener, reiniciarAvion }) {
+  constructor({ vuelo, controles, SW, ui, obtener, reiniciarAvion, fuegoConFuel = false }) {
+    this.fuegoConFuel = fuegoConFuel;   /* cabina nueva (etapa 4): no hay switch FIRE, el corte es la manija FUEL a OFF (estado 0); a confirmar con Bruno */
     Object.assign(this, { vuelo, controles, SW, ui, obtener, reiniciarAvion });
     this.fase = 'intro'; this.t = 0; this.pasos = []; this.i = 0; this.notas = {}; this.resultados = [];
     this.secuencia = ['arranque', 'despegue', 'falla', 'fuego', 'fallaDespegue'];
     this.falladas = 0;
   }
   // ------------- utilidades -------------
-  sw(n) { return !!this.controles.estado(this.SW[n]); }
+  sw(n) { if (n === 'FIRE' && this.fuegoConFuel) return this.controles.estado(this.SW.FIRE) === 0; return !!this.controles.estado(this.SW[n]); }
   lev(n) { const p = this.controles.palancas.find(x => x.nombre === n); return p ? THREE.MathUtils.clamp(-p.ang / 0.9, 0, 1) : 0; }
   get alt() { return this.vuelo.pos.y * 3.28084 - (this.obtener.terreno(this.vuelo.pos.x, this.vuelo.pos.z) * 3.28084); }
   get ias() { return this.vuelo.vIAS; }
@@ -170,7 +171,7 @@ export class Mision {
     this.definir('fuego', [
       { id: 'pot', texto: '¡FUEGO DE MOTOR! Potencia a RALENTÍ', listo: () => this.lev('levPOT') < 0.15, tiempo: 6, penal: 15, voz: 'Fuego de motor. Potencia a ralentí.' },
       { id: 'cond', texto: 'Condición a CORTE', listo: () => this.lev('levCOND') < 0.1, tiempo: 8, penal: 20 },
-      { id: 'fire', texto: 'Corte de combustible y extintor: switch FIRE', listo: () => this.sw('FIRE'), tiempo: 10, penal: 20 },
+      { id: 'fire', texto: this.fuegoConFuel ? 'Corte de combustible: manija FUEL a OFF' : 'Corte de combustible y extintor: switch FIRE', listo: () => this.sw('FIRE'), tiempo: 10, penal: 20 },
       { id: 'dump', texto: 'Largá la carga', listo: () => v.agua < 100 || v.largando, tiempo: 10, penal: 10 },
       { id: 'bandera', texto: 'Hélice a BANDERA', listo: () => this.lev('levHEL') < 0.15, tiempo: 10, penal: 10 },
     ], 'Emergencia: fuego de motor');
@@ -224,6 +225,6 @@ export class Mision {
     if (tipo === 'contacto' || tipo === 'accidente') { if (this.alContacto && (tipo === 'accidente' || this.vuelo.enTierra || true)) { const f = this.alContacto; this.alContacto = null; f(d); } else if (tipo === 'accidente' && this.fase !== 'pausa' && this.fase !== 'intro') { this.cerrarFase(this.titulo || 'Vuelo', false, 'Accidente. Repasemos qué pasó.'); } }
     if (tipo === 'vne') { this.puntos -= 10; this.detalle.push('superó la Vne'); }
     if (tipo === 'fuego-extinguido') this.decir(this.titulo, 'Fuego extinguido. Ahora, a aterrizar.');
-    if (tipo === 'fuego-incontrolado' && this.fase !== 'pausa') { this.vuelo.estrellado = true; this.cerrarFase('Fuego de motor', false, 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FIRE.'); }
+    if (tipo === 'fuego-incontrolado' && this.fase !== 'pausa') { this.vuelo.estrellado = true; this.cerrarFase('Fuego de motor', false, this.fuegoConFuel ? 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FUEL a OFF.' : 'El fuego no se controló a tiempo. Repasá: ralentí, condición a corte, FIRE.'); }
   }
 }

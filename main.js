@@ -14,7 +14,7 @@ import { Mision } from './mision.js?v=20261022b';
 import { Audio } from './audio.js?v=20261018b';
 import { crearAPie } from './apie.js?v=20261024a';
 import { crearPanelVR } from './panelvr.js?v=20261017a';
-import { cargarCabinaNueva } from './cabina_nueva.js?v=20261108c';
+import { cargarCabinaNueva } from './cabina_nueva.js?v=20261111a';
 
 /* INTERRUPTOR (etapa 0 de la cabina nueva, 3/11): ?cabina=nueva carga la cabina de cero (cabina_nueva.js);
    ?cabina=vieja o nada, la FSX con sus parches. Conviven hasta la etapa 7 para poder comparar. */
@@ -105,7 +105,7 @@ function recortarManija(raiz, piezas) {
   for (const x of geos) for (const k of Object.keys(x.attributes)) if (!comunes.includes(k)) x.deleteAttribute(k);
   return new THREE.Mesh(mergeGeometries(geos, true), mats);   /* un grupo por pieza, cada una con su material */
 }
-if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261108c', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
+if (MODO_CABINA === 'nueva') Promise.resolve().then(() => cargarCabinaNueva({ cabina, controles, V: '20261111a', V_EXT, OJO, Instrumentos }).then(r => {   /* en una microtarea: controles y mision se declaran más abajo */
   exterior = r.exterior; cabinaNueva = r; instrumentos = r.instrumentos; radios.visible = false; document.getElementById('cargando').remove(); mision.menu();   /* instrumentos: anemómetro y altímetro del tablero nuevo (etapa 2) */
   for (const n of SW3) controles.hacerTresPosiciones(n, 0);   /* la FUEL BOOST PUMP del tablero nuevo (swFPUMP) es de 3 posiciones, como en la vieja */
   if (r.tablero) {   /* 2b (8/11): la tablilla del tutor prendida al parante derecho del parabrisas (inclinada como el vidrio, 2 cm por dentro) y la placa MENÚ sobre el ala derecha del tablero, donde el 802 real lleva la matrícula; la luz ENG FIRE vieja queda dentro de la chapa: la reemplaza MASTER WARN */
@@ -731,9 +731,9 @@ const controles = new Controles(cabina); window.__controles = controles;
    no existe apunta a una malla que no está (controles.estado da null y aplicarControles no lo pisa): FIRE → la manija FUEL (etapa 4), HYD y SPARE no
    están en el 802 real; AVNC (MASTER AVIONICS, en el rack, etapa 5) va PROVISORIAMENTE con el MASTER para que la misión y las pantallas anden */
 const SW = MODO_CABINA === 'nueva'
-  ? { BATT: 'swBATT', ALTN: 'swALTN', GEN: 'swGEN', IGNTR: 'swIGN', START: 'swSTART', FIRE: 'swFIRE', FPUMP: 'swFPUMP', HYD: 'swHYD', AVNC: 'swBATT', PITOT: 'swPITOT', HOPR: 'swFRDS', FRDS: 'swARMED', WIPER: 'swWIPER', LDG: 'swLDG_L', DOME: 'swWORK', BCN: 'swPULSE', NAV: 'swSTRBNAV', STRB: 'swSTRBNAV', SPARE: 'swSPARE' }
+  ? { BATT: 'swBATT', ALTN: 'swALTN', GEN: 'swGEN', IGNTR: 'swIGN', START: 'swSTART', FIRE: 'swFUEL', FPUMP: 'swFPUMP', HYD: 'swHYD', AVNC: 'swBATT', PITOT: 'swPITOT', HOPR: 'swFRDS', FRDS: 'swARMED', WIPER: 'swWIPER', LDG: 'swLDG_L', DOME: 'swWORK', BCN: 'swPULSE', NAV: 'swSTRBNAV', STRB: 'swSTRBNAV', SPARE: 'swSPARE' }
   : { BATT: 'sw62', ALTN: 'sw64', GEN: 'sw56', IGNTR: 'sw53', START: 'sw47', FIRE: 'sw60', FPUMP: 'swFPUMP', HYD: 'sw54', AVNC: 'sw63', PITOT: 'sw50', HOPR: 'swHOPR', FRDS: 'swFRDS', WIPER: 'swWIPER', LDG: 'sw52', DOME: 'sw49', BCN: 'sw61', NAV: 'sw51', STRB: 'sw48', SPARE: 'sw38' };
-const SW3 = MODO_CABINA === 'nueva' ? ['swFPUMP', 'swIGN', 'swFRDS_GAL', 'swFRDS_COV'] : ['swFPUMP', 'swFRDS_D', 'sw53'];   /* 3 posiciones: IGNITION ON · OFF · CONTINUOUS (los extremos encienden); GALLONS y COVERAGE + · 0 · − (vuelven solas) · FSX: swFRDS_D AUTO/MAN/OFF, sw53 IGNTR */
+const SW3 = MODO_CABINA === 'nueva' ? ['swFPUMP', 'swIGN', 'swFRDS_GAL', 'swFRDS_COV', 'swTRIMALERON'] : ['swFPUMP', 'swFRDS_D', 'sw53'];   /* 3 posiciones: IGNITION ON · OFF · CONTINUOUS (los extremos encienden); GALLONS y COVERAGE + · 0 · − (vuelven solas) · FSX: swFRDS_D AUTO/MAN/OFF, sw53 IGNTR */
 const levAng = n => { const p = controles.palancas.find(x => x.nombre === n); return p ? p.ang : 0; };
 const adelante = n => THREE.MathUtils.clamp(-levAng(n) / 0.9, 0, 1);   // palancas: adelante = ángulo negativo
 const hayLev = n => controles.palancas.some(x => x.nombre === n);
@@ -743,16 +743,16 @@ function aplicarControles() {
   const est = (n, actual) => { const v = controles.estado(n); return v === null ? !!actual : !!v; };
   m.bateria = est(SW.BATT, m.bateria); m.generador = controles.estado(SW.GEN) === null && controles.estado(SW.ALTN) === null ? !!m.generador : !!(controles.estado(SW.GEN) || controles.estado(SW.ALTN));
   m.ignicion = est(SW.IGNTR, m.ignicion); m.arrancador = est(SW.START, m.arrancador) && m.bateria; m.bombaCombustible = est(SW.FPUMP, m.bombaCombustible);
-  m.extintor = est(SW.FIRE, m.extintor);
+  m.extintor = MODO_CABINA === 'nueva' ? controles.estado('swFUEL') === 0 : est(SW.FIRE, m.extintor);   /* cabina nueva (etapa 4): no hay switch FIRE; la manija FUEL a OFF corta el combustible y hace de «FIRE» (a confirmar con Bruno) */
   if (hayLev('levPOT')) { c.potencia = adelante('levPOT'); c.reversa = THREE.MathUtils.clamp((levAng('levPOT') - 0.17) / 0.25, 0, 1); }   /* palanca detrás del ralentí = beta/reversa */
   if (hayLev('levHEL')) c.helice = adelante('levHEL');
   if (hayLev('levCOND')) c.condicion = adelante('levCOND');
   if (controles.estado('swFUEL') === 0) c.condicion = 0;   /* válvula de combustible en OFF: sin combustible, el motor se corta (manual 26/10) */
   vuelo.colaLibre = !!controles.estado('swWRUD');   /* traba de cola: destrabada gira más cerrado en el piso */
   if (adelante('levEDUMP') > 0.85 && vuelo.agua > 0) vuelo.agua = 0;   /* manija E-DUMP adelante: salvo total (manual 26/10) */
-  c.cabeceo = mando.x / LIMITE; c.alabeo = -mando.z / LIMITE;
+  c.cabeceo = THREE.MathUtils.clamp(mando.x / LIMITE + (c.trimProf || 0), -1, 1); c.alabeo = THREE.MathUtils.clamp(-mando.z / LIMITE + (c.trimAler || 0), -1, 1);   /* + trims de la consola (etapa 4) */
 
-  c.pedal = pedal; c.frenos = frenos; c.flaps = flaps;
+  c.pedal = THREE.MathUtils.clamp(pedal + (c.trimTimon || 0), -1, 1); c.frenos = frenos; c.flaps = flaps;
   /* largado de emergencia: tecla E (la manija roja agregada se sacó; falta definir el control real con AAXOD) */
   // el arrancador vuelve solo cuando el motor enciende (en el avión es con resorte)
   if (m.encendido && controles.estado(SW.START)) { const s = controles.switches.find(x => x.nombre === SW.START); if (s) { s.estado = false; controles._aplicarSwitch(s); } }
@@ -1040,7 +1040,9 @@ function reiniciarAvion({ enPista = false, enVuelo = false, agua = 2400, apagado
   mando.x = mando.z = 0; flaps = 0;
   const pon = (n, ang) => { const p = controles.palancas.find(x => x.nombre === n); if (p) { p.ang = ang; p._aplicar?.(); p.grupo.rotation.x = ang; }
     else { const k = { levPOT: 'potencia', levHEL: 'helice', levCOND: 'condicion' }[n]; if (k) v.mando[k] = THREE.MathUtils.clamp(-ang / 0.9, 0, 1); } };   /* sin la palanca (cabina nueva hasta la etapa 4): el mando directo */
-  const sw = (n, est) => { const s = controles.switches.find(x => x.nombre === SW[n]); if (s && s.estado !== est) { s.estado = est; controles._aplicarSwitch(s); } };
+  const sw = (n, est) => { const s = controles.switches.find(x => x.nombre === SW[n]); if (!s) return;
+    if (s.pos) est = n === 'FIRE' ? (est ? 0 : 1) : (est ? 1 : 0);   /* llaves de posiciones (la manija FUEL: 0 = OFF, 1 = MAIN): índice, no booleano */
+    if (s.estado !== est) { s.estado = est; controles._aplicarSwitch(s); } };
   if (enVuelo) {
     v.pos.set(30, 305, -300); v.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); v.vel.set(0, 0, -67); v.enTierra = false; v.tiempoAire = 10;
     Object.assign(v.motor, { encendido: true, ng: 92, torque: 80, itt: 720, rpmHel: 1700, bateria: true, generador: true });
@@ -1059,7 +1061,7 @@ window.__aPie = aPie;
 let modoPrevio = 'cabina';
 ui.aPie = () => { mision.fase = 'libre'; reiniciarAvion({ enPista: true, agua: 2400, apagado: true }); mision.ui.tareas([]); aPie.bajar(false);
   mision.decir('Recorrido a pie', 'Caminá alrededor del avión. Para subir, acercate al estribo debajo del ala izquierda.'); };
-const mision = new Mision({ vuelo, controles, SW, ui, obtener: { terreno: (x, z) => ambiente.alturaTerreno(x, z) }, reiniciarAvion }); window.__mision = mision;
+const mision = new Mision({ vuelo, controles, SW, ui, obtener: { terreno: (x, z) => ambiente.alturaTerreno(x, z) }, reiniciarAvion, fuegoConFuel: MODO_CABINA === 'nueva' });   /* cabina nueva: el paso de FUEGO es la manija FUEL a OFF */ window.__mision = mision;
 $('menu').onclick = () => { audio.iniciar(); pausar(); };
 // ---- pausa / salir: siempre a mano (botón fijo en la cabina, B/Y, Esc o «Menú») ----
 let pausado = false;

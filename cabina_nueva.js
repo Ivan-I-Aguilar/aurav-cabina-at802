@@ -8,9 +8,9 @@
 // del antepecho.
 import * as THREE from './three.module.js';
 import { GLTFLoader } from './GLTFLoader.js';
-import { Pantallas, Rotulos } from './pantallas.js?v=20261108c';
+import { Pantallas, Rotulos } from './pantallas.js?v=20261111a';
 
-export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_consola', … */
+export const PIEZAS = ['cab_cupula', 'cab_cascaron', 'cab_tablero', 'cab_llaves', 'cab_consola'];   /* GLB por zona, en orden de carga; cada etapa agrega el suyo: 'cab_radios', 'cab_asiento' */
 const HOLGURA = 0.015, PISO = 0.26;
 const CUPULA = PIEZAS.includes('cab_cupula'), CINTURON = 0.93;   /* con la cúpula nueva, el FSN va cortado en el antepecho (y 0,93) */
 const vidrios = raiz => raiz.traverse(o => { if (o.isMesh) { o.frustumCulled = true; if (o.material?.transparent) { o.renderOrder = 2; o.material.depthWrite = false; } } });
@@ -49,8 +49,12 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
   /* FRDS GEN III y SALVO (etapa 3): llaves momentáneas que vuelven solas, galones a largar y nivel de cobertura, compuerta que larga (en AUTO
      el caudal sigue al nivel de cobertura: de 11 s el 1 a 4 s el 8) y corta al llegar a los galones pedidos; el SALVO vacía la tolva de una */
   const frds = { galones: 800, cobertura: 3, gate: false, objetivo: null, t: {} };
-  const MOMENTANEOS = { swSALVO: 0.4, swFRDS_GATE: 0.6, swFRDS_FOAM: 0.6, swFRDS_GAL: 0.35, swFRDS_COV: 0.35 };
+  const MOMENTANEOS = { swSALVO: 0.4, swFRDS_GATE: 0.6, swFRDS_FOAM: 0.6, swFRDS_GAL: 0.35, swFRDS_COV: 0.35, swTRIMALERON: 0.35 };
+  /* trims (etapa 4): el volante de profundidad y el dial de timón son posiciones (índice → desplazamiento); el de alerón es una llave
+     momentánea que suma un paso por toque. Van a vuelo.mando.trimProf / trimAler / trimTimon y aplicarControles (main.js) los suma al mando */
+  const trims = { aler: 0 };
   const accionFRDS = (nombre, estado, vuelo) => {
+    if (nombre === 'swTRIMALERON') trims.aler = Math.max(-0.3, Math.min(0.3, trims.aler + (estado > 0 ? -0.05 : 0.05)));   /* arriba = ala izquierda abajo = alabeo negativo */
     if (nombre === 'swSALVO' && vuelo.agua > 0) { vuelo.largarCarga(true); frds.objetivo = null; vuelo.evento('largado'); }
     if (nombre === 'swFRDS_GAL') frds.galones = Math.max(50, Math.min(800, frds.galones + 50 * (estado > 0 ? 1 : -1)));
     if (nombre === 'swFRDS_COV') frds.cobertura = Math.max(1, Math.min(8, frds.cobertura + (estado > 0 ? 1 : -1)));
@@ -66,6 +70,8 @@ export async function cargarCabinaNueva({ cabina, controles, V, V_EXT, OJO, Inst
       else frds.t[n] = 0;
     }
     frds.gate = vuelo.largando != null && vuelo.agua > 0;
+    if (controles) { const ip = controles.estado('swK_TRIMPROF'), it = controles.estado('swK_TRIMTIMON');
+      vuelo.mando.trimProf = ip == null ? 0 : (ip - 5) * 0.04; vuelo.mando.trimTimon = it == null ? 0 : (it - 3) * 0.05; vuelo.mando.trimAler = trims.aler; }
     if (frds.objetivo != null && (vuelo.agua <= frds.objetivo || vuelo.largando == null)) { if (vuelo.agua <= frds.objetivo) vuelo.largando = null; frds.objetivo = null; }
     if (!pantallas) return;
     const m = vuelo.motor, sw = n => (controles && SW && SW[n]) ? controles.estado(SW[n]) : undefined;
