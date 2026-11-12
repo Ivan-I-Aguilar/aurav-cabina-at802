@@ -6,7 +6,8 @@ alumno sienta en VR el potencial de la práctica. Decidido: **tres juegos distin
 cada uno como actividad independiente del aula virtual de AURAV (dominio propio, ni Moodle ni Classroom): se juega, termina y
 entrega su resultado. El cruce de datos con el aula se hace cuando exista; el juego ya deja el resultado listo para eso.
 
-Estado: **aprobado por Iván el 11/11** («Aprobado, arrancá»). **J0 y J1 HECHAS el 12/11 (v=20261112a, sin publicar)**: ver §7.
+Estado: **aprobado por Iván el 11/11** («Aprobado, arrancá»). **J0 a J3 y el código de la J4 HECHOS el 12/11 y PUBLICADOS ese
+día (v=20261112d, con el ok de Iván: «Sí, publicá»); falta su prueba en el Quest**: ver §7.
 
 ## 1. Los tres niveles
 
@@ -138,8 +139,8 @@ Progresión: el nivel 2 se habilita con el 1 aprobado y el 3 con el 2; el instru
   hacia abajo); el paso «Flaps arriba» de un avión liviano y los pasos de navegación salían «fuera de orden».
   Queda: todo en el Quest (J4), que el humo del capot/la campana se vean y oigan bien en VR, las preguntas de §5.3 (qué emergencias quieren
   AAXOD y si las señales previas van), y el piloto de prueba larga alto cuando el foco está entre lomas (sigue el terreno de adelante).
-- **J4, la parte de código (12/11/2026, v=20261112d, commit local): los tres niveles jugables de punta a punta DENTRO del casco.** Falta lo
-  que depende de Iván: su prueba en el Quest y publicar (sólo cuando lo pida).
+- **J4, la parte de código (12/11/2026, v=20261112d): los tres niveles jugables de punta a punta DENTRO del casco. PUBLICADA el 12/11 con
+  el ok de Iván («Sí, publicá»), junto con toda la cabina nueva.** Falta lo que depende de Iván: su prueba en el Quest.
   - **Empezar en VR:** la pantalla de inicio suma el botón «Empezar en VR» (sólo si el navegador tiene VR): un toque entra al casco y el
     nivel arranca 1,5 s después, ya sentado y recentrado. Antes, con la pantalla de inicio abierta, el «Entrar en VR» de la barra quedaba
     tapado: había que empezar en 2D (con el reloj corriendo) y después entrar. `entrarVR()` en `main.js`.
@@ -165,6 +166,9 @@ Progresión: el nivel 2 se habilita con el 1 aprobado y el 3 con el 2; el instru
   - Probado en PC: tablilla en sus tres vistas, pausa y «Empezar de nuevo», nivel 2 entero con el piloto de prueba (APROBADO), mundo
     detenido en el debrief, voz del resultado, «Repetir»; el panel de VR del debrief se ve en PC con `__debriefVR()`. **Nada de esto se
     pudo probar en el casco** (acá no hay VR): entrar con «Empezar en VR», leer la tablilla, apuntar a los botones del panel con el rayo.
+  - **Publicación (12/11):** antes de subir se corrió `herramientas/prevuelo_pages.py` (nuevo): todo lo que el juego carga está en git
+    con las mismas mayúsculas (Pages distingue, el servidor local no) y cada frase tiene su WAV. Links para el Quest: la página con
+    `?nivel=1`, `?nivel=2` y `?nivel=3`; la barra tiene que decir v20261112d.
 
 ## 5. Qué hace falta saber (de Iván, AAXOD o el manual)
 

@@ -4,9 +4,10 @@ Cabina del Air Tractor AT-802 en WebXR (Three.js r180, sin bundler) para AURAV, 
 aeronáutica de Iván. Uso interno de prueba (AAXOD). Se abre en el Quest desde GitHub Pages:
 https://ivan-i-aguilar.github.io/aurav-cabina-at802/
 
-**Ahora mismo (11/11): la cabina nueva de Blender está COMPLETA (etapas 0 a 6 de `PLAN_CABINA_NUEVA.md`) y es la
-ÚNICA cabina del juego: la FSX (`cabina.glb`) y todos sus parches se sacaron el 11/11 (etapa 7).** Falta el ok de Iván a las
-vistas, su prueba en el Quest y publicar (sólo cuando él lo pida). La historia de los parches de la cabina FSX y del exterior
+**Ahora mismo (12/11): la cabina nueva de Blender está COMPLETA (etapas 0 a 6 de `PLAN_CABINA_NUEVA.md`) y es la
+ÚNICA cabina del juego: la FSX (`cabina.glb`) y todos sus parches se sacaron el 11/11 (etapa 7). PUBLICADA el 12/11 junto con los
+tres niveles del aula virtual (v=20261112d, con el ok de Iván).** Falta el ok de Iván a las vistas y su prueba en el Quest (de la
+cabina nueva y de los niveles no se probó NADA en el casco). La historia de los parches de la cabina FSX y del exterior
 (16/10 al 2/11) está en `TRASPASO.md`; los GLB retirados quedaron en git (hasta f051b6f) y en `Documents/aurav-cabina/retirados_11_11/`.
 
 ## Cómo trabajar con Iván
@@ -26,6 +27,9 @@ vistas, su prueba en el Quest y publicar (sólo cuando él lo pida). La historia
 ## Publicar
 **REGLA (26/10, pedido de Iván): NO publicar hasta que él lo pida expresamente** («vamos a subir cuando me parezca»): acumular commits locales y pushear sólo con su ok.
 El repo está en `C:\Users\ivani\Documents\aurav-cabina-at802` (Windows). Pages sirve `main` desde la raíz; tarda 1–2 min.
+**Antes de subir (12/11):** `python -E -P -X utf8 herramientas/prevuelo_pages.py`. Pages distingue mayúsculas y sólo sirve lo que está
+en git; el servidor local no: el script revisa que cada archivo que el juego nombra (módulos, GLB, texturas, el WAV de cada frase) esté
+en git con el mismo nombre. Y después de subir, abrir la página publicada y mirar que no haya errores ni 404 en la consola.
 ```
 git add -A
 git -c user.name="Ivan I. Aguilar" -c user.email="aguivanig@gmail.com" commit -m "..."
@@ -34,11 +38,13 @@ git push origin main
 **Versión de la página:** `version.txt` y `VERSION_PAGINA` en index.html tienen que coincidir con el `?v=` de main.js; si el navegador guardó un index viejo, se recarga solo. **Siempre subir la versión** de los imports (`?v=AAAAMMDDx`) en `index.html` (main.js) y en `main.js` para cada módulo o
 GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no cambió», casi siempre es caché.
 
-## Estado (11/11)
-- **Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván): TODAVÍA la cabina FSX.
-- **Local, SIN publicar: toda la cabina nueva, v=20261111d** (commits del 3/11 al 11/11; el último, la etapa 7: limpieza). Se prueba
+## Estado (12/11)
+- **Publicado el 12/11 (con el ok de Iván: «Sí, publicá»):** Pages sirve v=20261112d: la cabina nueva entera y los tres niveles
+  (J0–J4), todos los commits del 31/10 al 12/11 subidos de una vez. Lo publicado antes era v=20261028d (push 6433ea7 del 28/10),
+  todavía la cabina FSX. Links: la raíz (práctica con el tutor) y `?nivel=1`, `?nivel=2`, `?nivel=3`. **En el Quest no se probó NADA.**
+- **La cabina nueva, v=20261111d** (commits del 3/11 al 11/11; el último, la etapa 7: limpieza). En local se prueba
   en `http://localhost:8765/` a secas (ya no hace falta `?cabina=nueva`). En el Quest no se probó NADA de la cabina nueva.
-- **Local, SIN publicar: los niveles del aula virtual J0–J3 y el código de la J4 (12/11, v=20261112d, `PLAN_JUEGO.md` §7):** `?nivel=1`
+- **Los niveles del aula virtual J0–J3 y el código de la J4 (12/11, v=20261112d, `PLAN_JUEGO.md` §7):** `?nivel=1`
   (puesta en marcha con fallas al azar), `?nivel=2` (misión de incendio: orden por radio, foco con humo, descarga medida, vuelta y
   aterrizaje) y `?nivel=3` (la misma misión con una emergencia sorpresa: falla de motor en vuelo con o sin rearranque, fuego, falla en el
   despegue a 150 ft, generador, compuerta trabada; momento y señales previas por semilla) completos en PC. Probados con
@@ -46,12 +52,12 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 - **J4 (12/11), para jugarlos DENTRO del casco:** botón «Empezar en VR» en la pantalla de inicio del nivel, el checklist en la tablilla
   (que se mudó al ala derecha del tablero: en el parante del parabrisas el parante le tapaba un tercio del texto), debrief en un panel de
   VR (resultado, barras, Repetir · Otra situación · Salir de VR), pausa de nivel y pausa automática si se saca el casco. **En el Quest no
-  se probó NADA de esto ni de los niveles** (acá no hay VR): es lo primero que tiene que mirar Iván cuando publique.
+  se probó NADA de esto ni de los niveles** (acá no hay VR): es lo primero que tiene que mirar Iván ahora que está publicado.
 - Pendiente de Iván: el ok a las vistas de las etapas 3 a 6 (capturas mandadas el 11/11), confirmar con Bruno que el paso de
-  FUEGO sea «manija FUEL a OFF», el Quest (legibilidad de pantallas, alcance, ojo) y publicar.
+  FUEGO sea «manija FUEL a OFF» y el Quest (legibilidad de pantallas, alcance, ojo; los tres niveles entrando con «Empezar en VR»).
 - **Rendimiento (11/11, Chrome en PC, ventana de 800 px, escena entera con el aeródromo):** 296 llamadas de dibujo, 191 k triángulos,
   43 texturas, 144 fps. La cabina nueva pone unos 15 k triángulos y ~70 llamadas (los controles son mallas sueltas). En el Quest, a medir.
-- Historia por etapas (lo de abajo es el detalle de cada una):
+- Historia por etapas (lo de abajo es el detalle de cada una; donde dice «SIN publicar» era cierto ese día: TODO se publicó el 12/11):
 - **(viejo) Publicado:** Pages sirve v=20261028d (push 6433ea7 del 28/10, con el ok de Iván).
 - **Local, SIN publicar:** los arreglos del 31/10 al 2/11 sobre la cabina FSX (v=20261102j, superados:
   no seguir parchando la cabina FSX) y la **etapa 0 de la cabina nueva, HECHA el 3/11 (v=20261103a)**:
@@ -350,13 +356,14 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
 
 ## Pendientes (en orden)
 0. **El juego por niveles (`PLAN_JUEGO.md`):** de la J4 queda lo de Iván: probar los tres niveles en el Quest (entrar con «Empezar en VR»,
-   leer la tablilla del ala derecha, el debrief en el casco, la pausa) y publicar cuando lo pida; después J5 (POST al aula cuando exista). Y
+   leer la tablilla del ala derecha, el debrief en el casco, la pausa; publicado el 12/11) y lo que salga de esa prueba; después J5 (POST al aula cuando exista). Y
    las preguntas de §5 (límites de arranque, ventana de descarga y coberturas, emergencias que quieren, umbral, Bruno). J0–J3 y el código de
    la J4, hechos el 12/11.
 0b. **Pedido de Iván (11/11): el mismo AT-802 (exterior y cabina nueva) en los otros juegos de AURAV** (rampa/señaleros `aurav-senales`,
    apoyos terrestres «MOE», …) para que se vea siempre la misma aeronave: tarea aparte, después de los niveles.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
-   legibles, alcance de llaves y palancas, altura del ojo) y publicar cuando lo pida (subir `version.txt`, `VERSION_PAGINA` y los `?v=`).
+   legibles, alcance de llaves y palancas, altura del ojo). Publicada el 12/11; lo que siga se vuelve a subir sólo con su ok (y subiendo
+   `version.txt`, `VERSION_PAGINA` y los `?v=`).
 2. Versión definitiva de la etapa 6: asiento de malla roja de verdad (`butaca_blender.py` nuevo), placa AIR TRACTOR de los pedales,
    conducto de aire. Y lo anotado como «queda» en cada etapa del plan (fotos de cerca para rótulos, traba de cola, freno de estacionamiento).
 3. Probar en el Quest: altura del ojo, agarre de switches (6 cm) y palancas (10 cm), sensibilidad del bastón (`LIMITE = 0.3` rad → mando ±1), legibilidad de la tablilla `hudVR`.
