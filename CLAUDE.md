@@ -365,6 +365,10 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    la J4, hechos el 12/11.
 0b. **Pedido de Iván (11/11): el mismo AT-802 (exterior y cabina nueva) en los otros juegos de AURAV** (rampa/señaleros `aurav-senales`,
    apoyos terrestres «MOE», …) para que se vea siempre la misma aeronave: tarea aparte, después de los niveles.
+   **Plan escrito el 14/11: `PLAN_AVION_JUEGOS.md`** (inventario: sólo `aurav-senales` y `aurav-sector` —el del MOE— tienen AT-802, el
+   mismo `at802.glb` de simulador; script `herramientas/avion_juegos.py` que exporta el avión al marco de esos juegos con hélice que
+   gira y LOD; variantes y decisiones). **Falta el ok de Iván; no se tocó ningún juego.** Hallazgo de paso: en el exterior nuevo las
+   luces de punta de ala están invertidas (verde a la izquierda, roja a la derecha; verificado con capturas en la cabina publicada).
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
    legibles, alcance de llaves y palancas, altura del ojo). Publicada el 12/11; lo que siga se vuelve a subir sólo con su ok (y subiendo
    `version.txt`, `VERSION_PAGINA` y los `?v=`).
