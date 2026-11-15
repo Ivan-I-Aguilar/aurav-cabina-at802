@@ -225,6 +225,7 @@ GLB que cambie: el Quest cachea agresivamente. Si Iván dice «no cargó / no ca
 | `TRASPASO.md` | Historia detallada de decisiones y números, incluida toda la saga de parches de la cabina FSX y del exterior (16/10 al 2/11). |
 | `PLAN_CABINA_NUEVA.md` | Plan de la cabina nueva de cero (2/11): etapas, piezas por zona, técnica, verificación. Marcar cada etapa HECHA con fecha y versión. |
 | `PLAN_CUPULA.md` | Plan detallado de la etapa 1b (3/11): la cúpula nueva (jaula, 3 paños de parabrisas, techo con ventanas, puertas, carenado), medidas desde la 360, corte del FSN, etapas 1b.0–1b.4 y verificación. |
+| `PLAN_TALLER.md` | **Taller de motores del AT-802 en VR** (plan del 15/11, espera el ok de Iván): hangar ficticio de AURAV, mesa holográfica con el motor del simulador de turbohélice de escritorio (`motor.js` y `content.js` tal cual, `engine.js` con materiales de holograma), banco de componentes, modos piloto y mecánico, etapas T0–T7, presupuesto del Quest y las 5 decisiones. |
 | `PLAN_JUEGO.md` | **El juego en tres niveles independientes** para el aula virtual de AURAV (aprobado por Iván el 11/11): 1 puesta en marcha con fallas al azar · 2 misión de incendio · 3 salida con emergencia sorpresa; semilla, registrador, devolución al instructor, constancia y JSON del resultado. J0–J3 hechas el 12/11 (§7); quedan J4 (debrief en VR, Quest) y J5 (POST al aula). |
 | `escenario_azar.js`, `registro.js`, `debrief.js`, `constancia.js` | **Niveles (12/11):** la semilla → situación (`generar`, mulberry32), el registrador de la partida (los movimientos seguidos de una misma palanca se funden en un renglón; nombres legibles en `NOMBRES_CONTROL`), la rúbrica + pantalla de resultado + JSON (`localStorage` `aurav_cabina_resultados`) y la constancia con el logo de AAXOD (`aaxod-logo.png`). Links: `?nivel=1[&semilla=S][&alumno=N]`. Semillas de prueba del nivel 1: 100001 normal · 100000 hot start · 100008 hung start · 100002 batería baja. |
 | `incendio.js` | **Foco de incendio del nivel 2 (12/11):** frente de llamas (sprites aditivos que titilan), resplandor, columna de humo que nace oscura y se aclara al subir, inclinada por el viento, parche quemado; `poner(x, z, y, viento)`, `controlar(k)` (humo → vapor), `actualizar(dt)`. Unas 32 llamadas de dibujo sólo en los niveles 2 y 3. Referencia: los videos de Iván del 11/11 (`Desktop/WAN_referencias/seedance_prueba*.mp4`, fuera del repo). |
@@ -376,6 +377,11 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    §5. Hallazgo de paso: en el
    exterior del simulador las luces de punta de ala están invertidas (verde a la izquierda, roja a la derecha; el GLB de los juegos
    ya las trae bien; en la cabina queda por corregir).
+0c. **Pedido de Iván (15/11): taller de motores del AT-802 en VR** (hangar ficticio de AURAV, el AT-802 de este repo, un Cessna 172
+   en reparación y una mesa holográfica con el turbohélice genérico del simulador de escritorio del repo `aurav`; modos piloto y
+   mecánico). **Plan escrito el 15/11: `PLAN_TALLER.md`**; espera el ok de Iván y sus 5 decisiones (§13, de a una: la primera es la
+   licencia del exterior del AT-802; por ahora rige uso interno). La fuente del simulador quedó FUERA del repo, en
+   `Documents/aurav-cabina/taller_fuente/` (el zip y el traspaso, en `OneDrive/Desktop/AURAV/HOLOGRAMA/`). No se tocó el juego.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
    legibles, alcance de llaves y palancas, altura del ojo). Publicada el 12/11; lo que siga se vuelve a subir sólo con su ok (y subiendo
    `version.txt`, `VERSION_PAGINA` y los `?v=`).
