@@ -548,7 +548,7 @@ nada).** Lo que quedó:
 - **Reserva (adelanta la T9):** `taller/mecanico.js` con el **borrador de la inspección** de las seis piezas (dónde está, qué se
   mira, qué se busca, qué queda para el manual) y las tareas del módulo 1, y **`taller/INSPECCION_BORRADOR.md`**, la misma tabla para
   quien valide, con tres preguntas. Todo [AGREGADO, VERIFICAR].
-- Falta: el ok de Iván al banco y a la forma de ubicar; los sonidos de agarrar y soltar.
+- **Ok de Iván al banco y a la forma de ubicar: 15/11 («Queda así»: el lugar titila al acercar la pieza; la variante más difícil, sin marca hasta soltar, quedó descartada).** Los sonidos de agarrar y soltar se hicieron en la reserva (bips sintetizados).
 
 ### T9 — Modo mecánico 2: identificar, inspeccionar y resultado (3 h)
 | Tramo | Qué se hace | Listo cuando |
