@@ -580,6 +580,15 @@ try {
 // ------------------------------------------------------------ el motor: holograma (o los materiales originales con ?holo=0)
 const eng = buildEngine();
 sumarAgregados(eng); // el detector de virutas y las termocuplas de ITT (T8): aparte, así engine.js sigue igual a la fuente
+// los nombres de pieza en las mallas del motor, sin tocar engine.js (para IDENTIFICAR, T9): por su material y su estación
+eng.root.traverse((m) => {
+  if (!m.isMesh || !m.userData || m.userData.pieza) return;
+  const {tag, mat0} = m.userData;
+  if (mat0 === eng.M.screen) m.userData.pieza = 'malla';
+  else if (tag === 3 && (mat0 === eng.M.ceramic || mat0 === eng.M.shaftM)) m.userData.pieza = 'ignitor';
+  else if (tag === 3 && mat0 === eng.M.brass) m.userData.pieza = 'inyector';
+  else if (tag === 4 && mat0 === eng.M.turb) m.userData.pieza = 'alabe';
+});
 let s = initState(true);
 let holo = null;
 let motorGrupo;
@@ -1789,6 +1798,35 @@ function clicPieza(e) {
   return true;
 }
 
+// ------------------------------------------------------------ identificar con el rayo (T9, tramo 1 adelantado)
+// La pieza que señala un rayo en el holograma: el holograma es transparente, así que vale la PRIMERA malla con nombre de pieza a lo
+// largo del rayo (la carcasa de adelante no la tapa). En el holograma junto, cada triángulo sabe de qué malla vino (userData.rangos).
+const rayoPieza = new THREE.Raycaster();
+function piezaApuntada(r) {
+  const objetos = holo ? holo.cuerpos.map((c) => c.malla) : [eng.root];
+  for (const h of r.intersectObjects(objetos, !holo)) {
+    let pieza = null;
+    if (holo) {
+      const rango = h.object.userData.rangos?.find((x) => h.faceIndex >= x.desde && h.faceIndex < x.hasta);
+      pieza = rango?.malla.userData.pieza || null;
+    } else pieza = h.object.userData?.pieza || null;
+    if (pieza) return {pieza, punto: h.point, distancia: h.distance};
+  }
+  return null;
+}
+/** prueba: desde el ojo del alumno en la mesa hacia el lugar de cada pieza, ¿el rayo dice esa pieza? */
+function probarIdentificar() {
+  const ojo = new THREE.Vector3(0, ALTURA_OJOS, INICIO.pos.z);
+  const res = {};
+  for (const clave of Object.keys(LUGAR_PIEZA)) {
+    const lugar = lugarEnMundo(clave, new THREE.Vector3());
+    rayoPieza.set(ojo, lugar.clone().sub(ojo).normalize());
+    rayoPieza.far = 5;
+    res[clave] = piezaApuntada(rayoPieza)?.pieza || null;
+  }
+  return res;
+}
+
 // ------------------------------------------------------------ piloto de prueba del modo piloto (T7, tramo 3 adelantado)
 // Corre el motor con el mismo cuadro del juego (avanzar) y mira lo que el alumno tendría que ver: el arranque normal (la condición
 // pasa sola a ralentí bajo y llega a ralentí sin pasar 750 °C), los dos arranques con falla, las tres fallas en marcha con su
@@ -2172,6 +2210,8 @@ window.__taller = {
   probarMandos,
   /** salto con fundido: 'partida', 'mesa', 'at802', 'cessna', 'bancos', 'oficina' */
   saltar: saltarA,
+  /** identificar (T9): la pieza que dice el rayo desde el ojo hacia el lugar de cada pieza */
+  probarIdentificar,
   /** ubicar (T8): aciertos, errores y las piezas puestas; tomar/soltar para las pruebas */
   get ubicar() {
     return {aciertos: ubicar.aciertos, errores: ubicar.errores, puestas: Object.keys(ubicar.puestas), llevando: ubicar.pieza && ubicar.pieza.userData.pieza};
