@@ -7,7 +7,7 @@ acá. Este documento es el plan profundo que pide `CLAUDE.md` antes de un trabaj
 cada etapa se marca HECHA con fecha y versión.
 
 **Estado (15/11):** plan propuesto; **espera el ok de Iván y sus decisiones (§13), que se preguntan de a una. Ya están la 1
-(uso interno) y la 2 (página nueva, `taller.html`), del 15/11.** No se modeló
+(uso interno), la 2 (página nueva, `taller.html`) y la 3a (el modo mecánico identifica, ubica e inspecciona), del 15/11.** No se modeló
 nada ni se tocó el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
 decidir qué entra (§3).
 
@@ -26,7 +26,7 @@ decidir qué entra (§3).
   vistas.
 - **Cómo:** 8 etapas (T0 a T7). Primero el holograma (lo más riesgoso para el Quest) en una sala vacía; después la mesa y los
   paneles; después el hangar y las aeronaves; al final los dos modos, el rendimiento y el Quest.
-- **Cuánto:** unas 11 a 14 sesiones como las de estos días.
+- **Cuánto:** unas 11 a 15 sesiones como las de estos días.
 - **Cómo sabemos que quedó:** chequeo automático de presupuesto y de carga antes de mirar; ronda fija de vistas que se le manda a
   Iván; él prueba en el Quest (desde acá no se puede). Publicar, sólo con su ok.
 - **Qué hace falta de Iván:** las 5 decisiones de §13 (de a una), bajar el Cessna de Sketchfab con su cuenta, y decir quién de
@@ -193,7 +193,8 @@ PROVISORIA; toda placa se verifica con rayos desde el ojo, lección de la tablil
 pasa sola a ralentí bajo al 12 % de Ng, como en `live.js`), las 5 fallas, los instrumentos, el flujo, el corte, el recorrido y las
 6 preguntas. La voz del tutor puede decir las 8 frases con el mismo método de `voz/` (Sabina, `voces.py`).
 
-**Modo mecánico:** contenido nuevo, ver §7. Su alcance es la decisión 3 y **nada se publica sin la validación de AAXOD**.
+**Modo mecánico:** contenido nuevo, ver §7. Hace las tres cosas (decisión 3a, 15/11): identificar, ubicar e inspeccionar; **nada
+se publica sin la validación de AAXOD**.
 
 ## 7. Banco de componentes y modo mecánico
 **Banco** (`taller_piezas.py` → `taller/piezas.glb`): un banco con bandejas y las piezas sueltas **a tamaño real** [medidas
@@ -206,14 +207,16 @@ admisión**. Material «real» (metal, cerámica, bronce, sin texturas), para qu
   ignitores, la fila de álabes, la malla); al soltarla cerca aparece una copia a la escala del holograma en su lugar y la pieza
   vuelve al banco. Si se suelta en otro lado, el holograma marca el lugar correcto.
 
-**Modo mecánico, módulo 1** (propuesta en tres niveles; Iván elige hasta dónde en la decisión 3):
+**Modo mecánico, módulo 1** (Iván eligió los tres niveles el 15/11, decisión 3a):
 1. **Identificar:** «Señalá el ignitor»: el alumno apunta el rayo al holograma; si acierta, la pieza se pone verde y sale su
    nombre; si no, se le dice qué señaló. Para eso cada malla de `engine.js` lleva el nombre de su pieza (cambio mínimo y anotado
    en la copia) y el rayo lee la pieza del triángulo que toca.
 2. **Ubicar:** las piezas del banco (arriba).
 3. **Inspeccionar:** en cada pieza, qué se mira (por ejemplo erosión y fisuras en el álabe, carbón en el inyector, desgaste del
    electrodo del ignitor, objetos extraños y roturas en la malla) [AGREGADO, VERIFICAR]. **Lo escribe o lo valida alguien de
-   AAXOD** (decisión 3) y va en `taller/mecanico.js`, aparte del código.
+   AAXOD** (decisión 3b) y va en `taller/mecanico.js`, aparte del código. Cómo se arma: primero un borrador con conocimiento
+   general, todo [AGREGADO] / [VERIFICAR], en una tabla fácil de corregir (pieza · qué se mira · qué se busca · qué queda para el
+   manual); lo corrige quien valide, y el modo mecánico no se publica hasta tener esa validación.
 - Al final, los aciertos por tarea, como el debrief de los niveles (sin constancia ni envío al aula en esta versión).
 
 ## 8. Presupuesto para el Quest
@@ -290,8 +293,8 @@ su ok.
 - **Verificación:** un piloto de prueba por consola (como `herramientas/piloto_prueba.js`) que hace el recorrido, un arranque
   normal, uno caliente, uno colgado y las preguntas; capturas.
 
-### Etapa T6 — Modo mecánico (2 sesiones; después de las decisiones 3 y 4)
-- `taller_piezas.py` → `piezas.glb`; agarrar, acercar, iluminar y soltar; identificar; inspección (si entra); resultado.
+### Etapa T6 — Modo mecánico (2–3 sesiones; después de la decisión 4 y del borrador de inspección corregido)
+- `taller_piezas.py` → `piezas.glb`; agarrar, acercar, iluminar y soltar; identificar; inspección; resultado.
 - **Verificación:** cada pieza en su lugar y fuera de lugar; cada tarea; capturas; **el contenido lo valida AAXOD** antes de
   publicar.
 
@@ -338,7 +341,7 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
 - **Qué Quest** usan Iván y los alumnos (2, 3 o 3S): fija el presupuesto.
 - **El Cessna:** cuánto pesa de verdad (triángulos, texturas), si trae capó, hélice y ruedas separadas, y qué versión de CC BY
   tiene. Se sabe al bajarlo.
-- **Quién de AAXOD valida** el modo mecánico (decisión 3).
+- **Quién de AAXOD valida** el modo mecánico (decisión 3b).
 - **Las medidas del hangar** que le gusten a Iván (las de §4 son inventadas).
 - **Cuándo llega el manual** del motor real (para cambiar el genérico).
 - Si más adelante el taller tiene que **mandar resultados al aula virtual**, como los niveles (J5 de `PLAN_JUEGO.md`): en esta
@@ -356,7 +359,8 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
    hasta el hangar del aeródromo: más continuidad, pero más peso en el Quest y toca los niveles publicados) · 3 · las dos: primero
    la página, después la puerta desde el juego · 4 · otra. **Elegida por Iván el 15/11: 1 · página nueva.**
 3. **Modo mecánico:** 3a, qué hace en el módulo 1 (· 1 · identificar · 2 · identificar y ubicar · 3 · las dos más inspección ·
-   4 · otra) y 3b, **quién de AAXOD lo valida**.
+   4 · otra) y 3b, **quién de AAXOD lo valida**. **3a elegida por Iván el 15/11: 3 · las tres (identificar, ubicar e
+   inspeccionar).**
 4. **Piezas del banco en la primera versión:** · 1 · las cuatro del traspaso (ignitor, inyector, álabe, malla de admisión) · 2 ·
    esas más el detector de virutas y la termocupla de ITT · 3 · empezar con dos (ignitor e inyector) · 4 · otra.
 5. **Qué modelo de motor manda:** · 1 · cada uno el suyo hasta tener el manual (el taller, el genérico: 52 / 65 % e ITT 545; la
@@ -374,9 +378,9 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
 | T3 | El hangar | 2–3 |
 | T4 | AT-802 y Cessna | 1–2 |
 | T5 | Modo piloto entero | 1 |
-| T6 | Modo mecánico | 2 |
+| T6 | Modo mecánico (identificar, ubicar e inspeccionar) | 2–3 |
 | T7 | Rendimiento, Quest y publicar | 1 |
-| | **Total** | **11–14** |
+| | **Total** | **11–15** |
 
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el
