@@ -45,6 +45,13 @@ export function crearPanel({ancho, alto, px = 1024, nombre = 'panel', transparen
       const b = botones.find((b) => u >= b.x && u <= b.x + b.w && v >= b.y && v <= b.y + b.h);
       return {distancia: h.distance, id: b ? b.id : null};
     },
+    /** el centro de un botón en el mundo (para apuntarle con un mando simulado en las pruebas) o null */
+    centro(id, out = new THREE.Vector3()) {
+      const b = botones.find((x) => x.id === id);
+      if (!b) return null;
+      malla.updateWorldMatrix(true, false);
+      return malla.localToWorld(out.set(((b.x + b.w / 2) / W - 0.5) * ancho, (0.5 - (b.y + b.h / 2) / H) * alto, 0));
+    },
   };
 }
 

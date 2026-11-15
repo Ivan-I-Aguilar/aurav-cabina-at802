@@ -826,10 +826,35 @@ const agarreHolo = [];
 let dosManos = null;
 const mHolo = new THREE.Matrix4();
 const vEsc = new THREE.Vector3();
+// «cerca» = dentro de la caja de los cuerpos del motor más 6 cm. Antes era una esfera de 0,5 m alrededor del centro, que llegaba a
+// las puntas de las palancas: un grip que erraba la palanca por poco agarraba el holograma (lo encontró probarMandos, 15/11)
+const cajaHolo = new THREE.Box3();
+const cajaTmp = new THREE.Box3();
 function cercaDelHolograma(c) {
   c.getWorldPosition(tmp);
-  motorGrupo.getWorldPosition(tmp2);
-  return tmp.distanceTo(CENTRO_HOLO) < 0.32 + motorGrupo.scale.x * 0.5 || tmp.distanceTo(tmp2) < 0.3;
+  cajaHolo.makeEmpty();
+  for (const o of holo ? holo.cuerpos.map((x) => x.malla) : [motorGrupo]) cajaHolo.union(cajaTmp.setFromObject(o));
+  return cajaHolo.expandByScalar(0.06).containsPoint(tmp);
+}
+// con la cabeza adentro del holograma (agrandado a tamaño real, para caminarlo) las capas aditivas se apilan y no se ve nada: se
+// apaga de a poco, hasta el 20 % a 25 cm adentro de la caja de los cuerpos (en el marco del motor: la caja no crece al girarlo)
+const cajaLocalHolo = new THREE.Box3();
+if (holo) {
+  motorGrupo.updateMatrixWorld(true);
+  const inv = motorGrupo.matrixWorld.clone().invert();
+  for (const {malla} of holo.cuerpos) {
+    malla.geometry.computeBoundingBox();
+    cajaLocalHolo.union(cajaTmp.copy(malla.geometry.boundingBox).applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, malla.matrixWorld)));
+  }
+}
+const ojoLocal = new THREE.Vector3();
+function brilloPorCabeza() {
+  if (!holo) return 1;
+  (renderer.xr.isPresenting ? renderer.xr.getCamera() : camara).getWorldPosition(ojoLocal);
+  motorGrupo.worldToLocal(ojoLocal);
+  const {min, max} = cajaLocalHolo;
+  const adentro = Math.min(ojoLocal.x - min.x, max.x - ojoLocal.x, ojoLocal.y - min.y, max.y - ojoLocal.y, ojoLocal.z - min.z, max.z - ojoLocal.z);
+  return adentro <= 0 ? 1 : 1 - 0.8 * ss(0, 0.25, adentro * motorGrupo.scale.x);
 }
 function manosVR() {
   hoverVR = null;
@@ -869,6 +894,208 @@ function manosVR() {
       agarreHolo[0].rel.copy(mano.matrixWorld).invert().multiply(motorGrupo.updateMatrix() || motorGrupo.matrix);
     } else motorGrupo.scale.copy(vEsc);
   }
+}
+
+// ------------------------------------------------------------ prueba de los mandos de VR sin casco (reserva de la T2)
+// Pone los dos controles de renderer.xr (los mismos objetos que mueve el casco: hijos del jugador, con la matriz puesta a mano como la
+// pone WebXR) donde iría la mano y corre el mismo código del cuadro de VR: manosVR() y el evento selectstart. Cubre el grip en las
+// palancas, el gatillo en los paneles, en los botones de la mesa y en la pausa, y agarrar el holograma con una y con dos manos. No
+// cubre el seguimiento real, los botones del gamepad (B/Y, joysticks) ni cómo se siente: eso, sólo en el Quest.
+const vUno = new THREE.Vector3(1, 1, 1);
+const ADELANTE = new THREE.Vector3(0, 0, -1);
+function ponerMano(c, pos, mirarA = null, quat = null) {
+  jugador.updateMatrixWorld(true);
+  const q = quat ? quat.clone() : new THREE.Quaternion();
+  if (mirarA) q.setFromUnitVectors(ADELANTE, mirarA.clone().sub(pos).normalize());
+  c.matrix.multiplyMatrices(new THREE.Matrix4().copy(jugador.matrixWorld).invert(), new THREE.Matrix4().compose(pos, q, vUno));
+  c.matrix.decompose(c.position, c.quaternion, c.scale);
+  c.updateMatrixWorld(true);
+}
+function cuadroVR(n = 1) {
+  for (let i = 0; i < n; i++) {
+    manosVR();
+    sincronizarPalancas(1 / 72);
+  }
+}
+const apretarGrip = (c) => Object.assign(c.userData, {grip: true, gripNuevo: true});
+const soltarGrip = (c) => (c.userData.grip = false);
+/** la punta de una palanca con el ángulo a (lógico, −0,9 adelante … 0,15 atrás), en el mundo */
+function puntaCon(p, a) {
+  raizMesa.updateWorldMatrix(true, false);
+  const t = a * p.escala;
+  return raizMesa.localToWorld(p.pivote.clone().add(new THREE.Vector3(0, p.alto * Math.cos(t), p.alto * Math.sin(t))));
+}
+/** apunta la mano a un punto desde 40 cm (del lado del alumno) y aprieta el gatillo */
+function gatilloEn(c, punto, normal) {
+  ponerMano(c, punto.clone().addScaledVector(normal, 0.4), punto);
+  c.dispatchEvent({type: 'selectstart'});
+  cuadroVR();
+}
+function probarMandos() {
+  const res = [];
+  const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
+  const [m0, m1] = manos;
+  const lejos = new THREE.Vector3(0, -5, 0); // bajo el piso: fuera del alcance de todo
+  const v = new THREE.Vector3();
+  pararRecorrido();
+  cerrarPreguntas();
+  if (panelVR.visible) panelVR.ocultar();
+  poseManual = false;
+  for (const c of manos) {
+    soltarGrip(c);
+    ponerMano(c, lejos);
+  }
+  cuadroVR();
+  if (controles) {
+    const pal = (n) => controles.palancas.find((p) => p.nombre === n);
+    // 1) POTENCIA: grip en la punta (atrás, ralentí) y la mano la lleva adelante por su arco
+    const pla = pal('levPLA');
+    inp.pla = 0;
+    sincronizarPalancas(1);
+    ponerMano(m0, puntaCon(pla, A_MAX));
+    apretarGrip(m0);
+    cuadroVR();
+    ok('grip en la punta de POTENCIA la agarra', pla.agarre === m0);
+    for (let k = 1; k <= 12; k++) {
+      ponerMano(m0, puntaCon(pla, A_MAX + ((A_MIN - A_MAX) * k) / 12));
+      cuadroVR();
+    }
+    ok('la mano adelante → potencia 100 %', inp.pla > 0.97, +inp.pla.toFixed(3));
+    soltarGrip(m0);
+    cuadroVR();
+    ok('al soltar, la palanca queda suelta y en su lugar', !pla.agarre && inp.pla > 0.97 && Math.abs(pla.ang - A_MIN) < 0.03, +pla.ang.toFixed(3));
+    // 2) CONDICIÓN: soltada entre muescas va a la más cercana
+    const cl = pal('levCL');
+    inp.cl = 0;
+    sincronizarPalancas(1);
+    ponerMano(m0, puntaCon(cl, MUESCAS[0]));
+    apretarGrip(m0);
+    cuadroVR();
+    for (let k = 1; k <= 8; k++) {
+      ponerMano(m0, puntaCon(cl, MUESCAS[0] + ((-0.33 - MUESCAS[0]) * k) / 8));
+      cuadroVR();
+    }
+    soltarGrip(m0);
+    cuadroVR(60);
+    ok('CONDICIÓN soltada cerca de la muesca del medio → RALENTÍ BAJO', inp.cl === 1 && Math.abs(cl.ang - MUESCAS[1]) < 0.01, {cl: inp.cl, ang: +cl.ang.toFixed(3)});
+    // 3) HÉLICE atrás → bandera
+    const prop = pal('levPROP');
+    inp.prop = 1;
+    sincronizarPalancas(1);
+    ponerMano(m1, puntaCon(prop, A_MIN));
+    apretarGrip(m1);
+    cuadroVR();
+    for (let k = 1; k <= 12; k++) {
+      ponerMano(m1, puntaCon(prop, A_MIN + ((A_MAX - A_MIN) * k) / 12));
+      cuadroVR();
+    }
+    soltarGrip(m1);
+    cuadroVR();
+    ok('HÉLICE atrás → bandera', inp.prop < FEATHER, +inp.prop.toFixed(3));
+    // 4) un grip que no llega (15 cm antes de la punta, del lado del alumno) no agarra nada: ni la palanca ni el holograma. (A 12 cm
+    // agarra la HÉLICE, que está a 9 cm: controles.js toma la punta más cercana a menos de 10 cm. Y 12 cm por ENCIMA de la punta de
+    // POTENCIA agarra el holograma, y está bien: es 5 cm más allá de su punta derecha)
+    ponerMano(m0, puntaCon(pla, -0.4).add(new THREE.Vector3(0, 0, 0.15)));
+    apretarGrip(m0);
+    cuadroVR();
+    ok('grip 15 cm antes de una palanca no agarra nada', controles.palancas.every((p) => !p.agarre) && !agarreHolo.length, {
+      palancas: controles.palancas.filter((p) => p.agarre).map((p) => p.nombre),
+      holograma: agarreHolo.length,
+      mano: m0.getWorldPosition(new THREE.Vector3()).toArray().map((x) => +x.toFixed(3)),
+    });
+    soltarGrip(m0);
+    cuadroVR();
+  } else ok('mesa.glb con las palancas', false, 'no cargó');
+  // 5) gatillo en los paneles: una estación, una falla, CORTE
+  const normal = (m) => new THREE.Vector3(0, 0, 1).applyQuaternion(m.getWorldQuaternion(new THREE.Quaternion()));
+  for (const [panel, id, cond, txt] of [
+    [panelEstaciones, 'st3', () => estacion === 3, 'gatillo en ESTACIÓN 3'],
+    [panelEstaciones, 'v_corte', () => corte === true, 'gatillo en CORTE'],
+    [panelMotor, 'f_hot', () => inp.fault === 'hot', 'gatillo en ARRANQUE CALIENTE'],
+    [panelMotor, 'f_none', () => inp.fault === 'none', 'gatillo en SIN FALLA'],
+  ]) {
+    gatilloEn(m1, panel.centro(id, v), normal(panel.malla));
+    ok(txt, cond(), {id});
+  }
+  // 6) gatillo en el botón A RALENTÍ de la mesa
+  const btn = botones3D.btnRALENTI;
+  if (btn) {
+    inp.pla = 0.7;
+    btn.malla.geometry.computeBoundingSphere();
+    const centro = btn.malla.localToWorld(btn.malla.geometry.boundingSphere.center.clone());
+    gatilloEn(m1, centro, new THREE.Vector3(0, 0.7, 0.7).normalize());
+    ok('gatillo en A RALENTÍ', inp.pla === 0, +inp.pla.toFixed(3));
+  }
+  // 7) la pausa: el gatillo en «Motor a ralentí»
+  inp.pla = 0.7;
+  abrirPausa();
+  panelVR.malla.updateWorldMatrix(true, false);
+  const enRalenti = panelVR.malla.localToWorld(new THREE.Vector3(0, (0.5 - 600 / 680) * panelVR.malla.geometry.parameters.height, 0));
+  gatilloEn(m1, enRalenti, normal(panelVR.malla));
+  ok('pausa: gatillo en «Motor a ralentí» la cierra y pone ralentí', !panelVR.visible && inp.pla === 0, {pausa: panelVR.visible});
+  // 8) el holograma con una mano: lo lleva 20 cm y lo gira 30°
+  for (const c of manos) ponerMano(c, lejos);
+  cuadroVR();
+  motorGrupo.updateMatrixWorld(true);
+  const pMano0 = CENTRO_HOLO.clone().add(new THREE.Vector3(0.12, 0, 0.1));
+  ponerMano(m0, pMano0);
+  apretarGrip(m0);
+  cuadroVR();
+  ok('grip junto al holograma lo agarra', agarreHolo.length === 1 && poseManual);
+  const antes = motorGrupo.matrixWorld.clone();
+  const mano0 = m0.matrixWorld.clone();
+  const giro = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 6);
+  ponerMano(m0, pMano0.clone().add(new THREE.Vector3(0.2, 0.05, 0)), null, giro);
+  cuadroVR();
+  motorGrupo.updateMatrixWorld(true);
+  const esperado = new THREE.Matrix4().multiplyMatrices(m0.matrixWorld, mano0.clone().invert()).multiply(antes);
+  const pe = new THREE.Vector3().setFromMatrixPosition(esperado);
+  const pr = new THREE.Vector3().setFromMatrixPosition(motorGrupo.matrixWorld);
+  const qe = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(esperado));
+  const qr = motorGrupo.getWorldQuaternion(new THREE.Quaternion());
+  ok('una mano lo lleva y lo gira con ella', pe.distanceTo(pr) < 0.002 && qe.angleTo(qr) < 0.01, {errorMm: +(pe.distanceTo(pr) * 1000).toFixed(2), errorGrados: +THREE.MathUtils.radToDeg(qe.angleTo(qr)).toFixed(2)});
+  // 9) con las dos manos: separarlas al doble lo agranda al doble; al triple, tope 1:1
+  const s0 = motorGrupo.scale.x;
+  const pA = m0.getWorldPosition(new THREE.Vector3());
+  const pB = pA.clone().add(new THREE.Vector3(-0.2, 0, 0));
+  ponerMano(m1, pB);
+  apretarGrip(m1);
+  cuadroVR();
+  ok('el grip de la otra mano se suma', agarreHolo.length === 2);
+  ponerMano(m1, pA.clone().add(new THREE.Vector3(-0.4, 0, 0)));
+  cuadroVR();
+  ok('manos al doble de distancia → el doble de tamaño', Math.abs(motorGrupo.scale.x - Math.min(1, 2 * s0)) < 0.005, {antes: +s0.toFixed(3), despues: +motorGrupo.scale.x.toFixed(3)});
+  ponerMano(m1, pA.clone().add(new THREE.Vector3(-1.2, 0, 0)));
+  cuadroVR();
+  ok('al separarlas mucho, tope 1:1 del real', Math.abs(motorGrupo.scale.x - 1) < 1e-6, +motorGrupo.scale.x.toFixed(3));
+  soltarGrip(m0);
+  soltarGrip(m1);
+  cuadroVR();
+  ok('al soltar las dos, queda donde está', agarreHolo.length === 0 && poseManual && Math.abs(motorGrupo.scale.x - 1) < 1e-6);
+  // 10) a tamaño real, con la cabeza en el centro del motor se apaga al 20 %; a 1 m de su costado, entero
+  if (holo) {
+    const camAntes = camara.position.clone();
+    const centroMotor = motorGrupo.localToWorld(cajaLocalHolo.getCenter(new THREE.Vector3()));
+    jugador.updateMatrixWorld(true);
+    camara.position.copy(jugador.worldToLocal(centroMotor.clone()));
+    camara.updateMatrixWorld(true);
+    const bAdentro = brilloPorCabeza();
+    camara.position.copy(jugador.worldToLocal(centroMotor.clone().add(new THREE.Vector3(0, 0, 1.2))));
+    camara.updateMatrixWorld(true);
+    const bAfuera = brilloPorCabeza();
+    camara.position.copy(camAntes);
+    camara.updateMatrixWorld(true);
+    ok('con la cabeza adentro se apaga (20 %) y afuera vuelve', Math.abs(bAdentro - 0.2) < 0.01 && bAfuera === 1, {adentro: +bAdentro.toFixed(3), afuera: bAfuera});
+  }
+  // dejar todo como al principio: el holograma a la mesa, sin estación, sin corte, motor a ralentí
+  for (const c of manos) ponerMano(c, lejos);
+  cuadroVR();
+  poseManual = false;
+  estacion = 0;
+  corte = false;
+  aRalenti();
+  const fallaron = res.filter((r) => !r.ok);
+  return {pruebas: res.length, fallaron: fallaron.length, detalle: res};
 }
 
 // ------------------------------------------------------------ HUD (PC) y leyenda
@@ -961,9 +1188,10 @@ function avanzar(dt) {
   }
   const st = STATIONS.find((x) => x.n === estacion);
   cartel.actualizar({estacion: preguntasAbiertas ? null : st || null, alerta: !preguntasAbiertas && alertaVisible() ? FAULTS[inp.fault] : null});
-  // las llamadas de la estación (aparecen de a poco, como en el escritorio) y el holograma atenuado mientras están las preguntas
+  // las llamadas de la estación (aparecen de a poco, como en el escritorio) y el holograma atenuado mientras están las preguntas o
+  // con la cabeza adentro
   llamadas.actualizar(preguntasAbiertas ? null : st || null, estacion ? ss(0.8, 1.3, since) : 0, eng.root, renderer.xr.isPresenting ? renderer.xr.getCamera() : camara);
-  if (holo) holo.ajustes.uBrillo.value += ((preguntasAbiertas ? 0.3 : 1) - holo.ajustes.uBrillo.value) * Math.min(1, dt * 6);
+  if (holo) holo.ajustes.uBrillo.value += (Math.min(preguntasAbiertas ? 0.3 : 1, brilloPorCabeza()) - holo.ajustes.uBrillo.value) * Math.min(1, dt * 6);
   hudT -= dt;
   if (hudT <= 0 && !renderer.xr.isPresenting) {
     hudT = 0.1;
@@ -1119,6 +1347,8 @@ window.__taller = {
     return {...inp};
   },
   rayosDesdeElOjo,
+  /** los mandos de VR simulados: grip en las palancas, gatillo en paneles, mesa y pausa, el holograma con una y dos manos */
+  probarMandos,
   /** avanza la simulación t segundos de golpe (para las capturas) */
   correr(t, cada = 1 / 60) {
     for (let x = 0; x < t; x += cada) avanzar(cada);
