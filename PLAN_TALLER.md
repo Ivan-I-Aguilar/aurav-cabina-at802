@@ -467,6 +467,7 @@ nada).** Lo que quedó:
   corren con `__taller.correr(t)`.
 - Queda de la reserva: el sonido ambiente del hangar (`audio.js` no tiene; habría que sintetizarlo).
 - Capturas: `Documents/aurav-cabina/capturas_taller/T5_muebles_partida_AT802.jpg`.
+- **Ok de Iván a los muebles, el atril de partida y el AT-802 en su puesto: 15/11 («Quedan así»).**
 
 **T6, tramo 1 ADELANTADO (15/11/2026, 15:45; mismas condiciones).** El AT-802 en H3: `juegos/at802.glb` (el mismo de los otros
 juegos; mismo repo, no se copia) con la nariz al portón y las ruedas principales en (−10; −14,5) del hangar; calzas amarillas en las
