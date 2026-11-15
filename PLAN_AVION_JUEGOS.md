@@ -167,4 +167,14 @@ Peso estimado:
   cono de la nariz a 4,2; `main.js`: «Ver desde la cabina» en `ojo-piloto`; versiones 20261115a; README. Probado en PC: sin errores;
   marca S, calzas de cerca, estacionados de lejos y de cerca, rodaje en la curva con la hélice, vista de cabina. Escena: 517 mallas
   (antes 588), 315 k tri (312 k), 196 con sombra (272). Con el panel del navegador oculto no se pudo medir por cuadro.
-- **Falta:** la librea (pregunta 2), la etapa C (sector, después de la pregunta 3), publicar (con su ok) y el Quest.
+- **Etapa C HECHA el 15/11 (sector; commit local 8ed9e9a en `aurav-sector`, sin publicar), con la opción 1 de la válvula hasta que
+  Iván conteste la pregunta 3:** `at802.glb` nuevo y el mismo `at802glb.js` de señaleros; la manguera llega desde la derecha a la boca
+  de carga real (centro-izquierda, bajo la panza); la marca de la válvula, la llegada de la etapa a pie y el apoyo quedan al costado
+  del fuselaje (`juntoValvula`, a 1,25 / 1,6 m del eje como mínimo). `despegue.js`: la rueda de cola se hundía hasta 0,90 m en la
+  pista al levantar la nariz (también con el avión viejo); ahora la cola se levanta en la carrera (fuselaje horizontal), rota apenas
+  y en el vuelo la nariz sube sin que la cola toque el piso (punta de pala a 0,68 m como mínimo). Probado en PC: sin errores; misma
+  vista que antes, manguera en la boca, marca de la etapa a pie, carrera y despegue. Escena: 220 mallas (231), 294 k tri (267 k),
+  72 con sombra (88).
+- **15/11:** `juegos/LEEME.md` + `juegos/at802glb.js` (copia de referencia del cargador) para usar el avión en juegos nuevos (Iván
+  está armando otra capacitación con el AT8T).
+- **Falta:** la pregunta 3 (válvula), la 4 (matrícula), publicar los tres repos (con su ok) y el Quest.

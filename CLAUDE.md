@@ -370,8 +370,9 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    gira y LOD; variantes y decisiones). **Aprobado por Iván el 15/11 («sí, cabina y exterior»).** Etapa A HECHA el 15/11:
    `python -E -P -X utf8 herramientas/avion_juegos.py [--librea azul|bordo]` → `juegos/at802.glb` (2,5 MB, 71 k tri, 9 llamadas,
    con cabina liviana y hélice en `helice-eje` → `helice`) y `juegos/at802-lod.glb` (0,9 MB, 15 k tri; lo simplifica Blender con
-   `herramientas/avion_juegos_lod.py`); visor `juegos/ver.html` (`__ver('…')`). **Etapa B (señaleros) HECHA el 15/11**, commit
-   local en `aurav-senales` sin publicar. Falta la librea (azul o bordó), sector y el Quest. Detalle en el plan §5. Hallazgo de paso: en el
+   `herramientas/avion_juegos_lod.py`); visor `juegos/ver.html` (`__ver('…')`). **Etapas B (señaleros) y C (sector) HECHAS el
+   15/11**, commits locales sin publicar; librea azul (elegida por Iván). **Para un juego nuevo con el AT-802: `juegos/LEEME.md`.**
+   Falta: válvula de carga de sector (pregunta 3), matrícula, publicar y el Quest. Detalle en el plan §5. Hallazgo de paso: en el
    exterior del simulador las luces de punta de ala están invertidas (verde a la izquierda, roja a la derecha; el GLB de los juegos
    ya las trae bien; en la cabina queda por corregir).
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
