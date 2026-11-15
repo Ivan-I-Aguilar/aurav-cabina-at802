@@ -2345,6 +2345,21 @@ function rayosDesdeElOjo(blanco, objeto, ojo = new THREE.Vector3(0, ALTURA_OJOS,
   return res;
 }
 window.__renderer = renderer;
+// la RONDA FIJA del plan (§10), con su numeración, sobre las vistas de __ronda: 1 partida mirando hacia adentro · 2 mesa de frente ·
+// 3 mesa de 3/4 desde la izquierda · 4 holograma de cerca con una estación aislada · 5 banco de componentes · 6 AT-802 de 3/4
+// delantero · 7 Cessna con su crédito (falta el avión: T6) · 8 bancos y herramientas · 9 portón desde adentro · 10 la nave entera
+// desde el portón · 11 techo
+const RONDA_FIJA = [null, 21, 1, 2, 4, 25, 23, null, 17, 12, 13, 14];
+window.__rondaFija = async (n) => {
+  if (!n) return RONDA_FIJA.map((k, i) => (i ? `${i}: ${k ? RONDA[k].nombre : 'falta (el Cessna, T6)'}` : null)).filter(Boolean);
+  const k = RONDA_FIJA[n];
+  if (!k) return 'falta: el Cessna llega en la T6';
+  if (n === 4) {
+    estacion = 3; // una estación aislada: la cámara de combustión
+    desdeEstacion = reloj - 5;
+  }
+  return window.__ronda(k);
+};
 window.__ronda = async (n) => {
   if (!n) return RONDA.map((r, i) => (r ? `${i}: ${r.nombre}` : null)).filter(Boolean);
   const r = RONDA[n];

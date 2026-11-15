@@ -258,6 +258,14 @@ Pedido de Iván (15/11): cada etapa es un plan de trabajo de **3 horas como mín
 hasta el cierre, sin esperar respuestas en el medio. Son 10 etapas (T1 a T10) de 3 a 3,5 horas: unas 33 horas en total (§14). Se
 larga con «arrancá T1» (y así cada una); conviene dar al principio los permisos que pida la app (Blender, el servidor, Node).
 
+**El primer bloque (15/11/2026, de 14:21 a 16:10; v=20261115d; sin publicar; en el Quest no se probó nada):** la T1 HECHA y,
+adelantadas dentro del mismo bloque, la T2, T3, T4, T5, T8 y T9 (la T9 en local, detrás de `?mecanico=1`), el tramo 1 de la T6 (el
+AT-802; el Cessna espera la descarga de Iván), los tramos 1 a 3 de la T7 y de la T10 (sin publicar ni tocar el juego). Se cerró a
+las 1 h 50 min y no a las 3 h porque **lo que queda depende de Iván**: el look del holograma y su ok a la mesa, la nave, la ronda,
+el banco y la forma de ubicar; bajar el Cessna; quién valida el modo mecánico (3b); probar en el Quest y el ok para publicar. Cada
+etapa tiene abajo lo hecho, lo medido, los hallazgos y lo que falta. Pruebas por consola: `__taller.probarMandos()` 24,
+`probarPiloto()` 15, `probarMecanico()` 5 y `probarIdentificar()` las seis piezas; y `node herramientas/taller_prueba_motor.mjs`.
+
 **Cómo es cada bloque (vale para todas):**
 - **Arranque (15 min):** leer este plan y `CLAUDE.md`, `git status`, levantar `servidor.py`, medir el punto de partida
   (`renderer.info` y la prueba del motor) y anotar la hora.
@@ -488,6 +496,26 @@ Cessna habrá que mirar las llamadas: quedan 7). Falta el Cessna (espera la desc
 - **Reserva:** el resumen del final (estaciones vistas, aciertos); pulido en PC; tamaños de letra.
 - **Al cierre, Iván:** el modo piloto entero en PC (y en el Quest, si se puede probar sin publicar: §10).
 
+**T7, tramos 1 a 3 ADELANTADOS dentro del bloque de la T1 (15/11/2026, 15:45–15:50; sin publicar; en el Quest no se probó
+nada).** Lo que quedó:
+- **El camino del modo piloto** (`camino` en `taller/main.js`): estaciones vistas (también en el recorrido), fallas probadas por el
+  alumno (la del recorrido no cuenta), arranque normal hecho (cuando llega a ralentí) y la mejor nota de las preguntas; el resumen
+  sale al final de las preguntas y en la pausa. Se arranca en la partida (atril) → la mesa → estaciones, palancas, fallas → preguntas
+  → resumen. Los textos son los del simulador (`content.js`, igual a la fuente) y los [AGREGADO] de las T2–T3.
+- **La voz del tutor:** `herramientas/voces.py` suma las 8 frases de las estaciones y los 5 avisos de falla; `voces.ps1` generó sus
+  13 WAV con la voz Sabina en `voz/` (sólo se sumaron entradas a `frases.json`: la cabina no cambia). Se dicen al elegir una estación
+  (también en el recorrido) y cuando aparece la alerta de una falla.
+- **Pausa sola al sacarse el casco** (el `visibilitychange` de la sesión de VR), como en los niveles de la cabina.
+- **Piloto de prueba por consola:** `__taller.probarPiloto()` corre el motor con el mismo cuadro del juego: arranque normal (la
+  condición pasa sola a ralentí bajo, Ng 60 %, ITT máxima 699 °C), caliente (ITT 1035 °C y alerta), colgado (Ng 24 %), pérdida de
+  compresor (estampidos), ingestión (más ITT y menos torque que sin falla, a la misma palanca), sobretemperatura (942 °C), el
+  recorrido entero (las 8 estaciones, la potencia sola y la alerta del caliente) y las 6 preguntas todas bien y todas mal: **15 de 15**.
+  Deja el camino del alumno y el holograma como estaban.
+- **Hallazgos:** (1) ARRANCAR con el motor en marcha no hace nada (como el escritorio): el piloto de prueba apaga antes; (2) las
+  preguntas en z 0,1 quedaban detrás de la cara del holograma y el flujo tapaba «Otra vez»: van en z 0,2; (3) el resumen decía
+  «Preguntas: sin hacer» debajo de «1 de 6 correctas»: en el panel de preguntas no va esa línea.
+- Falta: el cierre de la etapa con Iván (el modo piloto entero en PC) y la reserva (pulido, tamaños de letra).
+
 ### T8 — Modo mecánico 1: banco y ubicar (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
 |---|---|---|
@@ -498,6 +526,26 @@ Cessna habrá que mirar las llamadas: quedan 7). Falta el Cessna (espera la desc
 
 - **Reserva:** el borrador de la tabla de inspección (adelanta T9); sonidos de agarrar y soltar.
 - **Al cierre, Iván:** ok al banco y a la forma de ubicar.
+
+**T8 ADELANTADA y HECHA dentro del bloque de la T1, con su reserva (15/11/2026, 15:50–15:56; sin publicar; en el Quest no se probó
+nada).** Lo que quedó:
+- `herramientas/taller_piezas.py` (Blender) → `taller/piezas.glb` (4,1 k tri, 7 llamadas, 0,37 MB; meta 8 y 10 k) y
+  `piezas_informe.json`: el banco con 6 bandejas de espuma al costado derecho del alumno, de frente a la mesa, y las seis piezas a
+  tamaño real (ignitor, inyector, álabe con su perfil torcido y raíz de pino, sector de la malla, detector de virutas, termocupla),
+  cada una suelta con `userData {pieza, nombre, estacion, bandeja}`, un material y color por vértice (metal, cerámica, bronce,
+  cobre). Medidas genéricas **[VERIFICAR]**, no del manual. El riel con los nombres lo dibuja el juego.
+- `taller/agregados.js` (aparte: `engine.js` sigue igual a la fuente): el detector de virutas abajo en la caja reductora y el anillo
+  de termocuplas de ITT entre las dos turbinas (8 sondas, arnés y bornera), con `tag` / `prim` / `pieza`, más `PARTS_AGREGADAS` y
+  `LUGAR_PIEZA`. Todo [AGREGADO, VERIFICAR]. Los nombres de pieza de las mallas del motor se ponen desde afuera, por material y
+  estación (malla, ignitor, inyector, álabe): no hizo falta tocar la copia de `engine.js`.
+- **Ubicar** (`taller/main.js`): VR, grip a menos de 10 cm; PC, clic para tomar (sigue al mouse a 45 cm) y clic para dejar. A menos
+  de 40 cm del holograma el lugar de la pieza titila; soltada a menos de 12 cm de su lugar, acierto y queda una copia a la escala del
+  holograma (colgada de su raíz: se mueve con él); en otro lado del holograma, error y titila el lugar correcto 3 s; lejos, vuelve
+  sola. `probarMandos` suma tres pruebas de ubicar: **24 de 24**.
+- **Reserva (adelanta la T9):** `taller/mecanico.js` con el **borrador de la inspección** de las seis piezas (dónde está, qué se
+  mira, qué se busca, qué queda para el manual) y las tareas del módulo 1, y **`taller/INSPECCION_BORRADOR.md`**, la misma tabla para
+  quien valide, con tres preguntas. Todo [AGREGADO, VERIFICAR].
+- Falta: el ok de Iván al banco y a la forma de ubicar; los sonidos de agarrar y soltar.
 
 ### T9 — Modo mecánico 2: identificar, inspeccionar y resultado (3 h)
 | Tramo | Qué se hace | Listo cuando |
@@ -510,6 +558,19 @@ Cessna habrá que mirar las llamadas: quedan 7). Falta el Cessna (espera la desc
 - **Reserva:** preguntas del modo mecánico (como las 6 del piloto); más tareas de identificar.
 - **Al cierre, Iván:** pasarle la tabla a quien valide, cuando lo sepa.
 
+**T9 ADELANTADA y HECHA EN LOCAL dentro del bloque de la T1 (15/11/2026, 15:57–16:01; no se publica hasta la validación de AAXOD;
+en el Quest no se probó nada).** Lo que quedó, todo detrás de `?mecanico=1` (sin eso, el botón del atril sigue apagado):
+- **Identificar:** la consigna en el cartel de arriba del holograma («IDENTIFICAR · 1 DE 4 · Señalá con el rayo el ignitor…»); el
+  gatillo (VR) o el clic (PC) sobre el holograma responde con la primera malla con nombre de pieza a lo largo del rayo (el holograma
+  es transparente; en el holograma junto, cada triángulo sabe de qué malla vino por `userData.rangos`): acierto en verde, o en rojo
+  el nombre de lo señalado. `__taller.probarIdentificar()` reconoce las seis piezas desde el ojo del alumno.
+- **Ubicar e inspeccionar:** las seis piezas en su lugar (T8); con una pieza en la mano, el panel de atrás del banco
+  (`crearPanelMecanico`) muestra su tabla (qué se mira, qué se busca, qué queda para el manual) con el aviso del borrador.
+- **Resultado** por tarea en el mismo panel (identificar n de 4 y sus errores, ubicar 6 de 6 y sus errores, inspeccionar las piezas
+  vistas). `__taller.probarMecanico()`: **5 de 5**. Bips sintetizados al tomar, acertar, errar y devolver (reserva de la T8).
+- **La tabla para quien valide:** `taller/INSPECCION_BORRADOR.md` (la misma de `taller/mecanico.js`), con tres preguntas.
+- Falta: quién valida (decisión 3b) y su corrección; las preguntas del modo mecánico (reserva).
+
 ### T10 — Rendimiento, Quest y publicar (3 h + Iván)
 | Tramo | Qué se hace | Listo cuando |
 |---|---|---|
@@ -521,6 +582,19 @@ Cessna habrá que mirar las llamadas: quedan 7). Falta el Cessna (espera la desc
 - **Publicar, sólo con su ok:** el push en primer plano con la cuenta Ivan-I-Aguilar y después mirar la página publicada (sin
   errores ni 404). Si nadie validó el modo mecánico, se publica con el modo piloto y el mecánico queda oculto (sólo en local).
 - **Reserva:** el README del taller; los ajustes que salgan de su prueba.
+
+**T10, tramos 1 a 3 ADELANTADOS en lo que no necesita a Iván (15/11/2026, 16:02–16:06; sin publicar).** Lo que quedó:
+- **Rendimiento:** lo opaco con color por vértice de la nave y de los muebles se junta al cargar en una malla a doble cara (de 4
+  llamadas a 1) y el AT-802 es un `THREE.LOD` (de lejos, más de 12 m, el `at802-lod.glb` de `juegos/`). **Peor vista, con todo a la
+  vista: 68 llamadas y 72,6 k tri** (antes 75 y 125 k; tope 75 y 200 k: quedan 7 llamadas para el Cessna). Descarga ≈ 7,5 MB (los
+  GLB 5,1 MB y three.js 2,2 MB; tope 12 MB).
+- **`prevuelo_pages.py`** revisa también `taller.html` y los módulos de `taller/`: nada que arreglar. **El botón del juego no se
+  agregó:** si se suma antes de que Iván decida publicar el taller, saldría con la próxima publicación de la cabina.
+- **Guía para Iván:** `taller/PROBAR_EN_EL_QUEST.md` (servirlo desde la PC, abrirlo en el Quest por el cable con `adb reverse` [a
+  probar], qué mirar en el casco y lo que desde la PC sólo se probó con los mandos simulados).
+- **La ronda fija de §10 con un comando:** `await __rondaFija(n)` (n = 1..11; la 7, el Cessna, falta). Lámina:
+  `Documents/aurav-cabina/capturas_taller/ronda_fija_15_11.jpg`.
+- Falta, todo de Iván: probar en el Quest, el ok para publicar (y entonces el botón del juego y la versión de la página).
 
 ## 10. Verificación (en cada etapa)
 **Automática, antes de mirar:** presupuesto (`renderer.info` y el informe de cada GLB); carga sin errores ni 404
