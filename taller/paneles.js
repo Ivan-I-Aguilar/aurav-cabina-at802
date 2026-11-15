@@ -331,7 +331,7 @@ export function crearPanelEstaciones({estaciones, leyenda, ancho = 0.68, alto = 
  * correcta; al final «n de 6» y el aviso. Botones: 'q_a0'…'q_a2' (las opciones en pantalla), 'q_siguiente', 'q_otra', 'q_cerrar'.
  * tocar(id) devuelve 'cerrar' cuando hay que esconderlo.
  */
-export function crearPanelPreguntas({quiz, orden, ancho = 0.76, alto = 0.5}) {
+export function crearPanelPreguntas({quiz, orden, ancho = 0.76, alto = 0.5, resumen = null}) {
   const p = crearPanel({ancho, alto, px: 1400, nombre: 'panel-preguntas'});
   const {g, W, H} = p;
   const M = 44;
@@ -365,7 +365,14 @@ export function crearPanelPreguntas({quiz, orden, ancho = 0.76, alto = 0.5}) {
       texto(g, 'PREGUNTAS · RESULTADO', M, 76, 32, C.red, {negrita: true});
       texto(g, `${puntaje} de ${quiz.length} correctas`, M, 170, 64, C.ink, {negrita: true});
       g.font = `bold 34px ${FUENTE}`;
-      envolver(g, 'Repasá las estaciones de las que dudaste. Este material no reemplaza la instrucción.', W - 2 * M).forEach((l, i) => texto(g, l, M, 250 + i * 46, 34, C.mute, {negrita: true}));
+      const consejo = envolver(g, 'Repasá las estaciones de las que dudaste. Este material no reemplaza la instrucción.', W - 2 * M);
+      consejo.forEach((l, i) => texto(g, l, M, 250 + i * 46, 34, C.mute, {negrita: true}));
+      if (resumen) {
+        // el camino del modo piloto (lo que se vio y se hizo en la mesa), partido en renglones por los « · »
+        resumen()
+          .split(' · ')
+          .forEach((l, i) => texto(g, l, M, 250 + consejo.length * 46 + 30 + i * 40, 30, C.ink, {negrita: true, max: W - 2 * M - 560}));
+      }
       texto(g, '[AGREGADO]', M, H - 66, 26, C.mute, {negrita: true});
       boton(bOtra, 'Otra vez');
       boton({...bSig, id: 'q_cerrar'}, 'Cerrar', true);

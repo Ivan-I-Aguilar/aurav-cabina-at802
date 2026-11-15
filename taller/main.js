@@ -596,8 +596,14 @@ cartel.malla.position.set(0, 1.66, -0.12);
 cartel.malla.visible = false;
 escena.add(cartel.malla);
 // las preguntas: delante del holograma, a la altura de los ojos (el holograma se atenúa mientras están abiertas)
-const preguntas = crearPanelPreguntas({quiz: QUIZ, orden: ORDER});
-preguntas.malla.position.set(0, 1.47, 0.1);
+// el camino del modo piloto (T7, adelantado): lo que el alumno ya vio e hizo, para el resumen del final y la pausa [PROVISORIO]
+const camino = {estaciones: new Set(), fallas: new Set(), arranco: false, enCurso: false, preguntas: null};
+function resumenCamino(conPreguntas = true) {
+  const p = camino.preguntas === null ? 'sin hacer' : `${camino.preguntas} de ${QUIZ.length}`;
+  return `Estaciones vistas: ${camino.estaciones.size} de ${STATIONS.length} · Fallas probadas: ${camino.fallas.size} de 5 · Arranque normal: ${camino.arranco ? 'hecho' : 'falta'}` + (conPreguntas ? ` · Preguntas: ${p}` : '');
+}
+const preguntas = crearPanelPreguntas({quiz: QUIZ, orden: ORDER, resumen: () => resumenCamino(false)}); // el puntaje ya está grande arriba
+preguntas.malla.position.set(0, 1.48, 0.2); // delante de la cara del holograma (z 0,17): en 0,1 el flujo tapaba «Otra vez»
 preguntas.malla.visible = false;
 preguntas.malla.renderOrder = 12;
 escena.add(preguntas.malla);
@@ -650,6 +656,7 @@ function pulsarArranque() {
   inp.pla = 0;
   inp.start = true;
   autoCL = true;
+  camino.enCurso = inp.fault === 'none'; // un arranque normal cuenta cuando llega a ralentí
 }
 function arrancar() {
   if (s.ng >= 25) return;
@@ -659,6 +666,7 @@ function arrancar() {
 }
 function ponerFalla(k) {
   if (k === 'none') return aRalenti();
+  camino.fallas.add(k);
   if (FAULTS[k].start) {
     apagar();
     inp.fault = k;
@@ -672,6 +680,7 @@ function ponerFalla(k) {
 function ponerEstacion(n) {
   estacion = estacion === n ? 0 : n;
   desdeEstacion = reloj;
+  if (estacion) camino.estaciones.add(estacion);
 }
 /** la alerta sale cuando aparece el síntoma (como en la cabina: arranque caliente con ITT > 750; colgado, Ng estancado) */
 function alertaVisible() {
@@ -699,7 +708,11 @@ function pararRecorrido() {
 function pasoRecorrido() {
   const t = (reloj - recorrido.t0) % DURATION;
   if (t < recorrido.tPrev) aRalenti(); // dio la vuelta
-  if (recorrido.tPrev < FAULT_T && t >= FAULT_T) ponerFalla('hot');
+  if (recorrido.tPrev < FAULT_T && t >= FAULT_T) {
+    const yaProbada = camino.fallas.has('hot');
+    ponerFalla('hot');
+    if (!yaProbada) camino.fallas.delete('hot'); // la que muestra el recorrido no cuenta como probada por el alumno
+  }
   if (recorrido.tPrev < RESET_T && t >= RESET_T) aRalenti();
   recorrido.tPrev = t;
   const i = inpAt(t);
@@ -713,6 +726,7 @@ function pasoRecorrido() {
   if (st !== estacion) {
     estacion = st;
     desdeEstacion = reloj;
+    if (st) camino.estaciones.add(st);
   }
   return poseHolograma(t);
 }
@@ -805,6 +819,8 @@ function accionar(a) {
   if (recorrido.activo && a.id !== 'v_recorrido') pararRecorrido(); // cualquier toque del alumno toma el control
   if (a.tipo === 'panel' && a.id.startsWith('q_')) {
     if (preguntas.tocar(a.id) === 'cerrar') cerrarPreguntas();
+    const e = preguntas.estado;
+    if (e.pregunta >= QUIZ.length) camino.preguntas = Math.max(camino.preguntas ?? 0, e.puntaje);
   } else if (a.tipo === 'panel' && a.id.startsWith('f_')) ponerFalla(a.id.slice(2));
   else if (a.tipo === 'panel' && /^st\d$/.test(a.id)) ponerEstacion(+a.id.slice(2));
   else if (a.id === 'v_corte') corte = true;
@@ -1083,13 +1099,18 @@ renderer.xr.addEventListener('sessionstart', () => {
   botonVR.textContent = 'Salir de VR';
   jugador.rotation.set(0, yaw, 0); // se entra en VR donde se estaba y mirando para el mismo lado
   audio.iniciar(); // el Quest suspende el audio al entrar en VR: se reanuda acá y en cada gesto
+  // pausa si se saca el casco (o si el sistema tapa la escena con su menú)
+  const ses = renderer.xr.getSession();
+  ses.addEventListener('visibilitychange', () => {
+    if (ses.visibilityState !== 'visible' && !panelVR.visible) abrirPausa();
+  });
 });
 function abrirPausa() {
   const botones = [{id: 'seguir', texto: 'Seguir'}, {id: 'ralenti', texto: 'Motor a ralentí'}, {id: 'ir_mesa', texto: 'A la mesa'}, {id: 'ir_partida', texto: 'A la partida'}];
   if (hangar) botones.push({id: 'ir_at802', texto: 'Al AT-802'}, {id: 'ir_cessna', texto: 'Al Cessna'}, {id: 'ir_bancos', texto: 'A los bancos'});
   botones.push({id: 'salir', texto: 'Salir de VR'});
   panelVR.mostrar(
-    {titulo: 'TALLER DE MOTORES · PAUSA', texto: `${LEGEND}\n\nEl motor sigue en el estado en que lo dejaste.`, botones},
+    {titulo: 'TALLER DE MOTORES · PAUSA', texto: `${LEGEND}\n\nEl motor sigue en el estado en que lo dejaste.\n${resumenCamino()}`, botones},
     (id) => {
       panelVR.ocultar();
       if (id === 'ralenti') aRalenti();
@@ -1321,7 +1342,11 @@ function gatilloEn(c, punto, normal) {
   c.dispatchEvent({type: 'selectstart'});
   cuadroVR();
 }
+/** las pruebas no tienen que dejar marcas en el camino del alumno */
+const guardarCamino = () => ({...camino, estaciones: new Set(camino.estaciones), fallas: new Set(camino.fallas)});
+const restaurarCamino = (c) => Object.assign(camino, c);
 function probarMandos() {
+  const caminoAntes = guardarCamino();
   const res = [];
   const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
   const [m0, m1] = manos;
@@ -1513,11 +1538,118 @@ function probarMandos() {
   for (const c of manos) ponerMano(c, lejos);
   cuadroVR();
   poseManual = false;
+  Object.assign(pose, {...POSE_BASE, objetivo: [...POSE_BASE.objetivo]});
+  aplicarPose(); // de una: sin cuadros (la pestaña de fondo) el holograma quedaba a tamaño real
   estacion = 0;
   corte = false;
   aRalenti();
+  restaurarCamino(caminoAntes);
   const fallaron = res.filter((r) => !r.ok);
   return {pruebas: res.length, fallaron: fallaron.length, detalle: res};
+}
+
+// ------------------------------------------------------------ piloto de prueba del modo piloto (T7, tramo 3 adelantado)
+// Corre el motor con el mismo cuadro del juego (avanzar) y mira lo que el alumno tendría que ver: el arranque normal (la condición
+// pasa sola a ralentí bajo y llega a ralentí sin pasar 750 °C), los dos arranques con falla, las tres fallas en marcha con su
+// síntoma, el recorrido de 82 s (las 8 estaciones y la alerta del arranque caliente) y las 6 preguntas (todas bien y todas mal).
+function probarPiloto() {
+  const caminoAntes = guardarCamino();
+  const res = [];
+  const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
+  const correrMirando = (seg, fn) => {
+    for (let t = 0; t < seg; t += 1 / 60) {
+      avanzar(1 / 60);
+      fn && fn();
+    }
+  };
+  pararRecorrido();
+  cerrarPreguntas();
+  // 1) arranque normal (desde el motor parado: ARRANCAR no hace nada con Ng > 25 %, como en el escritorio)
+  inp.fault = 'none';
+  apagar();
+  arrancar();
+  let ittMax = 0;
+  let clSola = false;
+  correrMirando(30, () => {
+    ittMax = Math.max(ittMax, s.itt);
+    if (inp.cl === 1) clSola = true;
+  });
+  ok('arranque normal: la condición pasa sola a ralentí bajo', clSola);
+  ok('arranque normal: llega a ralentí (Ng 60 %) y prende', s.lit && Math.abs(s.ng - 60) < 1.5, {ng: +s.ng.toFixed(1)});
+  ok('arranque normal: la ITT no pasa de 750 °C', ittMax < 750, {ittMax: Math.round(ittMax)});
+  ok('arranque normal: cuenta en el camino', camino.arranco);
+  // 2) arranque caliente
+  ponerFalla('hot');
+  ittMax = 0;
+  let alerta = false;
+  correrMirando(20, () => {
+    ittMax = Math.max(ittMax, s.itt);
+    alerta ||= alertaVisible();
+  });
+  ok('arranque caliente: la ITT pasa de 750 °C y sale la alerta', ittMax > 750 && alerta, {ittMax: Math.round(ittMax)});
+  // 3) arranque colgado
+  ponerFalla('hung');
+  alerta = false;
+  correrMirando(30, () => (alerta ||= alertaVisible()));
+  ok('arranque colgado: prende pero el Ng se queda abajo de 30 %, con alerta', s.lit && s.ng < 30 && alerta, {ng: +s.ng.toFixed(1)});
+  // 4) en marcha: pérdida de compresor, ingestión y sobretemperatura, a plena potencia
+  const enMarcha = (k, seg) => {
+    aRalenti();
+    ponerFalla(k);
+    inp.pla = 1;
+    const r = {surge: 0, ittMax: 0, tq: 0};
+    correrMirando(seg, () => {
+      r.surge = Math.max(r.surge, s.surge);
+      r.ittMax = Math.max(r.ittMax, s.itt);
+    });
+    r.tq = s.tq;
+    r.alerta = alertaVisible();
+    return r;
+  };
+  const sinFalla = enMarcha('none', 15);
+  const stall = enMarcha('stall', 15);
+  ok('pérdida de compresor: estampidos (surge) y alerta', stall.surge > 0.9 && stall.alerta, {surge: +stall.surge.toFixed(2)});
+  const fod = enMarcha('fod', 15);
+  ok('ingestión: más ITT y menos torque que sin falla', fod.ittMax > sinFalla.ittMax && fod.tq < sinFalla.tq && fod.alerta, {itt: [Math.round(sinFalla.ittMax), Math.round(fod.ittMax)], tq: [Math.round(sinFalla.tq), Math.round(fod.tq)]});
+  const sobre = enMarcha('overtemp', 20);
+  ok('sobretemperatura: la ITT pasa la zona roja (850 °C)', sobre.ittMax > 850 && sobre.alerta, {ittMax: Math.round(sobre.ittMax)});
+  ok('las 5 fallas cuentan en el camino', camino.fallas.size === 5, [...camino.fallas]);
+  // 5) el recorrido entero
+  aRalenti();
+  camino.estaciones.clear();
+  iniciarRecorrido();
+  alerta = false;
+  let palancasSolas = 0;
+  correrMirando(DURATION - 0.5, () => {
+    alerta ||= alertaVisible() && inp.fault === 'hot';
+    palancasSolas = Math.max(palancasSolas, inp.pla);
+  });
+  ok('recorrido: pasa por las 8 estaciones', camino.estaciones.size === 8, [...camino.estaciones]);
+  ok('recorrido: mueve la potencia solo y muestra el arranque caliente', palancasSolas > 0.5 && alerta, {potenciaMax: +palancasSolas.toFixed(2)});
+  pararRecorrido();
+  // 6) las preguntas: todas bien, después todas mal
+  abrirPreguntas();
+  const responder = (bien) => {
+    for (let q = 0; q < QUIZ.length; q++) {
+      const j = ORDER[q].findIndex((a) => (bien ? a === 0 : a !== 0));
+      accionar({tipo: 'panel', id: `q_a${j}`});
+      accionar({tipo: 'panel', id: 'q_siguiente'});
+    }
+    return preguntas.estado;
+  };
+  const todasBien = responder(true);
+  ok('preguntas: todas bien → 6 de 6', todasBien.puntaje === QUIZ.length && todasBien.pregunta === QUIZ.length, todasBien);
+  accionar({tipo: 'panel', id: 'q_otra'});
+  const todasMal = responder(false);
+  ok('preguntas: todas mal → 0 de 6 (y el camino guarda la mejor)', todasMal.puntaje === 0 && camino.preguntas === QUIZ.length, {mal: todasMal.puntaje, mejor: camino.preguntas});
+  accionar({tipo: 'panel', id: 'q_cerrar'});
+  ok('preguntas: CERRAR las esconde', !preguntasAbiertas);
+  // dejar el motor a ralentí, sin estación
+  aRalenti();
+  estacion = 0;
+  const resumen = resumenCamino();
+  restaurarCamino(caminoAntes);
+  return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res, camino: resumen};
 }
 
 // ------------------------------------------------------------ HUD (PC) y leyenda
@@ -1573,6 +1705,10 @@ function avanzar(dt) {
     step(s, inp, PASO);
     inp.start = false;
     acum -= PASO;
+  }
+  if (camino.enCurso && s.lit && s.ng >= 58) {
+    camino.arranco = true;
+    camino.enCurso = false;
   }
   if (inp.fault !== ultimaFalla) {
     tFalla = reloj;
@@ -1785,6 +1921,11 @@ window.__taller = {
   probarMandos,
   /** salto con fundido: 'partida', 'mesa', 'at802', 'cessna', 'bancos', 'oficina' */
   saltar: saltarA,
+  /** el piloto de prueba del modo piloto: arranques, fallas, recorrido y preguntas por consola */
+  probarPiloto,
+  get camino() {
+    return {estaciones: [...camino.estaciones], fallas: [...camino.fallas], arranco: camino.arranco, preguntas: camino.preguntas, resumen: resumenCamino()};
+  },
   panelAtril,
   choquesMuebles,
   /** avanza la simulación t segundos de golpe (para las capturas) */
