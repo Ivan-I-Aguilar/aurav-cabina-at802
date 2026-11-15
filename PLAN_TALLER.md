@@ -7,8 +7,8 @@ acá. Este documento es el plan profundo que pide `CLAUDE.md` antes de un trabaj
 cada etapa se marca HECHA con fecha y versión.
 
 **Estado (15/11):** plan propuesto; **espera el ok de Iván y sus decisiones (§13), que se preguntan de a una. Ya están la 1
-(uso interno), la 2 (página nueva, `taller.html`) y la 3a (el modo mecánico identifica, ubica e inspecciona), del 15/11; la 3b (quién lo
-valida) queda pendiente.** No se modeló
+(uso interno), la 2 (página nueva, `taller.html`), la 3a (el modo mecánico identifica, ubica e inspecciona) y la 4
+(seis piezas en el banco), del 15/11; la 3b (quién lo valida) queda pendiente.** No se modeló
 nada ni se tocó el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
 decidir qué entra (§3).
 
@@ -90,6 +90,7 @@ está, el motor solo serían ~105 llamadas de dibujo y ~156 k triángulos: más 
 | `taller/main.js` | Escena, jugador, VR (`local-floor`), caminar y saltos entre zonas, modos, la lógica portada de `live.js`, bucle (el motor a paso fijo), ganchos de prueba (`__taller`, `__ronda(n)`, `__vista(…)`). |
 | `taller/motor.js`, `taller/content.js` | Copias tal cual. |
 | `taller/engine.js` | Copia; cambian los dos imports (`../three.module.js`, `../BufferGeometryUtils.js`) y, para el modo mecánico, cada malla lleva el nombre de su pieza (§7). |
+| `taller/agregados.js` | Lo que el motor del simulador no tiene y el taller sí: el detector de virutas y las termocuplas de ITT (decisión 4), con su estación, su pieza y su punto de llamada. |
 | `taller/holograma.js` | El holograma: junta las mallas por cuerpo que gira, sombreador de holograma, aislado y corte por uniforms, partículas como puntos de luz, efectos, proyector. |
 | `taller/paneles.js` | Paneles 3D en canvas: estaciones y texto, instrumentos, fallas y alerta, vista, preguntas, modo mecánico, leyenda; rayo + gatillo en VR y clic en PC. |
 | `taller/recorrido.js` | El guion de `tour.js` sin el kit; las vistas como giros del holograma. |
@@ -199,13 +200,18 @@ se publica sin la validación de AAXOD**.
 
 ## 7. Banco de componentes y modo mecánico
 **Banco** (`taller_piezas.py` → `taller/piezas.glb`): un banco con bandejas y las piezas sueltas **a tamaño real** [medidas
-VERIFICAR], cada una con `userData {pieza, nombre, estacion}` y su lugar en el holograma. Propuesta para la primera versión
-(decisión 4): **ignitor**, **inyector de combustible**, **álabe** (de la turbina del compresor) y **sector de la malla de
-admisión**. Material «real» (metal, cerámica, bronce, sin texturas), para que se distingan del holograma.
+VERIFICAR], cada una con `userData {pieza, nombre, estacion}` y su lugar en el holograma. **Seis piezas en la primera versión
+(decisión 4, 15/11):** **ignitor**, **inyector de combustible**, **álabe** (de la turbina del compresor), **sector de la malla de
+admisión**, **detector de virutas** y **termocupla de ITT**. Material «real» (metal, cerámica, bronce, sin texturas), para que se
+distingan del holograma.
+- **Las dos últimas no están en el motor del simulador:** se suman al holograma en un archivo aparte (`taller/agregados.js`, así
+  `engine.js` sigue igual a la fuente), con su lugar [AGREGADO, VERIFICAR]: el detector de virutas abajo en la caja reductora (y
+  otro en la de accesorios, si se confirma) y las termocuplas de ITT en un anillo entre la turbina del compresor y la turbina
+  libre, con su arnés alrededor de la carcasa. Cada una con su punto de llamada, como los de `PARTS`.
 - **Agarrar:** grip cerca (10 cm) o rayo + gatillo; en PC, clic para tomar y clic para dejar. Si se suelta lejos, vuelve sola a su
   bandeja.
 - **Al acercarla al holograma** (a menos de ~40 cm), el lugar donde va se ilumina y titila (las 14 posiciones de inyectores, los 2
-  ignitores, la fila de álabes, la malla); al soltarla cerca aparece una copia a la escala del holograma en su lugar y la pieza
+  ignitores, la fila de álabes, la malla, el detector de virutas, el anillo de termocuplas); al soltarla cerca aparece una copia a la escala del holograma en su lugar y la pieza
   vuelve al banco. Si se suelta en otro lado, el holograma marca el lugar correcto.
 
 **Modo mecánico, módulo 1** (Iván eligió los tres niveles el 15/11, decisión 3a):
@@ -214,7 +220,8 @@ admisión**. Material «real» (metal, cerámica, bronce, sin texturas), para qu
    en la copia) y el rayo lee la pieza del triángulo que toca.
 2. **Ubicar:** las piezas del banco (arriba).
 3. **Inspeccionar:** en cada pieza, qué se mira (por ejemplo erosión y fisuras en el álabe, carbón en el inyector, desgaste del
-   electrodo del ignitor, objetos extraños y roturas en la malla) [AGREGADO, VERIFICAR]. **Lo escribe o lo valida alguien de
+   electrodo del ignitor, objetos extraños y roturas en la malla, virutas en el detector, la punta y el cable de la termocupla)
+   [AGREGADO, VERIFICAR]. **Lo escribe o lo valida alguien de
    AAXOD** (decisión 3b) y va en `taller/mecanico.js`, aparte del código. Cómo se arma: primero un borrador con conocimiento
    general, todo [AGREGADO] / [VERIFICAR], en una tabla fácil de corregir (pieza · qué se mira · qué se busca · qué queda para el
    manual); lo corrige quien valide (todavía no se sabe quién: 3b, 15/11), y el modo mecánico no se publica hasta tener esa
@@ -233,9 +240,9 @@ con esto en la peor vista:
 | Cessna 172 (Sketchfab) | sin medir: hay que bajarlo | ≤ 6 llamadas · ≤ 40 k tri · texturas ≤ 2048, una sola imagen si se puede |
 | Hangar (nave y zonas) | — | ≤ 15 llamadas · ≤ 30 k tri · ≤ 4 texturas de 1024 |
 | Mesa, proyector y cuadrante | — | ≤ 6 llamadas · ≤ 5 k tri |
-| Banco y piezas | — | ≤ 6 llamadas · ≤ 8 k tri |
+| Banco y las seis piezas | — | ≤ 8 llamadas · ≤ 10 k tri |
 | Paneles, llamadas y leyenda | — | ≤ 10 llamadas |
-| **Total** | | **≤ 70 llamadas · ≤ 200 k tri · ≤ 12 MB de descarga** |
+| **Total** | | **≤ 75 llamadas · ≤ 200 k tri · ≤ 12 MB de descarga** |
 
 - **Lo caro de un holograma no son los triángulos sino el relleno:** capas aditivas una encima de otra. Se controla con el
   holograma chico en la vista y apagándolo de a poco si la cabeza se mete adentro (a menos de 20 cm).
@@ -295,8 +302,9 @@ su ok.
 - **Verificación:** un piloto de prueba por consola (como `herramientas/piloto_prueba.js`) que hace el recorrido, un arranque
   normal, uno caliente, uno colgado y las preguntas; capturas.
 
-### Etapa T6 — Modo mecánico (2–3 sesiones; después de la decisión 4 y del borrador de inspección corregido)
-- `taller_piezas.py` → `piezas.glb`; agarrar, acercar, iluminar y soltar; identificar; inspección; resultado.
+### Etapa T6 — Modo mecánico (2–3 sesiones; después del borrador de inspección corregido)
+- `taller_piezas.py` → `piezas.glb` (las seis piezas) y `agregados.js` (el detector de virutas y las termocuplas en el holograma);
+  agarrar, acercar, iluminar y soltar; identificar; inspección; resultado.
 - **Verificación:** cada pieza en su lugar y fuera de lugar; cada tarea; capturas; **el contenido lo valida AAXOD** antes de
   publicar.
 
@@ -367,11 +375,12 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
    inspeccionar).** **3b (15/11): todavía no se sabe; el borrador se arma igual y el modo mecánico no se publica hasta tener quien
    lo valide.**
 4. **Piezas del banco en la primera versión:** · 1 · las cuatro del traspaso (ignitor, inyector, álabe, malla de admisión) · 2 ·
-   esas más el detector de virutas y la termocupla de ITT · 3 · empezar con dos (ignitor e inyector) · 4 · otra.
-5. **Qué modelo de motor manda:** · 1 · cada uno el suyo hasta tener el manual (el taller, el genérico: 52 / 65 % e ITT 545; la
-   cabina, el suyo: 60 %); nada publicado cambia · 2 · manda la cabina: el taller toma las cifras de `vuelo.js`, así el alumno ve
-   lo mismo en los dos · 3 · manda el genérico: cambia la cabina (y los umbrales de los niveles) · 4 · se espera el manual y los
-   dos pasan a las cifras reales con un instructor · 5 · otra. Hace falta antes de T5.
+   esas más el detector de virutas y la termocupla de ITT · 3 · empezar con dos (ignitor e inyector) · 4 · otra. **Elegida por Iván el 15/11: 2 · seis piezas.**
+5. **Qué modelo de motor manda.** Hoy no coinciden: en ralentí la cabina muestra Ng 60 % e ITT ~440 °C y el holograma Ng 52 % e
+   ITT 545 °C; en el arranque colgado la cabina clava el Ng en 24 % y el holograma en 36 %. · 1 · cada uno con el suyo hasta tener
+   el manual, y con el manual los dos pasan a las cifras reales (con un instructor); nada publicado cambia · 2 · manda la cabina:
+   el holograma toma ya las cifras de `vuelo.js` y el alumno ve lo mismo en los dos (el simulador de escritorio queda como está) ·
+   3 · manda el genérico: cambian la cabina publicada y los umbrales de los niveles · 4 · otra. Hace falta antes de T5.
 6. **El ok al plan**, con lo que salga de las cinco.
 
 ## 14. Cronograma
