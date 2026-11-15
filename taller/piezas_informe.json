@@ -1,0 +1,83 @@
+{
+ "etapa": "T8 tramo 1 (adelantado)",
+ "triangulos": {
+  "banco_componentes": 516,
+  "pieza_ignitor": 760,
+  "pieza_inyector": 288,
+  "pieza_alabe": 176,
+  "pieza_malla": 1560,
+  "pieza_detector": 616,
+  "pieza_termocupla": 160
+ },
+ "llamadas": 7,
+ "mb": 0.369,
+ "bandejas": [
+  {
+   "centro": [
+    2.09,
+    0.924,
+    1.0833
+   ],
+   "z0": 0.965,
+   "z1": 1.2017,
+   "pieza": "ignitor",
+   "nombre": "Ignitor"
+  },
+  {
+   "centro": [
+    2.09,
+    0.924,
+    1.35
+   ],
+   "z0": 1.2317,
+   "z1": 1.4683,
+   "pieza": "inyector",
+   "nombre": "Inyector de combustible"
+  },
+  {
+   "centro": [
+    2.09,
+    0.924,
+    1.6167
+   ],
+   "z0": 1.4983,
+   "z1": 1.735,
+   "pieza": "alabe",
+   "nombre": "Álabe de la turbina del compresor"
+  },
+  {
+   "centro": [
+    2.09,
+    0.924,
+    1.8833
+   ],
+   "z0": 1.765,
+   "z1": 2.0017,
+   "pieza": "malla",
+   "nombre": "Sector de la malla de admisión"
+  },
+  {
+   "centro": [
+    2.09,
+    0.924,
+    2.15
+   ],
+   "z0": 2.0317,
+   "z1": 2.2683,
+   "pieza": "detector",
+   "nombre": "Detector de virutas"
+  },
+  {
+   "centro": [
+    2.09,
+    0.924,
+    2.4167
+   ],
+   "z0": 2.2983,
+   "z1": 2.535,
+   "pieza": "termocupla",
+   "nombre": "Termocupla de ITT"
+  }
+ ],
+ "nota": "medidas genéricas [VERIFICAR], no del manual"
+}

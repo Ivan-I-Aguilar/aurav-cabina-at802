@@ -16,7 +16,7 @@ import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261115d';
 import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115d';
 import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115d';
 import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115d';
-import {crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril} from './paneles.js?v=20261115d';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril} from './paneles.js?v=20261115d';
 import {crearLlamadas} from './llamadas.js?v=20261115d';
 import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115d';
 
@@ -374,6 +374,58 @@ if (hangar)
   } catch (e) {
     console.warn('taller: muebles.glb no cargó', e);
   }
+// ------------------------------------------------------------ el banco de componentes (T8, tramo 1 adelantado: taller_piezas.py → piezas.glb)
+// Al costado derecho del alumno, de frente a la mesa. Las seis piezas a tamaño real [medidas VERIFICAR], cada una suelta (pieza_*,
+// con userData {pieza, nombre, estacion, bandeja}) para agarrarlas en la T8; el riel con los nombres lo dibuja el juego. Marco del mundo.
+let banco = null;
+const piezasBanco = {};
+try {
+  const gp = await new GLTFLoader().loadAsync(`./taller/piezas.glb?v=${VERSION}`);
+  gp.scene.name = 'banco-componentes';
+  gp.scene.traverse((o) => {
+    if (o.userData.banco) banco = JSON.parse(o.userData.banco);
+    if (o.userData.pieza) piezasBanco[o.userData.pieza] = o;
+    if (o.isMesh) {
+      o.material.metalness = o.material.name.includes('pieza') ? 0.3 : 0.1; // sin mapa de ambiente, el metal muy metálico se ve negro
+      o.material.roughness = o.material.name.includes('pieza') ? 0.42 : 0.75;
+      o.material.needsUpdate = true;
+    }
+  });
+  escena.add(gp.scene);
+  if (banco) {
+    const [x0, x1, z0, z1] = banco.caja;
+    choquesMuebles.push([x0, x1, z0, z1]);
+    // el riel de los nombres: entre el canto del banco y las bandejas, inclinado 35° hacia el alumno
+    const largo = z1 - z0;
+    const riel = crearPanel({ancho: largo, alto: 0.1, px: 2400, nombre: 'riel-banco'});
+    const {g, W, H} = riel;
+    g.fillStyle = '#16181b';
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = '#ffcf4a';
+    g.fillRect(0, 0, W, 8);
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    for (const b of banco.bandejas) {
+      // la placa mira a −x: su +u (derecha del que la lee) va hacia +z
+      const u = ((b.centro[2] - z0) / largo) * W;
+      g.font = 'bold 44px Arial';
+      g.fillStyle = '#ffffff';
+      g.fillText(b.nombre || '', u, H * 0.42, (W / banco.bandejas.length) * 0.94);
+      g.font = 'bold 26px Arial';
+      g.fillStyle = '#9fa6ad';
+      g.fillText('[VERIFICAR]', u, H * 0.8);
+    }
+    riel.pintado();
+    const inc = THREE.MathUtils.degToRad(35);
+    riel.malla.rotation.set(0, -Math.PI / 2, 0, 'YXZ');
+    riel.malla.rotateX(-(Math.PI / 2 - inc));
+    riel.malla.position.set(x0 + 0.06, banco.tapa_y + 0.03, (z0 + z1) / 2);
+    escena.add(riel.malla);
+  }
+} catch (e) {
+  console.warn('taller: piezas.glb no cargó', e);
+}
+
 // ------------------------------------------------------------ carteles de seguridad genéricos (reserva de la T5): un atlas, una llamada
 // Sin marcas ni logos; los pictogramas son figuras simples [PROVISORIO]. Marco del hangar (cuelgan de él).
 function atlasSeguridad() {
@@ -1816,6 +1868,9 @@ const RONDA = [
   // 23 y 24 (T6, tramo 1 adelantado): el AT-802 en su puesto
   {nombre: 'el AT-802 de 3/4 delantero', pos: [-1.5, 1.75, 39.5], mira: [-10, 1.6, 29], hfov: 80},
   {nombre: 'el AT-802: calzas, escalera y hélice', pos: [-6.2, 1.65, 35.4], mira: [-9.3, 1.0, 31.4], hfov: 75},
+  // 25 y 26 (T8, tramo 1 adelantado): el banco de componentes
+  {nombre: 'el banco de componentes', pos: [1.05, 1.6, 1.75], mira: [2.05, 0.9, 1.75], hfov: 75},
+  {nombre: 'el banco desde la mesa', pos: [0, 1.6, 0.95], mira: [2.0, 1.0, 1.75], hfov: 75},
 ];
 function ponerCamara(pos, mira, hfov = 75) {
   jugador.position.set(pos[0], 0, pos[2]);
