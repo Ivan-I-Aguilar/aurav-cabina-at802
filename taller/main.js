@@ -17,7 +17,8 @@ import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=202
 import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115d';
 import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115d';
 import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115d';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril} from './paneles.js?v=20261115d';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261115d';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261115d';
 import {crearLlamadas} from './llamadas.js?v=20261115d';
 import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115d';
 
@@ -682,7 +683,7 @@ const paneles = [panelMotor, panelEstaciones, preguntas];
 // el panel del atril de partida (T5): sobre la cabeza inclinada del atril de muebles.glb
 let panelAtril = null;
 if (datosAtril) {
-  panelAtril = crearPanelAtril({leyenda: LEGEND});
+  panelAtril = crearPanelAtril({leyenda: LEGEND, mecanico: PARAM.get('mecanico') === '1'});
   const [x, y, z] = datosAtril.centro;
   const inc = THREE.MathUtils.degToRad(datosAtril.inclinacion_grados);
   panelAtril.malla.rotation.x = -(Math.PI / 2 - inc); // la normal queda (0, cos inc, sin inc): hacia el que llega por el portón
@@ -913,7 +914,14 @@ function accionar(a) {
   else if (a.id === 'v_preguntas') preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
   else if (a.id === 'v_mesa') poseManual = false;
   else if (a.id === 'modo_piloto') saltarA('mesa');
-  else if (a.id === 'modo_mecanico') return true; // en preparación (T8): el botón se ve apagado
+  else if (a.id === 'modo_mecanico') {
+    // sin publicar hasta la validación de AAXOD (decisión 3b): sólo con ?mecanico=1; si no, el botón se ve apagado
+    if (PARAM.get('mecanico') === '1') {
+      iniciarMecanico();
+      saltarA('mesa');
+    }
+    return true;
+  }
   else if (a.id.startsWith('ir_')) saltarA(a.id.slice(3));
   else if (a.tipo === 'boton') {
     const b = botones3D[a.id];
@@ -1016,7 +1024,10 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   arrastre.y = e.clientY;
 });
 const soltar = (e) => {
-  if (arrastre && !palancaMouse && e && Math.hypot(e.clientX - arrastre.x0, e.clientY - arrastre.y0) < 5) accionar(arrastre.a);
+  if (arrastre && !palancaMouse && e && Math.hypot(e.clientX - arrastre.x0, e.clientY - arrastre.y0) < 5) {
+    if (arrastre.a && arrastre.a.id) accionar(arrastre.a);
+    else intentarIdentificar(rayoDesdeMouse(e));
+  }
   arrastre = null;
   palancaMouse = null;
 };
@@ -1278,8 +1289,10 @@ const manos = [0, 1].map((i) => {
   c.userData = {linea, grip: false, gripNuevo: false};
   c.addEventListener('selectstart', () => {
     audio.iniciar();
-    if (panelVR.visible) panelVR.gatillo(c);
-    else accionar(apuntado(rayoDesdeControl(c)));
+    if (panelVR.visible) return panelVR.gatillo(c);
+    const a = apuntado(rayoDesdeControl(c));
+    if (a && a.id) accionar(a);
+    else intentarIdentificar(rayoDesdeControl(c)); // el modo mecánico: el gatillo sobre el holograma responde «señalá…»
   });
   c.addEventListener('squeezestart', () => Object.assign(c.userData, {grip: true, gripNuevo: true}));
   c.addEventListener('squeezeend', () => (c.userData.grip = false));
@@ -1827,6 +1840,139 @@ function probarIdentificar() {
   return res;
 }
 
+// ------------------------------------------------------------ el modo mecánico, módulo 1 (T9 adelantada; BORRADOR sin validar)
+// Sólo con ?mecanico=1: no se publica hasta la validación de AAXOD (decisión 3b). Las tareas de mecanico.js en orden: IDENTIFICAR
+// (el cartel de arriba del holograma da la consigna; el gatillo o el clic sobre el holograma responde), UBICAR (las seis piezas del
+// banco en su lugar) e INSPECCIONAR (tener cada pieza en la mano: el panel de atrás del banco muestra su tabla). Al final, el
+// resultado por tarea en el mismo panel.
+const mecanico = {activo: false, i: 0, errores: TAREAS.map(() => 0), vistas: new Set(), mensaje: null, hasta: 0};
+let panelMecanico = null;
+if (banco) {
+  panelMecanico = crearPanelMecanico({leyenda: LEGEND, aviso: AVISO_MECANICO});
+  const [, x1, z0, z1] = banco.caja;
+  panelMecanico.malla.rotation.y = -Math.PI / 2; // mira a −x, al que está frente al banco
+  panelMecanico.malla.position.set(x1 + 0.08, 1.48, (z0 + z1) / 2);
+  panelMecanico.malla.visible = false;
+  escena.add(panelMecanico.malla);
+}
+function iniciarMecanico() {
+  Object.assign(mecanico, {activo: true, i: 0, errores: TAREAS.map(() => 0), mensaje: null, hasta: 0});
+  mecanico.vistas.clear();
+  for (const [k, copia] of Object.entries(ubicar.puestas)) {
+    eng.root.remove(copia);
+    delete ubicar.puestas[k];
+  }
+  Object.assign(ubicar, {aciertos: 0, errores: 0, marcaHasta: 0});
+  pararRecorrido();
+}
+const tareaActual = () => TAREAS[mecanico.i] || null;
+function intentarIdentificar(r) {
+  const t = tareaActual();
+  if (!mecanico.activo || !t || t.tipo !== 'identificar') return false;
+  const h = piezaApuntada(r);
+  if (!h) return false;
+  if (h.pieza === t.pieza) {
+    mecanico.mensaje = {titulo: '✓ CORRECTO', texto: INSPECCION[h.pieza].nombre, color: 'verde'};
+    mecanico.i++;
+  } else {
+    mecanico.errores[mecanico.i]++;
+    mecanico.mensaje = {titulo: '✗ NO ES ESA', texto: `Eso es: ${INSPECCION[h.pieza].nombre}. ${t.texto}`, color: 'rojo'};
+  }
+  mecanico.hasta = reloj + 2.5;
+  return true;
+}
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+function pasoMecanico() {
+  if (!panelMecanico) return;
+  panelMecanico.malla.visible = mecanico.activo;
+  if (!mecanico.activo) return;
+  let t = tareaActual();
+  if (t && t.tipo === 'ubicar' && t.piezas.every((k) => ubicar.puestas[k])) {
+    mecanico.errores[mecanico.i] = ubicar.errores;
+    mecanico.i++;
+  }
+  if (ubicar.pieza) mecanico.vistas.add(ubicar.pieza.userData.pieza);
+  t = tareaActual();
+  if (t && t.tipo === 'inspeccionar' && t.piezas.every((k) => mecanico.vistas.has(k))) mecanico.i++;
+  const tareas = TAREAS.map((x, j) => {
+    const estado = j < mecanico.i ? 'hecha' : j === mecanico.i ? 'actual' : 'pendiente';
+    let detalle = '';
+    if (estado === 'hecha' && mecanico.errores[j]) detalle = plural(mecanico.errores[j], 'error', 'errores');
+    if (estado === 'actual' && x.tipo === 'ubicar') detalle = `${x.piezas.filter((k) => ubicar.puestas[k]).length} de ${x.piezas.length}`;
+    if (estado === 'actual' && x.tipo === 'inspeccionar') detalle = `${x.piezas.filter((k) => mecanico.vistas.has(k)).length} de ${x.piezas.length}`;
+    return {texto: x.texto, estado, detalle};
+  });
+  let resultado = null;
+  if (mecanico.i >= TAREAS.length) {
+    const ident = TAREAS.map((x, j) => [x, j]).filter(([x]) => x.tipo === 'identificar');
+    const errId = ident.reduce((sum, [, j]) => sum + mecanico.errores[j], 0);
+    const jU = TAREAS.findIndex((x) => x.tipo === 'ubicar');
+    resultado = [
+      `Identificar: ${ident.length} de ${ident.length} · ${plural(errId, 'error', 'errores')}`,
+      `Ubicar: ${TAREAS[jU].piezas.length} de ${TAREAS[jU].piezas.length} · ${plural(mecanico.errores[jU], 'error', 'errores')}`,
+      `Inspeccionar: ${mecanico.vistas.size} de ${Object.keys(INSPECCION).length} piezas vistas`,
+    ];
+  }
+  const enMano = ubicar.pieza ? INSPECCION[ubicar.pieza.userData.pieza] : null;
+  panelMecanico.actualizar({tareas, pieza: enMano, resultado});
+}
+function tareaCartel() {
+  if (!mecanico.activo) return null;
+  if (reloj < mecanico.hasta && mecanico.mensaje) return mecanico.mensaje;
+  const t = tareaActual();
+  if (!t) return {titulo: 'MODO MECÁNICO · TERMINADO', texto: 'El resultado está en el panel de atrás del banco.'};
+  const mismas = TAREAS.filter((x) => x.tipo === t.tipo);
+  const k = TAREAS.slice(0, mecanico.i + 1).filter((x) => x.tipo === t.tipo).length;
+  return {titulo: `${t.tipo.toUpperCase()} · ${k} DE ${mismas.length}`, texto: t.texto};
+}
+/** prueba del modo mecánico: identificar (una mal y todas bien), ubicar las seis e inspeccionarlas; deja todo como estaba */
+function probarMecanico() {
+  const res = [];
+  const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
+  const vozAntes = audio.vozOn;
+  audio.vozOn = false;
+  iniciarMecanico();
+  const ojo = new THREE.Vector3(0, ALTURA_OJOS, INICIO.pos.z);
+  const apuntarA = (clave) => {
+    const lugar = lugarEnMundo(clave, new THREE.Vector3());
+    rayoPieza.set(ojo, lugar.sub(ojo).normalize());
+    rayoPieza.far = 5;
+    return intentarIdentificar(rayoPieza);
+  };
+  apuntarA('inyector'); // la primera consigna es el ignitor: error
+  ok('identificar: señalar otra pieza cuenta un error y no avanza', mecanico.i === 0 && mecanico.errores[0] === 1 && mecanico.mensaje.color === 'rojo', mecanico.mensaje);
+  for (const t of TAREAS.filter((x) => x.tipo === 'identificar')) apuntarA(t.pieza);
+  ok('identificar: las cuatro consignas bien avanzan a ubicar', tareaActual()?.tipo === 'ubicar', {i: mecanico.i});
+  const [m0] = manos;
+  for (const clave of TAREAS.find((x) => x.tipo === 'ubicar').piezas) {
+    const p = piezasBanco[clave];
+    ponerMano(m0, p.getWorldPosition(new THREE.Vector3()));
+    apretarGrip(m0);
+    cuadroVR();
+    pasoMecanico();
+    ponerMano(m0, lugarEnMundo(clave, new THREE.Vector3()));
+    cuadroVR();
+    soltarGrip(m0);
+    cuadroVR();
+    pasoMecanico();
+  }
+  ok('ubicar: las seis piezas puestas pasan la tarea (y al llevarlas ya se vieron)', mecanico.i >= TAREAS.findIndex((x) => x.tipo === 'ubicar') + 1, {i: mecanico.i, puestas: Object.keys(ubicar.puestas)});
+  pasoMecanico();
+  ok('inspeccionar: con las seis vistas termina', mecanico.i >= TAREAS.length, {vistas: [...mecanico.vistas]});
+  mecanico.hasta = 0; // el «✓ CORRECTO» del último intento dura 2,5 s (acá el reloj no corre)
+  ok('el cartel dice terminado', tareaCartel()?.titulo === 'MODO MECÁNICO · TERMINADO');
+  for (const c of manos) ponerMano(c, new THREE.Vector3(0, -5, 0));
+  cuadroVR();
+  for (const [k, copia] of Object.entries(ubicar.puestas)) {
+    eng.root.remove(copia);
+    delete ubicar.puestas[k];
+  }
+  Object.assign(ubicar, {aciertos: 0, errores: 0, marcaHasta: 0});
+  mecanico.activo = false;
+  audio.vozOn = vozAntes;
+  return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res};
+}
+
 // ------------------------------------------------------------ piloto de prueba del modo piloto (T7, tramo 3 adelantado)
 // Corre el motor con el mismo cuadro del juego (avanzar) y mira lo que el alumno tendría que ver: el arranque normal (la condición
 // pasa sola a ralentí bajo y llega a ralentí sin pasar 750 °C), los dos arranques con falla, las tres fallas en marcha con su
@@ -1975,6 +2121,7 @@ function avanzar(dt) {
     manosVR();
   }
   pasoUbicar(); // la pieza que se lleva y la marca de su lugar (T8)
+  pasoMecanico(); // las tareas del modo mecánico (T9)
   // el recorrido pone las palancas, la estación y las fallas del guion; la pose del holograma sigue a la vista de cada estación
   const metaTour = recorrido.activo ? pasoRecorrido() : null;
   if (!poseManual && !agarreHolo.length) seguirPose(metaTour || POSE_BASE, dt);
@@ -2033,7 +2180,7 @@ function avanzar(dt) {
     if (preguntasAbiertas) preguntas.pasarPor(hover && hover.startsWith('q_') ? hover : null);
   }
   const st = STATIONS.find((x) => x.n === estacion);
-  cartel.actualizar({estacion: preguntasAbiertas ? null : st || null, alerta: !preguntasAbiertas && alertaVisible() ? FAULTS[inp.fault] : null});
+  cartel.actualizar({estacion: preguntasAbiertas || mecanico.activo ? null : st || null, alerta: !preguntasAbiertas && alertaVisible() ? FAULTS[inp.fault] : null, tarea: tareaCartel()});
   // las llamadas de la estación (aparecen de a poco, como en el escritorio) y el holograma atenuado mientras están las preguntas o
   // con la cabeza adentro
   llamadas.actualizar(preguntasAbiertas ? null : st || null, estacion ? ss(0.8, 1.3, since) : 0, eng.root, renderer.xr.isPresenting ? renderer.xr.getCamera() : camara);
@@ -2212,6 +2359,12 @@ window.__taller = {
   saltar: saltarA,
   /** identificar (T9): la pieza que dice el rayo desde el ojo hacia el lugar de cada pieza */
   probarIdentificar,
+  /** el modo mecánico (T9, borrador; sólo con ?mecanico=1 desde el atril): la prueba entera y el arranque a mano */
+  probarMecanico,
+  iniciarMecanico,
+  get mecanico() {
+    return {activo: mecanico.activo, tarea: mecanico.i, errores: [...mecanico.errores], vistas: [...mecanico.vistas]};
+  },
   /** ubicar (T8): aciertos, errores y las piezas puestas; tomar/soltar para las pruebas */
   get ubicar() {
     return {aciertos: ubicar.aciertos, errores: ubicar.errores, puestas: Object.keys(ubicar.puestas), llevando: ubicar.pieza && ubicar.pieza.userData.pieza};

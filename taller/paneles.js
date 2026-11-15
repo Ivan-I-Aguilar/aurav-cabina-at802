@@ -185,13 +185,25 @@ export function crearCartel({ancho = 1.0, alto = 0.24} = {}) {
   let firma = '';
   return {
     ...p,
-    actualizar({estacion, alerta}) {
-      const f = JSON.stringify([estacion && estacion.n, alerta && alerta.alert]);
+    actualizar({estacion, alerta, tarea = null}) {
+      const f = JSON.stringify([estacion && estacion.n, alerta && alerta.alert, tarea]);
       if (f === firma) return;
       firma = f;
       g.clearRect(0, 0, W, H);
-      p.malla.visible = !!(estacion || alerta);
+      p.malla.visible = !!(estacion || alerta || tarea);
       if (!p.malla.visible) return;
+      if (tarea && !alerta) {
+        // la tarea del modo mecánico (T9): «IDENTIFICAR · 1 DE 4» y la consigna, o el resultado del intento en verde o rojo
+        const fondo = tarea.color === 'verde' ? C.green : tarea.color === 'rojo' ? C.red : C.panel;
+        const tinta = tarea.color ? '#ffffff' : C.ink;
+        caja(g, 0, 0, W, H, 24, fondo, tarea.color ? fondo : C.line);
+        texto(g, tarea.titulo, 40, 70, 40, tarea.color ? '#ffffff' : C.amber, {negrita: true});
+        texto(g, '[AGREGADO · VERIFICAR]', W - 40, 70, 28, tarea.color ? '#ffffff' : C.mute, {negrita: true, alinear: 'right'});
+        g.font = `bold 50px ${FUENTE}`;
+        envolver(g, tarea.texto, W - 80).slice(0, 2).forEach((l, i) => texto(g, l, 40, 152 + i * 64, 50, tinta, {negrita: true}));
+        p.pintado();
+        return;
+      }
       if (alerta) {
         caja(g, 0, 0, W, H, 24, C.red);
         texto(g, alerta.alert, W / 2, H * 0.38, 50, '#ffffff', {negrita: true, alinear: 'center', base: 'middle', max: W - 60});
@@ -213,13 +225,15 @@ export function crearCartel({ancho = 1.0, alto = 0.24} = {}) {
  * 'modo_mecanico' (en preparación hasta la T8: se ve apagado), 'ir_mesa', 'ir_at802', 'ir_cessna', 'ir_bancos', 'ir_oficina'.
  * actualizar({hover}). Va sobre la cabeza inclinada del atril de muebles.glb (0,92 × 0,52 m).
  */
-export function crearPanelAtril({leyenda, ancho = 0.88, alto = 0.48}) {
+export function crearPanelAtril({leyenda, ancho = 0.88, alto = 0.48, mecanico = false}) {
   const p = crearPanel({ancho, alto, px: 1280, nombre: 'panel-atril'});
   const {g, W, H} = p;
   const M = 30;
   const bwM = (W - 2 * M - 20) / 2;
   p.botones.push({id: 'modo_piloto', x: M, y: 150, w: bwM, h: 170, t: 'MODO PILOTO', sub: 'El motor en la mesa: arrancarlo, sus estaciones y sus fallas'});
-  p.botones.push({id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'En preparación', apagado: true});
+  p.botones.push(mecanico
+    ? {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'BORRADOR sin validar: identificar, ubicar e inspeccionar'}
+    : {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'En preparación', apagado: true});
   const IR = [['ir_mesa', 'LA MESA'], ['ir_at802', 'AT-802'], ['ir_cessna', 'CESSNA'], ['ir_bancos', 'BANCOS'], ['ir_oficina', 'CRÉDITOS']];
   const bwI = (W - 2 * M - 4 * 14) / 5;
   IR.forEach(([id, t], i) => p.botones.push({id, t, x: M + i * (bwI + 14), y: 400, w: bwI, h: 96}));
@@ -483,4 +497,74 @@ export function crearPlacaCuadrante(datos) {
   p.malla.position.set((x0 + x1) / 2, datos.caja.tope + 0.0018, (z0 + z1) / 2);
   p.malla.renderOrder = 2;
   return p;
+}
+
+/**
+ * El panel del MODO MECÁNICO (T9, adelantado; BORRADOR sin validar), detrás del banco de componentes: las tareas con su estado, la
+ * inspección de la pieza que se tiene en la mano (taller/mecanico.js) y el resultado al final, con el aviso del borrador y la leyenda.
+ * actualizar({tareas: [{texto, estado: 'hecha'|'actual'|'pendiente', detalle}], pieza: entrada de INSPECCION o null, resultado: [renglones] o null})
+ */
+export function crearPanelMecanico({leyenda, aviso, ancho = 0.9, alto = 0.84}) {
+  const p = crearPanel({ancho, alto, px: 1400, nombre: 'panel-mecanico'});
+  const {g, W, H} = p;
+  const M = 40;
+  let firma = '';
+  function dibujar({tareas = [], pieza = null, resultado = null}) {
+    g.clearRect(0, 0, W, H);
+    caja(g, 0, 0, W, H, 26, C.panel, C.line);
+    g.fillStyle = C.amber;
+    g.fillRect(M, 30, 70, 7);
+    texto(g, 'MODO MECÁNICO · BORRADOR', M, 84, 44, C.ink, {negrita: true});
+    texto(g, '[AGREGADO · VERIFICAR]', W - M, 84, 26, C.mute, {negrita: true, alinear: 'right'});
+    let y = 140;
+    // con una pieza en la mano, sólo la tarea actual: la inspección necesita el lugar
+    for (const t of pieza ? tareas.filter((x) => x.estado === 'actual') : tareas) {
+      const marca = t.estado === 'hecha' ? '✓' : t.estado === 'actual' ? '▶' : '·';
+      const color = t.estado === 'hecha' ? C.green : t.estado === 'actual' ? C.red : C.mute;
+      texto(g, `${marca} ${t.texto}${t.detalle ? ` — ${t.detalle}` : ''}`, M, y, 32, color, {negrita: t.estado === 'actual', max: W - 2 * M});
+      y += 44;
+    }
+    y += 14;
+    g.fillStyle = C.line;
+    g.fillRect(M, y - 26, W - 2 * M, 3);
+    if (pieza) {
+      texto(g, `INSPECCIÓN · ${pieza.nombre.toUpperCase()}`, M, y + 22, 36, C.red, {negrita: true, max: W - 2 * M});
+      y += 66;
+      const bloque = (titulo, lineas) => {
+        texto(g, titulo, M, y, 28, C.mute, {negrita: true});
+        y += 36;
+        for (const l of lineas) {
+          g.font = `30px ${FUENTE}`;
+          for (const r of envolver(g, `• ${l}`, W - 2 * M - 20)) {
+            texto(g, r, M + 14, y, 30, C.ink);
+            y += 36;
+          }
+        }
+        y += 6;
+      };
+      bloque('QUÉ SE MIRA', pieza.mira);
+      bloque('QUÉ SE BUSCA', pieza.busca);
+      bloque('QUEDA PARA EL MANUAL', [pieza.manual]);
+    } else if (resultado) {
+      texto(g, 'RESULTADO', M, y + 22, 36, C.red, {negrita: true});
+      y += 70;
+      for (const l of resultado) {
+        texto(g, l, M, y, 34, C.ink, {negrita: true, max: W - 2 * M});
+        y += 46;
+      }
+    }
+    g.font = `bold 26px ${FUENTE}`;
+    envolver(g, aviso, W - 2 * M).forEach((l, i) => texto(g, l, M, H - 190 + i * 32, 26, C.amber, {negrita: true}));
+    pieLeyenda(g, W, H - 110, 110, leyenda, 28);
+    p.pintado();
+  }
+  return {
+    ...p,
+    actualizar(e) {
+      const f = JSON.stringify(e);
+      if (f === firma) return;
+      firma = f;
+      dibujar(e);
+    },
+  };
 }
