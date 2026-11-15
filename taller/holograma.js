@@ -150,6 +150,7 @@ export function envolverMotor(raiz) {
  * eng: lo que devuelve buildEngine() (root, update, PARTS…). opciones: estado0 (un estado del modelo en marcha, para probar qué
  * gira), conjuntos (STATIONS de engine.js: qué queda y qué se resalta en cada estación), color, acento, tamPunto (m).
  */
+// el look: A, celeste #62d8ff con acento ámbar #ffc46b (lo eligió Iván el 15/11 entre las cuatro de T1_variantes_color.jpg)
 export function crearHolograma(eng, {estado0, conjuntos = {}, color = '#62d8ff', acento = '#ffc46b', tamPunto = 0.011, brilloFlujo = 1.25, atenuarGrandes = 0.1} = {}) {
   const raiz = eng.root;
   const env = envolverMotor(raiz);

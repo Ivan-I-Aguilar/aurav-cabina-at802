@@ -316,7 +316,7 @@ publicar; en el Quest no se probó nada).** Lo que quedó:
   0,42); (4) con el panel del navegador escondido, las capturas salen viejas: mostrarlo antes de la ronda.
 - Capturas (fuera del repo): `Documents/aurav-cabina/capturas_taller/T1_holograma.jpg` (vistas, 7 estaciones, fallas, sin corte y el
   escritorio de referencia) y `T1_variantes_color.jpg` (A celeste + ámbar, B celeste + blanco, C celeste + lima de AURAV, D azul +
-  naranja). Falta que Iván elija el look.
+  naranja). **Iván eligió la A, celeste y ámbar (15/11, «1 · Celeste y ámbar»): es la que ya estaba en el código.**
 
 ### T2 — Mesa, palancas, instrumentos y fallas (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
