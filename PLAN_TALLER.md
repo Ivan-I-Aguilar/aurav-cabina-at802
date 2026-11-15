@@ -353,6 +353,7 @@ nada).** Lo que quedó:
   5,6 cm; (4) ARRANCAR sólo arranca con el motor parado (Ng < 25 %), como en el escritorio; (5) la mesa da 13 llamadas (el presupuesto
   decía 6): palancas, botones y lámparas son mallas sueltas para agarrarlas y prenderlas; la escena entera sigue en 44.
 - Capturas: `Documents/aurav-cabina/capturas_taller/T2_mesa_y_paneles.jpg`.
+- **Ok de Iván a la mesa, el cuadrante y los paneles: 15/11 («Quedan así»).**
 - **Pregunta para Iván:** el TORQUE se pone rojo desde 85 % porque así son los arcos del MVP-50 de la cabina (verde 0–85, rojo
   85–100): a plena potencia se ve rojo, en el taller y en la cabina. ¿Está bien así o se corrige en los dos?
 
