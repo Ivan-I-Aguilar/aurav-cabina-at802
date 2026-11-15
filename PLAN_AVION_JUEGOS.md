@@ -161,3 +161,10 @@ Peso estimado:
   salida para probar variantes. Visor: `juegos/ver.html` (mismas luces que los juegos; `__ver('…')` con 14 vistas, anclajes,
   hélice que gira, LOD al lado). Ronda mirada: 3/4 delanteros y traseros, frente desde la marca S, hélice quieta y girada, válvula,
   ruedas, cabina desde el ojo, por la ventana izquierda, puntas de ala, LOD de cerca: sin defectos.
+- **Etapa B HECHA el 15/11 (señaleros; commit local bf01a05 en `aurav-senales`, sin publicar):** `at802.glb` y `at802-lod.glb`
+  nuevos; `at802glb.js` usa los anclajes y los materiales del GLB (`prepararAvion`, `esAvionNuevo`; con un GLB viejo se arma como
+  antes) y `V_AVION = '20261115a'` en las URL de los GLB; `plataforma.js`: `NARIZ_X` 2,72, calzas a ±0,38 del apoyo en z ±1,422,
+  cono de la nariz a 4,2; `main.js`: «Ver desde la cabina» en `ojo-piloto`; versiones 20261115a; README. Probado en PC: sin errores;
+  marca S, calzas de cerca, estacionados de lejos y de cerca, rodaje en la curva con la hélice, vista de cabina. Escena: 517 mallas
+  (antes 588), 315 k tri (312 k), 196 con sombra (272). Con el panel del navegador oculto no se pudo medir por cuadro.
+- **Falta:** la librea (pregunta 2), la etapa C (sector, después de la pregunta 3), publicar (con su ok) y el Quest.
