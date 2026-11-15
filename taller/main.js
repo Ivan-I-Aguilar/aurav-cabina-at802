@@ -15,7 +15,7 @@ import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261115d';
 import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115d';
 import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115d';
 import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115d';
-import {crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante} from './paneles.js?v=20261115d';
+import {crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril} from './paneles.js?v=20261115d';
 import {crearLlamadas} from './llamadas.js?v=20261115d';
 import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115d';
 
@@ -264,6 +264,115 @@ try {
   console.warn('taller: hangar.glb no cargó; queda la sala gris', e);
   escena.add(crearSala());
 }
+
+// ------------------------------------------------------------ muebles y utilería (T5: herramientas/taller_muebles.py → muebles.glb)
+// En el marco del hangar (cuelgan de él). Los rectángulos de choque vienen en userData.choques; el atril, en userData.atril.
+const choquesMuebles = []; // [x0, x1, z0, z1] en el mundo
+let datosAtril = null;
+function lienzo(w, h, dibujar) {
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  dibujar(cv.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+const texturaSombra = () =>
+  lienzo(64, 64, (g) => {
+    const r = g.createRadialGradient(32, 32, 4, 32, 32, 32);
+    r.addColorStop(0, 'rgba(255,255,255,0.9)');
+    r.addColorStop(0.55, 'rgba(255,255,255,0.45)');
+    r.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = r;
+    g.fillRect(0, 0, 64, 64);
+  });
+const texturaMantenimiento = () =>
+  lienzo(512, 768, (g, w, h) => {
+    g.fillStyle = '#f2c230';
+    g.fillRect(0, 0, w, h);
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, w, h);
+    g.rect(34, 34, w - 68, h - 68);
+    g.clip('evenodd');
+    g.fillStyle = '#16181b';
+    for (let k = -h; k < w + h; k += 64) {
+      g.beginPath();
+      g.moveTo(k, 0);
+      g.lineTo(k + 32, 0);
+      g.lineTo(k + 32 - h, h);
+      g.lineTo(k - h, h);
+      g.fill();
+    }
+    g.restore();
+    g.fillStyle = '#16181b';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = 'bold 92px Arial';
+    g.fillText('EN', w / 2, 230);
+    g.font = 'bold 74px Arial';
+    g.fillText('MANTENI-', w / 2, 340, w - 90);
+    g.fillText('MIENTO', w / 2, 425, w - 90);
+    g.font = 'bold 34px Arial';
+    g.fillText('AERONAVE FUERA', w / 2, 540, w - 90);
+    g.fillText('DE SERVICIO', w / 2, 584, w - 90);
+    g.fillText('NO OPERAR', w / 2, 646, w - 90);
+  });
+// los créditos completos, en el pizarrón de la oficina [PROVISORIO: el del Cessna se suma con el avión, en la T6]
+const CREDITOS = [
+  ['TALLER DE MOTORES · AURAV', 'Uso interno de prueba. Nada de lo que se ve es un procedimiento aprobado.'],
+  ['El motor del holograma', 'El turbohélice genérico del simulador de escritorio de AURAV, con las cifras de la cabina del AT-802 de este proyecto.'],
+  ['El AT-802', 'Exterior: modelo freeware de FSX (Flight Sim Nation), sólo para uso interno. Cabina: AURAV.'],
+  ['El hangar', 'Ficticio, de AURAV: medidas y distribución inventadas.'],
+  ['Programas', 'three.js (licencia MIT) · Blender.'],
+];
+const texturaCreditos = () =>
+  lienzo(1600, 505, (g, w, h) => {
+    g.fillStyle = '#f7f8f9';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = '#2f86e0';
+    g.font = 'bold 54px Arial';
+    g.fillText('CRÉDITOS', 40, 70);
+    let y = 128;
+    for (const [t, d] of CREDITOS) {
+      g.fillStyle = '#16181b';
+      g.font = 'bold 34px Arial';
+      g.fillText(t, 40, y);
+      g.fillStyle = '#4a4f55';
+      g.font = '28px Arial';
+      g.fillText(d, 40, y + 36, w - 80);
+      y += 76;
+    }
+  });
+if (hangar)
+  try {
+    const gm = await new GLTFLoader().loadAsync(`./taller/muebles.glb?v=${VERSION}`);
+    gm.scene.name = 'muebles';
+    gm.scene.traverse((o) => {
+      if (o.userData.choques) for (const [x0, x1, z0, z1] of JSON.parse(o.userData.choques)) choquesMuebles.push([x0, x1, z0 + DESPLAZAR_HANGAR, z1 + DESPLAZAR_HANGAR]);
+      if (o.userData.atril) datosAtril = JSON.parse(o.userData.atril);
+      if (!o.isMesh) return;
+      const n = o.material.name || '';
+      if (n.includes('muebles_vidrio')) o.material = new THREE.MeshStandardMaterial({color: 0xcfe3ef, transparent: true, opacity: 0.16, roughness: 0.1, metalness: 0, depthWrite: false, side: THREE.DoubleSide});
+      else if (n.includes('muebles_sombra')) {
+        o.material = new THREE.MeshBasicMaterial({color: 0x000000, map: texturaSombra(), transparent: true, opacity: 0.55, depthWrite: false});
+        o.renderOrder = 1;
+      } else if (n.includes('pizarron') || n.includes('cartel_mantenimiento')) {
+        const t = n.includes('pizarron') ? texturaCreditos() : texturaMantenimiento();
+        t.flipY = false; // las coordenadas de textura del glTF ya vienen con v hacia abajo (con flipY el texto salía dado vuelta)
+        o.material = new THREE.MeshBasicMaterial({map: t, toneMapped: false, side: THREE.DoubleSide});
+      } else {
+        o.material.metalness = 0.1;
+        o.material.roughness = 0.75;
+        o.material.needsUpdate = true;
+      }
+    });
+    hangar.add(gm.scene);
+  } catch (e) {
+    console.warn('taller: muebles.glb no cargó', e);
+  }
 const leyenda = crearLeyenda();
 escena.add(leyenda.grupo);
 const proyector = crearProyector({altoCono: CENTRO_HOLO.y - 0.15 - (MESA.alto + 0.031)});
@@ -389,6 +498,18 @@ preguntas.malla.visible = false;
 preguntas.malla.renderOrder = 12;
 escena.add(preguntas.malla);
 const paneles = [panelMotor, panelEstaciones, preguntas];
+// el panel del atril de partida (T5): sobre la cabeza inclinada del atril de muebles.glb
+let panelAtril = null;
+if (datosAtril) {
+  panelAtril = crearPanelAtril({leyenda: LEGEND});
+  const [x, y, z] = datosAtril.centro;
+  const inc = THREE.MathUtils.degToRad(datosAtril.inclinacion_grados);
+  panelAtril.malla.rotation.x = -(Math.PI / 2 - inc); // la normal queda (0, cos inc, sin inc): hacia el que llega por el portón
+  panelAtril.malla.position.set(x, y, z + DESPLAZAR_HANGAR).addScaledVector(new THREE.Vector3(0, Math.cos(inc), Math.sin(inc)), 0.004);
+  escena.add(panelAtril.malla);
+  panelAtril.actualizar();
+  paneles.push(panelAtril);
+}
 const llamadas = crearLlamadas({escena, parts: eng.PARTS, centro: CENTRO_HOLO});
 // la pausa en VR (B/Y): el panel de la cabina (panelvr.js), frente a la cabeza
 const panelVR = crearPanelVR();
@@ -588,6 +709,9 @@ function accionar(a) {
   else if (a.id === 'v_recorrido') recorrido.activo ? pararRecorrido() : iniciarRecorrido();
   else if (a.id === 'v_preguntas') preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
   else if (a.id === 'v_mesa') poseManual = false;
+  else if (a.id === 'modo_piloto') saltarA('mesa');
+  else if (a.id === 'modo_mecanico') return true; // en preparación (T8): el botón se ve apagado
+  else if (a.id.startsWith('ir_')) saltarA(a.id.slice(3));
   else if (a.tipo === 'boton') {
     const b = botones3D[a.id];
     b.hasta = reloj + 0.18;
@@ -719,13 +843,21 @@ function limitar(p) {
     p.x = clamp(p.x, -6.6, 6.6);
     p.z = clamp(p.z, -6.6, 6.6);
   }
-  const mx = MESA.ancho / 2 + 0.25;
-  const mz = MESA.fondo / 2 + 0.25;
-  if (Math.abs(p.x) < mx && Math.abs(p.z) < mz) {
-    const dx = mx - Math.abs(p.x);
-    const dz = mz - Math.abs(p.z);
-    if (dx < dz) p.x = Math.sign(p.x || 1) * mx;
-    else p.z = Math.sign(p.z || 1) * mz;
+  // la mesa y los muebles: se sale del rectángulo (con 25 cm de cuerpo) por el lado más cercano
+  const mx = MESA.ancho / 2;
+  const mz = MESA.fondo / 2;
+  for (const [x0, x1, z0, z1] of [[-mx, mx, -mz, mz], ...choquesMuebles]) {
+    const a = x0 - 0.25;
+    const b = x1 + 0.25;
+    const c = z0 - 0.25;
+    const d = z1 + 0.25;
+    if (p.x <= a || p.x >= b || p.z <= c || p.z >= d) continue;
+    const salidas = [p.x - a, b - p.x, p.z - c, d - p.z];
+    const i = salidas.indexOf(Math.min(...salidas));
+    if (i === 0) p.x = a;
+    else if (i === 1) p.x = b;
+    else if (i === 2) p.z = c;
+    else p.z = d;
   }
 }
 function caminar(dt, ejeX, ejeY) {
@@ -753,16 +885,19 @@ botonVR.addEventListener('click', async () => {
 });
 renderer.xr.addEventListener('sessionstart', () => {
   botonVR.textContent = 'Salir de VR';
-  jugador.position.copy(INICIO.pos);
-  jugador.rotation.set(0, 0, 0);
+  jugador.rotation.set(0, yaw, 0); // se entra en VR donde se estaba y mirando para el mismo lado
   audio.iniciar(); // el Quest suspende el audio al entrar en VR: se reanuda acá y en cada gesto
 });
 function abrirPausa() {
+  const botones = [{id: 'seguir', texto: 'Seguir'}, {id: 'ralenti', texto: 'Motor a ralentí'}, {id: 'ir_mesa', texto: 'A la mesa'}, {id: 'ir_partida', texto: 'A la partida'}];
+  if (hangar) botones.push({id: 'ir_at802', texto: 'Al AT-802'}, {id: 'ir_cessna', texto: 'Al Cessna'}, {id: 'ir_bancos', texto: 'A los bancos'});
+  botones.push({id: 'salir', texto: 'Salir de VR'});
   panelVR.mostrar(
-    {titulo: 'TALLER DE MOTORES · PAUSA', texto: `${LEGEND}\n\nEl motor sigue en el estado en que lo dejaste.`, botones: [{id: 'seguir', texto: 'Seguir'}, {id: 'ralenti', texto: 'Motor a ralentí'}, {id: 'salir', texto: 'Salir de VR'}]},
+    {titulo: 'TALLER DE MOTORES · PAUSA', texto: `${LEGEND}\n\nEl motor sigue en el estado en que lo dejaste.`, botones},
     (id) => {
       panelVR.ocultar();
       if (id === 'ralenti') aRalenti();
+      else if (id.startsWith('ir_')) saltarA(id.slice(3));
       else if (id === 'salir') renderer.xr.getSession()?.end();
     },
     renderer.xr.isPresenting ? renderer.xr.getCamera() : camara,
@@ -770,9 +905,68 @@ function abrirPausa() {
 }
 renderer.xr.addEventListener('sessionend', () => {
   botonVR.textContent = 'Entrar en VR';
+  yaw = jugador.rotation.y;
   jugador.rotation.set(0, 0, 0);
   camara.position.set(0, ALTURA_OJOS, 0);
 });
+
+// ------------------------------------------------------------ saltos con fundido (T5): partida, mesa, AT-802, Cessna, bancos, oficina
+// Nunca un movimiento forzado de la cámara: fundido a negro, se pone la CABEZA en el destino mirando hacia yaw, y se vuelve. Marco del
+// mundo (z del hangar + 45); yaw 0 = mirando hacia el fondo (−z). [PROVISORIO: el AT-802 y el Cessna se afinan con los aviones, T6]
+const DESTINOS = {
+  partida: {x: 0, z: 39.95, yaw: 0, pitch: -0.52}, // a 0,95 m del atril: el panel entero entre 18° y 42° hacia abajo
+  mesa: {x: INICIO.pos.x, z: INICIO.pos.z, yaw: INICIO.yaw, pitch: INICIO.pitch},
+  at802: {x: -10, z: 37.5, yaw: 0, pitch: -0.12},
+  cessna: {x: 9, z: 35.5, yaw: 0, pitch: -0.12},
+  bancos: {x: 10.2, z: -12.4, yaw: 0, pitch: -0.1},
+  oficina: {x: -17, z: -10.9, yaw: 0, pitch: -0.05},
+};
+const fundido = new THREE.Mesh(
+  new THREE.SphereGeometry(0.25, 16, 8),
+  new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0, side: THREE.BackSide, depthTest: false, depthWrite: false}),
+);
+fundido.name = 'fundido';
+fundido.renderOrder = 999;
+fundido.visible = false;
+camara.add(fundido);
+let salto = null;
+const eSalto = new THREE.Euler(0, 0, 0, 'YXZ');
+function ponerEn(d) {
+  if (renderer.xr.isPresenting) {
+    eSalto.setFromQuaternion(camara.quaternion, 'YXZ'); // la cabeza, relativa al jugador
+    jugador.rotation.set(0, d.yaw - eSalto.y, 0);
+    const c = Math.cos(jugador.rotation.y);
+    const s_ = Math.sin(jugador.rotation.y);
+    const hx = camara.position.x;
+    const hz = camara.position.z;
+    jugador.position.set(d.x - (hx * c + hz * s_), 0, d.z - (-hx * s_ + hz * c));
+  } else {
+    jugador.position.set(d.x, 0, d.z);
+    yaw = d.yaw;
+    pitch = d.pitch;
+  }
+}
+function saltarA(nombre) {
+  const d = DESTINOS[nombre];
+  if (!d || salto) return false;
+  salto = {d, t: 0, movido: false};
+  pararRecorrido();
+  return true;
+}
+function pasoSalto(dt) {
+  if (!salto) return;
+  salto.t += dt;
+  if (!salto.movido && salto.t >= 0.25) {
+    ponerEn(salto.d);
+    salto.movido = true;
+  }
+  const t = salto.t;
+  fundido.material.opacity = t < 0.25 ? t / 0.25 : t < 0.35 ? 1 : Math.max(0, 1 - (t - 0.35) / 0.3);
+  fundido.visible = fundido.material.opacity > 0.001;
+  if (t >= 0.65) salto = null;
+}
+// se arranca en la partida (H2, junto al portón), salvo ?inicio=mesa
+if (panelAtril && PARAM.get('inicio') !== 'mesa') ponerEn(DESTINOS.partida);
 const manos = [0, 1].map((i) => {
   const c = renderer.xr.getController(i);
   const linea = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]), new THREE.LineBasicMaterial({color: 0x9fe3ff, transparent: true, opacity: 0.7}));
@@ -1030,9 +1224,21 @@ function probarMandos() {
   inp.pla = 0.7;
   abrirPausa();
   panelVR.malla.updateWorldMatrix(true, false);
-  const enRalenti = panelVR.malla.localToWorld(new THREE.Vector3(0, (0.5 - 600 / 680) * panelVR.malla.geometry.parameters.height, 0));
-  gatilloEn(m1, enRalenti, normal(panelVR.malla));
+  {
+    // el botón 1 («Motor a ralentí») con la misma grilla que dibuja panelvr.js (1024 × 680 px; 4 columnas si hay más de 4 botones)
+    const n = hangar ? 8 : 5;
+    const cols = n > 4 ? 4 : n;
+    const bw = (1024 - 80 - (cols - 1) * 14) / cols;
+    const bh = n > 4 ? 56 : 80;
+    const y0 = n > 4 ? 680 - 30 - Math.ceil(n / cols) * (bh + 12) : 680 - 120;
+    const u = 40 + (1 % cols) * (bw + 14) + bw / 2;
+    const vv = y0 + Math.floor(1 / cols) * (bh + 12) + bh / 2;
+    const {width, height} = panelVR.malla.geometry.parameters;
+    const enRalenti = panelVR.malla.localToWorld(new THREE.Vector3((u / 1024 - 0.5) * width, (0.5 - vv / 680) * height, 0));
+    gatilloEn(m1, enRalenti, normal(panelVR.malla));
+  }
   ok('pausa: gatillo en «Motor a ralentí» la cierra y pone ralentí', !panelVR.visible && inp.pla === 0, {pausa: panelVR.visible});
+  if (panelVR.visible) panelVR.ocultar(); // que no se coma los gatillos de las pruebas que siguen
   // 8) el holograma con una mano: lo lleva 20 cm y lo gira 30°
   for (const c of manos) ponerMano(c, lejos);
   cuadroVR();
@@ -1087,6 +1293,26 @@ function probarMandos() {
     camara.updateMatrixWorld(true);
     ok('con la cabeza adentro se apaga (20 %) y afuera vuelve', Math.abs(bAdentro - 0.2) < 0.01 && bAfuera === 1, {adentro: +bAdentro.toFixed(3), afuera: bAfuera});
   }
+  // 11) el atril de partida: gatillo en «IR A · BANCOS» → fundido y la cabeza en los bancos; «MODO PILOTO» → a la mesa
+  if (panelAtril) {
+    const jAntes = jugador.position.clone();
+    const yawAntes = yaw;
+    const pitchAntes = pitch;
+    ponerEn(DESTINOS.partida);
+    gatilloEn(m1, panelAtril.centro('ir_bancos', v), normal(panelAtril.malla));
+    pasoSalto(0.3);
+    pasoSalto(0.4);
+    const llego = Math.hypot(jugador.position.x - DESTINOS.bancos.x, jugador.position.z - DESTINOS.bancos.z) < 0.01 && !salto && !fundido.visible;
+    ok('atril: gatillo en IR A BANCOS lleva a los bancos (con fundido)', llego, jugador.position.toArray().map((x) => +x.toFixed(2)));
+    ponerEn(DESTINOS.partida);
+    gatilloEn(m1, panelAtril.centro('modo_piloto', v), normal(panelAtril.malla));
+    pasoSalto(0.3);
+    pasoSalto(0.4);
+    ok('atril: MODO PILOTO lleva a la mesa', Math.hypot(jugador.position.x - DESTINOS.mesa.x, jugador.position.z - DESTINOS.mesa.z) < 0.01);
+    jugador.position.copy(jAntes);
+    yaw = yawAntes;
+    pitch = pitchAntes;
+  }
   // dejar todo como al principio: el holograma a la mesa, sin estación, sin corte, motor a ralentí
   for (const c of manos) ponerMano(c, lejos);
   cuadroVR();
@@ -1125,6 +1351,7 @@ const camPC = () => {
 };
 function avanzar(dt) {
   reloj += dt;
+  pasoSalto(dt);
   if (!renderer.xr.isPresenting) {
     const v = 0.6 * dt;
     if (teclas.arrowup) inp.pla = clamp(inp.pla + v, 0, 1);
@@ -1184,6 +1411,7 @@ function avanzar(dt) {
     panelT = 0.1;
     panelMotor.actualizar({r: readout(s), fault: inp.fault, hover});
     panelEstaciones.actualizar({estacion, corte, flujo: !!flujo, recorrido: recorrido.activo, hover});
+    if (panelAtril) panelAtril.actualizar({hover});
     if (preguntasAbiertas) preguntas.pasarPor(hover && hover.startsWith('q_') ? hover : null);
   }
   const st = STATIONS.find((x) => x.n === estacion);
@@ -1225,6 +1453,13 @@ const RONDA = [
   {nombre: 'el techo: arcos, correas y luminarias', pos: [0, 1.7, 18], mira: [0, 11, 10], hfov: 100},
   {nombre: 'la nave desde un rincón alto', pos: [17, 5.6, 37.5], mira: [-8, 1.5, 0], hfov: 90}, // entre dos filas de luminarias (en 43 una quedaba encima)
   {nombre: 'afuera: el portón desde la plataforma', pos: [6, 1.7, 70], mira: [0, 4, 45], hfov: 80},
+  // 17 a 21 (T5): los muebles y la utilería (marco del mundo: z del hangar + 45)
+  {nombre: 'los bancos con sus tableros y las cajoneras', pos: [10.5, 1.65, -10.3], mira: [11.5, 1.35, -15], hfov: 75},
+  {nombre: 'las estanterías y el compresor (pared derecha)', pos: [13.5, 1.7, 7.5], mira: [19, 1.2, -3], hfov: 80},
+  {nombre: 'la oficina vidriada', pos: [-8.5, 1.65, -3], mira: [-15.5, 1.3, -12.5], hfov: 75},
+  {nombre: 'el pizarrón de los créditos', pos: [-17, 1.6, -11.4], mira: [-17, 1.55, -15], hfov: 70},
+  {nombre: 'los puestos: conos, escalera, carro y cartel', pos: [0.5, 1.75, 42], mira: [0, 0.6, 26], hfov: 85},
+  {nombre: 'la partida: el atril', pos: [0, 1.6, 41.6], mira: [0, 1.0, 39], hfov: 70},
 ];
 function ponerCamara(pos, mira, hfov = 75) {
   jugador.position.set(pos[0], 0, pos[2]);
@@ -1349,6 +1584,10 @@ window.__taller = {
   rayosDesdeElOjo,
   /** los mandos de VR simulados: grip en las palancas, gatillo en paneles, mesa y pausa, el holograma con una y dos manos */
   probarMandos,
+  /** salto con fundido: 'partida', 'mesa', 'at802', 'cessna', 'bancos', 'oficina' */
+  saltar: saltarA,
+  panelAtril,
+  choquesMuebles,
   /** avanza la simulación t segundos de golpe (para las capturas) */
   correr(t, cada = 1 / 60) {
     for (let x = 0; x < t; x += cada) avanzar(cada);

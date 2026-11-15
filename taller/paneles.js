@@ -209,6 +209,62 @@ export function crearCartel({ancho = 1.0, alto = 0.24} = {}) {
 }
 
 /**
+ * El panel del ATRIL DE PARTIDA (T5, H2): la elección de modo y los saltos con fundido. Botones: 'modo_piloto' (lleva a la mesa),
+ * 'modo_mecanico' (en preparación hasta la T8: se ve apagado), 'ir_mesa', 'ir_at802', 'ir_cessna', 'ir_bancos', 'ir_oficina'.
+ * actualizar({hover}). Va sobre la cabeza inclinada del atril de muebles.glb (0,92 × 0,52 m).
+ */
+export function crearPanelAtril({leyenda, ancho = 0.88, alto = 0.48}) {
+  const p = crearPanel({ancho, alto, px: 1280, nombre: 'panel-atril'});
+  const {g, W, H} = p;
+  const M = 30;
+  const bwM = (W - 2 * M - 20) / 2;
+  p.botones.push({id: 'modo_piloto', x: M, y: 150, w: bwM, h: 170, t: 'MODO PILOTO', sub: 'El motor en la mesa: arrancarlo, sus estaciones y sus fallas'});
+  p.botones.push({id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'En preparación', apagado: true});
+  const IR = [['ir_mesa', 'LA MESA'], ['ir_at802', 'AT-802'], ['ir_cessna', 'CESSNA'], ['ir_bancos', 'BANCOS'], ['ir_oficina', 'CRÉDITOS']];
+  const bwI = (W - 2 * M - 4 * 14) / 5;
+  IR.forEach(([id, t], i) => p.botones.push({id, t, x: M + i * (bwI + 14), y: 400, w: bwI, h: 96}));
+  let firma = '';
+  function dibujar(hover) {
+    g.clearRect(0, 0, W, H);
+    caja(g, 0, 0, W, H, 22, C.panel, C.line);
+    g.fillStyle = '#082440';
+    g.beginPath();
+    g.roundRect(0, 0, W, 128, [22, 22, 0, 0]);
+    g.fill();
+    texto(g, 'TALLER DE MOTORES · AURAV', M + 4, 70, 52, '#ffffff', {negrita: true});
+    texto(g, 'VER PARA VOLAR', M + 4, 112, 30, '#c8e63a', {negrita: true});
+    texto(g, '[PROVISORIO]', W - M, 112, 24, '#8fa3b8', {negrita: true, alinear: 'right'});
+    for (const b of p.botones) {
+      const sobre = hover === b.id;
+      if (b.sub) {
+        const fondo = b.apagado ? '#eceef0' : sobre ? '#b81426' : C.red;
+        caja(g, b.x, b.y, b.w, b.h, 16, fondo, b.apagado ? C.line : fondo);
+        texto(g, b.t, b.x + 28, b.y + 70, 48, b.apagado ? C.mute : '#ffffff', {negrita: true, max: b.w - 56});
+        g.font = `30px ${FUENTE}`;
+        envolver(g, b.sub, b.w - 56).slice(0, 2).forEach((l, i) => texto(g, l, b.x + 28, b.y + 116 + i * 36, 30, b.apagado ? C.mute : '#ffffff'));
+      } else {
+        caja(g, b.x, b.y, b.w, b.h, 12, sobre ? '#eef0f2' : '#ffffff', sobre ? C.ink : C.line);
+        texto(g, b.t, b.x + b.w / 2, b.y + b.h / 2 + 2, 34, C.ink, {negrita: true, alinear: 'center', base: 'middle', max: b.w - 16});
+      }
+    }
+    g.fillStyle = C.red;
+    g.fillRect(M, 346, 60, 6);
+    texto(g, 'IR A', M, 388, 30, C.ink, {negrita: true});
+    pieLeyenda(g, W, H - 120, 120, leyenda, 29);
+    p.pintado();
+  }
+  return {
+    ...p,
+    actualizar({hover = null} = {}) {
+      const f = String(hover);
+      if (f === firma) return;
+      firma = f;
+      dibujar(hover);
+    },
+  };
+}
+
+/**
  * ESTACIONES + VISTA (el panel de la izquierda, T3). estaciones: STATIONS de content.js. Botones: 'st1'…'st8' (tocar la activa la
  * apaga, como el escritorio), 'v_corte', 'v_completo', 'v_flujo', 'v_recorrido', 'v_preguntas', 'v_mesa' (devuelve el holograma a
  * la mesa). actualizar({estacion, corte, flujo, recorrido, hover}).
