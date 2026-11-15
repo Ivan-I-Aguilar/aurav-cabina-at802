@@ -21,13 +21,14 @@ decidir qué entra (§3).
 - **Para quién:** pilotos (**modo piloto**: lo que ya hace el simulador) y mecánicos (**modo mecánico**: identificar piezas,
   ubicarlas, qué se inspecciona; contenido nuevo que valida AAXOD).
 - **Qué se reutiliza:** del simulador, el modelo del motor (`motor.js`, con las cifras de la cabina), el contenido (`content.js`)
-  tal cual y la geometría (`engine.js`) cambiando sólo los imports; para VR se rehacen los materiales (holograma sin postproceso), el tablero HTML (paneles
-  3D) y el recorrido (en VR no se mueve la cámara: gira el holograma). Del repo: el AT-802 listo para juegos (`juegos/at802.glb`),
-  `controles.js` (palancas que se agarran), `panelvr.js`, la turbina de `audio.js`, el método de Blender por scripts y la ronda de
-  vistas.
-- **Cómo:** 8 etapas (T0 a T7). Primero el holograma (lo más riesgoso para el Quest) en una sala vacía; después la mesa y los
-  paneles; después el hangar y las aeronaves; al final los dos modos, el rendimiento y el Quest.
-- **Cuánto:** unas 11 a 15 sesiones como las de estos días.
+  tal cual y la geometría (`engine.js`) cambiando sólo los imports; para VR se rehacen los materiales (holograma sin
+  postproceso), el tablero HTML (paneles 3D) y el recorrido (en VR no se mueve la cámara: gira el holograma). Del repo: el AT-802
+  listo para juegos (`juegos/at802.glb`), `controles.js` (palancas que se agarran), `panelvr.js`, la turbina de `audio.js`, el
+  método de Blender por scripts y la ronda de vistas.
+- **Cómo:** 10 etapas (T1 a T10), cada una un **bloque de trabajo de 3 horas o más** que corre solo hasta el cierre (pedido de
+  Iván, 15/11; §9). Primero el holograma (lo más riesgoso para el Quest) en una sala gris; después la mesa y los paneles; después
+  el hangar y las aeronaves; al final los dos modos, el rendimiento y el Quest.
+- **Cuánto:** unas 33 horas: 10 bloques de 3 a 3,5 horas (§14).
 - **Cómo sabemos que quedó:** chequeo automático de presupuesto y de carga antes de mirar; ronda fija de vistas que se le manda a
   Iván; él prueba en el Quest (desde acá no se puede). Publicar, sólo con su ok.
 - **Qué hace falta de Iván:** el ok al plan, bajar el Cessna de Sketchfab con su cuenta y decir quién de AAXOD valida el modo
@@ -133,7 +134,7 @@ portón hacia el fondo, +y arriba, −z hacia el fondo, origen en el piso en el 
 caminar 40 m con el joystick. Nunca un movimiento forzado de la cámara. En PC: WASD + mouse y clic.
 
 **Luz:** sin luces dinámicas ni sombras en tiempo real en la nave: una luz de hemisferio y una direccional suaves, más la luz
-horneada en Blender (oclusión y luz de techo, a colores por vértice o a una imagen chica; a probar en T3) y sombras de contacto
+horneada en Blender (oclusión y luz de techo, a colores por vértice o a una imagen chica; a probar en T4) y sombras de contacto
 falsas (manchas) bajo las aeronaves, los bancos y la mesa. Las luminarias son discos emisivos.
 
 ## 5. La mesa holográfica
@@ -213,8 +214,8 @@ distingan del holograma.
 - **Agarrar:** grip cerca (10 cm) o rayo + gatillo; en PC, clic para tomar y clic para dejar. Si se suelta lejos, vuelve sola a su
   bandeja.
 - **Al acercarla al holograma** (a menos de ~40 cm), el lugar donde va se ilumina y titila (las 14 posiciones de inyectores, los 2
-  ignitores, la fila de álabes, la malla, el detector de virutas, el anillo de termocuplas); al soltarla cerca aparece una copia a la escala del holograma en su lugar y la pieza
-  vuelve al banco. Si se suelta en otro lado, el holograma marca el lugar correcto.
+  ignitores, la fila de álabes, la malla, el detector de virutas, el anillo de termocuplas); al soltarla cerca aparece una copia a
+  la escala del holograma en su lugar y la pieza vuelve al banco. Si se suelta en otro lado, el holograma marca el lugar correcto.
 
 **Modo mecánico, módulo 1** (Iván eligió los tres niveles el 15/11, decisión 3a):
 1. **Identificar:** «Señalá el ignitor»: el alumno apunta el rayo al holograma; si acierta, la pieza se pone verde y sale su
@@ -223,11 +224,10 @@ distingan del holograma.
 2. **Ubicar:** las piezas del banco (arriba).
 3. **Inspeccionar:** en cada pieza, qué se mira (por ejemplo erosión y fisuras en el álabe, carbón en el inyector, desgaste del
    electrodo del ignitor, objetos extraños y roturas en la malla, virutas en el detector, la punta y el cable de la termocupla)
-   [AGREGADO, VERIFICAR]. **Lo escribe o lo valida alguien de
-   AAXOD** (decisión 3b) y va en `taller/mecanico.js`, aparte del código. Cómo se arma: primero un borrador con conocimiento
-   general, todo [AGREGADO] / [VERIFICAR], en una tabla fácil de corregir (pieza · qué se mira · qué se busca · qué queda para el
-   manual); lo corrige quien valide (todavía no se sabe quién: 3b, 15/11), y el modo mecánico no se publica hasta tener esa
-   validación.
+   [AGREGADO, VERIFICAR]. **Lo escribe o lo valida alguien de AAXOD** (decisión 3b) y va en `taller/mecanico.js`, aparte del
+   código. Cómo se arma: primero un borrador con conocimiento general, todo [AGREGADO] / [VERIFICAR], en una tabla fácil de
+   corregir (pieza · qué se mira · qué se busca · qué queda para el manual); lo corrige quien valide (todavía no se sabe quién: 3b,
+   15/11), y el modo mecánico no se publica hasta tener esa validación.
 - Al final, los aciertos por tarea, como el debrief de los niveles (sin constancia ni envío al aula en esta versión).
 
 ## 8. Presupuesto para el Quest
@@ -253,71 +253,144 @@ con esto en la peor vista:
 - **Se mide en cada etapa** con `renderer.info` en PC (llamadas y triángulos) y se anota acá; el número que manda es el del Quest,
   que mide Iván.
 
-## 9. Etapas
-Cada etapa deja la página andando en local, termina con capturas a Iván y se marca HECHA con fecha y versión. Nada se publica sin
-su ok.
+## 9. Etapas: bloques de trabajo de 3 horas o más
+Pedido de Iván (15/11): cada etapa es un plan de trabajo de **3 horas como mínimo**, pensado para largarlo entero y que corra solo
+hasta el cierre, sin esperar respuestas en el medio. Son 10 etapas (T1 a T10) de 3 a 3,5 horas: unas 33 horas en total (§14). Se
+larga con «arrancá T1» (y así cada una); conviene dar al principio los permisos que pida la app (Blender, el servidor, Node).
 
-### Etapa T0 — Base de la página (1 sesión)
-- `taller.html` y `taller/main.js`: renderer, VR (`local-floor`), jugador, caminar (VR y PC), ganchos de prueba. Una sala gris
-  vacía con una mesa provisoria.
-- Copias de `motor.js` (con las cifras de la cabina), `content.js` y `engine.js` (imports cambiados) y el motor con sus materiales
-  originales sobre la mesa, respondiendo a las palancas con el teclado.
-- **Lista cuando** `content.js` es idéntico a la fuente (se compara el hash), `motor.js` da las mismas cifras que la cabina (prueba
-  en Node contra `vuelo.js`: ralentí, plena potencia y los arranques normal, caliente y colgado) y `renderer.info` da lo esperado
-  (las 105 mallas).
+**Cómo es cada bloque (vale para todas):**
+- **Arranque (15 min):** leer este plan y `CLAUDE.md`, `git status`, levantar `servidor.py`, medir el punto de partida
+  (`renderer.info` y la prueba del motor) y anotar la hora.
+- **Tramos de 30 a 75 min**, en el orden de la tabla de la etapa. Cada tramo termina con su chequeo automático, una captura revisada
+  con ojo crítico (lo raro se corrige en el momento: no se espera a que lo marque Iván) y un commit local, así el avance queda en git
+  aunque el bloque se corte.
+- **Autonomía:** se decide solo lo chico y reversible (medidas y colores provisorios, nombres internos, el orden de los tramos) y se
+  marca [PROVISORIO]. Lo que es de Iván pero no frena se anota como pregunta para el cierre y se sigue con lo provisorio. Se para
+  sólo si algo contradice una decisión suya o este plan, o si habría que tocar lo publicado.
+- **Mínimo de 3 horas:** si lo principal termina antes, se sigue con la **reserva** de la etapa, en orden: siempre trabajo útil
+  (pruebas, pulido, documentación o lo que adelanta la etapa siguiente sin decidir por Iván). Se cierra antes de las 3 horas sólo
+  si algo bloquea de verdad, y se dice qué.
+- **Cierre (30 min):** la ronda de vistas de la etapa, revisada (lo raro se corrige antes de mandarla); la etapa marcada HECHA con
+  fecha y versión en este plan; `CLAUDE.md` al día; commit local; y a Iván: las capturas, qué se hizo, qué quedó provisorio y las
+  preguntas juntadas, de a una. Nada se publica, y siempre se dice lo que no se pudo probar (el Quest).
 
-### Etapa T1 — El holograma (1–2 sesiones)
-- `holograma.js`: juntar por cuerpo con `tag` / `prim` / `pieza`, sombreador, contornos, aislar, corte, flujo como puntos de luz,
-  efectos, proyector y cono.
-- **Verificación:** presupuesto (≤ 20 llamadas, ≤ 40 k tri); capturas de frente y de 3/4, cada una de las 8 estaciones aislada, el
-  corte, el flujo y cada una de las 5 fallas, y las mismas vistas del escritorio al lado (abriendo `turbohelice.html` en local) para
-  comparar.
-- **Lista cuando** Iván ve las capturas y da el ok al «look» (color, brillo, acento).
+### T1 — Base y holograma en una sala gris (3,5 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:00 | `taller.html` y `taller/main.js`: renderer, VR (`local-floor`), jugador, caminar en PC y en VR, ganchos (`__taller`, `__ronda`, `__vista`); una sala gris con una mesa provisoria | carga sin errores y se camina |
+| 1:00–1:30 | Copias: `content.js` (igual a la fuente), `engine.js` (imports) y `motor.js` con las cifras de la cabina, con su prueba en Node contra `vuelo.js` (ralentí, plena potencia y arranques normal, caliente y colgado); el motor con sus materiales originales y las palancas en el teclado | la prueba da bien; `renderer.info` muestra las 105 mallas |
+| 1:30–2:30 | `holograma.js`: juntar por cuerpo que gira con `tag` / `prim` / `pieza`; sombreador (fresnel, barrido, parpadeo); aislar y cortar por uniforms; contornos | ≤ 20 llamadas y ≤ 40 k tri; las 8 estaciones se aíslan |
+| 2:30–3:00 | Flujo como puntos de luz con sus 4 colores; efectos (llama, chorros, chispas, estampido, escombros, álabes dañados); proyector y cono | las 5 fallas se ven |
+| 3:00–3:30 | Cierre: capturas de frente y de 3/4, las 8 estaciones, el corte, el flujo y las 5 fallas, al lado de las mismas vistas del escritorio (`turbohelice.html` en local) | — |
 
-### Etapa T2 — Mesa, palancas y paneles (2 sesiones)
-- `taller_mesa.py` → `mesa.glb` (mesa, proyector, cuadrante con `levPLA / levCL / levPROP`, botones, lámparas); `paneles.js` (los
-  paneles de §6, la leyenda y las preguntas), las llamadas 3D, `recorrido.js`, agarrar y agrandar el holograma.
-- **Verificación:** cada botón y cada palanca (clic en PC; lo de VR, con rayos simulados desde las manos); el arranque, las 5 fallas
-  y la vuelta a ralentí; las 6 preguntas; el recorrido entero; rayos desde el ojo a cada panel y a la leyenda, con la cabeza
-  corrida ±8 cm; legibilidad en capturas a la resolución del Quest.
-- **Lista cuando** el modo piloto se puede hacer entero en PC sobre la mesa.
+- **Reserva:** dos o tres variantes de color y de acento para que Iván elija; cuánto margen de rendimiento queda (con el doble de
+  partículas); la prueba del motor como script de un solo comando (`herramientas/taller_prueba_motor.mjs`).
+- **Al cierre, Iván:** elige el «look» del holograma (color, brillo, acento).
 
-### Etapa T3 — El hangar (2–3 sesiones)
-- `taller_hangar.py` → `hangar.glb`: nave (piso con juntas y sendas, arcos calados, correas, chapa, portón, luminarias), las zonas
-  H1–H8 con muebles livianos, luz horneada, el fondo de afuera y la marca de AURAV. Renders Eevee antes de integrar.
-- Puntos de salto con fundido y el atril de partida con la elección de modo, la leyenda y los créditos.
-- **Verificación:** chequeo automático (presupuesto; nada flotando ni superpuesto en el mismo plano: sirven los chequeos de
-  `cab_comun.py`) y la ronda de vistas de §10, mandada a Iván.
-- **Lista cuando** Iván da el ok a la nave.
+### T2 — Mesa, palancas, instrumentos y fallas (3,5 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:30 | `taller_mesa.py` (Blender): mesa, proyector, cuadrante con `levPLA`, `levCL` (3 muescas) y `levPROP` con `piv` / `eje` / `ang` / `pos`, botones ARRANCAR y A RALENTÍ, lámparas; renders Eevee e informe | ≤ 6 llamadas y ≤ 5 k tri |
+| 1:30–2:15 | Integrar con `controles.js` (grip en VR, clic en PC) y la lógica portada de `live.js` (`toIdle`, `toOff`, `pressStart`, la condición que pasa sola a ralentí, las fallas); lámparas | arranques normal, caliente y colgado con las palancas 3D |
+| 2:15–3:00 | Paneles INSTRUMENTOS (barras, zonas, valor grande, el aviso de valores ilustrativos) y FALLAS con la alerta roja | las 5 fallas desde el panel |
+| 3:00–3:30 | Cierre: rayos desde el ojo a las palancas y a los paneles con la cabeza corrida ±8 cm; legibilidad en capturas a la resolución del Quest | — |
 
-### Etapa T4 — Las aeronaves (1–2 sesiones)
-- **AT-802:** `juegos/at802.glb` tal cual (es el mismo repo: no se copia) en H3, con calzas, escalera y conos.
-- **Cessna 172:** **Iván lo baja de Sketchfab con su cuenta** («FREE Cessna 172SP», NLM Group) y deja el archivo en
-  `Documents/aurav-cabina/taller_fuente/cessna/` (fuera del repo). `taller_cessna.py` lo aligera (Decimate, texturas a 1024–2048,
-  una sola imagen si se puede), le saca el capó y una rueda si el modelo los trae separados y lo apoya sobre gatos →
-  `taller/cessna172.glb`. Placa del crédito junto al avión; el crédito también en el panel de créditos y en el README, con el
-  enlace al modelo, la licencia (la versión de CC BY que diga la página) y «modificado: aligerado».
-- **Verificación:** presupuesto, vistas de las dos aeronaves desde el piso y desde arriba, el crédito legible desde 2 m.
+- **Reserva:** la turbina de `audio.js` siguiendo a Ng y Np; la pausa (B/Y) con su menú; los mandos de VR simulados por código
+  (rayos y agarre desde las manos).
+- **Al cierre, Iván:** ok a la mesa y al cuadrante.
 
-### Etapa T5 — Modo piloto entero (1 sesión)
-- De la partida a la mesa: estaciones, palancas, fallas, preguntas y el resumen; la voz de las 8 frases (si Iván quiere) y la
-  turbina de `audio.js` siguiendo a Ng y Np.
-- **Verificación:** un piloto de prueba por consola (como `herramientas/piloto_prueba.js`) que hace el recorrido, un arranque
-  normal, uno caliente, uno colgado y las preguntas; capturas.
+### T3 — Estaciones, llamadas, preguntas y recorrido (3,5 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:15 | Panel ESTACIONES y el texto de la estación arriba del holograma; llamadas 3D (etiquetas a los costados, líneas hasta los puntos de `PARTS`, de cara al alumno) | las 8 estaciones con sus llamadas |
+| 1:15–1:45 | Panel VISTA (CORTE · COMPLETO · FLUJO · RECORRIDO · PREGUNTAS · VOLVER A LA MESA) y la leyenda fija (canto de la mesa y pie de cada panel) | el rayo desde el ojo llega a la leyenda desde las 3 posiciones |
+| 1:45–2:30 | Preguntas en VR (orden de `ORDER`, ✓ o ✗, resultado) y `recorrido.js` (el guion de `tour.js` girando el holograma, con las palancas que se mueven solas) | las 6 preguntas; el recorrido de 82 s entero |
+| 2:30–3:00 | Agarrar el holograma: girar, acercar, agrandar hasta 1:1, «volver a la mesa» | sin saltos ni temblores |
+| 3:00–3:30 | Cierre: capturas de cada panel, de una estación con sus llamadas y del recorrido en tres momentos | — |
 
-### Etapa T6 — Modo mecánico (2–3 sesiones; después del borrador de inspección corregido)
-- `taller_piezas.py` → `piezas.glb` (las seis piezas) y `agregados.js` (el detector de virutas y las termocuplas en el holograma);
-  agarrar, acercar, iluminar y soltar; identificar; inspección; resultado.
-- **Verificación:** cada pieza en su lugar y fuera de lugar; cada tarea; capturas; **el contenido lo valida AAXOD** antes de
-  publicar.
+- **Reserva:** atajos de PC como en el escritorio (teclas 1 a 8); el holograma que se apaga de a poco con la cabeza adentro; letra
+  más grande donde la captura no se lea.
+- **Al cierre, Iván:** ok al modo piloto sobre la mesa, en PC.
 
-### Etapa T7 — Rendimiento, Quest y publicar (1 sesión + Iván)
-- Medición final, `?v=` en todo, `prevuelo_pages.py` ampliado al taller (que todo lo que la página nombra esté en git con el mismo
-  nombre) y el botón «Taller de motores» en el menú del juego (y uno para volver): lo único que se toca del juego.
-- **Iván en el Quest:** fluidez, legibilidad de los paneles, alcance de las palancas, agarrar el holograma y las piezas, mareo al
-  caminar. Publicar, sólo con su ok.
-- Si para entonces nadie validó el modo mecánico (3b), el taller se publica con el modo piloto y el mecánico queda oculto (sólo
-  en local).
+### T4 — La nave del hangar (3,5 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:30 | `taller_hangar.py` (Blender, por vértices): piso con losas, juntas y sendas amarillas, el sector del taller; columnas, arcos calados, correas, chapa acanalada de paredes y techo | renders Eevee de la nave vacía |
+| 1:30–2:15 | Portón corredizo abierto en parte y el fondo de afuera (plataforma, pasto, cielo); luminarias emisivas; la marca de AURAV | — |
+| 2:15–3:00 | Luz horneada (oclusión y luz de techo a colores por vértice; si no sale, a mano: más oscuro abajo y en los rincones); integrar en `taller.html` | ≤ 15 llamadas y ≤ 30 k tri |
+| 3:00–3:30 | Cierre: el portón desde adentro, la nave entera desde el portón, el techo y la mesa con la nave atrás | — |
+
+- **Reserva:** variantes de color del piso y la chapa; niebla suave para la profundidad; los chequeos de `cab_comun.py` adaptados a
+  la nave (nada flotando, nada superpuesto en el mismo plano).
+- **Al cierre, Iván:** ok a la nave y a las medidas inventadas de §4.
+
+### T5 — Zonas, muebles, partida y saltos (3,5 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:30 | Muebles livianos por script: bancos de trabajo, tableros de herramientas con siluetas, cajoneras rojas, estanterías, compresor, ventiladores, matafuegos y lavaojos (H6); la oficina vidriada (H7) | dentro del presupuesto del hangar |
+| 1:30–2:15 | Utilería de los puestos: calzas, escalera y conos (H3); gatos, carro, bandeja y cartel «EN MANTENIMIENTO» (H4); sombras de contacto | — |
+| 2:15–3:00 | Atril de partida (elección de modo, leyenda, créditos); puntos de salto con fundido; caminar con choque simple (paredes, mesas, aviones) | se llega a cada zona en VR y en PC |
+| 3:00–3:30 | Cierre: la ronda fija de §10 entera | — |
+
+- **Reserva:** carteles de seguridad genéricos; sonido ambiente del hangar; más detalle en los tableros de herramientas.
+- **Al cierre, Iván:** ok a la ronda.
+
+### T6 — Las aeronaves (3 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:00 | AT-802: `juegos/at802.glb` en H3 con su utilería (es el mismo repo: no se copia); choque al caminar; vistas desde el piso y desde arriba | — |
+| 1:00–2:30 | Cessna 172: si Iván ya lo bajó, `taller_cessna.py` (Decimate, texturas a 1024–2048, capó y rueda si vienen aparte, sobre gatos) → `cessna172.glb`; la placa del crédito, y el crédito también en el panel de créditos y en el README, con el enlace al modelo, la licencia (la versión de CC BY que diga la página) y «modificado: aligerado». Si todavía no lo bajó, el puesto queda armado con un marcador y se pasa a la reserva: no frena | ≤ 6 llamadas y ≤ 40 k tri; el crédito se lee desde 2 m |
+| 2:30–3:00 | Cierre: presupuesto con todo junto en la peor vista; capturas de las dos aeronaves | ≤ 75 llamadas y ≤ 200 k tri |
+
+- **Reserva:** el motor en holograma «dentro» del capó del AT-802 (para ver dónde va); algún `at802-lod.glb` de relleno, si el
+  presupuesto deja.
+- **Antes de esta etapa, Iván:** bajar el Cessna («FREE Cessna 172SP», NLM Group) de Sketchfab con su cuenta y dejarlo en
+  `Documents/aurav-cabina/taller_fuente/cessna/`, fuera del repo.
+
+### T7 — Modo piloto entero (3 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:15 | El camino entero: partida → mesa → estaciones → palancas → fallas → preguntas → resumen; textos revisados | — |
+| 1:15–2:00 | La voz de las 8 frases y de los avisos (`voces.py` y `voces.ps1`, Sabina) y la turbina | cada frase con su WAV |
+| 2:00–2:45 | Piloto de prueba por consola (como `herramientas/piloto_prueba.js`): recorrido, arranques normal, caliente y colgado, las 5 fallas y las preguntas | pasa entero sin errores |
+| 2:45–3:00 | Cierre | — |
+
+- **Reserva:** el resumen del final (estaciones vistas, aciertos); pulido en PC; tamaños de letra.
+- **Al cierre, Iván:** el modo piloto entero en PC (y en el Quest, si se puede probar sin publicar: §10).
+
+### T8 — Modo mecánico 1: banco y ubicar (3,5 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:30 | `taller_piezas.py`: las seis piezas a tamaño real con su `userData`, y el banco con bandejas | ≤ 8 llamadas y ≤ 10 k tri |
+| 1:30–2:15 | `agregados.js`: el detector de virutas y el anillo de termocuplas de ITT con su arnés, con `tag` / `pieza` / punto de llamada; los nombres de pieza en la copia de `engine.js` | cada pieza del holograma tiene nombre |
+| 2:15–3:00 | Agarrar, soltar y volver a la bandeja; acercar → se ilumina el lugar; soltar cerca → la copia a escala; error → se marca el lugar correcto | las seis, bien y mal puestas |
+| 3:00–3:30 | Cierre | — |
+
+- **Reserva:** el borrador de la tabla de inspección (adelanta T9); sonidos de agarrar y soltar.
+- **Al cierre, Iván:** ok al banco y a la forma de ubicar.
+
+### T9 — Modo mecánico 2: identificar, inspeccionar y resultado (3 h)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:00 | Identificar: «señalá…» con el rayo (la pieza del triángulo que toca), acierto en verde, error con el nombre de lo señalado | todas las piezas con nombre |
+| 1:00–2:00 | Inspección: el borrador [AGREGADO] / [VERIFICAR] en `taller/mecanico.js` y en una tabla para quien valide (pieza · qué se mira · qué se busca · qué queda para el manual); el panel de inspección | las seis piezas |
+| 2:00–2:45 | Resultado por tarea (como el debrief de los niveles); el modo mecánico queda oculto para publicar hasta la validación (3b) | — |
+| 2:45–3:00 | Cierre: capturas y la tabla lista para pasarla | — |
+
+- **Reserva:** preguntas del modo mecánico (como las 6 del piloto); más tareas de identificar.
+- **Al cierre, Iván:** pasarle la tabla a quien valide, cuando lo sepa.
+
+### T10 — Rendimiento, Quest y publicar (3 h + Iván)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:15 | Medición en la peor vista y ajustes (juntar lo que falte, bajar texturas); `?v=` en todo | ≤ 75 llamadas, ≤ 200 k tri y ≤ 12 MB |
+| 1:15–2:00 | `prevuelo_pages.py` ampliado al taller; el botón «Taller de motores» en el menú del juego y el de volver (lo único que se toca del juego); la versión de la página | ningún archivo faltante |
+| 2:00–2:45 | Guía para Iván: cómo probar en el Quest (con `adb reverse` o publicando) y qué mirar en el casco (fluidez, legibilidad, alcance, agarrar, mareo); `CLAUDE.md` y este plan al día | — |
+| 2:45–3:00 | Cierre | — |
+
+- **Publicar, sólo con su ok:** el push en primer plano con la cuenta Ivan-I-Aguilar y después mirar la página publicada (sin
+  errores ni 404). Si nadie validó el modo mecánico, se publica con el modo piloto y el mecánico queda oculto (sólo en local).
+- **Reserva:** el README del taller; los ajustes que salgan de su prueba.
 
 ## 10. Verificación (en cada etapa)
 **Automática, antes de mirar:** presupuesto (`renderer.info` y el informe de cada GLB); carga sin errores ni 404
@@ -329,7 +402,7 @@ frente · 3 mesa de 3/4 desde la izquierda · 4 holograma de cerca con una estac
 3/4 delantero · 7 Cessna con su crédito · 8 bancos y herramientas · 9 portón desde adentro · 10 la nave entera desde el portón ·
 11 techo. Se le mandan a Iván; él decide si quedó.
 
-**Funcional:** el modo piloto por consola (T5) y el mecánico tarea por tarea (T6).
+**Funcional:** el modo piloto por consola (T7) y el mecánico tarea por tarea (T8 y T9).
 
 **En el Quest:** sólo Iván. Para probar sin publicar hay una vía (a probar): con el Quest en modo desarrollador y
 `adb reverse tcp:8765 tcp:8765`, el navegador del Quest abre `http://localhost:8765/taller.html` servido por la PC (localhost
@@ -350,7 +423,8 @@ cuenta como seguro y WebXR anda). Si no, se publica, con su ok.
 | El Quest cachea | `?v=` en todo lo que cambie |
 | Romper el juego publicado | página aparte (decidida el 15/11); del juego sólo se toca el botón de entrada |
 
-Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para ver dónde va) y algún `at802-lod.glb` de relleno.
+Opcional (en la reserva de T6): el motor en holograma «dentro» del capó del AT-802 (para ver dónde va) y algún `at802-lod.glb` de
+relleno.
 
 ## 12. Lo que falta saber
 - **Qué Quest** usan Iván y los alumnos (2, 3 o 3S): fija el presupuesto.
@@ -367,8 +441,9 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
    readme que tenemos no traen términos (el del Fireboss sólo lista archivos; el terrestre no trae readme). · 1 · el taller queda
    de uso interno, como la cabina (lo que rige hoy) · 2 · modelar un exterior propio en Blender, para poder mostrarlo afuera
    (trabajo grande, plan aparte; mientras tanto rige 1) · 3 · buscar los términos de la descarga o pedirle permiso al autor
-   (mientras tanto rige 1) · 4 · otra. **Elegida por Iván el 15/11: 1 · uso interno, como la cabina.** El resto del taller (hangar, holograma, Cessna CC BY) no tiene esa
-   traba: si algún día se quiere mostrar afuera, el AT-802 se puede apagar con un parámetro.
+   (mientras tanto rige 1) · 4 · otra. **Elegida por Iván el 15/11: 1 · uso interno, como la cabina.** El resto del taller
+   (hangar, holograma, Cessna CC BY) no tiene esa traba: si algún día se quiere mostrar afuera, el AT-802 se puede apagar con un
+   parámetro.
 2. **¿Página nueva o modo dentro del juego?** · 1 · página nueva `taller.html` en este repo (propuesta: liviana, no toca el juego
    publicado; un botón del menú del juego lleva al taller y otro vuelve) · 2 · modo dentro del juego (bajar del avión y caminar
    hasta el hangar del aeródromo: más continuidad, pero más peso en el Quest y toca los niveles publicados) · 3 · las dos: primero
@@ -378,28 +453,31 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
    inspeccionar).** **3b (15/11): todavía no se sabe; el borrador se arma igual y el modo mecánico no se publica hasta tener quien
    lo valide.**
 4. **Piezas del banco en la primera versión:** · 1 · las cuatro del traspaso (ignitor, inyector, álabe, malla de admisión) · 2 ·
-   esas más el detector de virutas y la termocupla de ITT · 3 · empezar con dos (ignitor e inyector) · 4 · otra. **Elegida por Iván el 15/11: 2 · seis piezas.**
+   esas más el detector de virutas y la termocupla de ITT · 3 · empezar con dos (ignitor e inyector) · 4 · otra. **Elegida por
+   Iván el 15/11: 2 · seis piezas.**
 5. **Qué modelo de motor manda.** Hoy no coinciden: en ralentí la cabina muestra Ng 60 % e ITT ~440 °C y el holograma Ng 52 % e
    ITT 545 °C; en el arranque colgado la cabina clava el Ng en 24 % y el holograma en 36 %. · 1 · cada uno con el suyo hasta tener
    el manual, y con el manual los dos pasan a las cifras reales (con un instructor); nada publicado cambia · 2 · manda la cabina:
    el holograma toma ya las cifras de `vuelo.js` y el alumno ve lo mismo en los dos (el simulador de escritorio queda como está) ·
    3 · manda el genérico: cambian la cabina publicada y los umbrales de los niveles · 4 · otra. **Elegida por Iván el 15/11: 2 ·
    manda la cabina.** La cabina no tiene ralentí alto: el holograma lo deja en 65 % [VERIFICAR] hasta el manual.
-6. **El ok al plan**, con las cinco ya incorporadas: · 1 · aprobado, se arranca por T0 · 2 · aprobado con cambios · 3 · todavía no ·
-   4 · otra.
+6. **El ok al plan**, con las cinco ya incorporadas y las etapas como bloques de 3 horas o más: · 1 · aprobado, se arranca por T1 ·
+   2 · aprobado con cambios · 3 · todavía no · 4 · otra.
 
-## 14. Cronograma
-| Etapa | Qué | Sesiones |
-|---|---|---|
-| T0 | Base de la página y el motor andando | 1 |
-| T1 | El holograma | 1–2 |
-| T2 | Mesa, palancas y paneles | 2 |
-| T3 | El hangar | 2–3 |
-| T4 | AT-802 y Cessna | 1–2 |
-| T5 | Modo piloto entero | 1 |
-| T6 | Modo mecánico (identificar, ubicar e inspeccionar) | 2–3 |
-| T7 | Rendimiento, Quest y publicar | 1 |
-| | **Total** | **11–15** |
+## 14. Cronograma (bloques de 3 horas o más)
+| Etapa | Qué | Horas | Al cierre, Iván |
+|---|---|---|---|
+| T1 | Base y holograma en una sala gris | 3,5 | elige el «look» |
+| T2 | Mesa, palancas, instrumentos y fallas | 3,5 | ok a la mesa |
+| T3 | Estaciones, llamadas, preguntas y recorrido | 3,5 | ok al modo piloto en PC |
+| T4 | La nave del hangar | 3,5 | ok a la nave y a las medidas |
+| T5 | Zonas, muebles, partida y saltos | 3,5 | ok a la ronda |
+| T6 | Las aeronaves | 3 | (antes: bajar el Cessna) |
+| T7 | Modo piloto entero | 3 | prueba el modo piloto |
+| T8 | Modo mecánico 1: banco y ubicar | 3,5 | ok al banco |
+| T9 | Modo mecánico 2: identificar, inspeccionar y resultado | 3 | pasa la tabla a quien valide |
+| T10 | Rendimiento, Quest y publicar | 3 | prueba en el Quest y decide si se publica |
+| | **Total** | **≈ 33** | |
 
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el
