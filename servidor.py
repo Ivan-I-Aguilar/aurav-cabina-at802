@@ -1,7 +1,9 @@
 # Servidor local SIN CACHÉ (1/11): python servidor.py y abrir http://localhost:8765/
 # Manda Cache-Control: no-store en TODO, así cada F5 trae la última versión de verdad.
 # (Con `python -m http.server` el navegador cacheaba index/main/GLB y se veían versiones viejas.)
+# Otro puerto (15/11, para tener dos abiertos: la cabina y el taller): python servidor.py 8766
 import http.server
+import sys
 
 
 class SinCache(http.server.SimpleHTTPRequestHandler):
@@ -12,5 +14,6 @@ class SinCache(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    print('Sirviendo en http://localhost:8765/ (sin caché)')
-    http.server.ThreadingHTTPServer(('', 8765), SinCache).serve_forever()
+    puerto = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
+    print(f'Sirviendo en http://localhost:{puerto}/ (sin caché)')
+    http.server.ThreadingHTTPServer(('', puerto), SinCache).serve_forever()
