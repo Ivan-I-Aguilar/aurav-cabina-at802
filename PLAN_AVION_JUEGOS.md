@@ -142,7 +142,7 @@ Peso estimado:
 ## 4. Decisiones de Iván (de a una)
 1. **¿Aprobás el plan?** **Aprobado el 15/11: «sí, cabina y exterior»** (cabina liviana en el avión principal de los dos juegos, LOD
    en los estacionados).
-2. **Librea:** 1 · azul, como la cabina hoy · 2 · bordó como el de AAXOD y los juegos viejos (y después la cabina igual) · 3 · otra.
+2. **Librea:** **elegida el 15/11: azul, como la cabina** (el GLB ya estaba exportado así; `--librea bordo` queda como opción).
 3. **Válvula de carga en sector:** 1 · la real (centro-izquierda) y la manguera llega por debajo desde la derecha · 2 · una segunda
    válvula espejada a la derecha, como el viejo · 3 · pasar la carga al lado izquierdo · 4 · otra.
 4. **Matrícula:** 1 · sin matrícula, como la cabina · 2 · AUR-AV pintada, como los viejos · 3 · otra.
