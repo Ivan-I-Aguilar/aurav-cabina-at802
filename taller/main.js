@@ -8,6 +8,7 @@
 // La lógica de las palancas, el arranque y las fallas es la de live.js del escritorio; las cifras, las de la cabina (motor.js).
 import * as THREE from '../three.module.js';
 import {GLTFLoader} from '../GLTFLoader.js';
+import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
@@ -373,6 +374,109 @@ if (hangar)
   } catch (e) {
     console.warn('taller: muebles.glb no cargó', e);
   }
+// ------------------------------------------------------------ carteles de seguridad genéricos (reserva de la T5): un atlas, una llamada
+// Sin marcas ni logos; los pictogramas son figuras simples [PROVISORIO]. Marco del hangar (cuelgan de él).
+function atlasSeguridad() {
+  const T = 512;
+  return lienzo(4 * T, 2 * T, (g) => {
+    const centrado = (t, x, y, tam, color = '#16181b') => {
+      g.font = `bold ${tam}px Arial`;
+      g.fillStyle = color;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(t, x, y, T - 50);
+    };
+    const tile = (k, fondo) => {
+      const x = (k % 4) * T;
+      const y = Math.floor(k / 4) * T;
+      g.fillStyle = fondo;
+      g.fillRect(x + 6, y + 6, T - 12, T - 12);
+      return [x, y];
+    };
+    // 0 · prohibido fumar
+    let [x, y] = tile(0, '#ffffff');
+    g.fillStyle = '#8a8f96';
+    g.fillRect(x + 130, y + 175, 230, 40);
+    g.fillStyle = '#e8732a';
+    g.fillRect(x + 360, y + 175, 30, 40);
+    g.lineWidth = 34;
+    g.strokeStyle = '#d6182b';
+    g.beginPath();
+    g.arc(x + 256, y + 195, 150, 0, Math.PI * 2);
+    g.moveTo(x + 150, y + 89);
+    g.lineTo(x + 362, y + 301);
+    g.stroke();
+    centrado('PROHIBIDO', x + 256, y + 400, 64);
+    centrado('FUMAR', x + 256, y + 462, 64);
+    // 1 · protección auditiva obligatoria
+    [x, y] = tile(1, '#ffffff');
+    g.fillStyle = '#1f5fae';
+    g.beginPath();
+    g.arc(x + 256, y + 190, 160, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = 26;
+    g.beginPath();
+    g.arc(x + 256, y + 200, 92, Math.PI * 1.05, Math.PI * 1.95);
+    g.stroke();
+    g.fillStyle = '#ffffff';
+    g.beginPath();
+    g.roundRect(x + 140, y + 180, 56, 100, 22);
+    g.roundRect(x + 316, y + 180, 56, 100, 22);
+    g.fill();
+    centrado('USO OBLIGATORIO DE', x + 256, y + 400, 40);
+    centrado('PROTECCIÓN AUDITIVA', x + 256, y + 455, 44);
+    // 2 y 3 · salida (flecha a la derecha y a la izquierda)
+    for (const [k, flecha] of [[2, '→'], [3, '←']]) {
+      [x, y] = tile(k, '#1f8f4e');
+      g.strokeStyle = '#ffffff';
+      g.lineWidth = 16;
+      g.strokeRect(x + 176, y + 60, 160, 230);
+      centrado(flecha, x + 256, y + 180, 150, '#ffffff');
+      centrado('SALIDA', x + 256, y + 400, 92, '#ffffff');
+    }
+    // 4 · atención hélice
+    [x, y] = tile(4, '#ffffff');
+    g.fillStyle = '#f2c230';
+    g.strokeStyle = '#16181b';
+    g.lineWidth = 18;
+    g.beginPath();
+    g.moveTo(x + 256, y + 40);
+    g.lineTo(x + 446, y + 330);
+    g.lineTo(x + 66, y + 330);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    centrado('!', x + 256, y + 222, 190);
+    centrado('NO PASAR FRENTE', x + 256, y + 400, 50);
+    centrado('A LA HÉLICE', x + 256, y + 458, 50);
+  });
+}
+const CARTELES_SEGURIDAD = [
+  // [tile, x, y, z, giro (rad sobre la vertical: 0 = mira a +z), lado (m)]
+  [0, -17.5, 2.6, -0.07, Math.PI, 0.6], // prohibido fumar: frente, adentro, a la izquierda del portón
+  [0, 10.2, 2.75, -59.93, 0, 0.6], // y sobre los bancos
+  [1, -19.93, 2.7, -18.5, Math.PI / 2, 0.6], // protección auditiva: junto al AT-802
+  [1, -6.0, 2.75, -59.93, 0, 0.6], // y en el fondo, junto al taller
+  [3, -19.93, 2.7, -4.0, Math.PI / 2, 0.55], // salida: el portón queda a la izquierda de quien mira la pared izquierda
+  [2, 19.93, 2.7, -4.0, -Math.PI / 2, 0.55], // y a la derecha de quien mira la pared derecha
+  [4, -19.93, 2.7, -11.0, Math.PI / 2, 0.6], // atención hélice
+];
+function crearCartelesSeguridad() {
+  const geos = CARTELES_SEGURIDAD.map(([k, x, y, z, giro, lado]) => {
+    const g = new THREE.PlaneGeometry(lado, lado);
+    const uv = g.attributes.uv;
+    const col = k % 4;
+    const fila = Math.floor(k / 4);
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.25 * (col + uv.getX(i)), 0.5 * (1 - fila) + 0.5 * uv.getY(i) - 0.0);
+    g.applyMatrix4(new THREE.Matrix4().makeRotationY(giro).setPosition(x, y, z));
+    return g;
+  });
+  const m = new THREE.Mesh(mergeGeometries(geos), new THREE.MeshBasicMaterial({map: atlasSeguridad(), color: 0xe4e4e4}));
+  m.name = 'carteles-seguridad';
+  return m;
+}
+if (hangar) hangar.add(crearCartelesSeguridad());
 const leyenda = crearLeyenda();
 escena.add(leyenda.grupo);
 const proyector = crearProyector({altoCono: CENTRO_HOLO.y - 0.15 - (MESA.alto + 0.031)});
