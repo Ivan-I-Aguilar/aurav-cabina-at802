@@ -860,15 +860,107 @@ function limitar(p) {
     else p.z = d;
   }
 }
+const antesDeCaminar = new THREE.Vector3();
 function caminar(dt, ejeX, ejeY) {
   if (!ejeX && !ejeY) return;
   camara.getWorldDirection(tmp);
   tmp.y = 0;
   tmp.normalize();
   tmp2.set(-tmp.z, 0, tmp.x);
+  antesDeCaminar.copy(jugador.position);
   jugador.position.addScaledVector(tmp, -ejeY * 1.5 * dt).addScaledVector(tmp2, ejeX * 1.5 * dt);
   limitar(jugador.position);
+  // el avión: si el paso entra en una celda ocupada, se desliza por el eje que quede libre o no se mueve (si ya estaba adentro, por
+  // un salto o al entrar en VR, se lo deja salir)
+  if (bloqueado(jugador.position.x, jugador.position.z) && !bloqueado(antesDeCaminar.x, antesDeCaminar.z)) {
+    const {x, z} = jugador.position;
+    if (!bloqueado(x, antesDeCaminar.z)) jugador.position.z = antesDeCaminar.z;
+    else if (!bloqueado(antesDeCaminar.x, z)) jugador.position.x = antesDeCaminar.x;
+    else jugador.position.copy(antesDeCaminar);
+  }
 }
+// ------------------------------------------------------------ el AT-802 en su puesto (T6, tramo 1 adelantado)
+// juegos/at802.glb: el MISMO avión del simulador y de los otros juegos (juegos/LEEME.md); en este repo se carga de ahí, no se copia.
+// Su marco: +x nariz, +y arriba, +z derecha, origen en el piso entre las ruedas principales. En H3 (marco del hangar: x −19…−1,
+// z −24…−11) va con la nariz al portón (rotation.y = −π/2) y las ruedas principales en (−10; −14,5) [PROVISORIO].
+const AT802 = {x: -10, z: -14.5, v: '20261115a'};
+let avionAT = null;
+// el choque con el avión: sus triángulos que bajan de 1,9 m (el ala, la cola, el tren), rasterizados en planta en una grilla de 20 cm
+const GRILLA = {paso: 0.2, x0: 0, z0: 0, nx: 0, nz: 0, celdas: null};
+function bloqueado(x, z, r = 0.25) {
+  if (!GRILLA.celdas) return false;
+  const {paso, x0, z0, nx, nz, celdas} = GRILLA;
+  for (let i = Math.floor((x - r - x0) / paso); i <= Math.floor((x + r - x0) / paso); i++)
+    for (let j = Math.floor((z - r - z0) / paso); j <= Math.floor((z + r - z0) / paso); j++)
+      if (i >= 0 && j >= 0 && i < nx && j < nz && celdas[j * nx + i]) return true;
+  return false;
+}
+function rasterizarChoque(raiz, alto = 1.9) {
+  raiz.updateWorldMatrix(true, true);
+  const caja = new THREE.Box3().setFromObject(raiz);
+  const {paso} = GRILLA;
+  GRILLA.x0 = caja.min.x - paso;
+  GRILLA.z0 = caja.min.z - paso;
+  GRILLA.nx = Math.ceil((caja.max.x - caja.min.x) / paso) + 2;
+  GRILLA.nz = Math.ceil((caja.max.z - caja.min.z) / paso) + 2;
+  const celdas = new Uint8Array(GRILLA.nx * GRILLA.nz);
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const marcar = (x, z) => {
+    const i = Math.floor((x - GRILLA.x0) / paso);
+    const j = Math.floor((z - GRILLA.z0) / paso);
+    if (i >= 0 && j >= 0 && i < GRILLA.nx && j < GRILLA.nz) celdas[j * GRILLA.nx + i] = 1;
+  };
+  const lado = (px, pz, p, q) => (q.x - p.x) * (pz - p.z) - (q.z - p.z) * (px - p.x);
+  raiz.traverse((o) => {
+    if (!o.isMesh || !o.visible) return;
+    const pos = o.geometry.attributes.position;
+    const idx = o.geometry.index;
+    const n = idx ? idx.count : pos.count;
+    for (let t = 0; t < n; t += 3) {
+      const ia = idx ? idx.getX(t) : t;
+      const ib = idx ? idx.getX(t + 1) : t + 1;
+      const ic = idx ? idx.getX(t + 2) : t + 2;
+      a.fromBufferAttribute(pos, ia).applyMatrix4(o.matrixWorld);
+      b.fromBufferAttribute(pos, ib).applyMatrix4(o.matrixWorld);
+      c.fromBufferAttribute(pos, ic).applyMatrix4(o.matrixWorld);
+      if (Math.min(a.y, b.y, c.y) > alto) continue;
+      marcar(a.x, a.z);
+      marcar(b.x, b.z);
+      marcar(c.x, c.z);
+      const area = lado(c.x, c.z, a, b);
+      if (Math.abs(area) < 1e-6) continue;
+      for (let x = Math.min(a.x, b.x, c.x); x <= Math.max(a.x, b.x, c.x); x += paso)
+        for (let z = Math.min(a.z, b.z, c.z); z <= Math.max(a.z, b.z, c.z); z += paso) {
+          const s1 = lado(x, z, a, b) * area;
+          const s2 = lado(x, z, b, c) * area;
+          const s3 = lado(x, z, c, a) * area;
+          if (s1 >= 0 && s2 >= 0 && s3 >= 0) marcar(x, z);
+        }
+    }
+  });
+  GRILLA.celdas = celdas;
+  return celdas.reduce((s, v) => s + v, 0);
+}
+if (hangar)
+  try {
+    const ga = await new GLTFLoader().loadAsync(`./juegos/at802.glb?v=${AT802.v}`);
+    avionAT = ga.scene;
+    avionAT.name = 'AT-802';
+    avionAT.rotation.y = -Math.PI / 2; // la nariz (+x) al portón (+z del hangar)
+    avionAT.position.set(AT802.x, 0, AT802.z);
+    avionAT.traverse((o) => {
+      if (o.isMesh && o.material.transparent) {
+        o.material.depthWrite = false; // como prepararAvion de juegos/at802glb.js
+        o.renderOrder = 2;
+      }
+    });
+    hangar.add(avionAT);
+    AT802.celdas = rasterizarChoque(avionAT);
+  } catch (e) {
+    console.warn('taller: juegos/at802.glb no cargó', e);
+  }
 
 // ------------------------------------------------------------ VR: entrar, joysticks (caminar y girar de a 30°), rayos, grip y gatillo
 const botonVR = document.getElementById('vr');
@@ -1460,6 +1552,9 @@ const RONDA = [
   {nombre: 'el pizarrón de los créditos', pos: [-17, 1.6, -11.4], mira: [-17, 1.55, -15], hfov: 70},
   {nombre: 'los puestos: conos, escalera, carro y cartel', pos: [0.5, 1.75, 42], mira: [0, 0.6, 26], hfov: 85},
   {nombre: 'la partida: el atril', pos: [0, 1.6, 41.6], mira: [0, 1.0, 39], hfov: 70},
+  // 23 y 24 (T6, tramo 1 adelantado): el AT-802 en su puesto
+  {nombre: 'el AT-802 de 3/4 delantero', pos: [-1.5, 1.75, 39.5], mira: [-10, 1.6, 29], hfov: 80},
+  {nombre: 'el AT-802: calzas, escalera y hélice', pos: [-6.2, 1.65, 35.4], mira: [-9.3, 1.0, 31.4], hfov: 75},
 ];
 function ponerCamara(pos, mira, hfov = 75) {
   jugador.position.set(pos[0], 0, pos[2]);

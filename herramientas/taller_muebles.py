@@ -273,30 +273,60 @@ choque(PUERTA[1], OX1, OZ1 - 0.05, OZ1 + 0.05)
 choque(OX1 - 0.05, OX1 + 0.05, OZ0, OZ1)
 choque(-17.65, -15.75, -57.65, -56.75)
 
-# ---------------------------------------------------------------- H3: conos y escalera de servicio del puesto del AT-802
-zx0, zx1, zz0, zz1 = ZONAS['at802']
-for x, z in ((zx0 + 0.5, zz0 + 0.5), (zx1 - 0.5, zz0 + 0.5), (zx0 + 0.5, zz1 - 0.5), (zx1 - 0.5, zz1 - 0.5)):
+# ---------------------------------------------------------------- H3: el puesto del AT-802 (el avión lo pone el juego: juegos/at802.glb)
+# El avión va con la nariz al portón y las ruedas principales en AT802 (marco del hangar; el mismo número que taller/main.js). Del
+# informe de juegos/: trocha 2,844 m, rueda de cola 7,03 m detrás, nariz 2,72 m adelante, punteras a ±9,01 m y 0,69 m detrás.
+AT802 = (-10.0, -14.5)
+TROCHA, COLA, NARIZ, PUNTERA, R_RUEDA = 2.844, 7.031, 2.716, (9.014, -0.695), 0.37
+def calza(x, z, hacia, ancho=0.3):
+    """cuña amarilla junto a una rueda: hacia = +1 si la rueda queda hacia +z de la calza, −1 si hacia −z"""
+    # perfil (distancia a la rueda, alto): la cara inclinada sigue la cubierta
+    perfil = [(0.16, 0.0), (0.31, 0.14), (0.44, 0.14), (0.52, 0.0)]
+    def P(d, y, lado):
+        return (x + lado * ancho / 2, y, z - hacia * d)
+    for lado in (-1, 1):
+        m.cara([P(d, y, lado) for d, y in perfil], [AMARILLO] * 4)
+    for (d0, y0), (d1, y1) in zip(perfil, perfil[1:]):
+        m.quad(P(d0, y0, -1), P(d1, y1, -1), P(d1, y1, 1), P(d0, y0, 1), mezclar(AMARILLO, 0.85))
+    m.quad(P(0.16, 0.002, -1), P(0.52, 0.002, -1), P(0.52, 0.002, 1), P(0.16, 0.002, 1), mezclar(AMARILLO, 0.6))
+ax_, az_ = AT802
+for sx in (-1, 1):                                                                  # calzas adelante y atrás de cada rueda principal
+    for h in (-1, 1):
+        calza(ax_ + sx * TROCHA / 2, az_, h)
+calza(ax_, az_ - COLA, 1, ancho=0.2)                                                 # y la de la rueda de cola
+calza(ax_, az_ - COLA, -1, ancho=0.2)
+# conos: en las dos punteras (afuera del ala), detrás de la cola y delante de la hélice
+for x, z in ((ax_ - PUNTERA[0] - 0.5, az_ + PUNTERA[1]), (ax_ + PUNTERA[0] + 0.5, az_ + PUNTERA[1]), (ax_, az_ - 8.8), (ax_, az_ + NARIZ + 1.1)):
     cono(x, z, 0.16, 0.5, CONO)
     choque(x - 0.22, x + 0.22, z - 0.22, z + 0.22)
-# escalera de plataforma (amarilla, con ruedas): sube hacia −z hasta 1,5 m. Afuera de la zona, en el pasillo entre los dos puestos,
-# hasta que la T6 ponga el avión (adentro chocaba con el ala) [PROVISORIO]
-ex, ez = -0.2, -16.5
-for dx in (-0.32, 0.32):
-    barra((ex + dx, 0.12, ez + 0.75), (ex + dx, 1.5, ez - 0.25), 0.05, AMARILLO)       # largueros
-    barra((ex + dx, 0.12, ez - 0.55), (ex + dx, 1.5, ez - 0.55), 0.05, AMARILLO)       # pata de atrás
-    barra((ex + dx, 1.5, ez - 0.55), (ex + dx, 2.45, ez - 0.55), 0.035, AMARILLO)      # baranda
-    barra((ex + dx, 1.5, ez - 0.25), (ex + dx, 2.45, ez - 0.25), 0.035, AMARILLO)
-    barra((ex + dx, 2.45, ez - 0.55), (ex + dx, 2.45, ez - 0.25), 0.035, AMARILLO)
-for k in range(1, 6):
-    t = k / 6
-    yy, zz = 0.12 + t * (1.5 - 0.12), ez + 0.75 - t * 1.0
-    caja(ex - 0.3, ex + 0.3, yy - 0.025, yy, zz - 0.09, zz + 0.09, GRIS_CLARO)       # peldaños
-caja(ex - 0.34, ex + 0.34, 1.47, 1.52, ez - 0.6, ez - 0.2, GRIS_CLARO)              # plataforma
-for x in (ex - 0.34, ex + 0.3):
-    for z in (ez + 0.7, ez - 0.6):
-        caja(x, x + 0.04, 0, 0.12, z, z + 0.06, NEGRO)
-choque(ex - 0.4, ex + 0.4, ez - 0.65, ez + 0.8)
-sombra(ex, ez + 0.05, 0.55, 0.9)
+
+# escalera de plataforma (amarilla, con ruedas) junto al capó del lado del pasillo: sube hacia el motor (−x) hasta 1,5 m
+def escalera(cx, cz, dx, dz):
+    """d = (dx, dz): hacia dónde sube (eje del piso). Local: s a lo largo de d, w de costado; sólo ejes del hangar"""
+    px, pz = -dz, dx
+    W_ = lambda s, y, w: (cx + s * dx + w * px, y, cz + s * dz + w * pz)
+    def cajaL(s0, s1, y0, y1, w0, w1, col):
+        a, b_ = W_(s0, y0, w0), W_(s1, y1, w1)
+        caja(a[0], b_[0], a[1], b_[1], a[2], b_[2], col)
+    for w in (-0.32, 0.32):
+        barra(W_(-0.75, 0.12, w), W_(0.25, 1.5, w), 0.05, AMARILLO)                 # largueros
+        barra(W_(0.55, 0.12, w), W_(0.55, 1.5, w), 0.05, AMARILLO)                  # pata de atrás
+        barra(W_(0.55, 1.5, w), W_(0.55, 2.45, w), 0.035, AMARILLO)                 # baranda
+        barra(W_(0.25, 1.5, w), W_(0.25, 2.45, w), 0.035, AMARILLO)
+        barra(W_(0.55, 2.45, w), W_(0.25, 2.45, w), 0.035, AMARILLO)
+    for k in range(1, 6):
+        t = k / 6
+        yy, ss_ = 0.12 + t * (1.5 - 0.12), -0.75 + t * 1.0
+        cajaL(ss_ - 0.09, ss_ + 0.09, yy - 0.025, yy, -0.3, 0.3, GRIS_CLARO)       # peldaños
+    cajaL(0.2, 0.6, 1.47, 1.52, -0.34, 0.34, GRIS_CLARO)                            # plataforma
+    for s_ in (-0.72, 0.55):
+        for w in (-0.34, 0.3):
+            cajaL(s_, s_ + 0.06, 0, 0.12, w, w + 0.04, NEGRO)
+    a, b_ = W_(-0.8, 0, -0.4), W_(0.65, 0, 0.4)
+    choque(a[0], b_[0], a[2], b_[2])
+    c_ = W_(-0.07, 0, 0)
+    sombra(c_[0], c_[2], 0.9 if dx else 0.55, 0.55 if dx else 0.9)
+escalera(ax_ + 1.45, az_ + 1.6, -1, 0)                                              # la plataforma queda a 0,8 m del eje del avión
 
 # ---------------------------------------------------------------- H4: carro, bandeja y cartel «EN MANTENIMIENTO» del puesto del Cessna
 kx, kz = 4.4, -14.2
