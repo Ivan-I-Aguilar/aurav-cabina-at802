@@ -6,13 +6,13 @@ claude.ai (`OneDrive/Desktop/AURAV/HOLOGRAMA/PLAN_TALLER_MOTORES.md`, también d
 acá. Este documento es el plan profundo que pide `CLAUDE.md` antes de un trabajo grande: se actualiza a medida que avanzamos y
 cada etapa se marca HECHA con fecha y versión.
 
-**Estado (15/11):** plan propuesto; **espera el ok de Iván y sus decisiones (§13), que se preguntan de a una. La 1 ya está:
-uso interno (15/11).** No se modeló
+**Estado (15/11):** plan propuesto; **espera el ok de Iván y sus decisiones (§13), que se preguntan de a una. Ya están la 1
+(uso interno) y la 2 (página nueva, `taller.html`), del 15/11.** No se modeló
 nada ni se tocó el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
 decidir qué entra (§3).
 
 ## En una mirada
-- **Qué:** una página nueva (propuesta: `taller.html`, decisión 2) con un hangar de AURAV inventado, el AT-802 de este repo
+- **Qué:** una página nueva, `taller.html` (decidido el 15/11), con un hangar de AURAV inventado, el AT-802 de este repo
   estacionado, un Cessna 172 en reparación, bancos con herramientas y, en el centro del trabajo, una **mesa holográfica**: el
   turbohélice genérico del simulador de escritorio flotando sobre un proyector, celeste y translúcido, funcionando, con sus 8
   estaciones, las 3 palancas, el arranque, las 5 fallas y las 6 preguntas. Al lado, un **banco de componentes** con piezas a tamaño
@@ -81,7 +81,7 @@ está, el motor solo serían ~105 llamadas de dibujo y ~156 k triángulos: más 
   `OneDrive/Desktop/AURAV/HOLOGRAMA/`). Al repo entran sólo las copias que se usan, con su nombre original (así se nota que son
   copias) y un comentario arriba que dice de dónde salen y qué se les cambió, para poder traer las mejoras del simulador de
   escritorio sin adivinar.
-- **Archivos nuevos** (propuesta, si la decisión 2 es «página nueva»):
+- **Archivos nuevos** (la página nueva quedó decidida el 15/11):
 
 | Archivo | Qué es |
 |---|---|
@@ -297,7 +297,7 @@ su ok.
 
 ### Etapa T7 — Rendimiento, Quest y publicar (1 sesión + Iván)
 - Medición final, `?v=` en todo, `prevuelo_pages.py` ampliado al taller (que todo lo que la página nombra esté en git con el mismo
-  nombre) y el botón de entrada desde el juego (si la decisión 2 lo pide).
+  nombre) y el botón «Taller de motores» en el menú del juego (y uno para volver): lo único que se toca del juego.
 - **Iván en el Quest:** fluidez, legibilidad de los paneles, alcance de las palancas, agarrar el holograma y las piezas, mareo al
   caminar. Publicar, sólo con su ok.
 
@@ -330,7 +330,7 @@ cuenta como seguro y WebXR anda). Si no, se publica, con su ok.
 | Licencia del exterior del AT-802 | decidida el 15/11: uso interno; si algún día se muestra afuera, el AT-802 se apaga con un parámetro |
 | Que el taller se aparte del simulador de escritorio | copias tal cual, con lo cambiado anotado arriba |
 | El Quest cachea | `?v=` en todo lo que cambie |
-| Romper el juego publicado | página aparte (si la decisión 2 lo confirma); del juego sólo se toca el botón de entrada |
+| Romper el juego publicado | página aparte (decidida el 15/11); del juego sólo se toca el botón de entrada |
 
 Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para ver dónde va) y algún `at802-lod.glb` de relleno.
 
@@ -354,7 +354,7 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
 2. **¿Página nueva o modo dentro del juego?** · 1 · página nueva `taller.html` en este repo (propuesta: liviana, no toca el juego
    publicado; un botón del menú del juego lleva al taller y otro vuelve) · 2 · modo dentro del juego (bajar del avión y caminar
    hasta el hangar del aeródromo: más continuidad, pero más peso en el Quest y toca los niveles publicados) · 3 · las dos: primero
-   la página, después la puerta desde el juego · 4 · otra.
+   la página, después la puerta desde el juego · 4 · otra. **Elegida por Iván el 15/11: 1 · página nueva.**
 3. **Modo mecánico:** 3a, qué hace en el módulo 1 (· 1 · identificar · 2 · identificar y ubicar · 3 · las dos más inspección ·
    4 · otra) y 3b, **quién de AAXOD lo valida**.
 4. **Piezas del banco en la primera versión:** · 1 · las cuatro del traspaso (ignitor, inyector, álabe, malla de admisión) · 2 ·
