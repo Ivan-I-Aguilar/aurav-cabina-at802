@@ -287,7 +287,7 @@ larga con «arrancá T1» (y así cada una); conviene dar al principio los permi
   partículas); la prueba del motor como script de un solo comando (`herramientas/taller_prueba_motor.mjs`).
 - **Al cierre, Iván:** elige el «look» del holograma (color, brillo, acento).
 
-**T1 HECHA el 15/11/2026 (bloque arrancado a las 14:21; lo principal y la verificación, a las 15:00; v=20261115a, sin
+**T1 HECHA el 15/11/2026 (bloque arrancado a las 14:21; lo principal y la verificación, a las 14:45; v=20261115a, sin
 publicar; en el Quest no se probó nada).** Lo que quedó:
 - `taller.html` + `taller/main.js`: sala gris, mesa provisoria con el proyector y la leyenda en un cartel de mesa (letra de 2,5 cm),
   caminar en PC (WASD + mouse) y en VR (joystick izquierdo; derecho, giro de a 30°), la lógica de `live.js`, teclas del motor (H =
@@ -321,6 +321,32 @@ publicar; en el Quest no se probó nada).** Lo que quedó:
 - **Reserva:** la turbina de `audio.js` siguiendo a Ng y Np; la pausa (B/Y) con su menú; los mandos de VR simulados por código
   (rayos y agarre desde las manos).
 - **Al cierre, Iván:** ok a la mesa y al cuadrante.
+
+**T2 ADELANTADA y HECHA dentro del bloque de la T1 (15/11/2026, 14:45–15:00; v=20261115b; sin publicar; en el Quest no se probó
+nada).** Lo que quedó:
+- `herramientas/taller_mesa.py` (Blender 5.2, con `cab_comun.py`) → `taller/mesa.glb` (1132 tri, 13 mallas: 5 fijas por material +
+  3 palancas + 2 botones + 3 lámparas; 76 KB) y `taller/mesa_informe.json`. Mesa de 1,60 × 0,80 m a 0,90 m con estante; a la derecha
+  del canto, la caja del cuadrante con las tres palancas en el orden del AT-802 (POTENCIA plateada con manija en T, HÉLICE azul,
+  CONDICIÓN roja con 3 muescas), los botones ARRANCAR y A RALENTÍ y las tres lámparas en columna. Los datos de los rótulos viajan en
+  `userData.cuadrante`.
+- `taller/paneles.js`: `crearPanel` (canvas con botones y rayo), `crearPanelMotor` (INSTRUMENTOS con los rangos del MVP-50 y
+  FALLAS, con la leyenda al pie), `crearCartel` (estación y alerta arriba del holograma) y `crearPlacaCuadrante` (rótulos de 1,5 cm).
+- `taller/main.js`: las palancas con `controles.js` (VR: grip a menos de 10 cm; PC: se arrastran), sincronizadas con el motor en los
+  dos sentidos (en el arranque la condición se mueve sola a su muesca); botones que se hunden; lámparas como el escritorio; el panel a
+  1,2 m (0,68 × 0,97 m); el cartel; la leyenda pasa al canto izquierdo (3 renglones, letra de 2,5 cm); la turbina de `audio.js` con un
+  golpe en cada estampido; la pausa de VR con B/Y (`panelvr.js`); ganchos `tocar(id)`, `palanca(nombre, ang)`, `pausa()`,
+  `rayosDesdeElOjo()` y las vistas 7 a 9 de `__ronda`.
+- **Verificado en PC:** potencia adelante → Ng 100 %; condición soltada entre muescas → la más cercana; hélice atrás → bandera (Np → 0);
+  el arranque entero con sus lámparas; las 5 fallas desde el panel; el cartel con la estación y con la alerta; **rayos desde el ojo y
+  con la cabeza corrida ±8 cm: libres** a la leyenda, el cuadrante, las puntas de las tres palancas, los botones, el panel (arriba,
+  centro y fallas) y el cartel. Escena: 44 llamadas, 37,9 k tri.
+- **Hallazgos:** (1) el panel de 0,56 m a 1,3 m daba letra de 1,6 cm: pasó a 0,68 m a 1,2 m (2 cm); (2) en fila, los rótulos de las
+  lámparas no pasaban de 0,8 cm: van en columna con el rótulo al costado; (3) la manija en T de 7,2 cm tapaba el rótulo de la hélice:
+  5,6 cm; (4) ARRANCAR sólo arranca con el motor parado (Ng < 25 %), como en el escritorio; (5) la mesa da 13 llamadas (el presupuesto
+  decía 6): palancas, botones y lámparas son mallas sueltas para agarrarlas y prenderlas; la escena entera sigue en 44.
+- Capturas: `Documents/aurav-cabina/capturas_taller/T2_mesa_y_paneles.jpg`.
+- **Pregunta para Iván:** el TORQUE se pone rojo desde 85 % porque así son los arcos del MVP-50 de la cabina (verde 0–85, rojo
+  85–100): a plena potencia se ve rojo, en el taller y en la cabina. ¿Está bien así o se corrige en los dos?
 
 ### T3 — Estaciones, llamadas, preguntas y recorrido (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
