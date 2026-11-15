@@ -13,6 +13,7 @@ import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
 import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261115d';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261115d';
 import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115d';
 import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115d';
 import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115d';
@@ -384,7 +385,15 @@ try {
   gp.scene.name = 'banco-componentes';
   gp.scene.traverse((o) => {
     if (o.userData.banco) banco = JSON.parse(o.userData.banco);
-    if (o.userData.pieza) piezasBanco[o.userData.pieza] = o;
+    if (o.userData.pieza) {
+      // la geometría viene horneada en la bandeja: se centra en la pieza, así se puede llevar y volver a su lugar
+      o.geometry.computeBoundingBox();
+      const c = o.geometry.boundingBox.getCenter(new THREE.Vector3());
+      o.geometry.translate(-c.x, -c.y, -c.z);
+      o.position.copy(c);
+      o.userData.casa = c.clone();
+      piezasBanco[o.userData.pieza] = o;
+    }
     if (o.isMesh) {
       o.material.metalness = o.material.name.includes('pieza') ? 0.3 : 0.1; // sin mapa de ambiente, el metal muy metálico se ve negro
       o.material.roughness = o.material.name.includes('pieza') ? 0.42 : 0.75;
@@ -570,6 +579,7 @@ try {
 
 // ------------------------------------------------------------ el motor: holograma (o los materiales originales con ?holo=0)
 const eng = buildEngine();
+sumarAgregados(eng); // el detector de virutas y las termocuplas de ITT (T8): aparte, así engine.js sigue igual a la fuente
 let s = initState(true);
 let holo = null;
 let motorGrupo;
@@ -942,6 +952,8 @@ addEventListener('keyup', (e) => {
 let arrastre = null;
 let hoverPC = null;
 renderer.domElement.addEventListener('pointerdown', (e) => {
+  ultimoMouse = e;
+  if (clicPieza(e)) return; // tomar o dejar una pieza del banco (T8)
   const a = apuntado(rayoDesdeMouse(e));
   arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a, girarHolo: e.shiftKey};
   if (a && a.tipo === 'palanca' && a.id !== 'levCL') {
@@ -969,6 +981,7 @@ renderer.domElement.addEventListener(
 );
 renderer.domElement.addEventListener('pointermove', (e) => {
   if (renderer.xr.isPresenting) return;
+  ultimoMouse = e;
   if (!arrastre) {
     const a = apuntado(rayoDesdeMouse(e));
     hoverPC = a && a.tipo === 'panel' ? a.id : null;
@@ -1335,7 +1348,9 @@ function manosVR() {
   hoverVR = null;
   for (const c of manos) {
     let agarroControl = false;
-    if (controles && !panelVR.visible) agarroControl = controles.manoVR(c, c.userData.grip, c.userData.gripNuevo);
+    if (ubicar.mano === c && !c.userData.grip) soltarPieza();
+    if (c.userData.gripNuevo && !panelVR.visible && !ubicar.pieza) agarroControl = tomarConMano(c); // las piezas del banco (T8)
+    if (controles && !panelVR.visible && !agarroControl) agarroControl = controles.manoVR(c, c.userData.grip, c.userData.gripNuevo);
     if (c.userData.gripNuevo && !agarroControl && !panelVR.visible && cercaDelHolograma(c)) {
       motorGrupo.updateMatrixWorld(true);
       agarreHolo.push({mano: c, rel: new THREE.Matrix4().copy(c.matrixWorld).invert().multiply(motorGrupo.matrixWorld)});
@@ -1389,6 +1404,7 @@ function ponerMano(c, pos, mirarA = null, quat = null) {
 function cuadroVR(n = 1) {
   for (let i = 0; i < n; i++) {
     manosVR();
+    pasoUbicar();
     sincronizarPalancas(1 / 72);
   }
 }
@@ -1600,6 +1616,34 @@ function probarMandos() {
     yaw = yawAntes;
     pitch = pitchAntes;
   }
+  // 12) ubicar las piezas del banco (T8): acierto, error y suelta lejos
+  if (piezasBanco.ignitor) {
+    const antes = {aciertos: ubicar.aciertos, errores: ubicar.errores, puestas: {...ubicar.puestas}};
+    const llevar = (clave, destino) => {
+      const p = piezasBanco[clave];
+      ponerMano(m0, p.getWorldPosition(new THREE.Vector3()));
+      apretarGrip(m0);
+      cuadroVR();
+      const tomada = ubicar.pieza === p;
+      ponerMano(m0, destino);
+      cuadroVR();
+      const marca = marcaLugar.visible;
+      soltarGrip(m0);
+      cuadroVR();
+      return {tomada, marca, enCasa: p.position.distanceTo(p.userData.casa) < 1e-6};
+    };
+    const r1 = llevar('ignitor', lugarEnMundo('ignitor', new THREE.Vector3()));
+    ok('ubicar: el ignitor se agarra con el grip, su lugar titila y soltado ahí es acierto', r1.tomada && r1.marca && ubicar.aciertos === antes.aciertos + 1 && !!ubicar.puestas.ignitor && r1.enCasa, r1);
+    const r2 = llevar('alabe', lugarEnMundo('ignitor', new THREE.Vector3()));
+    ok('ubicar: el álabe soltado en el lugar del ignitor es error y marca su lugar', r2.tomada && ubicar.errores === antes.errores + 1 && ubicar.marca === 'alabe' && r2.enCasa, r2);
+    const r3 = llevar('inyector', motorGrupo.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0, 1.4)));
+    ok('ubicar: soltado lejos vuelve a su bandeja sin contar', r3.tomada && ubicar.aciertos === antes.aciertos + 1 && ubicar.errores === antes.errores + 1 && r3.enCasa, r3);
+    for (const [k, copia] of Object.entries(ubicar.puestas)) if (!antes.puestas[k]) {
+      eng.root.remove(copia);
+      delete ubicar.puestas[k];
+    }
+    Object.assign(ubicar, {aciertos: antes.aciertos, errores: antes.errores, marcaHasta: 0});
+  }
   // dejar todo como al principio: el holograma a la mesa, sin estación, sin corte, motor a ralentí
   for (const c of manos) ponerMano(c, lejos);
   cuadroVR();
@@ -1613,6 +1657,136 @@ function probarMandos() {
   audio.vozOn = vozAntes;
   const fallaron = res.filter((r) => !r.ok);
   return {pruebas: res.length, fallaron: fallaron.length, detalle: res};
+}
+
+// ------------------------------------------------------------ ubicar las piezas del banco en el holograma (T8, tramo 3 adelantado)
+// Se agarra una pieza (VR: grip a menos de 10 cm; PC: clic para tomarla, que sigue al mouse a 45 cm, y otro clic para dejarla). Con
+// la pieza a menos de 40 cm del holograma, su lugar se ilumina y titila. Soltada a menos de 12 cm de su lugar: ACIERTO, queda una
+// copia a la escala del holograma en su lugar (se mueve con él) y la pieza vuelve a su bandeja. Soltada en otro lado del holograma:
+// ERROR, el lugar correcto titila 3 s y la pieza vuelve. Soltada lejos: vuelve sola, sin contar. [PROVISORIO: la forma de ubicar
+// la decide Iván al cierre de la T8]
+let ultimoMouse = null;
+const ubicar = {pieza: null, mano: null, aciertos: 0, errores: 0, puestas: {}, marca: null, marcaHasta: 0};
+const marcaLugar = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 16, 10),
+  new THREE.MeshBasicMaterial({color: 0xffc46b, transparent: true, opacity: 0, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending}),
+);
+marcaLugar.name = 'marca-lugar';
+marcaLugar.renderOrder = 20;
+marcaLugar.visible = false;
+escena.add(marcaLugar);
+const vLugar = new THREE.Vector3();
+function lugarEnMundo(clave, out = vLugar) {
+  const k = LUGAR_PIEZA[clave];
+  const p = eng.PARTS[k] || PARTS_AGREGADAS[k];
+  eng.root.updateWorldMatrix(true, false);
+  return eng.root.localToWorld(out.set(...p));
+}
+function cercaDelHologramaPunto(p, margen) {
+  cajaHolo.makeEmpty();
+  for (const o of holo ? holo.cuerpos.map((x) => x.malla) : [motorGrupo]) cajaHolo.union(cajaTmp.setFromObject(o));
+  return cajaHolo.expandByScalar(margen).containsPoint(p);
+}
+function tomarPieza(p, mano) {
+  ubicar.pieza = p;
+  ubicar.mano = mano;
+  pararRecorrido();
+}
+function tomarConMano(c) {
+  c.getWorldPosition(tmp);
+  let mejor = null;
+  let d0 = 0.1;
+  for (const p of Object.values(piezasBanco)) {
+    const d = p.getWorldPosition(tmp2).distanceTo(tmp);
+    if (d < d0) {
+      d0 = d;
+      mejor = p;
+    }
+  }
+  if (mejor) tomarPieza(mejor, c);
+  return !!mejor;
+}
+const vPieza = new THREE.Vector3();
+function soltarPieza() {
+  const p = ubicar.pieza;
+  if (!p) return null;
+  ubicar.pieza = null;
+  ubicar.mano = null;
+  const clave = p.userData.pieza;
+  p.getWorldPosition(vPieza);
+  const lugar = lugarEnMundo(clave, new THREE.Vector3());
+  let resultado = 'lejos';
+  if (vPieza.distanceTo(lugar) < 0.12) {
+    resultado = 'acierto';
+    ubicar.aciertos++;
+    if (!ubicar.puestas[clave]) {
+      // la copia a la escala del holograma, colgada de la raíz del motor (milímetros): se mueve y se corta con él
+      const copia = new THREE.Mesh(p.geometry, p.material);
+      copia.name = `puesta_${clave}`;
+      copia.scale.setScalar(1000);
+      copia.position.set(...(eng.PARTS[LUGAR_PIEZA[clave]] || PARTS_AGREGADAS[LUGAR_PIEZA[clave]]));
+      eng.root.add(copia);
+      ubicar.puestas[clave] = copia;
+    }
+  } else if (cercaDelHologramaPunto(vPieza, 0.25)) {
+    resultado = 'error';
+    ubicar.errores++;
+    ubicar.marca = clave;
+    ubicar.marcaHasta = reloj + 3;
+  }
+  p.position.copy(p.userData.casa);
+  p.quaternion.identity();
+  return resultado;
+}
+const qMano = new THREE.Quaternion();
+function pasoUbicar() {
+  const p = ubicar.pieza;
+  if (p) {
+    if (ubicar.mano) {
+      ubicar.mano.getWorldPosition(p.position);
+      ubicar.mano.getWorldQuaternion(qMano);
+      p.quaternion.copy(qMano);
+    } else if (ultimoMouse) {
+      const r = rayoDesdeMouse(ultimoMouse);
+      p.position.copy(r.ray.origin).addScaledVector(r.ray.direction, 0.45);
+    }
+  }
+  // la marca: el lugar de la pieza que se lleva cerca del holograma, o el correcto después de un error
+  let clave = null;
+  if (p && cercaDelHologramaPunto(p.getWorldPosition(vPieza), 0.4)) clave = p.userData.pieza;
+  else if (reloj < ubicar.marcaHasta) clave = ubicar.marca;
+  marcaLugar.visible = !!clave;
+  if (clave) {
+    lugarEnMundo(clave, marcaLugar.position);
+    const k = 0.5 + 0.5 * Math.sin(reloj * 9);
+    marcaLugar.scale.setScalar(0.022 + 0.01 * k);
+    marcaLugar.material.opacity = 0.35 + 0.5 * k;
+  }
+}
+/** PC: un clic sobre una pieza la toma; con una pieza en la mano, el clic la deja. Devuelve true si el clic fue para eso */
+function clicPieza(e) {
+  if (renderer.xr.isPresenting) return false;
+  if (ubicar.pieza) {
+    soltarPieza();
+    return true;
+  }
+  const r = rayoDesdeMouse(e);
+  const lista = Object.values(piezasBanco);
+  let h = r.intersectObjects(lista, false)[0];
+  if (!h) {
+    // tolerante: las piezas son chicas (5 a 20 cm); vale pasar a menos de 3 cm de su centro
+    let d0 = 0.03;
+    for (const p of lista) {
+      const d = r.ray.distanceToPoint(p.getWorldPosition(tmp));
+      if (d < d0) {
+        d0 = d;
+        h = {object: p};
+      }
+    }
+  }
+  if (!h) return false;
+  tomarPieza(h.object, null);
+  return true;
 }
 
 // ------------------------------------------------------------ piloto de prueba del modo piloto (T7, tramo 3 adelantado)
@@ -1762,6 +1936,7 @@ function avanzar(dt) {
     leerJoysticks(dt);
     manosVR();
   }
+  pasoUbicar(); // la pieza que se lleva y la marca de su lugar (T8)
   // el recorrido pone las palancas, la estación y las fallas del guion; la pose del holograma sigue a la vista de cada estación
   const metaTour = recorrido.activo ? pasoRecorrido() : null;
   if (!poseManual && !agarreHolo.length) seguirPose(metaTour || POSE_BASE, dt);
@@ -1997,6 +2172,14 @@ window.__taller = {
   probarMandos,
   /** salto con fundido: 'partida', 'mesa', 'at802', 'cessna', 'bancos', 'oficina' */
   saltar: saltarA,
+  /** ubicar (T8): aciertos, errores y las piezas puestas; tomar/soltar para las pruebas */
+  get ubicar() {
+    return {aciertos: ubicar.aciertos, errores: ubicar.errores, puestas: Object.keys(ubicar.puestas), llevando: ubicar.pieza && ubicar.pieza.userData.pieza};
+  },
+  piezasBanco,
+  lugarEnMundo,
+  tomarPieza: (clave) => tomarPieza(piezasBanco[clave], null),
+  soltarPieza,
   /** el piloto de prueba del modo piloto: arranques, fallas, recorrido y preguntas por consola */
   probarPiloto,
   get camino() {
