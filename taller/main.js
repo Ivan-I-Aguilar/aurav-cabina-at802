@@ -1753,10 +1753,34 @@ function cercaDelHologramaPunto(p, margen) {
   for (const o of holo ? holo.cuerpos.map((x) => x.malla) : [motorGrupo]) cajaHolo.union(cajaTmp.setFromObject(o));
   return cajaHolo.expandByScalar(margen).containsPoint(p);
 }
+// los sonidos de agarrar y soltar (reserva de la T8): bips cortos sintetizados, sin archivos
+function bip(frec, dur = 0.07, vol = 0.22, tipo = 'square') {
+  const C = audio.ctx;
+  if (!C || !audio.vozOn) return;
+  const o = C.createOscillator();
+  const g = C.createGain();
+  o.type = tipo;
+  o.frequency.value = frec;
+  g.gain.setValueAtTime(vol, C.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, C.currentTime + dur);
+  o.connect(g).connect(audio.master || C.destination);
+  o.start();
+  o.stop(C.currentTime + dur);
+}
+const SONIDO = {
+  tomar: () => bip(660, 0.05),
+  acierto: () => {
+    bip(880, 0.08);
+    setTimeout(() => bip(1320, 0.12), 90);
+  },
+  error: () => bip(180, 0.22, 0.25, 'sawtooth'),
+  volver: () => bip(440, 0.05, 0.15),
+};
 function tomarPieza(p, mano) {
   ubicar.pieza = p;
   ubicar.mano = mano;
   pararRecorrido();
+  SONIDO.tomar();
 }
 function tomarConMano(c) {
   c.getWorldPosition(tmp);
@@ -1802,6 +1826,7 @@ function soltarPieza() {
   }
   p.position.copy(p.userData.casa);
   p.quaternion.identity();
+  (SONIDO[resultado] || SONIDO.volver)();
   return resultado;
 }
 const qMano = new THREE.Quaternion();
@@ -1918,9 +1943,11 @@ function intentarIdentificar(r) {
   if (h.pieza === t.pieza) {
     mecanico.mensaje = {titulo: '✓ CORRECTO', texto: INSPECCION[h.pieza].nombre, color: 'verde'};
     mecanico.i++;
+    SONIDO.acierto();
   } else {
     mecanico.errores[mecanico.i]++;
     mecanico.mensaje = {titulo: '✗ NO ES ESA', texto: `Eso es: ${INSPECCION[h.pieza].nombre}. ${t.texto}`, color: 'rojo'};
+    SONIDO.error();
   }
   mecanico.hasta = reloj + 2.5;
   return true;

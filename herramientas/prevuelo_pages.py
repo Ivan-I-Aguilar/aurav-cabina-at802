@@ -48,7 +48,9 @@ def revisar(fuente, linea, ruta):
 
 
 FUENTES = [t for t in EN_GIT if t == 'index.html' or t == 'herramientas/piloto_prueba.js'
-           or (t.endswith('.js') and '/' not in t and not t.startswith('three.') and t not in AJENOS)]
+           or (t.endswith('.js') and '/' not in t and not t.startswith('three.') and t not in AJENOS)
+           # el taller de motores (PLAN_TALLER.md, T10): su página y sus módulos (las rutas de los GLB son relativas a la página)
+           or t == 'taller.html' or (t.startswith('taller/') and t.endswith('.js'))]
 for f in FUENTES:
     with open(os.path.join(REPO, f), encoding='utf-8') as fh:
         for n, renglon in enumerate(fh.read().split('\n'), 1):
