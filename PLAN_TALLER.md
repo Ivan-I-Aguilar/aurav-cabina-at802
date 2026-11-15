@@ -7,7 +7,8 @@ acá. Este documento es el plan profundo que pide `CLAUDE.md` antes de un trabaj
 cada etapa se marca HECHA con fecha y versión.
 
 **Estado (15/11):** plan propuesto; **espera el ok de Iván y sus decisiones (§13), que se preguntan de a una. Ya están la 1
-(uso interno), la 2 (página nueva, `taller.html`) y la 3a (el modo mecánico identifica, ubica e inspecciona), del 15/11.** No se modeló
+(uso interno), la 2 (página nueva, `taller.html`) y la 3a (el modo mecánico identifica, ubica e inspecciona), del 15/11; la 3b (quién lo
+valida) queda pendiente.** No se modeló
 nada ni se tocó el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
 decidir qué entra (§3).
 
@@ -216,7 +217,8 @@ admisión**. Material «real» (metal, cerámica, bronce, sin texturas), para qu
    electrodo del ignitor, objetos extraños y roturas en la malla) [AGREGADO, VERIFICAR]. **Lo escribe o lo valida alguien de
    AAXOD** (decisión 3b) y va en `taller/mecanico.js`, aparte del código. Cómo se arma: primero un borrador con conocimiento
    general, todo [AGREGADO] / [VERIFICAR], en una tabla fácil de corregir (pieza · qué se mira · qué se busca · qué queda para el
-   manual); lo corrige quien valide, y el modo mecánico no se publica hasta tener esa validación.
+   manual); lo corrige quien valide (todavía no se sabe quién: 3b, 15/11), y el modo mecánico no se publica hasta tener esa
+   validación.
 - Al final, los aciertos por tarea, como el debrief de los niveles (sin constancia ni envío al aula en esta versión).
 
 ## 8. Presupuesto para el Quest
@@ -303,6 +305,8 @@ su ok.
   nombre) y el botón «Taller de motores» en el menú del juego (y uno para volver): lo único que se toca del juego.
 - **Iván en el Quest:** fluidez, legibilidad de los paneles, alcance de las palancas, agarrar el holograma y las piezas, mareo al
   caminar. Publicar, sólo con su ok.
+- Si para entonces nadie validó el modo mecánico (3b), el taller se publica con el modo piloto y el mecánico queda oculto (sólo
+  en local).
 
 ## 10. Verificación (en cada etapa)
 **Automática, antes de mirar:** presupuesto (`renderer.info` y el informe de cada GLB); carga sin errores ni 404
@@ -341,7 +345,7 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
 - **Qué Quest** usan Iván y los alumnos (2, 3 o 3S): fija el presupuesto.
 - **El Cessna:** cuánto pesa de verdad (triángulos, texturas), si trae capó, hélice y ruedas separadas, y qué versión de CC BY
   tiene. Se sabe al bajarlo.
-- **Quién de AAXOD valida** el modo mecánico (decisión 3b).
+- **Quién de AAXOD valida** el modo mecánico (decisión 3b: Iván todavía no lo sabe, 15/11).
 - **Las medidas del hangar** que le gusten a Iván (las de §4 son inventadas).
 - **Cuándo llega el manual** del motor real (para cambiar el genérico).
 - Si más adelante el taller tiene que **mandar resultados al aula virtual**, como los niveles (J5 de `PLAN_JUEGO.md`): en esta
@@ -360,7 +364,8 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
    la página, después la puerta desde el juego · 4 · otra. **Elegida por Iván el 15/11: 1 · página nueva.**
 3. **Modo mecánico:** 3a, qué hace en el módulo 1 (· 1 · identificar · 2 · identificar y ubicar · 3 · las dos más inspección ·
    4 · otra) y 3b, **quién de AAXOD lo valida**. **3a elegida por Iván el 15/11: 3 · las tres (identificar, ubicar e
-   inspeccionar).**
+   inspeccionar).** **3b (15/11): todavía no se sabe; el borrador se arma igual y el modo mecánico no se publica hasta tener quien
+   lo valide.**
 4. **Piezas del banco en la primera versión:** · 1 · las cuatro del traspaso (ignitor, inyector, álabe, malla de admisión) · 2 ·
    esas más el detector de virutas y la termocupla de ITT · 3 · empezar con dos (ignitor e inyector) · 4 · otra.
 5. **Qué modelo de motor manda:** · 1 · cada uno el suyo hasta tener el manual (el taller, el genérico: 52 / 65 % e ITT 545; la
