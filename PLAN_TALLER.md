@@ -113,7 +113,7 @@ aserradas y sendas amarillas, muchas luminarias LED redondas, ventiladores indus
 rojos y un portón grande que da a la plataforma. El nuestro toma ese TIPO de nave con otras medidas, otra distribución y la marca
 de AURAV (la del escenario: «AURAV / PLANO AÉREO»); nada de AAXOD.
 
-Medidas propuestas [PROVISORIO: inventadas, se ajustan mirando las vistas]: nave de **40 m de luz × 60 m de fondo** (2.400 m²,
+Medidas [inventadas; **ok de Iván el 15/11** mirando las vistas]: nave de **40 m de luz × 60 m de fondo** (2.400 m²,
 alcanza para unas 12 aeronaves mezcladas), techo en arco de 6 m en los costados a 12 m en el centro, 9 arcos cada 7,5 m, **portón
 corredizo de 30 × 8 m** en el frente, abierto en parte (se ve la plataforma y el cielo). Marco: +x a la derecha mirando desde el
 portón hacia el fondo, +y arriba, −z hacia el fondo, origen en el piso en el centro del portón.
@@ -429,6 +429,7 @@ nada).** Lo que quedó:
   afuera): las vistas que valen son las del navegador.
 - Quedan de la reserva: variantes de color y niebla (la nave se lee bien sin niebla; el color, si Iván lo pide).
 - Capturas: `Documents/aurav-cabina/capturas_taller/T4_nave.jpg`.
+- **Ok de Iván a la nave y a sus medidas: 15/11 («Quedan así»).**
 
 ### T5 — Zonas, muebles, partida y saltos (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
