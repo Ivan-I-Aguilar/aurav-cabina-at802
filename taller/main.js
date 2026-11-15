@@ -1734,7 +1734,8 @@ let ultimoMouse = null;
 const ubicar = {pieza: null, mano: null, aciertos: 0, errores: 0, puestas: {}, marca: null, marcaHasta: 0};
 const marcaLugar = new THREE.Mesh(
   new THREE.SphereGeometry(1, 16, 10),
-  new THREE.MeshBasicMaterial({color: 0xffc46b, transparent: true, opacity: 0, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending}),
+  // mezcla normal, naranja fuerte: sumada (aditiva) sobre el holograma, que ya es casi blanco, no se veía (15/11)
+  new THREE.MeshBasicMaterial({color: 0xff8a1a, transparent: true, opacity: 0, depthTest: false, depthWrite: false}),
 );
 marcaLugar.name = 'marca-lugar';
 marcaLugar.renderOrder = 20;
@@ -1825,7 +1826,7 @@ function pasoUbicar() {
     lugarEnMundo(clave, marcaLugar.position);
     const k = 0.5 + 0.5 * Math.sin(reloj * 9);
     marcaLugar.scale.setScalar(0.022 + 0.01 * k);
-    marcaLugar.material.opacity = 0.35 + 0.5 * k;
+    marcaLugar.material.opacity = 0.45 + 0.5 * k;
   }
 }
 /** PC: un clic sobre una pieza la toma; con una pieza en la mano, el clic la deja. Devuelve true si el clic fue para eso */
