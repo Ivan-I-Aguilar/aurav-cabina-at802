@@ -6,9 +6,9 @@ claude.ai (`OneDrive/Desktop/AURAV/HOLOGRAMA/PLAN_TALLER_MOTORES.md`, también d
 acá. Este documento es el plan profundo que pide `CLAUDE.md` antes de un trabajo grande: se actualiza a medida que avanzamos y
 cada etapa se marca HECHA con fecha y versión.
 
-**Estado (15/11):** plan propuesto; **espera el ok de Iván y sus decisiones (§13), que se preguntan de a una. Ya están la 1
-(uso interno), la 2 (página nueva, `taller.html`), la 3a (el modo mecánico identifica, ubica e inspecciona) y la 4
-(seis piezas en el banco), del 15/11; la 3b (quién lo valida) queda pendiente.** No se modeló
+**Estado (15/11):** plan propuesto; **Iván ya tomó las 5 decisiones de §13 (15/11): uso interno, página nueva
+(`taller.html`), modo mecánico que identifica, ubica e inspecciona, seis piezas en el banco y, en las cifras del motor, manda la
+cabina. Queda pendiente quién de AAXOD valida el modo mecánico (3b) y falta su ok al plan.** No se modeló
 nada ni se tocó el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
 decidir qué entra (§3).
 
@@ -20,8 +20,8 @@ decidir qué entra (§3).
   real para agarrar.
 - **Para quién:** pilotos (**modo piloto**: lo que ya hace el simulador) y mecánicos (**modo mecánico**: identificar piezas,
   ubicarlas, qué se inspecciona; contenido nuevo que valida AAXOD).
-- **Qué se reutiliza:** del simulador, el modelo del motor (`motor.js`) y el contenido (`content.js`) tal cual, y la geometría
-  (`engine.js`) cambiando sólo los imports; para VR se rehacen los materiales (holograma sin postproceso), el tablero HTML (paneles
+- **Qué se reutiliza:** del simulador, el modelo del motor (`motor.js`, con las cifras de la cabina), el contenido (`content.js`)
+  tal cual y la geometría (`engine.js`) cambiando sólo los imports; para VR se rehacen los materiales (holograma sin postproceso), el tablero HTML (paneles
   3D) y el recorrido (en VR no se mueve la cámara: gira el holograma). Del repo: el AT-802 listo para juegos (`juegos/at802.glb`),
   `controles.js` (palancas que se agarran), `panelvr.js`, la turbina de `audio.js`, el método de Blender por scripts y la ronda de
   vistas.
@@ -30,8 +30,8 @@ decidir qué entra (§3).
 - **Cuánto:** unas 11 a 15 sesiones como las de estos días.
 - **Cómo sabemos que quedó:** chequeo automático de presupuesto y de carga antes de mirar; ronda fija de vistas que se le manda a
   Iván; él prueba en el Quest (desde acá no se puede). Publicar, sólo con su ok.
-- **Qué hace falta de Iván:** las 5 decisiones de §13 (de a una), bajar el Cessna de Sketchfab con su cuenta, y decir quién de
-  AAXOD valida el modo mecánico.
+- **Qué hace falta de Iván:** el ok al plan, bajar el Cessna de Sketchfab con su cuenta y decir quién de AAXOD valida el modo
+  mecánico (las 5 decisiones de §13 ya están).
 
 ## 1. Qué pidió Iván (del traspaso)
 - **Hangar de AURAV ficticio**, modelado en 3D: amplio (unas 12 aeronaves), ordenado, con bancos de trabajo y herramientas.
@@ -59,7 +59,7 @@ empaquetado.
 
 | Archivo | Qué es | En el taller |
 |---|---|---|
-| `motor.js` (133 líneas) | El modelo: `step(s, inp, dt)` con palanca de potencia `pla` 0–1, condición `cl` (0 corte · 1 ralentí bajo · 2 ralentí alto), hélice `prop` 0–1, arranque (pulso) y falla → Ng, ITT, torque, Np, flujo de combustible, los ángulos de giro en cámara lenta (`ga`, `pa`, `pr`) y la fase del flujo. `readout()` suma el estampido de la pérdida de compresor. `GAUGES` (rangos y zonas) y `FAULTS` (5 fallas con su alerta y su acción). JS puro, sin three. | **Tal cual.** |
+| `motor.js` (133 líneas) | El modelo: `step(s, inp, dt)` con palanca de potencia `pla` 0–1, condición `cl` (0 corte · 1 ralentí bajo · 2 ralentí alto), hélice `prop` 0–1, arranque (pulso) y falla → Ng, ITT, torque, Np, flujo de combustible, los ángulos de giro en cámara lenta (`ga`, `pa`, `pr`) y la fase del flujo. `readout()` suma el estampido de la pérdida de compresor. `GAUGES` (rangos y zonas) y `FAULTS` (5 fallas con su alerta y su acción). JS puro, sin three. | **La lógica, tal cual; las cifras, las de la cabina** (decisión 5, 15/11). |
 | `content.js` (35) | Las 8 estaciones (frase de Iván + 2–3 llamadas cada una), las 6 preguntas (la correcta es la primera; `ORDER` las mezcla en pantalla) y la leyenda. | **Tal cual.** El modo mecánico va en un archivo aparte. |
 | `engine.js` (551) | La geometría por código, en mm (eje z, adelante +z): 105 mallas (§8), `PARTS` (22 puntos para las llamadas), `STATIONS` (qué queda y qué se resalta en cada estación) y `Z`. `update(s, ops)` posa el giro, el flujo (1500 partículas en 36 recorridos), la llama, los inyectores, los ignitores, las fallas, el aislado por estación (piezas fantasma + acento rojo) y el corte (`setCut`: corte · vidrio · sólido). Sólo usa `three` y `BufferGeometryUtils`. | **La geometría, tal cual** (cambian los dos imports). Los materiales y el `update` se rehacen en `holograma.js` (§5). |
 | `console.js` (243) | El tablero HTML de 1600 × 900: título, estaciones, palancas, lámparas, instrumentos, fallas, vista, preguntas, texto de la estación, alerta, llamadas y la leyenda al pie. | **No:** se rehace como paneles 3D en canvas, con el mismo contenido y los mismos colores (§6). |
@@ -70,7 +70,8 @@ empaquetado.
 **Números del modelo (ilustrativos, no son límites de ningún motor):** ralentí bajo 52 % de Ng y alto 65 %; hélice gobernada
 1500–1700 RPM (roja 1760); ITT en ralentí ~545 °C, verde 400–760, roja 800; torque rojo 100 %; Ng rojo 102 %. El arranque caliente
 lleva la ITT hacia 1150 °C; el colgado deja el Ng en 36 % con la ITT subiendo hacia 790. **La cabina usa otros** (`CLAUDE.md`,
-«Números del avión»: Ng de ralentí 60 %, ITT de crucero ~420 + 3,8·torque, pico de arranque ~700): cuál manda es la decisión 5.
+«Números del avión»: Ng de ralentí 60 %, ITT de crucero ~420 + 3,8·torque, pico de arranque ~700). **Decisión 5 (15/11): manda la
+cabina**: el holograma toma esas cifras y el simulador de escritorio queda como está.
 
 **Probado acá (15/11):** `engine.js` arma sin errores con el three r180 del repo (una copia en el scratchpad con los imports
 cambiados, corrida en Node): 105 mallas — 85 sólidas (33,3 k triángulos, 15 materiales), 18 de efectos (2 k) y 2 instanciadas:
@@ -88,7 +89,8 @@ está, el motor solo serían ~105 llamadas de dibujo y ~156 k triángulos: más 
 |---|---|
 | `taller.html` | La página: Entrar en VR, barra mínima en PC, versión (`?v=`), créditos. |
 | `taller/main.js` | Escena, jugador, VR (`local-floor`), caminar y saltos entre zonas, modos, la lógica portada de `live.js`, bucle (el motor a paso fijo), ganchos de prueba (`__taller`, `__ronda(n)`, `__vista(…)`). |
-| `taller/motor.js`, `taller/content.js` | Copias tal cual. |
+| `taller/motor.js` | Copia con las cifras de la cabina (decisión 5), como en `vuelo.js`: Ng de ralentí 60 %, torque = (Ng − 58) / 43, ITT = 420 + 3,8·torque con el pico de arranque ~700, arranque caliente hacia 1120 °C y colgado en 24 % de Ng con la ITT subiendo despacio hacia 1100. La cabina no tiene ralentí alto: queda en 65 % [VERIFICAR] hasta el manual. La lógica (palancas, arranque, fallas, giro, flujo) no cambia. |
+| `taller/content.js` | Copia tal cual. |
 | `taller/engine.js` | Copia; cambian los dos imports (`../three.module.js`, `../BufferGeometryUtils.js`) y, para el modo mecánico, cada malla lleva el nombre de su pieza (§7). |
 | `taller/agregados.js` | Lo que el motor del simulador no tiene y el taller sí: el detector de virutas y las termocuplas de ITT (decisión 4), con su estación, su pieza y su punto de llamada. |
 | `taller/holograma.js` | El holograma: junta las mallas por cuerpo que gira, sombreador de holograma, aislado y corte por uniforms, partículas como puntos de luz, efectos, proyector. |
@@ -258,10 +260,11 @@ su ok.
 ### Etapa T0 — Base de la página (1 sesión)
 - `taller.html` y `taller/main.js`: renderer, VR (`local-floor`), jugador, caminar (VR y PC), ganchos de prueba. Una sala gris
   vacía con una mesa provisoria.
-- Copias de `motor.js`, `content.js` y `engine.js` (imports cambiados) y el motor con sus materiales originales sobre la mesa,
-  respondiendo a las palancas con el teclado.
-- **Lista cuando** las copias de `motor.js` y `content.js` son idénticas a la fuente (se compara el hash), el motor arranca, acelera
-  y falla igual que en el escritorio y `renderer.info` da lo esperado (las 105 mallas).
+- Copias de `motor.js` (con las cifras de la cabina), `content.js` y `engine.js` (imports cambiados) y el motor con sus materiales
+  originales sobre la mesa, respondiendo a las palancas con el teclado.
+- **Lista cuando** `content.js` es idéntico a la fuente (se compara el hash), `motor.js` da las mismas cifras que la cabina (prueba
+  en Node contra `vuelo.js`: ralentí, plena potencia y los arranques normal, caliente y colgado) y `renderer.info` da lo esperado
+  (las 105 mallas).
 
 ### Etapa T1 — El holograma (1–2 sesiones)
 - `holograma.js`: juntar por cuerpo con `tag` / `prim` / `pieza`, sombreador, contornos, aislar, corte, flujo como puntos de luz,
@@ -296,7 +299,7 @@ su ok.
   enlace al modelo, la licencia (la versión de CC BY que diga la página) y «modificado: aligerado».
 - **Verificación:** presupuesto, vistas de las dos aeronaves desde el piso y desde arriba, el crédito legible desde 2 m.
 
-### Etapa T5 — Modo piloto entero (1 sesión; antes, la decisión 5)
+### Etapa T5 — Modo piloto entero (1 sesión)
 - De la partida a la mesa: estaciones, palancas, fallas, preguntas y el resumen; la voz de las 8 frases (si Iván quiere) y la
   turbina de `audio.js` siguiendo a Ng y Np.
 - **Verificación:** un piloto de prueba por consola (como `herramientas/piloto_prueba.js`) que hace el recorrido, un arranque
@@ -318,8 +321,8 @@ su ok.
 
 ## 10. Verificación (en cada etapa)
 **Automática, antes de mirar:** presupuesto (`renderer.info` y el informe de cada GLB); carga sin errores ni 404
-(`prevuelo_pages.py`); el motor da los mismos números que el de escritorio (el guion de `tour.js` integrado con `motor.js`: sirve
-de control si `motor.js` cambia por la decisión 5); los paneles y la leyenda alcanzados por rayos desde el ojo.
+(`prevuelo_pages.py`); el motor del holograma da las mismas cifras que el de la cabina (prueba en Node contra `vuelo.js`: si la
+cabina cambia, avisa); los paneles y la leyenda alcanzados por rayos desde el ojo.
 
 **Visual, ronda fija** con `__ronda(n)`, de día y las mismas cada vez [PROVISORIA]: 1 partida mirando hacia adentro · 2 mesa de
 frente · 3 mesa de 3/4 desde la izquierda · 4 holograma de cerca con una estación aislada · 5 banco de componentes · 6 AT-802 de
@@ -341,9 +344,9 @@ cuenta como seguro y WebXR anda). Si no, se publica, con su ok.
 | Mareo al recorrer una nave de 60 m | puntos de salto con fundido, giro de a 30°, nunca mover la cámara del alumno |
 | Un Cessna de Sketchfab pesado o sin piezas separadas | aligerarlo por script; si no trae el capó aparte, «en reparación» con gatos, carro y tapas de utilería |
 | Contenido del modo mecánico equivocado | [AGREGADO] / [VERIFICAR] y validación de AAXOD antes de publicar |
-| Dos modelos de motor con cifras distintas | decisión 5 |
+| Dos modelos de motor con cifras distintas | decidido el 15/11: manda la cabina; una prueba en Node compara el holograma con `vuelo.js` |
 | Licencia del exterior del AT-802 | decidida el 15/11: uso interno; si algún día se muestra afuera, el AT-802 se apaga con un parámetro |
-| Que el taller se aparte del simulador de escritorio | copias tal cual, con lo cambiado anotado arriba |
+| Que el taller se aparte del simulador de escritorio sin querer | copias con lo cambiado anotado arriba (las cifras del motor se apartan a propósito: decisión 5) |
 | El Quest cachea | `?v=` en todo lo que cambie |
 | Romper el juego publicado | página aparte (decidida el 15/11); del juego sólo se toca el botón de entrada |
 
@@ -359,7 +362,7 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
 - Si más adelante el taller tiene que **mandar resultados al aula virtual**, como los niveles (J5 de `PLAN_JUEGO.md`): en esta
   versión, no.
 
-## 13. Decisiones pendientes de Iván (de a una)
+## 13. Decisiones de Iván (de a una; tomadas el 15/11, salvo la 3b y el ok al plan)
 1. **Licencia del exterior del AT-802** (freeware de FSX, FSN / rikoooo). Hallazgo del 14/11 (`PLAN_AVION_JUEGOS.md` §3.5): los
    readme que tenemos no traen términos (el del Fireboss sólo lista archivos; el terrestre no trae readme). · 1 · el taller queda
    de uso interno, como la cabina (lo que rige hoy) · 2 · modelar un exterior propio en Blender, para poder mostrarlo afuera
@@ -380,8 +383,10 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
    ITT 545 °C; en el arranque colgado la cabina clava el Ng en 24 % y el holograma en 36 %. · 1 · cada uno con el suyo hasta tener
    el manual, y con el manual los dos pasan a las cifras reales (con un instructor); nada publicado cambia · 2 · manda la cabina:
    el holograma toma ya las cifras de `vuelo.js` y el alumno ve lo mismo en los dos (el simulador de escritorio queda como está) ·
-   3 · manda el genérico: cambian la cabina publicada y los umbrales de los niveles · 4 · otra. Hace falta antes de T5.
-6. **El ok al plan**, con lo que salga de las cinco.
+   3 · manda el genérico: cambian la cabina publicada y los umbrales de los niveles · 4 · otra. **Elegida por Iván el 15/11: 2 ·
+   manda la cabina.** La cabina no tiene ralentí alto: el holograma lo deja en 65 % [VERIFICAR] hasta el manual.
+6. **El ok al plan**, con las cinco ya incorporadas: · 1 · aprobado, se arranca por T0 · 2 · aprobado con cambios · 3 · todavía no ·
+   4 · otra.
 
 ## 14. Cronograma
 | Etapa | Qué | Sesiones |

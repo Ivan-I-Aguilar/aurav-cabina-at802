@@ -383,7 +383,8 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    15/11: la 1 (uso interno, como la cabina), la 2 (página nueva, `taller.html`; del juego sólo se toca un botón del menú) y la 3a
    (el modo mecánico identifica, ubica e inspecciona; la inspección necesita la validación de AAXOD antes de publicar). La 3b
    (quién valida) está pendiente: Iván todavía no lo sabe; sin eso el modo mecánico no se publica. La 4: seis piezas en el banco
-   (ignitor, inyector, álabe, malla, detector de virutas y termocupla de ITT; las dos últimas se suman al holograma). La fuente del simulador quedó FUERA del repo, en
+   (ignitor, inyector, álabe, malla, detector de virutas y termocupla de ITT; las dos últimas se suman al holograma). La 5: manda
+   la cabina (el holograma toma las cifras de `vuelo.js`; el simulador de escritorio queda igual). Falta el ok de Iván al plan. La fuente del simulador quedó FUERA del repo, en
    `Documents/aurav-cabina/taller_fuente/` (el zip y el traspaso, en `OneDrive/Desktop/AURAV/HOLOGRAMA/`). No se tocó el juego.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
    legibles, alcance de llaves y palancas, altura del ojo). Publicada el 12/11; lo que siga se vuelve a subir sólo con su ok (y subiendo
