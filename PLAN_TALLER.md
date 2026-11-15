@@ -396,6 +396,31 @@ nada).** Lo que quedó:
   la nave (nada flotando, nada superpuesto en el mismo plano).
 - **Al cierre, Iván:** ok a la nave y a las medidas inventadas de §4.
 
+**T4 ADELANTADA y HECHA dentro del bloque de la T1 (15/11/2026, 15:05–15:40; v=20261115d; sin publicar; en el Quest no se probó
+nada).** Lo que quedó:
+- `herramientas/taller_hangar.py` (Blender 5.2, con `cab_comun.py`) → `taller/hangar.glb` (8654 tri, 6 mallas = 6 llamadas, 0,77 MB) y
+  `taller/hangar_informe.json`: la nave de §4 con las medidas provisorias (40 × 60 m; arco de 6 a 12 m, radio 36,33 m; 9 arcos cada
+  7,5 m). Piso de hormigón en grilla de 1 m con juntas aserradas cada 5 m y las sendas amarillas de H2–H5 y de los pasillos; paredes y
+  techo de chapa (la textura acanalada la pone el juego en canvas: el GLB trae coordenadas en metros) sobre un zócalo de hormigón;
+  columnas, arcos de 0,74 m de **alma calada** (agujeros de Ø 0,46 m cada 0,75 m, por textura con `alphaTest` y `alphaToCoverage`;
+  los extremos, macizos) y correas; el portón de 30 × 8 m abierto 12 m, con las hojas apiladas a los costados y su riel; 40
+  luminarias LED (discos que brillan, colgados de su cable); afuera, la plataforma y el pasto.
+- **Luz horneada analítica en colores por vértice** (sin bake de Blender: con este look no hacía falta una textura grande): el piso
+  más oscuro junto a las paredes y bajo las dos manchas de las aeronaves (sombras de contacto), las paredes más claras arriba.
+- `taller/main.js`: el hangar corrido +45 m (el sector del taller cae en la mesa; el alumno mira hacia el fondo, con el portón a la
+  espalda); el cartel «AURAV · TALLER DE MOTORES · VER PARA VOLAR» (8 × 2,34 m) en la pared del fondo a 6,8 m, detrás y por encima
+  del holograma; el cielo de fondo; caminar con límites (paredes, el portón sólo por el hueco, la mesa); las vistas 12 a 16 de
+  `__ronda` (la nave desde la mesa, desde el portón, el techo, un rincón alto, afuera). Si el GLB no carga, queda la sala gris.
+- **Medido (PC):** el hangar, 6 llamadas y 8,7 k tri (meta: 15 y 30 k); la escena entera desde el puesto de trabajo, 50 llamadas y
+  46,7 k tri.
+- **Hallazgos:** (1) con el «suelo» del hemisferio oscuro, el techo y los arcos quedaban negros (de abajo sólo los ilumina el
+  hemisferio): el suelo pasa a 0xcfd3d8, que hace de rebote del piso; (2) la chapa con mucho contraste (200 ± 55) oscurecía el techo:
+  222 ± 33; (3) arcos y correas llegaban a 4 cm de la chapa y el cable de las luces a 5 cm: ahora 1 cm y 5 mm; (4) el cartel a 4,6 m
+  quedaba a la altura de los paneles vistos desde la mesa: a 6,8 m; (5) en Eevee la nave sale oscura (el techo tapa las luces de
+  afuera): las vistas que valen son las del navegador.
+- Quedan de la reserva: variantes de color y niebla (la nave se lee bien sin niebla; el color, si Iván lo pide).
+- Capturas: `Documents/aurav-cabina/capturas_taller/T4_nave.jpg`.
+
 ### T5 — Zonas, muebles, partida y saltos (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
 |---|---|---|

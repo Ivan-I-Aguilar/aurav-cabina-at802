@@ -11,15 +11,15 @@ import {GLTFLoader} from '../GLTFLoader.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261115c';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115c';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115c';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115c';
-import {crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante} from './paneles.js?v=20261115c';
-import {crearLlamadas} from './llamadas.js?v=20261115c';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115c';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261115d';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115d';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115d';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115d';
+import {crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante} from './paneles.js?v=20261115d';
+import {crearLlamadas} from './llamadas.js?v=20261115d';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115d';
 
-export const VERSION = '20261115c';
+export const VERSION = '20261115d';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -50,7 +50,7 @@ escena.background = new THREE.Color(0x2a2e34);
 const jugador = new THREE.Group();
 jugador.name = 'jugador';
 escena.add(jugador);
-const camara = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.02, 120);
+const camara = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.02, 700);
 camara.rotation.order = 'YXZ';
 jugador.add(camara);
 const INICIO = {pos: new THREE.Vector3(0, 0, 0.95), yaw: 0, pitch: -0.32};
@@ -59,8 +59,11 @@ let pitch = INICIO.pitch;
 jugador.position.copy(INICIO.pos);
 camara.position.set(0, ALTURA_OJOS, 0);
 
-escena.add(new THREE.HemisphereLight(0xdfe7ef, 0x3c4046, 1.15));
-const sol = new THREE.DirectionalLight(0xffffff, 1.1);
+// sin sombras ni luces que se muevan: hemisferio + una direccional suave. El «suelo» del hemisferio es claro (el rebote del piso de
+// hormigón y las luminarias): con uno oscuro, el techo y los arcos de la nave quedaban negros, y con 0xa3a8ae, gris oscuro (15/11)
+const hemisferio = new THREE.HemisphereLight(0xe8eef5, 0xcfd3d8, 1.25);
+escena.add(hemisferio);
+const sol = new THREE.DirectionalLight(0xffffff, 0.7);
 sol.position.set(2.5, 6, 3.5);
 escena.add(sol);
 
@@ -163,7 +166,104 @@ function crearMesaProvisoria() {
   return g;
 }
 
-escena.add(crearSala());
+// ------------------------------------------------------------ la nave del hangar (T4: herramientas/taller_hangar.py → hangar.glb)
+// En el marco del hangar el portón está en z 0 y el fondo en z −60; se corre +45 m para que el sector del taller (z −45) caiga en la
+// mesa (el origen del mundo). El alumno en la mesa mira hacia el fondo: el portón abierto, lo más claro, le queda a la espalda.
+const DESPLAZAR_HANGAR = 45;
+let hangar = null;
+/** la chapa acanalada: bandas claras y oscuras (las coordenadas de textura del GLB están en metros; 5 ondas por metro) */
+function texturaAcanalada() {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 4;
+  const g = c.getContext('2d');
+  for (let x = 0; x < 64; x++) {
+    const v = Math.round(222 + 33 * Math.sin((x / 64) * Math.PI * 2)); // con 200 ± 55 el techo quedaba gris oscuro (15/11)
+    g.fillStyle = `rgb(${v},${v},${v})`;
+    g.fillRect(x, 0, 1, 4);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(5, 1);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+/** las almas de los arcos, caladas: un agujero redondo por paso (u del GLB = metros de arco / 0,75; v = 0 abajo … 1 arriba) */
+function texturaCalada() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 128, 128);
+  g.globalCompositeOperation = 'destination-out';
+  g.beginPath();
+  g.arc(64, 64, 39, 0, Math.PI * 2); // Ø 0,46 m en un alma de 0,74
+  g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.RepeatWrapping;
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+/** el cartel de AURAV en la pared del fondo (la marca del escenario; nada de AAXOD) */
+function cartelAurav() {
+  const cv = document.createElement('canvas');
+  cv.width = 1024;
+  cv.height = 300;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#082440';
+  c.fillRect(0, 0, 1024, 300);
+  c.fillStyle = '#c8e63a';
+  c.fillRect(0, 0, 1024, 14);
+  c.fillStyle = '#ffffff';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.font = 'bold 120px Arial';
+  c.fillText('AURAV', 512, 120);
+  c.font = 'bold 46px Arial';
+  c.fillStyle = '#c8e63a';
+  c.fillText('TALLER DE MOTORES · VER PARA VOLAR', 512, 228, 980);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(8, 2.34), new THREE.MeshBasicMaterial({map: t, toneMapped: false}));
+  m.name = 'cartel-aurav';
+  return m;
+}
+try {
+  const gltf = await new GLTFLoader().loadAsync(`./taller/hangar.glb?v=${VERSION}`);
+  hangar = gltf.scene;
+  hangar.name = 'hangar';
+  hangar.position.z = DESPLAZAR_HANGAR;
+  const acanalada = texturaAcanalada();
+  hangar.traverse((o) => {
+    if (!o.isMesh) return;
+    const n = o.material.name || '';
+    if (n.includes('hangar_luz')) o.material = new THREE.MeshBasicMaterial({color: 0xffffff, toneMapped: false, side: THREE.DoubleSide});
+    else {
+      o.material.metalness = 0.05;
+      o.material.roughness = 0.85;
+      if (n.includes('hangar_chapa')) o.material.map = acanalada;
+      if (n.includes('hangar_alma')) {
+        o.material.map = texturaCalada();
+        o.material.alphaTest = 0.5;
+        o.material.alphaToCoverage = true; // bordes suaves con el MSAA del casco
+        o.material.side = THREE.DoubleSide;
+      }
+      o.material.needsUpdate = true;
+    }
+  });
+  escena.add(hangar);
+  const cartel = cartelAurav();
+  cartel.position.set(0, 6.8, DESPLAZAR_HANGAR - 60 + 0.05); // alto: detrás del holograma, por encima de la línea de los paneles
+  escena.add(cartel);
+  escena.background = new THREE.Color(0xa9c7e0); // el cielo, que se ve por el portón
+} catch (e) {
+  console.warn('taller: hangar.glb no cargó; queda la sala gris', e);
+  escena.add(crearSala());
+}
 const leyenda = crearLeyenda();
 escena.add(leyenda.grupo);
 const proyector = crearProyector({altoCono: CENTRO_HOLO.y - 0.15 - (MESA.alto + 0.031)});
@@ -603,8 +703,22 @@ addEventListener('resize', () => {
 const tmp = new THREE.Vector3();
 const tmp2 = new THREE.Vector3();
 function limitar(p) {
-  p.x = clamp(p.x, -6.6, 6.6);
-  p.z = clamp(p.z, -6.6, 6.6);
+  if (hangar) {
+    // adentro de la nave (con medio metro a las paredes) o afuera, en la plataforma; el frente se cruza sólo por el portón abierto
+    const zPorton = DESPLAZAR_HANGAR;
+    if (p.z < zPorton) {
+      p.x = clamp(p.x, -19.5, 19.5);
+      p.z = Math.max(p.z, DESPLAZAR_HANGAR - 59.5);
+      if (p.z > zPorton - 0.5 && Math.abs(p.x) > 5.6) p.z = zPorton - 0.5;
+    } else {
+      p.x = clamp(p.x, -45, 45);
+      p.z = Math.min(p.z, zPorton + 40);
+      if (p.z < zPorton + 1.2 && Math.abs(p.x) > 5.6) p.z = zPorton + 1.2;
+    }
+  } else {
+    p.x = clamp(p.x, -6.6, 6.6);
+    p.z = clamp(p.z, -6.6, 6.6);
+  }
   const mx = MESA.ancho / 2 + 0.25;
   const mz = MESA.fondo / 2 + 0.25;
   if (Math.abs(p.x) < mx && Math.abs(p.z) < mz) {
@@ -878,6 +992,11 @@ const RONDA = [
   {nombre: 'el panel de instrumentos y fallas', pos: [0.15, ALTURA_OJOS, 0.85], mira: [0.92, 1.4, 0.18], hfov: 70},
   {nombre: 'el panel de estaciones y vista', pos: [-0.15, ALTURA_OJOS, 0.85], mira: [-0.92, 1.4, 0.18], hfov: 70},
   {nombre: 'el puesto entero (los dos paneles)', pos: [0, 1.75, 1.6], mira: [0, 1.25, 0], hfov: 95},
+  {nombre: 'la nave desde la mesa, mirando al portón', pos: [0, 1.6, 2.2], mira: [0, 3.5, 45], hfov: 100},
+  {nombre: 'desde el portón hacia el taller', pos: [0, 1.7, 42], mira: [0, 2.2, 0], hfov: 90},
+  {nombre: 'el techo: arcos, correas y luminarias', pos: [0, 1.7, 18], mira: [0, 11, 10], hfov: 100},
+  {nombre: 'la nave desde un rincón alto', pos: [17, 5.6, 37.5], mira: [-8, 1.5, 0], hfov: 90}, // entre dos filas de luminarias (en 43 una quedaba encima)
+  {nombre: 'afuera: el portón desde la plataforma', pos: [6, 1.7, 70], mira: [0, 4, 45], hfov: 80},
 ];
 function ponerCamara(pos, mira, hfov = 75) {
   jugador.position.set(pos[0], 0, pos[2]);
