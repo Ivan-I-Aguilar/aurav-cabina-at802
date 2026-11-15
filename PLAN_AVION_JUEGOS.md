@@ -39,11 +39,13 @@ Los dos juegos con AT-802 usan **el mismo archivo** (`at802.glb`, idéntico byte
 - `blender/cab_cupula.glb`: 0,21 MB · 7.136 tri · 5 llamadas.
 - Cabina (cascarón, tablero, llaves, consola, radios, asiento, pedales, butaca): ~9.300 tri · 78 llamadas · ~0,85 MB. Las pantallas
   y los rótulos se dibujan en vivo (`pantallas.js`, `radios.js`): fuera del simulador no existen.
-- Ruedas principales: contacto en x ±1,457, z −0,849 (trocha 2,92 m, radio 0,46). Rueda de cola: contacto en z 6,179, y −1,12 →
-  **actitud de 3 puntos 7,14°** (la cabina usa 7,2°). Hélice: eje en x 0, y 0,23, paralelo a z; palas en z −3,37, radio 1,55; cono hasta z −3,78.
-- Llevado al marco de los juegos viejos **calza casi exacto**: nariz en x 2,63 (el viejo 2,64), puntas de ala ±9,03 (±9,02),
-  trocha ±1,46 (±1,45), cola −7,9 (−7,86); el eje de la hélice queda 7 cm más adelante y 4 cm más alto. Casi todas las constantes
-  de los juegos sirven tal cual (comparado con capturas desde el mismo punto en los dos juegos y en la cabina).
+- Ruedas (medidas finas del 15/11, las del 14/11 eran aproximadas): las principales son cubiertas de radio 0,46 con centro en
+  x ±1,422, z −0,818 (trocha 2,84 m entre centros); la de cola, radio 0,22 con centro en z 6,19. La tangente común a las dos da
+  **3 puntos a 7,18°** (la cabina usa 7,2°) y el apoyo de las principales en z −0,761. Hélice: eje en x −0,0095, y 0,231, paralelo
+  a z (0,04°); palas en z −3,37, radio 1,55; cono hasta z −3,78.
+- Llevado al marco de los juegos viejos queda a pocos cm: puntas de ala ±9,01 (el viejo ±9,02), trocha 2,84 (calzas viejas en
+  ±1,45), cola −7,80 (−7,86); la nariz queda 8 cm más adelante (x 2,72 contra 2,64) y el eje de la hélice 16 cm más adelante y
+  5 cm más alto. Lo que depende de la nariz y de las ruedas se toma de los anclajes del GLB, no de constantes.
 
 **Hallazgos que el plan tiene que resolver:**
 1. **La hélice nueva no es una pieza:** viene pegada a la malla del exterior (materiales `pala` y `banda_pala` + el cono); en la
@@ -138,10 +140,24 @@ Peso estimado:
 - El Quest cachea: `?v=` en todos los módulos y GLB que cambien.
 
 ## 4. Decisiones de Iván (de a una)
-1. **¿Aprobás el plan?** 1 · Sí, con cabina liviana en el avión principal de los dos juegos (recomendado) · 2 · Sí, pero sólo
-   exterior · 3 · Otra cosa.
+1. **¿Aprobás el plan?** **Aprobado el 15/11: «sí, cabina y exterior»** (cabina liviana en el avión principal de los dos juegos, LOD
+   en los estacionados).
 2. **Librea:** 1 · azul, como la cabina hoy · 2 · bordó como el de AAXOD y los juegos viejos (y después la cabina igual) · 3 · otra.
 3. **Válvula de carga en sector:** 1 · la real (centro-izquierda) y la manguera llega por debajo desde la derecha · 2 · una segunda
    válvula espejada a la derecha, como el viejo · 3 · pasar la carga al lado izquierdo · 4 · otra.
 4. **Matrícula:** 1 · sin matrícula, como la cabina · 2 · AUR-AV pintada, como los viejos · 3 · otra.
 5. **Publicar** cada repo: sólo con su ok expreso.
+
+## 5. Avance
+- **Etapa A HECHA el 15/11 (sin publicar):** `herramientas/avion_juegos.py` (numpy + Pillow, sin Blender) →
+  `juegos/at802.glb` (2,5 MB · 71 k tri · 9 llamadas: exterior 58 k / 4, cabina 9,3 k / 4, hélice 3,9 k / 1) y, llamando a Blender
+  (`herramientas/avion_juegos_lod.py`, Decimate), `juegos/at802-lod.glb` (0,9 MB · 15 k tri · 5 llamadas; vidrios opacos oscuros).
+  Grupos de material: pintura, mate, metal y vidrio, con colores por vértice. Hélice = palas, bandas, cono (mat08), plato (mat10) y
+  las 5 raíces blancas (mat02 delante del capó), en `helice-eje` → `helice`. Anclajes: `acople-carga` y `acople-carga-derecho` (los
+  dos en la boca de la válvula real, hasta la pregunta 3), `cabina-piloto`, `ojo-piloto`, `nariz`, `rueda-izq/der/cola`,
+  `puntera-izq/der`; medidas en los `extras` del nodo `at802`. Chequeos (todos bien): las tres cubiertas apoyan en y = 0 (a menos de
+  0,6 mm), nada bajo el piso, los aros del cono centrados en el eje de giro (0,15 mm). Luces de punta de ala corregidas (roja izq.,
+  verde der.). `--librea bordo` pinta la franja, la cola y las puntas con el bordó del avión viejo; `--nombre` cambia el nombre de
+  salida para probar variantes. Visor: `juegos/ver.html` (mismas luces que los juegos; `__ver('…')` con 14 vistas, anclajes,
+  hélice que gira, LOD al lado). Ronda mirada: 3/4 delanteros y traseros, frente desde la marca S, hélice quieta y girada, válvula,
+  ruedas, cabina desde el ojo, por la ventana izquierda, puntas de ala, LOD de cerca: sin defectos.

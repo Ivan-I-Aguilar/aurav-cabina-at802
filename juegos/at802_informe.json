@@ -1,0 +1,142 @@
+{
+ "fecha": "2026-11-15",
+ "librea": "azul",
+ "marco": {
+  "contacto_principal_cabina": [
+   -0.0001,
+   -1.9964,
+   -0.7606
+  ],
+  "rueda_cola_cabina": [
+   0.0018,
+   -1.118,
+   6.2154
+  ],
+  "actitud_grados": 7.177,
+  "formula": "p_juego = Ry(-90°)·Rx(actitud)·(p_cabina − contacto_principal)"
+ },
+ "helice_partes": {
+  "mat08": 938,
+  "mat10": 172,
+  "mat02": 684
+ },
+ "helice": {
+  "cubo_cabina": [
+   -0.0095,
+   0.2313,
+   -3.3719
+  ],
+  "eje_cabina": [
+   0.0,
+   -0.00066,
+   -1.0
+  ],
+  "inclinacion_eje_cabina_grados": 0.038,
+  "cubo_juego": [
+   2.3126,
+   2.5364,
+   -0.0093
+  ],
+  "eje_juego": [
+   0.99225,
+   0.12427,
+   0.0
+  ],
+  "radio": 1.549,
+  "excentricidad_aros_cono_mm": 0.15
+ },
+ "medidas": {
+  "envergadura": 18.06,
+  "largo": 10.513,
+  "alto": 4.066,
+  "nariz_x": 2.716,
+  "cola_x": -7.796,
+  "trocha": 2.844,
+  "radio_helice": 1.549,
+  "actitud_grados": 7.177
+ },
+ "anclajes": {
+  "acople-carga": [
+   -3.2144,
+   0.2499,
+   -0.2923
+  ],
+  "acople-carga-derecho": [
+   -3.2144,
+   0.2499,
+   -0.2923
+  ],
+  "cabina-piloto": [
+   -2.7856,
+   2.2662,
+   0.0001
+  ],
+  "ojo-piloto": [
+   -2.8036,
+   3.05,
+   0.0001
+  ],
+  "nariz": [
+   2.7163,
+   2.5871,
+   -0.0093
+  ],
+  "rueda-izq": [
+   0.0,
+   -0.0,
+   -1.4221
+  ],
+  "rueda-der": [
+   -0.0,
+   0.0,
+   1.4221
+  ],
+  "rueda-cola": [
+   -7.0311,
+   0.0,
+   0.0019
+  ],
+  "puntera-izq": [
+   -0.6947,
+   2.1111,
+   -9.0136
+  ],
+  "puntera-der": [
+   -0.6961,
+   2.1113,
+   9.0143
+  ]
+ },
+ "chequeos": {
+  "ruedas_apoyan (y min de cada cubierta, mm)": [
+   -0.01,
+   -0.01,
+   -0.59
+  ],
+  "nada_bajo_el_piso (y min, mm)": -0.59,
+  "cono_centrado_en_el_eje (mm)": 0.153
+ },
+ "at802.glb": {
+  "MB": 2.5,
+  "exterior": {
+   "llamadas": 4,
+   "triangulos": 57959
+  },
+  "cabina": {
+   "llamadas": 4,
+   "triangulos": 9278
+  },
+  "helice": {
+   "llamadas": 1,
+   "triangulos": 3865
+  }
+ },
+ "at802-lod.glb": {
+  "MB": 0.896,
+  "triangulos": {
+   "exterior": 13999,
+   "helice": 900
+  },
+  "llamadas": 5
+ }
+}

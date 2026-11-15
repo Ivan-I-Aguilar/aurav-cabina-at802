@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AT-802 para los juegos</title>
+<style>
+  :root { --fondo: #b9cfe0; --texto: #102030; --panel: rgba(255, 255, 255, 0.85); }
+  html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--texto); font: 14px system-ui, sans-serif; overflow: hidden; }
+  #info { position: fixed; left: 8px; top: 8px; background: var(--panel); padding: 6px 10px; border-radius: 8px; max-width: calc(100vw - 32px); }
+  #info button { margin: 2px; }
+</style>
+</head>
+<body>
+<div id="info"><b>AT-802 para los juegos</b> · <span id="estado">cargando…</span><br>
+  <span id="vistas"></span><br>
+  <label><input type="checkbox" id="anclas" checked> anclajes</label>
+  <label><input type="checkbox" id="cabina" checked> cabina</label>
+  <label><input type="checkbox" id="lod"> LOD al lado</label>
+  <label><input type="checkbox" id="gira" checked> hélice</label>
+</div>
+<script type="module">
+// Visor de juegos/at802.glb y at802-lod.glb (herramientas/avion_juegos.py), con el mismo trato que les dan los juegos:
+// marco +x nariz, +z derecha, origen en el piso entre las ruedas principales; la hélice gira con helice.rotation.x.
+// Ganchos: __ver('nombre'), __camara([x,y,z], [hx,hy,hz], hfov), __info(), __avion, __lod.
+import * as THREE from '../three.module.js';
+import { GLTFLoader } from '../GLTFLoader.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth || 800, innerHeight || 600);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+const escena = new THREE.Scene(); escena.background = new THREE.Color(0xb9cfe0);
+const camara = new THREE.PerspectiveCamera(60, (innerWidth || 800) / (innerHeight || 600), 0.05, 500);
+camara.rotation.order = 'YXZ';
+{ // cielo para los reflejos, como en los juegos (degradé en un canvas)
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 32; const g = cv.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, 32); gr.addColorStop(0, '#5d8fc9'); gr.addColorStop(0.5, '#dfe9f2'); gr.addColorStop(0.52, '#8a8f86'); gr.addColorStop(1, '#55594f');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 32);
+  const t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace;
+  const pm = new THREE.PMREMGenerator(renderer); escena.environment = pm.fromEquirectangular(t).texture; escena.environmentIntensity = 0.8;
+}
+escena.add(new THREE.HemisphereLight(0xedf5ff, 0x797750, 1.6));   // las mismas luces que escenario.js de los juegos
+const sol = new THREE.DirectionalLight(0xffdfac, 2.6); sol.position.set(-16, 30, -18); sol.castShadow = true;
+sol.shadow.mapSize.set(1024, 1024); Object.assign(sol.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, far: 120 }); sol.shadow.bias = -0.0005; escena.add(sol);
+const piso = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x8e9290, roughness: 0.95 }));
+piso.rotation.x = -Math.PI / 2; piso.receiveShadow = true; escena.add(piso);
+const grilla = new THREE.GridHelper(60, 60, 0x404040, 0x6f7370); grilla.position.y = 0.002; escena.add(grilla);
+escena.add(new THREE.AxesHelper(2));   // rojo = +x (nariz), verde = +y, azul = +z (derecha)
+
+const cargador = new GLTFLoader();
+async function cargar(url) {
+  const g = await cargador.loadAsync(url + '?v=' + Date.now());
+  const avion = new THREE.Group(); avion.add(g.scene);
+  const datos = g.scene.getObjectByName('at802')?.userData || {};
+  g.scene.traverse(o => { if (!o.isMesh) return; o.receiveShadow = true;
+    if (o.material.transparent) { o.material.depthWrite = false; o.renderOrder = 2; } else o.castShadow = true; });
+  const helice = g.scene.getObjectByName('helice');
+  const disco = new THREE.Mesh(new THREE.CircleGeometry(datos.radioHelice || 1.5, 48), new THREE.MeshBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+  disco.rotation.y = Math.PI / 2; disco.position.x = 0.05; disco.visible = false; helice?.add(disco);
+  const marcas = new THREE.Group(); marcas.name = 'marcas';
+  for (const n of ['acople-carga', 'acople-carga-derecho', 'cabina-piloto', 'ojo-piloto', 'nariz', 'rueda-izq', 'rueda-der', 'rueda-cola', 'puntera-izq', 'puntera-der']) {
+    const a = g.scene.getObjectByName(n); if (!a) continue;
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), new THREE.MeshBasicMaterial({ color: n.startsWith('acople') ? 0xff00ff : n.startsWith('rueda') ? 0xffd000 : 0x00e5ff, depthTest: false }));
+    m.renderOrder = 5; a.getWorldPosition(m.position); marcas.add(m);
+  }
+  avion.add(marcas);
+  return { avion, helice, disco, datos, gltf: g };
+}
+const prm = new URLSearchParams(location.search);   // ?glb=otro.glb&lod=otro-lod.glb para mirar una variante
+const principal = await cargar('./' + (prm.get('glb') || 'at802.glb')); escena.add(principal.avion);
+const lod = await cargar('./' + (prm.get('lod') || 'at802-lod.glb')); lod.avion.position.set(0, 0, -24); lod.avion.visible = false; escena.add(lod.avion);
+window.__avion = principal; window.__lod = lod;
+
+function info(raiz) { let llamadas = 0, tris = 0; raiz.traverseVisible(o => { if (o.isMesh) { llamadas++; tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; } }); return { llamadas, tris }; }
+window.__info = () => ({ principal: info(principal.gltf.scene), lod: info(lod.gltf.scene), datos: principal.datos });
+const i0 = window.__info();
+document.getElementById('estado').textContent = `principal ${i0.principal.llamadas} llamadas, ${Math.round(i0.principal.tris / 1000)} k tri · LOD ${i0.lod.llamadas} llamadas, ${Math.round(i0.lod.tris / 1000)} k tri · librea ${principal.datos.librea}`;
+
+// cámara: desde un punto mirando a otro, con campo horizontal hfov (marco del avión = marco del mundo acá)
+window.__camara = (desde, hacia, hfov = 60) => {
+  camara.position.set(...desde); const d = new THREE.Vector3(...hacia).sub(camara.position);
+  camara.rotation.set(Math.atan2(d.y, Math.hypot(d.x, d.z)), Math.atan2(-d.x, -d.z), 0, 'YXZ');
+  camara.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hfov) / 2) / camara.aspect)); camara.updateProjectionMatrix();
+  renderer.render(escena, camara); return `desde ${desde} hacia ${hacia}`;
+};
+const ojo = principal.gltf.scene.getObjectByName('ojo-piloto').getWorldPosition(new THREE.Vector3()).toArray();
+const VISTAS = {
+  '3/4 del. izq.': [[9, 4.5, -10], [-1.5, 1.6, 0], 50], '3/4 del. der.': [[9, 4.5, 10], [-1.5, 1.6, 0], 50],
+  '3/4 tras. izq.': [[-12, 4, -9], [-2, 1.8, 0], 50], '3/4 tras. der.': [[-12, 4, 9], [-2, 1.8, 0], 50],
+  'frente (marca S)': [[9.72, 1.7, 0], [0, 2.4, 0], 75], 'costado izq.': [[-2.5, 1.8, -16], [-2.5, 1.8, 0], 60],
+  'arriba': [[-2.5, 26, 0.01], [-2.5, 0, 0], 60], 'válvula': [[-3.2, 0.9, 1.6], [-3.21, 0.25, -0.29], 60],
+  'ruedas': [[2.2, 0.8, 3.2], [0, 0.4, 1.3], 60], 'cola': [[-11, 1.4, 2.5], [-7, 0.6, 0], 50],
+  'cabina (ojo)': [ojo, [ojo[0] + 3, ojo[1] - 0.45, ojo[2]], 80], 'por la ventana izq.': [[-2.9, 3.4, -2.2], [-2.6, 2.6, 0], 60],
+  'hélice': [[4.8, 2.6, 1.6], [2.3, 2.5, 0], 50], 'LOD a 25 m': [[14, 4, -8], [-1, 1.5, -24], 45],
+};
+window.__ver = n => { const v = VISTAS[n]; if (!v) return Object.keys(VISTAS); if (n.startsWith('LOD')) { document.getElementById('lod').checked = true; lod.avion.visible = true; } return window.__camara(...v); };
+const cont = document.getElementById('vistas');
+for (const n of Object.keys(VISTAS)) { const b = document.createElement('button'); b.textContent = n; b.onclick = () => window.__ver(n); cont.appendChild(b); }
+document.getElementById('anclas').onchange = e => { principal.avion.getObjectByName('marcas').visible = e.target.checked; lod.avion.getObjectByName('marcas').visible = e.target.checked; };
+document.getElementById('cabina').onchange = e => { principal.gltf.scene.getObjectByName('cabina').visible = e.target.checked; };
+document.getElementById('lod').onchange = e => { lod.avion.visible = e.target.checked; };
+window.__ver('3/4 del. izq.');
+
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); });
+let t0 = performance.now();
+renderer.setAnimationLoop(() => {
+  const t = performance.now(), dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
+  const gira = document.getElementById('gira').checked;
+  for (const m of [principal, lod]) { if (gira && m.helice) m.helice.rotation.x += dt * 40; if (m.disco) m.disco.visible = gira; }
+  renderer.render(escena, camara);
+});
+</script>
+</body>
+</html>

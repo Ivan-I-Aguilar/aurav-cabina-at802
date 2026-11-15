@@ -367,8 +367,12 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    apoyos terrestres «MOE», …) para que se vea siempre la misma aeronave: tarea aparte, después de los niveles.
    **Plan escrito el 14/11: `PLAN_AVION_JUEGOS.md`** (inventario: sólo `aurav-senales` y `aurav-sector` —el del MOE— tienen AT-802, el
    mismo `at802.glb` de simulador; script `herramientas/avion_juegos.py` que exporta el avión al marco de esos juegos con hélice que
-   gira y LOD; variantes y decisiones). **Falta el ok de Iván; no se tocó ningún juego.** Hallazgo de paso: en el exterior nuevo las
-   luces de punta de ala están invertidas (verde a la izquierda, roja a la derecha; verificado con capturas en la cabina publicada).
+   gira y LOD; variantes y decisiones). **Aprobado por Iván el 15/11 («sí, cabina y exterior»).** Etapa A HECHA el 15/11:
+   `python -E -P -X utf8 herramientas/avion_juegos.py [--librea azul|bordo]` → `juegos/at802.glb` (2,5 MB, 71 k tri, 9 llamadas,
+   con cabina liviana y hélice en `helice-eje` → `helice`) y `juegos/at802-lod.glb` (0,9 MB, 15 k tri; lo simplifica Blender con
+   `herramientas/avion_juegos_lod.py`); visor `juegos/ver.html` (`__ver('…')`). Detalle en el plan §5. Hallazgo de paso: en el
+   exterior del simulador las luces de punta de ala están invertidas (verde a la izquierda, roja a la derecha; el GLB de los juegos
+   ya las trae bien; en la cabina queda por corregir).
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
    legibles, alcance de llaves y palancas, altura del ojo). Publicada el 12/11; lo que siga se vuelve a subir sólo con su ok (y subiendo
    `version.txt`, `VERSION_PAGINA` y los `?v=`).
