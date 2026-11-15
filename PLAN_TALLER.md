@@ -432,6 +432,39 @@ nada).** Lo que quedó:
 - **Reserva:** carteles de seguridad genéricos; sonido ambiente del hangar; más detalle en los tableros de herramientas.
 - **Al cierre, Iván:** ok a la ronda.
 
+**T5 ADELANTADA y HECHA dentro del bloque de la T1 (15/11/2026, 15:25–15:45; v=20261115d; sin publicar; en el Quest no se probó
+nada).** Lo que quedó:
+- `herramientas/taller_muebles.py` (Blender, con el `Malla` de `taller_hangar.py`) → `taller/muebles.glb` (5,6 k tri, 5 llamadas,
+  0,5 MB; mismo marco que el hangar) y `taller/muebles_informe.json`. H6: 3 bancos de trabajo con su tablero de siluetas (en el del
+  medio **falta una llave**: queda como gancho para el control de herramientas del modo mecánico, T8–T9), 2 cajoneras rojas con
+  ruedas, 2 racks (parantes azules, largueros naranja, cajas), compresor de tanque horizontal, 2 ventiladores de tambor, matafuegos en
+  las columnas y un lavaojos. H7: la oficina vidriada (marcos blancos, puerta, cielorraso, escritorio, silla) con el **pizarrón de
+  los créditos**. H4: carro, bandeja y el cartel de pie «EN MANTENIMIENTO». H2: el atril. Sombras de contacto (cuadrados con una
+  mancha en canvas) y 23 rectángulos de choque en `userData.choques`. Las calzas y los gatos van con los aviones (ver T6).
+- `taller/paneles.js` `crearPanelAtril`: TALLER DE MOTORES · AURAV, **MODO PILOTO** (lleva a la mesa), **MODO MECÁNICO** (apagado:
+  en preparación), IR A la mesa, el AT-802, el Cessna, los bancos y los créditos, y la leyenda al pie (0,88 × 0,48 m, letra de 2 cm).
+- `taller/main.js`: los muebles colgados del hangar (vidrio, sombras, créditos y cartel en canvas); el choque al caminar contra la
+  mesa y los muebles (se sale por el lado más cercano, con 25 cm de cuerpo); **saltos con fundido** (`DESTINOS`: partida, mesa,
+  AT-802, Cessna, bancos, oficina) que ponen la CABEZA en el destino mirando hacia adelante, sin mover la cámara a la fuerza; los
+  saltos también en la pausa de VR; **se arranca en la partida** (`?inicio=mesa` arranca en la mesa) y al entrar en VR se queda donde
+  se estaba; carteles de seguridad genéricos (reserva: prohibido fumar, protección auditiva, salida, atención hélice; un atlas, una
+  llamada); vistas 17 a 22 de `__ronda`.
+- **Verificado en PC:** los saltos (a los bancos, a la partida, a la mesa); caminando, el banco y el atril frenan al alumno a 25 cm;
+  `__taller.probarMandos()` con el gatillo simulado sobre el atril (IR A · BANCOS y MODO PILOTO) entre sus 21 pruebas: 21 de 21.
+- **Hallazgos:** (1) las texturas de canvas sobre mallas del GLB salían dadas vuelta: con coordenadas de glTF va `flipY = false`;
+  (2) un matafuego caía adentro del rack: a la derecha van en las columnas 1, 3 y 6; (3) la escalera adentro de la zona chocaba con el
+  ala: se puso junto al capó cuando llegó el avión; (4) con el panel del navegador en otra pestaña el juego no avanza: las pruebas
+  corren con `__taller.correr(t)`.
+- Queda de la reserva: el sonido ambiente del hangar (`audio.js` no tiene; habría que sintetizarlo).
+- Capturas: `Documents/aurav-cabina/capturas_taller/T5_muebles_partida_AT802.jpg`.
+
+**T6, tramo 1 ADELANTADO (15/11/2026, 15:45; mismas condiciones).** El AT-802 en H3: `juegos/at802.glb` (el mismo de los otros
+juegos; mismo repo, no se copia) con la nariz al portón y las ruedas principales en (−10; −14,5) del hangar; calzas amarillas en las
+tres ruedas, conos en las dos punteras, detrás de la cola y delante de la hélice, y la escalera de plataforma junto al capó. **Choque
+con el avión:** sus triángulos que bajan de 1,9 m, rasterizados en planta en una grilla de 20 cm (frena en el ala, el fuselaje y la
+cola; se desliza por el eje libre). **Presupuesto con toda la nave a la vista: 68 llamadas y 124,7 k tri** (tope: 75 y 200 k; con el
+Cessna habrá que mirar las llamadas: quedan 7). Falta el Cessna (espera la descarga de Iván) y la reserva.
+
 ### T6 — Las aeronaves (3 h)
 | Tramo | Qué se hace | Listo cuando |
 |---|---|---|
