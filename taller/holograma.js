@@ -170,6 +170,11 @@ export function crearHolograma(eng, {estado0, conjuntos = {}, color = '#62d8ff',
   }
   eng.update(s0, {});
   raiz.updateMatrixWorld(true);
+  // qué efectos quedan prendidos con el motor en marcha y sin falla (la llama sí; el estampido, las chispas y los escombros no)
+  const prendidosEnMarcha = new Set();
+  raiz.traverse((o) => {
+    if (o.isMesh && o.userData && o.userData.fx && o.visible) prendidosEnMarcha.add(o);
+  });
   const cuerpoDe = (o) => {
     for (let p = o; p && p !== raiz; p = p.parent) if (gira.has(p)) return p;
     return raiz;
@@ -313,11 +318,12 @@ export function crearHolograma(eng, {estado0, conjuntos = {}, color = '#62d8ff',
     mat.depthWrite = false;
     mat.toneMapped = false;
     mat.needsUpdate = true;
-    // los efectos grandes (la llama y el estampido, que cubren toda la cámara o el compresor) se atenúan a un décimo: en el
-    // holograma nada los tapa y se suman todas sus capas; con 0,32 todavía daban un bloque crema que tapaba los inyectores (15/11).
-    // Se baja el color, no la opacidad (la opacidad la pisa engine.js en cada cuadro).
+    // lo grande y siempre prendido (la llama, que cubre toda la cámara) se atenúa a un décimo: en el holograma nada la tapa y se
+    // suman todas sus capas; con 0,32 todavía daba un bloque crema que tapaba los inyectores (15/11). El estampido de la pérdida de
+    // compresor también es grande pero es un destello corto (y la pista de esa falla): ése no se toca. Se baja el color, no la
+    // opacidad (la opacidad la pisa engine.js en cada cuadro).
     if (!lista[0].geometry.boundingSphere) lista[0].geometry.computeBoundingSphere();
-    if (lista.length === 1 && lista[0].geometry.boundingSphere.radius > 150) mat.color.multiplyScalar(atenuarGrandes);
+    if (lista.length === 1 && prendidosEnMarcha.has(lista[0]) && lista[0].geometry.boundingSphere.radius > 150) mat.color.multiplyScalar(atenuarGrandes);
     if (lista.length < 2) continue;
     const pos = [];
     for (const m of lista) {
@@ -347,7 +353,9 @@ export function crearHolograma(eng, {estado0, conjuntos = {}, color = '#62d8ff',
     const pg = new THREE.BufferGeometry();
     pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3).setUsage(THREE.DynamicDrawUsage));
     pg.setAttribute('color', new THREE.BufferAttribute(new Float32Array(N * 3), 3).setUsage(THREE.DynamicDrawUsage));
-    const pm = new THREE.PointsMaterial({size: tamPunto, map: mancha(), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true, toneMapped: false});
+    // mezcla normal, no aditiva: en la cámara se apilan cientos de partículas y, sumadas, daban una mancha blanca (sobre todo sin
+    // corte); así además se ven los cuatro colores del flujo como en el escritorio (el gris del escape, sumado, desaparecía)
+    const pm = new THREE.PointsMaterial({size: tamPunto, map: mancha(), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.NormalBlending, sizeAttenuation: true, toneMapped: false});
     puntos = new THREE.Points(pg, pm);
     puntos.name = 'holo-flujo';
     puntos.frustumCulled = false;

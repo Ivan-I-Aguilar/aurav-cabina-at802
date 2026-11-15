@@ -465,6 +465,7 @@ function ponerCamara(pos, mira, hfov = 75) {
 }
 function dibujarAhora() {
   avanzar(0);
+  if (!renderer.xr.isPresenting) pintarHUD();
   escena.updateMatrixWorld(true);
   renderer.render(escena, camara);
 }
