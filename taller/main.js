@@ -680,8 +680,17 @@ function ponerFalla(k) {
 function ponerEstacion(n) {
   estacion = estacion === n ? 0 : n;
   desdeEstacion = reloj;
-  if (estacion) camino.estaciones.add(estacion);
+  if (estacion) {
+    camino.estaciones.add(estacion);
+    decirEstacion(estacion);
+  }
 }
+// la voz del tutor (T7, tramo 2): la frase de cada estación y el aviso de cada falla, con los WAV de voz/ (Sabina, voces.py)
+function decirEstacion(n) {
+  const st = STATIONS.find((x) => x.n === n);
+  if (st) audio.decir(st.text);
+}
+let alertaAntes = false;
 /** la alerta sale cuando aparece el síntoma (como en la cabina: arranque caliente con ITT > 750; colgado, Ng estancado) */
 function alertaVisible() {
   const f = inp.fault;
@@ -726,7 +735,10 @@ function pasoRecorrido() {
   if (st !== estacion) {
     estacion = st;
     desdeEstacion = reloj;
-    if (st) camino.estaciones.add(st);
+    if (st) {
+      camino.estaciones.add(st);
+      decirEstacion(st);
+    }
   }
   return poseHolograma(t);
 }
@@ -1347,6 +1359,8 @@ const guardarCamino = () => ({...camino, estaciones: new Set(camino.estaciones),
 const restaurarCamino = (c) => Object.assign(camino, c);
 function probarMandos() {
   const caminoAntes = guardarCamino();
+  const vozAntes = audio.vozOn;
+  audio.vozOn = false; // que la prueba no hable
   const res = [];
   const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
   const [m0, m1] = manos;
@@ -1544,6 +1558,7 @@ function probarMandos() {
   corte = false;
   aRalenti();
   restaurarCamino(caminoAntes);
+  audio.vozOn = vozAntes;
   const fallaron = res.filter((r) => !r.ok);
   return {pruebas: res.length, fallaron: fallaron.length, detalle: res};
 }
@@ -1554,6 +1569,8 @@ function probarMandos() {
 // síntoma, el recorrido de 82 s (las 8 estaciones y la alerta del arranque caliente) y las 6 preguntas (todas bien y todas mal).
 function probarPiloto() {
   const caminoAntes = guardarCamino();
+  const vozAntes = audio.vozOn;
+  audio.vozOn = false;
   const res = [];
   const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
   const correrMirando = (seg, fn) => {
@@ -1649,6 +1666,7 @@ function probarPiloto() {
   estacion = 0;
   const resumen = resumenCamino();
   restaurarCamino(caminoAntes);
+  audio.vozOn = vozAntes;
   return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res, camino: resumen};
 }
 
@@ -1706,6 +1724,9 @@ function avanzar(dt) {
     inp.start = false;
     acum -= PASO;
   }
+  const alertaAhora = alertaVisible();
+  if (alertaAhora && !alertaAntes) audio.decir(FAULTS[inp.fault].alert);
+  alertaAntes = alertaAhora;
   if (camino.enCurso && s.lit && s.ng >= 58) {
     camino.arranco = true;
     camino.enCurso = false;

@@ -30,6 +30,13 @@ for nombre in ('mision.js', 'main.js'):
         if ' ' in t and re.search(r'[a-záéíóúñ]{3}', t, re.I) and not re.search(r'[{}<>=;]|\$\{|https?:', t) and len(t) < 220:
             frases[clave(t)] = hablado(t)
 
+# el taller de motores (taller.html, T7 del PLAN_TALLER.md): las 8 frases de las estaciones y los avisos de las fallas
+for nombre, campo in (('taller/content.js', 'text'), ('taller/motor.js', 'alert')):
+    src = open(os.path.join(RAIZ, nombre), encoding='utf-8').read()
+    for m in re.finditer(campo + r": '((?:[^'\\\n]|\\.)*)'", src):
+        t = m.group(1).replace("\\'", "'")
+        frases[clave(t)] = hablado(t)
+
 os.makedirs(os.path.join(RAIZ, 'voz'), exist_ok=True)
 json.dump(frases, open(os.path.join(RAIZ, 'voz', 'frases.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
 print(len(frases), 'frases')

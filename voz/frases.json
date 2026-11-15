@@ -208,5 +208,18 @@
 "0cba3ed1": "MENÚ , SALIR",
 "d4db25d2": "Voz: ",
 "ab532a23": " , PÉRDIDA",
-"c576a414": " , ACCIDENTE"
+"c576a414": " , ACCIDENTE",
+"75c29fc9": "Mirá por dónde entra el aire: por atrás. Este motor trabaja al revés de lo que uno espera.",
+"43d6c2aa": "Cada etapa aprieta un poco más el aire. Más aire comprimido es más potencia disponible.",
+"d50d0e10": "Acá se mezcla combustible con aire y se enciende. Los ignitores solo se usan para arrancar.",
+"963e947d": "Esta turbina devuelve energía al compresor. Juntos forman el generador de gas.",
+"4ef84779": "Ojo con esto: la turbina de la hélice no está unida al compresor. Las une solo el gas.",
+"5dc6888a": "La turbina gira muy rápido. La caja reductora baja esas vueltas a las que la hélice puede usar.",
+"6a64be4d": "Los gases salen adelante, por los costados. Por eso el escape está cerca de la hélice.",
+"f23fef17": "Tres palancas, tres trabajos: cuánta potencia, si hay combustible y a qué vueltas gira la hélice.",
+"6fce2799": "ARRANQUE CALIENTE , LA i te te SUBE MUY RÁPIDO",
+"0515231a": "ARRANQUE COLGADO , EL ene ge SE ESTANCA Y NO LLEGA A RALENTÍ",
+"f1020dc7": "PÉRDIDA DE COMPRESOR , ESTAMPIDOS, LA i te te SALTA, EL ene ge OSCILA",
+"09d9b8bc": "INGESTIÓN DE OBJETOS POR LA ADMISIÓN , ÁLABES DAÑADOS",
+"248a37ab": "SOBRETEMPERATURA AL SUBIR POTENCIA"
 }
