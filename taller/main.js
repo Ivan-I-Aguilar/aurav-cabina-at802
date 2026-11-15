@@ -268,6 +268,30 @@ try {
   escena.add(crearSala());
 }
 
+// ------------------------------------------------------------ juntar lo opaco con color por vértice (T10, rendimiento)
+// El piso, la estructura y el afuera de la nave y los muebles usan el mismo tipo de material (color por vértice, sin textura): se
+// juntan en el marco del mundo en UNA malla (de 4 llamadas a 1). Lo que lleva textura o transparencia queda aparte.
+const JUNTABLES = new Set(['cab_hangar_piso', 'cab_hangar_estructura', 'cab_hangar_afuera', 'cab_muebles']);
+function juntarOpacos(raiz) {
+  raiz.updateMatrixWorld(true);
+  const geos = [];
+  const quitar = [];
+  raiz.traverse((o) => {
+    if (!o.isMesh || !JUNTABLES.has(o.material.name)) return;
+    const g = o.geometry.clone().applyMatrix4(o.matrixWorld);
+    for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'color', 'uv'].includes(k)) g.deleteAttribute(k);
+    geos.push(g);
+    quitar.push(o);
+  });
+  const junta = geos.length > 1 ? mergeGeometries(geos) : null;
+  if (!junta) return console.warn('taller: no se pudieron juntar las mallas opacas', geos.length);
+  for (const o of quitar) o.parent.remove(o);
+  // a doble cara, como los materiales del GLB (con una sola cara el piso desaparecía: sus caras miran para abajo)
+  const m = new THREE.Mesh(junta, new THREE.MeshStandardMaterial({vertexColors: true, roughness: 0.82, metalness: 0.06, side: THREE.DoubleSide}));
+  m.name = 'nave-opaca-junta';
+  escena.add(m);
+}
+
 // ------------------------------------------------------------ muebles y utilería (T5: herramientas/taller_muebles.py → muebles.glb)
 // En el marco del hangar (cuelgan de él). Los rectángulos de choque vienen en userData.choques; el atril, en userData.atril.
 const choquesMuebles = []; // [x0, x1, z0, z1] en el mundo
@@ -373,6 +397,7 @@ if (hangar)
       }
     });
     hangar.add(gm.scene);
+    juntarOpacos(hangar); // T10: una sola llamada para el piso, la estructura, el afuera y los muebles
   } catch (e) {
     console.warn('taller: muebles.glb no cargó', e);
   }
@@ -1167,13 +1192,31 @@ if (hangar)
     avionAT.name = 'AT-802';
     avionAT.rotation.y = -Math.PI / 2; // la nariz (+x) al portón (+z del hangar)
     avionAT.position.set(AT802.x, 0, AT802.z);
-    avionAT.traverse((o) => {
-      if (o.isMesh && o.material.transparent) {
-        o.material.depthWrite = false; // como prepararAvion de juegos/at802glb.js
-        o.renderOrder = 2;
-      }
-    });
-    hangar.add(avionAT);
+    const preparar = (raiz) =>
+      raiz.traverse((o) => {
+        if (o.isMesh && o.material.transparent) {
+          o.material.depthWrite = false; // como prepararAvion de juegos/at802glb.js
+          o.renderOrder = 2;
+        }
+      });
+    preparar(avionAT);
+    // T10: de lejos (más de 12 m), el LOD de juegos/ (5 llamadas y 15 k tri en vez de 9 y 71 k; los vidrios oscuros, sin cabina)
+    try {
+      const gl = await new GLTFLoader().loadAsync(`./juegos/at802-lod.glb?v=${AT802.v}`);
+      preparar(gl.scene);
+      const lod = new THREE.LOD();
+      lod.name = 'AT-802 (LOD)';
+      lod.rotation.y = avionAT.rotation.y;
+      lod.position.copy(avionAT.position);
+      avionAT.rotation.set(0, 0, 0);
+      avionAT.position.set(0, 0, 0);
+      lod.addLevel(avionAT, 0);
+      lod.addLevel(gl.scene, 12);
+      hangar.add(lod);
+    } catch (e) {
+      console.warn('taller: juegos/at802-lod.glb no cargó; queda el avión entero', e);
+      hangar.add(avionAT);
+    }
     AT802.celdas = rasterizarChoque(avionAT);
   } catch (e) {
     console.warn('taller: juegos/at802.glb no cargó', e);
