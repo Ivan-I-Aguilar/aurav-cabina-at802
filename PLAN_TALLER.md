@@ -474,7 +474,7 @@ juegos; mismo repo, no se copia) con la nariz al portón y las ruedas principale
 tres ruedas, conos en las dos punteras, detrás de la cola y delante de la hélice, y la escalera de plataforma junto al capó. **Choque
 con el avión:** sus triángulos que bajan de 1,9 m, rasterizados en planta en una grilla de 20 cm (frena en el ala, el fuselaje y la
 cola; se desliza por el eje libre). **Presupuesto con toda la nave a la vista: 68 llamadas y 124,7 k tri** (tope: 75 y 200 k; con el
-Cessna habrá que mirar las llamadas: quedan 7). Falta el Cessna (espera la descarga de Iván) y la reserva.
+Cessna habrá que mirar las llamadas: quedan 7). Falta el Cessna y la reserva. **Iván (15/11): «Seguir sin él» por ahora:** el puesto del Cessna queda como está (el cartel «EN MANTENIMIENTO», el carro y la bandeja, sin avión) y el Cessna se suma después, cuando lo baje de Sketchfab a `Documents/aurav-cabina/taller_fuente/cessna/`.
 
 ### T6 — Las aeronaves (3 h)
 | Tramo | Qué se hace | Listo cuando |
