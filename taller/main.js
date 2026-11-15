@@ -509,6 +509,8 @@ window.__taller = {
   ralenti: aRalenti,
   corte: (v) => (corte = v ?? !corte),
   flujo: (v) => (flujo = v ?? (flujo ? 0 : 1)),
+  /** esconde o muestra el HUD de PC (para capturas limpias) */
+  hud: (v) => (hud.style.display = v === false ? 'none' : ''),
   /** avanza la simulación t segundos de golpe (para las capturas) */
   correr(t, cada = 1 / 60) {
     for (let x = 0; x < t; x += cada) avanzar(cada);

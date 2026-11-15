@@ -249,7 +249,7 @@ con esto en la peor vista:
 - **Lo caro de un holograma no son los triángulos sino el relleno:** capas aditivas una encima de otra. Se controla con el
   holograma chico en la vista y apagándolo de a poco si la cabeza se mete adentro (a menos de 20 cm).
 - **Sin postproceso, sin sombras en tiempo real, sin PMREM.** Texto en canvas que se redibuja sólo al cambiar. El motor a paso
-  fijo (60 Hz), aparte del dibujo.
+  fijo (1/120 s, como la física de la cabina y la prueba contra `vuelo.js`), aparte del dibujo.
 - **Se mide en cada etapa** con `renderer.info` en PC (llamadas y triángulos) y se anota acá; el número que manda es el del Quest,
   que mide Iván.
 
@@ -286,6 +286,29 @@ larga con «arrancá T1» (y así cada una); conviene dar al principio los permi
 - **Reserva:** dos o tres variantes de color y de acento para que Iván elija; cuánto margen de rendimiento queda (con el doble de
   partículas); la prueba del motor como script de un solo comando (`herramientas/taller_prueba_motor.mjs`).
 - **Al cierre, Iván:** elige el «look» del holograma (color, brillo, acento).
+
+**T1 HECHA el 15/11/2026 (bloque arrancado a las 14:21; lo principal y la verificación, a las 15:00; v=20261115a, sin
+publicar; en el Quest no se probó nada).** Lo que quedó:
+- `taller.html` + `taller/main.js`: sala gris, mesa provisoria con el proyector y la leyenda en un cartel de mesa (letra de 2,5 cm),
+  caminar en PC (WASD + mouse) y en VR (joystick izquierdo; derecho, giro de a 30°), la lógica de `live.js`, teclas del motor (H =
+  ayuda) y ganchos `__taller` (estación, falla, arrancar, ralenti, corte, flujo, correr, medir, hud), `__ronda(1..6)` y `__vista`.
+  `?holo=0` muestra el motor con sus materiales originales.
+- `taller/content.js` idéntico a la fuente; `taller/engine.js` con sólo los dos imports cambiados; `taller/motor.js` con las cifras de
+  la cabina: `node herramientas/taller_prueba_motor.mjs` lo compara con `vuelo.js` en 6 casos (arranque y ralentí, plena potencia,
+  caliente, colgado, bandera, corte) y da **diferencia cero**; también revisa que `content.js` siga igual a la fuente.
+- `taller/holograma.js`: 84 mallas sólidas → 8 cuerpos (lo fijo, generador de gas, turbina libre, solar, portasatélites y 3 satélites;
+  qué gira se averigua probando el update), sombreador aditivo con fresnel, barrido y parpadeo, aislado y corte por uniforms,
+  contornos en los 4 cuerpos grandes, flujo como 1500 puntos de luz, chorros y chispas juntados, y `crearProyector`.
+- **Medido (PC):** escena entera 30–32 llamadas, 36,6 k tri, 1500 puntos, 12,1 k segmentos (con `?holo=0`: 118 y 157 k); el holograma
+  ≤ 16 llamadas y 33,3 k tri (meta: 20 y 40 k); JavaScript por cuadro 0,26 ms (el update del motor, 0,1 ms). El relleno en la GPU del
+  Quest sólo lo puede medir Iván.
+- **Hallazgos:** (1) la llama, aditiva y sin nada que la tape, sumada al celeste daba un bloque blanco: va al 10 %; el estampido de la
+  pérdida de compresor no se atenúa (es la pista de esa falla); (2) el flujo aditivo saturaba sin corte y el gris del escape desaparecía:
+  va con mezcla normal y se ven los cuatro colores del escritorio; (3) con tantas capas, poca intensidad por capa (base 0,035, borde
+  0,42); (4) con el panel del navegador escondido, las capturas salen viejas: mostrarlo antes de la ronda.
+- Capturas (fuera del repo): `Documents/aurav-cabina/capturas_taller/T1_holograma.jpg` (vistas, 7 estaciones, fallas, sin corte y el
+  escritorio de referencia) y `T1_variantes_color.jpg` (A celeste + ámbar, B celeste + blanco, C celeste + lima de AURAV, D azul +
+  naranja). Falta que Iván elija el look.
 
 ### T2 — Mesa, palancas, instrumentos y fallas (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
