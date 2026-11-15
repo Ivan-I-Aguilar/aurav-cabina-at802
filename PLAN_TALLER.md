@@ -6,7 +6,8 @@ claude.ai (`OneDrive/Desktop/AURAV/HOLOGRAMA/PLAN_TALLER_MOTORES.md`, también d
 acá. Este documento es el plan profundo que pide `CLAUDE.md` antes de un trabajo grande: se actualiza a medida que avanzamos y
 cada etapa se marca HECHA con fecha y versión.
 
-**Estado (15/11):** plan propuesto; **espera el ok de Iván y sus 5 decisiones (§13), que se preguntan de a una.** No se modeló
+**Estado (15/11):** plan propuesto; **espera el ok de Iván y sus decisiones (§13), que se preguntan de a una. La 1 ya está:
+uso interno (15/11).** No se modeló
 nada ni se tocó el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
 decidir qué entra (§3).
 
@@ -326,7 +327,7 @@ cuenta como seguro y WebXR anda). Si no, se publica, con su ok.
 | Un Cessna de Sketchfab pesado o sin piezas separadas | aligerarlo por script; si no trae el capó aparte, «en reparación» con gatos, carro y tapas de utilería |
 | Contenido del modo mecánico equivocado | [AGREGADO] / [VERIFICAR] y validación de AAXOD antes de publicar |
 | Dos modelos de motor con cifras distintas | decisión 5 |
-| Licencia del exterior del AT-802 | decisión 1; mientras tanto, uso interno |
+| Licencia del exterior del AT-802 | decidida el 15/11: uso interno; si algún día se muestra afuera, el AT-802 se apaga con un parámetro |
 | Que el taller se aparte del simulador de escritorio | copias tal cual, con lo cambiado anotado arriba |
 | El Quest cachea | `?v=` en todo lo que cambie |
 | Romper el juego publicado | página aparte (si la decisión 2 lo confirma); del juego sólo se toca el botón de entrada |
@@ -348,7 +349,7 @@ Opcional, si sobra: el motor en holograma «dentro» del capó del AT-802 (para 
    readme que tenemos no traen términos (el del Fireboss sólo lista archivos; el terrestre no trae readme). · 1 · el taller queda
    de uso interno, como la cabina (lo que rige hoy) · 2 · modelar un exterior propio en Blender, para poder mostrarlo afuera
    (trabajo grande, plan aparte; mientras tanto rige 1) · 3 · buscar los términos de la descarga o pedirle permiso al autor
-   (mientras tanto rige 1) · 4 · otra. **Por ahora rige 1.** El resto del taller (hangar, holograma, Cessna CC BY) no tiene esa
+   (mientras tanto rige 1) · 4 · otra. **Elegida por Iván el 15/11: 1 · uso interno, como la cabina.** El resto del taller (hangar, holograma, Cessna CC BY) no tiene esa
    traba: si algún día se quiere mostrar afuera, el AT-802 se puede apagar con un parámetro.
 2. **¿Página nueva o modo dentro del juego?** · 1 · página nueva `taller.html` en este repo (propuesta: liviana, no toca el juego
    publicado; un botón del menú del juego lleva al taller y otro vuelve) · 2 · modo dentro del juego (bajar del avión y caminar

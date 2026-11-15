@@ -379,8 +379,8 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    ya las trae bien; en la cabina queda por corregir).
 0c. **Pedido de Iván (15/11): taller de motores del AT-802 en VR** (hangar ficticio de AURAV, el AT-802 de este repo, un Cessna 172
    en reparación y una mesa holográfica con el turbohélice genérico del simulador de escritorio del repo `aurav`; modos piloto y
-   mecánico). **Plan escrito el 15/11: `PLAN_TALLER.md`**; espera el ok de Iván y sus 5 decisiones (§13, de a una: la primera es la
-   licencia del exterior del AT-802; por ahora rige uso interno). La fuente del simulador quedó FUERA del repo, en
+   mecánico). **Plan escrito el 15/11: `PLAN_TALLER.md`**; espera el ok de Iván y sus decisiones (§13, de a una). La 1 está decidida
+   (15/11): el taller es de uso interno, como la cabina. La fuente del simulador quedó FUERA del repo, en
    `Documents/aurav-cabina/taller_fuente/` (el zip y el traspaso, en `OneDrive/Desktop/AURAV/HOLOGRAMA/`). No se tocó el juego.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
    legibles, alcance de llaves y palancas, altura del ojo). Publicada el 12/11; lo que siga se vuelve a subir sólo con su ok (y subiendo
