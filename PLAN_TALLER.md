@@ -6,10 +6,10 @@ claude.ai (`OneDrive/Desktop/AURAV/HOLOGRAMA/PLAN_TALLER_MOTORES.md`, también d
 acá. Este documento es el plan profundo que pide `CLAUDE.md` antes de un trabajo grande: se actualiza a medida que avanzamos y
 cada etapa se marca HECHA con fecha y versión.
 
-**Estado (15/11):** plan propuesto; **Iván ya tomó las 5 decisiones de §13 (15/11): uso interno, página nueva
-(`taller.html`), modo mecánico que identifica, ubica e inspecciona, seis piezas en el banco y, en las cifras del motor, manda la
-cabina. Queda pendiente quién de AAXOD valida el modo mecánico (3b) y falta su ok al plan.** No se modeló
-nada ni se tocó el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
+**Estado (15/11):** **plan APROBADO por Iván el 15/11 («1 · Aprobado»)**, con sus 5 decisiones de §13: uso interno, página
+nueva (`taller.html`), modo mecánico que identifica, ubica e inspecciona, seis piezas en el banco y, en las cifras del motor,
+manda la cabina. Queda pendiente quién de AAXOD valida el modo mecánico (3b). **T1 arrancada el 15/11 a las 14:21.** No se tocó
+el juego. La fuente del simulador quedó extraída FUERA del repo, en `Documents/aurav-cabina/taller_fuente/`, hasta
 decidir qué entra (§3).
 
 ## En una mirada
@@ -462,7 +462,7 @@ relleno.
    3 · manda el genérico: cambian la cabina publicada y los umbrales de los niveles · 4 · otra. **Elegida por Iván el 15/11: 2 ·
    manda la cabina.** La cabina no tiene ralentí alto: el holograma lo deja en 65 % [VERIFICAR] hasta el manual.
 6. **El ok al plan**, con las cinco ya incorporadas y las etapas como bloques de 3 horas o más: · 1 · aprobado, se arranca por T1 ·
-   2 · aprobado con cambios · 3 · todavía no · 4 · otra.
+   2 · aprobado con cambios · 3 · todavía no · 4 · otra. **Aprobado por Iván el 15/11: 1 · aprobado, se arranca por T1.**
 
 ## 14. Cronograma (bloques de 3 horas o más)
 | Etapa | Qué | Horas | Al cierre, Iván |

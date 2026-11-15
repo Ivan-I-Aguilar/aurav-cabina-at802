@@ -386,7 +386,7 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    (ignitor, inyector, álabe, malla, detector de virutas y termocupla de ITT; las dos últimas se suman al holograma). La 5: manda
    la cabina (el holograma toma las cifras de `vuelo.js`; el simulador de escritorio queda igual). **Etapas (pedido de Iván,
    15/11): 10 bloques de trabajo de 3 horas o más (T1–T10, unas 33 h), cada uno con tramos, reserva y cierre (§9 del plan); se
-   larga con «arrancá T1».** Falta el ok de Iván al plan. La fuente del simulador quedó FUERA del repo, en
+   larga con «arrancá T1».** **Plan APROBADO por Iván el 15/11; T1 arrancada ese día.** La fuente del simulador quedó FUERA del repo, en
    `Documents/aurav-cabina/taller_fuente/` (el zip y el traspaso, en `OneDrive/Desktop/AURAV/HOLOGRAMA/`). No se tocó el juego.
 1. Etapa 7, lo que depende de Iván: su ok a las vistas de las etapas 3–6, Bruno (FUEGO = FUEL OFF), la prueba en el Quest (pantallas
    legibles, alcance de llaves y palancas, altura del ojo). Publicada el 12/11; lo que siga se vuelve a subir sólo con su ok (y subiendo
