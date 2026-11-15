@@ -143,8 +143,8 @@ Peso estimado:
 1. **¿Aprobás el plan?** **Aprobado el 15/11: «sí, cabina y exterior»** (cabina liviana en el avión principal de los dos juegos, LOD
    en los estacionados).
 2. **Librea:** **elegida el 15/11: azul, como la cabina** (el GLB ya estaba exportado así; `--librea bordo` queda como opción).
-3. **Válvula de carga en sector:** 1 · la real (centro-izquierda) y la manguera llega por debajo desde la derecha · 2 · una segunda
-   válvula espejada a la derecha, como el viejo · 3 · pasar la carga al lado izquierdo · 4 · otra.
+3. **Válvula de carga en sector:** **elegida el 15/11: «así está bien»**: la real (centro-izquierda), con la manguera que llega por
+   debajo desde la derecha (lo que ya está en el commit 8ed9e9a de sector).
 4. **Matrícula:** 1 · sin matrícula, como la cabina · 2 · AUR-AV pintada, como los viejos · 3 · otra.
 5. **Publicar** cada repo: sólo con su ok expreso.
 
@@ -167,8 +167,8 @@ Peso estimado:
   cono de la nariz a 4,2; `main.js`: «Ver desde la cabina» en `ojo-piloto`; versiones 20261115a; README. Probado en PC: sin errores;
   marca S, calzas de cerca, estacionados de lejos y de cerca, rodaje en la curva con la hélice, vista de cabina. Escena: 517 mallas
   (antes 588), 315 k tri (312 k), 196 con sombra (272). Con el panel del navegador oculto no se pudo medir por cuadro.
-- **Etapa C HECHA el 15/11 (sector; commit local 8ed9e9a en `aurav-sector`, sin publicar), con la opción 1 de la válvula hasta que
-  Iván conteste la pregunta 3:** `at802.glb` nuevo y el mismo `at802glb.js` de señaleros; la manguera llega desde la derecha a la boca
+- **Etapa C HECHA el 15/11 (sector; commit local 8ed9e9a en `aurav-sector`, sin publicar), con la válvula real (Iván: «así está
+  bien»):** `at802.glb` nuevo y el mismo `at802glb.js` de señaleros; la manguera llega desde la derecha a la boca
   de carga real (centro-izquierda, bajo la panza); la marca de la válvula, la llegada de la etapa a pie y el apoyo quedan al costado
   del fuselaje (`juntoValvula`, a 1,25 / 1,6 m del eje como mínimo). `despegue.js`: la rueda de cola se hundía hasta 0,90 m en la
   pista al levantar la nariz (también con el avión viejo); ahora la cola se levanta en la carrera (fuselaje horizontal), rota apenas
@@ -177,4 +177,4 @@ Peso estimado:
   72 con sombra (88).
 - **15/11:** `juegos/LEEME.md` + `juegos/at802glb.js` (copia de referencia del cargador) para usar el avión en juegos nuevos (Iván
   está armando otra capacitación con el AT8T).
-- **Falta:** la pregunta 3 (válvula), la 4 (matrícula), publicar los tres repos (con su ok) y el Quest.
+- **Falta:** la pregunta 4 (matrícula), publicar los tres repos (con su ok) y el Quest.
