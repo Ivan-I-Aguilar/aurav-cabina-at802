@@ -355,7 +355,7 @@ nada).** Lo que quedó:
 - Capturas: `Documents/aurav-cabina/capturas_taller/T2_mesa_y_paneles.jpg`.
 - **Ok de Iván a la mesa, el cuadrante y los paneles: 15/11 («Quedan así»).**
 - **Pregunta para Iván:** el TORQUE se pone rojo desde 85 % porque así son los arcos del MVP-50 de la cabina (verde 0–85, rojo
-  85–100): a plena potencia se ve rojo, en el taller y en la cabina. ¿Está bien así o se corrige en los dos?
+  85–100): a plena potencia se ve rojo, en el taller y en la cabina. ¿Está bien así o se corrige en los dos? **Respuesta de Iván (15/11): «Dejarlo así»: el arco queda verde 0–85 y rojo 85–100 en los dos.**
 
 ### T3 — Estaciones, llamadas, preguntas y recorrido (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
