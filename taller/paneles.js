@@ -202,6 +202,183 @@ export function crearCartel({ancho = 1.0, alto = 0.24} = {}) {
 }
 
 /**
+ * ESTACIONES + VISTA (el panel de la izquierda, T3). estaciones: STATIONS de content.js. Botones: 'st1'…'st8' (tocar la activa la
+ * apaga, como el escritorio), 'v_corte', 'v_completo', 'v_flujo', 'v_recorrido', 'v_preguntas', 'v_mesa' (devuelve el holograma a
+ * la mesa). actualizar({estacion, corte, flujo, recorrido, hover}).
+ */
+export function crearPanelEstaciones({estaciones, leyenda, ancho = 0.68, alto = 0.97}) {
+  const p = crearPanel({ancho, alto, px: 1024, nombre: 'panel-estaciones'});
+  const {g, W, H} = p;
+  const M = 34;
+  const sh = 84;
+  const sy0 = 104;
+  estaciones.forEach((s, i) => p.botones.push({id: `st${s.n}`, x: M, y: sy0 + i * (sh + 8), w: W - 2 * M, h: sh, n: s.n, nombre: s.name}));
+  const yV = sy0 + estaciones.length * (sh + 8) + 26;
+  const VISTA = [['v_corte', 'CORTE'], ['v_completo', 'COMPLETO'], ['v_flujo', 'FLUJO'], ['v_recorrido', 'RECORRIDO'], ['v_preguntas', 'PREGUNTAS (6)'], ['v_mesa', 'A LA MESA']];
+  const bw = (W - 2 * M - 2 * 14) / 3;
+  const bh = 80;
+  VISTA.forEach(([id, t], i) => p.botones.push({id, t, x: M + (i % 3) * (bw + 14), y: yV + 58 + Math.floor(i / 3) * (bh + 14), w: bw, h: bh}));
+  const yPie = H - 120;
+  let firma = '';
+  function dibujar(e) {
+    g.clearRect(0, 0, W, H);
+    caja(g, 0, 0, W, H, 26, C.panel, C.line);
+    g.fillStyle = C.red;
+    g.fillRect(M, 30, 70, 7);
+    texto(g, 'ESTACIONES', M, 82, 40, C.ink, {negrita: true});
+    texto(g, '[AGREGADO]', M + 262, 82, 26, C.mute, {negrita: true});
+    for (const b of p.botones) {
+      if (b.n) {
+        const activo = e.estacion === b.n;
+        caja(g, b.x, b.y, b.w, b.h, 12, activo ? C.red : e.hover === b.id ? '#eef0f2' : '#ffffff', activo ? C.red : C.line);
+        g.beginPath();
+        g.arc(b.x + 46, b.y + b.h / 2, 26, 0, Math.PI * 2);
+        g.strokeStyle = activo ? '#ffffff' : C.ink;
+        g.lineWidth = 4;
+        g.stroke();
+        texto(g, String(b.n), b.x + 46, b.y + b.h / 2 + 2, 32, activo ? '#ffffff' : C.ink, {negrita: true, alinear: 'center', base: 'middle'});
+        texto(g, b.nombre, b.x + 92, b.y + b.h / 2 + 2, 40, activo ? '#ffffff' : C.ink, {negrita: true, base: 'middle'});
+        continue;
+      }
+      const on = (b.id === 'v_corte' && e.corte) || (b.id === 'v_completo' && !e.corte) || (b.id === 'v_flujo' && e.flujo) || (b.id === 'v_recorrido' && e.recorrido);
+      const rojo = b.id === 'v_preguntas';
+      const fondo = rojo ? C.red : on ? C.ink : e.hover === b.id ? '#eef0f2' : '#ffffff';
+      caja(g, b.x, b.y, b.w, b.h, 12, fondo, rojo ? C.red : on ? C.ink : C.line);
+      texto(g, b.t, b.x + b.w / 2, b.y + b.h / 2 + 2, 30, rojo || on ? '#ffffff' : C.ink, {negrita: true, alinear: 'center', base: 'middle', max: b.w - 16});
+    }
+    g.fillStyle = C.red;
+    g.fillRect(M, yV - 6, 70, 7);
+    texto(g, 'VISTA', M, yV + 38, 40, C.ink, {negrita: true});
+    pieLeyenda(g, W, yPie, 120, leyenda, 30);
+    p.pintado();
+  }
+  return {
+    ...p,
+    actualizar(e) {
+      const f = JSON.stringify([e.estacion, e.corte, e.flujo, e.recorrido, e.hover]);
+      if (f === firma) return;
+      firma = f;
+      dibujar(e);
+    },
+  };
+}
+
+/**
+ * Las 6 preguntas (T3), como en live.js: la correcta es la primera de cada lista y se muestran en el orden de ORDER; ✓ o ✗ con la
+ * correcta; al final «n de 6» y el aviso. Botones: 'q_a0'…'q_a2' (las opciones en pantalla), 'q_siguiente', 'q_otra', 'q_cerrar'.
+ * tocar(id) devuelve 'cerrar' cuando hay que esconderlo.
+ */
+export function crearPanelPreguntas({quiz, orden, ancho = 0.76, alto = 0.5}) {
+  const p = crearPanel({ancho, alto, px: 1400, nombre: 'panel-preguntas'});
+  const {g, W, H} = p;
+  const M = 44;
+  const L = ['A', 'B', 'C'];
+  let qi = 0;
+  let puntaje = 0;
+  let elegida = null;
+  let hover = null;
+  const opciones = [0, 1, 2].map((j) => ({id: `q_a${j}`, x: M, y: 210 + j * 108, w: W - 2 * M, h: 92}));
+  const bSig = {id: 'q_siguiente', x: W - M - 300, y: H - 116, w: 300, h: 80};
+  const bCerrar = {id: 'q_cerrar', x: W - M - 300 - 24 - 220, y: H - 116, w: 220, h: 80};
+  const bOtra = {id: 'q_otra', x: W - M - 300 - 24 - 220, y: H - 116, w: 220, h: 80};
+  function botones() {
+    p.botones.length = 0;
+    if (qi >= quiz.length) p.botones.push(bOtra, {...bSig, id: 'q_cerrar'});
+    else {
+      if (elegida === null) p.botones.push(...opciones);
+      p.botones.push(bCerrar);
+      if (elegida !== null) p.botones.push(bSig);
+    }
+  }
+  function boton(b, t, oscuro) {
+    caja(g, b.x, b.y, b.w, b.h, 12, oscuro ? C.ink : hover === b.id ? '#eef0f2' : '#ffffff', oscuro ? C.ink : C.line);
+    texto(g, t, b.x + b.w / 2, b.y + b.h / 2 + 2, 30, oscuro ? '#ffffff' : C.ink, {negrita: true, alinear: 'center', base: 'middle'});
+  }
+  function dibujar() {
+    botones();
+    g.clearRect(0, 0, W, H);
+    caja(g, 0, 0, W, H, 26, '#ffffff', C.line);
+    if (qi >= quiz.length) {
+      texto(g, 'PREGUNTAS · RESULTADO', M, 76, 32, C.red, {negrita: true});
+      texto(g, `${puntaje} de ${quiz.length} correctas`, M, 170, 64, C.ink, {negrita: true});
+      g.font = `bold 34px ${FUENTE}`;
+      envolver(g, 'Repasá las estaciones de las que dudaste. Este material no reemplaza la instrucción.', W - 2 * M).forEach((l, i) => texto(g, l, M, 250 + i * 46, 34, C.mute, {negrita: true}));
+      texto(g, '[AGREGADO]', M, H - 66, 26, C.mute, {negrita: true});
+      boton(bOtra, 'Otra vez');
+      boton({...bSig, id: 'q_cerrar'}, 'Cerrar', true);
+      p.pintado();
+      return;
+    }
+    const Q = quiz[qi];
+    texto(g, `PREGUNTA ${qi + 1} DE ${quiz.length}`, M, 76, 32, C.red, {negrita: true});
+    texto(g, '[AGREGADO]', W - M, 76, 26, C.mute, {negrita: true, alinear: 'right'});
+    texto(g, Q.q, M, 156, 52, C.ink, {negrita: true, max: W - 2 * M});
+    orden[qi].forEach((a, j) => {
+      const b = opciones[j];
+      const correcta = a === 0;
+      let fondo = hover === b.id && elegida === null ? '#f3f4f6' : '#ffffff';
+      let borde = C.line;
+      if (elegida !== null && correcta) {
+        fondo = '#eef8f2';
+        borde = C.green;
+      } else if (elegida === j) {
+        fondo = '#fdf0f1';
+        borde = C.red;
+      }
+      caja(g, b.x, b.y, b.w, b.h, 12, fondo, borde);
+      g.beginPath();
+      g.arc(b.x + 48, b.y + b.h / 2, 26, 0, Math.PI * 2);
+      g.strokeStyle = C.ink;
+      g.lineWidth = 4;
+      g.stroke();
+      texto(g, L[j], b.x + 48, b.y + b.h / 2 + 2, 30, C.ink, {negrita: true, alinear: 'center', base: 'middle'});
+      texto(g, Q.a[a], b.x + 96, b.y + b.h / 2 + 2, 38, C.ink, {negrita: true, base: 'middle', max: b.w - 120});
+    });
+    if (elegida !== null) {
+      const ok = orden[qi][elegida] === 0;
+      texto(g, ok ? '✓ Correcto.' : `✗ No. La respuesta es: ${Q.a[0]}.`, M, H - 64, 34, ok ? C.green : C.red, {negrita: true, max: W - 2 * M - 560});
+      boton(bSig, 'Siguiente →', true);
+    }
+    boton(bCerrar, 'Cerrar');
+    p.pintado();
+  }
+  return {
+    ...p,
+    abrir() {
+      qi = 0;
+      puntaje = 0;
+      elegida = null;
+      hover = null;
+      dibujar();
+    },
+    tocar(id) {
+      if (id === 'q_cerrar') return 'cerrar';
+      if (id === 'q_otra') {
+        qi = 0;
+        puntaje = 0;
+        elegida = null;
+      } else if (id === 'q_siguiente' && elegida !== null) {
+        qi++;
+        elegida = null;
+      } else if (id.startsWith('q_a') && elegida === null && qi < quiz.length) {
+        elegida = +id.slice(3);
+        if (orden[qi][elegida] === 0) puntaje++;
+      }
+      dibujar();
+      return null;
+    },
+    pasarPor(id) {
+      if (id === hover) return;
+      hover = id;
+      dibujar();
+    },
+    get estado() {
+      return {pregunta: qi, puntaje, elegida};
+    },
+  };
+}
+
+/**
  * Los rótulos del cuadrante, sobre el tope de su caja (datos: userData.cuadrante de mesa.glb). Devuelve la placa (mirando hacia
  * arriba, con el borde de arriba del canvas hacia atrás, −z, para que se lea desde el lado del alumno).
  */

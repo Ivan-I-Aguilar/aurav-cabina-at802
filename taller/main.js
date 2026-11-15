@@ -11,13 +11,15 @@ import {GLTFLoader} from '../GLTFLoader.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261115b';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115b';
-import {STATIONS, LEGEND} from './content.js?v=20261115b';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115b';
-import {crearPanelMotor, crearCartel, crearPlacaCuadrante} from './paneles.js?v=20261115b';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261115c';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261115c';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115c';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115c';
+import {crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante} from './paneles.js?v=20261115c';
+import {crearLlamadas} from './llamadas.js?v=20261115c';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115c';
 
-export const VERSION = '20261115b';
+export const VERSION = '20261115c';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -214,37 +216,80 @@ if (HOLO) {
   motorGrupo = envolverMotor(eng.root).grupo;
   eng.setCut('section');
 }
-motorGrupo.position.copy(CENTRO_HOLO);
-motorGrupo.rotation.y = -Math.PI / 2; // la hélice a la izquierda del alumno y el costado cortado hacia él (como la vista del escritorio)
-motorGrupo.scale.setScalar(ESCALA_HOLO);
+const motorCentro = motorGrupo.children[0]; // grupo → centro (la caja del motor centrada) → raíz de engine.js
 escena.add(motorGrupo);
+
+// ------------------------------------------------------------ la pose del holograma en la mesa
+// Base: la hélice a la izquierda del alumno y el costado cortado hacia él (la vista «hero» del escritorio). El recorrido la cambia
+// por la vista de cada estación (recorrido.js); agarrarlo (grip en VR; rueda y Shift + arrastre en PC) la deja a mano hasta «A LA MESA».
+const pose = {...POSE_BASE, objetivo: [...POSE_BASE.objetivo]};
+let poseManual = false;
+const vPose = new THREE.Vector3();
+const ePose = new THREE.Euler(0, 0, 0, 'XYZ');
+const tPose = {pos: new THREE.Vector3(), quat: new THREE.Quaternion(), esc: ESCALA_HOLO};
+/** la transformación del grupo del motor para una pose: giro sobre la vertical, después la inclinación hacia el alumno (eje x del
+ *  mundo), la escala, y el punto «objetivo» del motor (m, marco del motor) en el centro de la mesa */
+function transformDePose(p, out = tPose) {
+  ePose.set(p.pitch, p.yaw, 0, 'XYZ');
+  out.quat.setFromEuler(ePose);
+  out.esc = ESCALA_HOLO * p.escala;
+  vPose.set(...p.objetivo).add(motorCentro.position).applyQuaternion(out.quat).multiplyScalar(out.esc);
+  out.pos.copy(CENTRO_HOLO).sub(vPose);
+  return out;
+}
+function aplicarPose() {
+  transformDePose(pose);
+  motorGrupo.position.copy(tPose.pos);
+  motorGrupo.quaternion.copy(tPose.quat);
+  motorGrupo.scale.setScalar(tPose.esc);
+}
+/** va de a poco hacia la pose meta desde donde esté el grupo (también desde donde lo dejó la mano) */
+function seguirPose(meta, dt) {
+  transformDePose(meta);
+  const k = 1 - Math.exp(-dt / 0.6);
+  motorGrupo.position.lerp(tPose.pos, k);
+  motorGrupo.quaternion.slerp(tPose.quat, k);
+  motorGrupo.scale.setScalar(motorGrupo.scale.x + (tPose.esc - motorGrupo.scale.x) * k);
+  Object.assign(pose, {yaw: meta.yaw, pitch: meta.pitch, escala: meta.escala, objetivo: [...meta.objetivo]});
+}
+aplicarPose();
 
 // ------------------------------------------------------------ paneles: INSTRUMENTOS + FALLAS a la derecha, el cartel arriba
 // 0,68 × 0,97 m a 1,2 m del ojo: la letra más chica (30 px de 1024) da 2 cm (con 0,56 m a 1,3 m daba 1,6 cm: chica para el casco)
 const PANEL = {ancho: 0.68, alto: 0.97};
-const panelMotor = crearPanelMotor({gauges: GAUGES, faults: FAULTS, faultKeys: FAULT_KEYS, leyenda: LEGEND, ...PANEL});
-{
-  const p = panelMotor.malla;
-  p.position.set(0.92, 1.4, 0.18);
-  p.rotation.y = Math.atan2(INICIO.pos.x - p.position.x, INICIO.pos.z - p.position.z); // de cara al alumno parado frente a la mesa
+const metalPanel = new THREE.MeshStandardMaterial({color: 0x2b3036, roughness: 0.55, metalness: 0.45});
+/** un panel de pie, de cara al alumno parado frente a la mesa, con su marco, su poste y su base */
+function montarPanel(p, x, y, z) {
+  p.position.set(x, y, z);
+  p.rotation.y = Math.atan2(INICIO.pos.x - x, INICIO.pos.z - z);
   escena.add(p);
-  const metal = new THREE.MeshStandardMaterial({color: 0x2b3036, roughness: 0.55, metalness: 0.45});
-  const marco = new THREE.Mesh(new THREE.BoxGeometry(PANEL.ancho + 0.02, PANEL.alto + 0.02, 0.025), metal);
+  const marco = new THREE.Mesh(new THREE.BoxGeometry(PANEL.ancho + 0.02, PANEL.alto + 0.02, 0.025), metalPanel);
   marco.position.copy(p.position).addScaledVector(new THREE.Vector3(Math.sin(p.rotation.y), 0, Math.cos(p.rotation.y)), -0.014);
   marco.rotation.y = p.rotation.y;
   escena.add(marco);
-  const poste = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, p.position.y - PANEL.alto / 2, 16), metal);
-  poste.position.set(marco.position.x, (p.position.y - PANEL.alto / 2) / 2, marco.position.z);
+  const poste = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, y - PANEL.alto / 2, 16), metalPanel);
+  poste.position.set(marco.position.x, (y - PANEL.alto / 2) / 2, marco.position.z);
   escena.add(poste);
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.03, 32), metal);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.03, 32), metalPanel);
   base.position.set(marco.position.x, 0.015, marco.position.z);
   escena.add(base);
 }
+const panelMotor = crearPanelMotor({gauges: GAUGES, faults: FAULTS, faultKeys: FAULT_KEYS, leyenda: LEGEND, ...PANEL});
+montarPanel(panelMotor.malla, 0.92, 1.4, 0.18);
+const panelEstaciones = crearPanelEstaciones({estaciones: STATIONS, leyenda: LEGEND, ...PANEL});
+montarPanel(panelEstaciones.malla, -0.92, 1.4, 0.18);
 const cartel = crearCartel();
 cartel.malla.position.set(0, 1.66, -0.12);
 cartel.malla.visible = false;
 escena.add(cartel.malla);
-const paneles = [panelMotor];
+// las preguntas: delante del holograma, a la altura de los ojos (el holograma se atenúa mientras están abiertas)
+const preguntas = crearPanelPreguntas({quiz: QUIZ, orden: ORDER});
+preguntas.malla.position.set(0, 1.47, 0.1);
+preguntas.malla.visible = false;
+preguntas.malla.renderOrder = 12;
+escena.add(preguntas.malla);
+const paneles = [panelMotor, panelEstaciones, preguntas];
+const llamadas = crearLlamadas({escena, parts: eng.PARTS, centro: CENTRO_HOLO});
 // la pausa en VR (B/Y): el panel de la cabina (panelvr.js), frente a la cabeza
 const panelVR = crearPanelVR();
 escena.add(panelVR.malla);
@@ -310,6 +355,52 @@ function alertaVisible() {
   if (f === 'hot') return s.itt > 750;
   if (f === 'hung') return s.lit && reloj - tFalla > 8;
   return true;
+}
+
+// ------------------------------------------------------------ el recorrido automático (recorrido.js: el guion de tour.js en vivo)
+// Las estaciones de a 7 s, las palancas que se mueven solas, el arranque caliente y el corte. En VR arranca sólo con el botón
+// RECORRIDO (en el casco, solo y sin aviso desorienta); cualquier toque del alumno lo para y el motor sigue desde donde quedó.
+const recorrido = {activo: false, t0: 0, tPrev: 0};
+function iniciarRecorrido() {
+  aRalenti();
+  estacion = 0;
+  desdeEstacion = reloj;
+  poseManual = false;
+  Object.assign(recorrido, {activo: true, t0: reloj, tPrev: 0});
+}
+function pararRecorrido() {
+  recorrido.activo = false;
+}
+function pasoRecorrido() {
+  const t = (reloj - recorrido.t0) % DURATION;
+  if (t < recorrido.tPrev) aRalenti(); // dio la vuelta
+  if (recorrido.tPrev < FAULT_T && t >= FAULT_T) ponerFalla('hot');
+  if (recorrido.tPrev < RESET_T && t >= RESET_T) aRalenti();
+  recorrido.tPrev = t;
+  const i = inpAt(t);
+  inp.pla = i.pla;
+  inp.prop = i.prop;
+  if (t >= FAULT_T && t < RESET_T) {
+    inp.cl = i.cl;
+    autoCL = false;
+  }
+  const st = stationAt(t);
+  if (st !== estacion) {
+    estacion = st;
+    desdeEstacion = reloj;
+  }
+  return poseHolograma(t);
+}
+
+// ------------------------------------------------------------ las preguntas
+let preguntasAbiertas = false;
+function abrirPreguntas() {
+  pararRecorrido();
+  preguntas.abrir();
+  preguntas.malla.visible = preguntasAbiertas = true;
+}
+function cerrarPreguntas() {
+  preguntas.malla.visible = preguntasAbiertas = false;
 }
 
 // ------------------------------------------------------------ las palancas 3D ↔ las entradas del motor
@@ -386,7 +477,17 @@ function apuntado(r) {
 }
 function accionar(a) {
   if (!a || !a.id) return false;
-  if (a.tipo === 'panel' && a.id.startsWith('f_')) ponerFalla(a.id.slice(2));
+  if (recorrido.activo && a.id !== 'v_recorrido') pararRecorrido(); // cualquier toque del alumno toma el control
+  if (a.tipo === 'panel' && a.id.startsWith('q_')) {
+    if (preguntas.tocar(a.id) === 'cerrar') cerrarPreguntas();
+  } else if (a.tipo === 'panel' && a.id.startsWith('f_')) ponerFalla(a.id.slice(2));
+  else if (a.tipo === 'panel' && /^st\d$/.test(a.id)) ponerEstacion(+a.id.slice(2));
+  else if (a.id === 'v_corte') corte = true;
+  else if (a.id === 'v_completo') corte = false;
+  else if (a.id === 'v_flujo') flujo = flujo ? 0 : 1;
+  else if (a.id === 'v_recorrido') recorrido.activo ? pararRecorrido() : iniciarRecorrido();
+  else if (a.id === 'v_preguntas') preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
+  else if (a.id === 'v_mesa') poseManual = false;
   else if (a.tipo === 'boton') {
     const b = botones3D[a.id];
     b.hasta = reloj + 0.18;
@@ -401,12 +502,16 @@ function accionar(a) {
 
 // ------------------------------------------------------------ teclado y mouse (PC)
 const teclas = {};
-const AYUDA = 'WASD caminar · arrastrar = mirar · arrastrar una palanca = moverla · clic en botones y panel · ↑↓ potencia · ←→ hélice · C condición · Enter arrancar · R a ralentí · G falla siguiente · 1–8 estación (0 todas) · K corte · L flujo · H ayuda';
+const AYUDA = 'WASD caminar · arrastrar = mirar · arrastrar una palanca = moverla · clic en botones y paneles · rueda = tamaño del holograma · Shift + arrastrar = girarlo · ↑↓ potencia · ←→ hélice · C condición · Enter arrancar · R a ralentí · G falla siguiente · 1–8 estación (0 todas) · K corte · L flujo · T recorrido · P preguntas · M a la mesa · H ayuda';
 let verAyuda = true;
 addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   teclas[k] = true;
+  if (k === 't') return recorrido.activo ? pararRecorrido() : iniciarRecorrido();
+  if (k === 'p') return preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
+  if (k === 'm') return (poseManual = false);
+  if (recorrido.activo && ['c', 'enter', 'r', 'g', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) pararRecorrido();
   if (k === 'c') {
     inp.cl = (inp.cl + 1) % 3;
     autoCL = false;
@@ -430,13 +535,30 @@ let arrastre = null;
 let hoverPC = null;
 renderer.domElement.addEventListener('pointerdown', (e) => {
   const a = apuntado(rayoDesdeMouse(e));
-  arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a};
+  arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a, girarHolo: e.shiftKey};
   if (a && a.tipo === 'palanca' && a.id !== 'levCL') {
     palancaMouse = a.palanca;
     arrastre.ang0 = a.palanca.ang;
+    pararRecorrido();
+  }
+  if (e.shiftKey) {
+    poseManual = true;
+    pararRecorrido();
   }
   renderer.domElement.setPointerCapture(e.pointerId);
 });
+// la rueda cambia el tamaño del holograma (de 0,2 a 1:1 del real, como las dos manos en VR)
+renderer.domElement.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+    poseManual = true;
+    pararRecorrido();
+    pose.escala = clamp(pose.escala * Math.exp(-e.deltaY * 0.0012), 0.2 / ESCALA_HOLO, 1 / ESCALA_HOLO);
+    aplicarPose();
+  },
+  {passive: false},
+);
 renderer.domElement.addEventListener('pointermove', (e) => {
   if (renderer.xr.isPresenting) return;
   if (!arrastre) {
@@ -448,6 +570,14 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   if (palancaMouse) {
     palancaMouse.ang = clamp(arrastre.ang0 + (e.clientY - arrastre.y0) * 0.006, A_MIN, A_MAX); // arrastrar hacia arriba = adelante
     controles._aplicarPalanca(palancaMouse);
+    return;
+  }
+  if (arrastre.girarHolo) {
+    pose.yaw += (e.clientX - arrastre.x) * 0.008;
+    pose.pitch = clamp(pose.pitch + (e.clientY - arrastre.y) * 0.006, -1.2, 1.2);
+    aplicarPose();
+    arrastre.x = e.clientX;
+    arrastre.y = e.clientY;
     return;
   }
   yaw -= (e.clientX - arrastre.x) * 0.0045;
@@ -576,10 +706,34 @@ function leerJoysticks(dt) {
   pausaPrevia = pausa;
 }
 let hoverVR = null;
+// agarrar el holograma: grip cerca de él (y no de una palanca). Con una mano se lleva y se gira; con las dos, además se agranda o
+// se achica (de 0,2 a 1:1 del real). Queda donde se suelta hasta «A LA MESA».
+const agarreHolo = [];
+let dosManos = null;
+const mHolo = new THREE.Matrix4();
+const vEsc = new THREE.Vector3();
+function cercaDelHolograma(c) {
+  c.getWorldPosition(tmp);
+  motorGrupo.getWorldPosition(tmp2);
+  return tmp.distanceTo(CENTRO_HOLO) < 0.32 + motorGrupo.scale.x * 0.5 || tmp.distanceTo(tmp2) < 0.3;
+}
 function manosVR() {
   hoverVR = null;
   for (const c of manos) {
-    if (controles && !panelVR.visible) controles.manoVR(c, c.userData.grip, c.userData.gripNuevo);
+    let agarroControl = false;
+    if (controles && !panelVR.visible) agarroControl = controles.manoVR(c, c.userData.grip, c.userData.gripNuevo);
+    if (c.userData.gripNuevo && !agarroControl && !panelVR.visible && cercaDelHolograma(c)) {
+      motorGrupo.updateMatrixWorld(true);
+      agarreHolo.push({mano: c, rel: new THREE.Matrix4().copy(c.matrixWorld).invert().multiply(motorGrupo.matrixWorld)});
+      poseManual = true;
+      pararRecorrido();
+    }
+    if (!c.userData.grip)
+      for (let i = agarreHolo.length - 1; i >= 0; i--)
+        if (agarreHolo[i].mano === c) {
+          agarreHolo.splice(i, 1);
+          dosManos = null;
+        }
     c.userData.gripNuevo = false;
     if (panelVR.visible) {
       const d = panelVR.apuntar(c);
@@ -591,6 +745,16 @@ function manosVR() {
     if (a && a.tipo === 'panel') hoverVR = a.id;
   }
   if (controles) controles.actualizar();
+  if (agarreHolo.length) {
+    const {mano, rel} = agarreHolo[0];
+    mHolo.multiplyMatrices(mano.matrixWorld, rel).decompose(motorGrupo.position, motorGrupo.quaternion, vEsc);
+    if (agarreHolo.length > 1) {
+      const d = agarreHolo[0].mano.getWorldPosition(tmp).distanceTo(agarreHolo[1].mano.getWorldPosition(tmp2));
+      if (!dosManos) dosManos = {d0: d, s0: motorGrupo.scale.x};
+      motorGrupo.scale.setScalar(clamp((dosManos.s0 * d) / Math.max(0.05, dosManos.d0), 0.2, 1));
+      agarreHolo[0].rel.copy(mano.matrixWorld).invert().multiply(motorGrupo.updateMatrix() || motorGrupo.matrix);
+    } else motorGrupo.scale.copy(vEsc);
+  }
 }
 
 // ------------------------------------------------------------ HUD (PC) y leyenda
@@ -606,7 +770,7 @@ function pintarHUD() {
     `<b>TALLER DE MOTORES · AURAV</b> <span style="opacity:.7">v${VERSION} · sala de prueba${HOLO ? '' : ' · materiales originales'}</span><br>` +
     `Ng <b>${r.ng.toFixed(1)}</b> % · ITT <b>${r.itt.toFixed(0)}</b> °C · TORQUE <b>${r.tq.toFixed(0)}</b> % · Np <b>${r.np.toFixed(0)}</b> · FLUJO <b>${r.ff.toFixed(0)}</b> PPH<br>` +
     `POTENCIA ${Math.round(inp.pla * 100)} % · CONDICIÓN ${CL_NAMES[inp.cl]} · HÉLICE ${helice}${s.startOn ? ' · <b>ARRANQUE</b>' : ''}${s.ign ? ' · IGNITORES' : ''}<br>` +
-    `FALLA ${f.name} · ${st ? `ESTACIÓN ${st.n} · ${st.name.toUpperCase()}` : 'MOTOR ENTERO'} · ${corte ? 'CORTE' : 'COMPLETO'}${flujo ? ' · FLUJO' : ''}` +
+    `FALLA ${f.name} · ${st ? `ESTACIÓN ${st.n} · ${st.name.toUpperCase()}` : 'MOTOR ENTERO'} · ${corte ? 'CORTE' : 'COMPLETO'}${flujo ? ' · FLUJO' : ''}${recorrido.activo ? ` · <b>RECORRIDO ${((reloj - recorrido.t0) % DURATION).toFixed(0)} s</b>` : ''}` +
     (verAyuda ? `<div id="ayuda">${AYUDA}</div>` : '');
 }
 
@@ -632,6 +796,9 @@ function avanzar(dt) {
     leerJoysticks(dt);
     manosVR();
   }
+  // el recorrido pone las palancas, la estación y las fallas del guion; la pose del holograma sigue a la vista de cada estación
+  const metaTour = recorrido.activo ? pasoRecorrido() : null;
+  if (!poseManual && !agarreHolo.length) seguirPose(metaTour || POSE_BASE, dt);
   sincronizarPalancas(dt);
   acum = Math.min(acum + dt, 0.25);
   while (acum >= PASO) {
@@ -671,12 +838,18 @@ function avanzar(dt) {
   for (const b of Object.values(botones3D)) b.malla.position.y = b.y0 - (reloj < b.hasta ? 0.006 : 0);
   // paneles: el de instrumentos y fallas a 10 Hz; el cartel cuando cambia
   panelT -= dt;
+  const hover = renderer.xr.isPresenting ? hoverVR : hoverPC;
   if (panelT <= 0) {
     panelT = 0.1;
-    panelMotor.actualizar({r: readout(s), fault: inp.fault, hover: renderer.xr.isPresenting ? hoverVR : hoverPC});
+    panelMotor.actualizar({r: readout(s), fault: inp.fault, hover});
+    panelEstaciones.actualizar({estacion, corte, flujo: !!flujo, recorrido: recorrido.activo, hover});
+    if (preguntasAbiertas) preguntas.pasarPor(hover && hover.startsWith('q_') ? hover : null);
   }
   const st = STATIONS.find((x) => x.n === estacion);
-  cartel.actualizar({estacion: st || null, alerta: alertaVisible() ? FAULTS[inp.fault] : null});
+  cartel.actualizar({estacion: preguntasAbiertas ? null : st || null, alerta: !preguntasAbiertas && alertaVisible() ? FAULTS[inp.fault] : null});
+  // las llamadas de la estación (aparecen de a poco, como en el escritorio) y el holograma atenuado mientras están las preguntas
+  llamadas.actualizar(preguntasAbiertas ? null : st || null, estacion ? ss(0.8, 1.3, since) : 0, eng.root, renderer.xr.isPresenting ? renderer.xr.getCamera() : camara);
+  if (holo) holo.ajustes.uBrillo.value += ((preguntasAbiertas ? 0.3 : 1) - holo.ajustes.uBrillo.value) * Math.min(1, dt * 6);
   hudT -= dt;
   if (hudT <= 0 && !renderer.xr.isPresenting) {
     hudT = 0.1;
@@ -703,6 +876,8 @@ const RONDA = [
   {nombre: 'puesto de trabajo (el alumno, campo ancho)', pos: [0, ALTURA_OJOS, 0.95], mira: [0.35, 1.18, 0], hfov: 100},
   {nombre: 'el cuadrante de cerca', pos: [0.3, 1.45, 0.72], mira: [0.38, 1.0, 0.24], hfov: 60},
   {nombre: 'el panel de instrumentos y fallas', pos: [0.15, ALTURA_OJOS, 0.85], mira: [0.92, 1.4, 0.18], hfov: 70},
+  {nombre: 'el panel de estaciones y vista', pos: [-0.15, ALTURA_OJOS, 0.85], mira: [-0.92, 1.4, 0.18], hfov: 70},
+  {nombre: 'el puesto entero (los dos paneles)', pos: [0, 1.75, 1.6], mira: [0, 1.25, 0], hfov: 95},
 ];
 function ponerCamara(pos, mira, hfov = 75) {
   jugador.position.set(pos[0], 0, pos[2]);
@@ -729,8 +904,9 @@ function rayosDesdeElOjo(blanco, objeto, ojo = new THREE.Vector3(0, ALTURA_OJOS,
   const res = [];
   escena.updateMatrixWorld(true);
   const tapan = [];
+  // sólo mallas: las líneas no tapan y three.js las toma con un margen de 1 m (daba falsos «tapa LineSegments»)
   escena.traverse((o) => {
-    if ((o.isMesh || o.isLine) && o.visible && o.layers.test(camara.layers) && o !== objeto && !o.name.startsWith('holo') && !(o.material && o.material.blending === THREE.AdditiveBlending)) tapan.push(o);
+    if (o.isMesh && o.visible && o.layers.test(camara.layers) && o !== objeto && !o.name.startsWith('holo') && !(o.material && o.material.blending === THREE.AdditiveBlending)) tapan.push(o);
   });
   for (const dx of [-0.08, 0, 0.08])
     for (const dy of [-0.08, 0, 0.08]) {
@@ -794,6 +970,22 @@ window.__taller = {
   /** abre (o cierra) la pausa de VR delante de la cámara (en PC, para mirarla) */
   pausa: () => (panelVR.visible ? panelVR.ocultar() : abrirPausa()),
   audio,
+  panelEstaciones,
+  preguntas,
+  llamadas,
+  /** el recorrido automático: true lo arranca, false lo para; devuelve si está andando y en qué segundo */
+  recorrido: (v) => {
+    if (v === true) iniciarRecorrido();
+    else if (v === false) pararRecorrido();
+    return {activo: recorrido.activo, t: +((reloj - recorrido.t0) % DURATION).toFixed(2)};
+  },
+  /** las preguntas: true las abre, false las cierra */
+  abrirPreguntas: (v = true) => (v ? abrirPreguntas() : cerrarPreguntas()),
+  /** la pose del holograma (y si está a mano) */
+  get pose() {
+    return {...pose, manual: poseManual, escalaMundo: +motorGrupo.scale.x.toFixed(3)};
+  },
+  aLaMesa: () => (poseManual = false),
   /** acciona un botón del panel ('f_hot'…) o de la mesa ('btnARRANCAR', 'btnRALENTI') como si se lo tocara */
   tocar: (id) => accionar(id.startsWith('btn') ? {tipo: 'boton', id} : id.startsWith('lev') ? {tipo: 'palanca', id} : {tipo: 'panel', id}),
   /** mueve una palanca 3D como si la agarrara una mano: nombre ('levPLA', 'levPROP', 'levCL') y ángulo (−0,9 adelante … 0,15 atrás) */

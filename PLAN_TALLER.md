@@ -361,6 +361,29 @@ nada).** Lo que quedó:
   más grande donde la captura no se lea.
 - **Al cierre, Iván:** ok al modo piloto sobre la mesa, en PC.
 
+**T3 ADELANTADA y HECHA dentro del bloque de la T1 (15/11/2026, 15:00–15:05; v=20261115c; sin publicar; en el Quest no se probó
+nada).** Lo que quedó:
+- `taller/recorrido.js`: el guion de `tour.js` sin el kit (SCRIPT, inpAt, stationAt, VIEW_FN, camAt) y la traducción de cada vista
+  del escritorio a una POSE DEL HOLOGRAMA: giro −az sobre la vertical, inclinación hacia el alumno lo que la elevación pase de los 19°
+  con que ya lo mira parado, escala √(3,95/d) entre 0,85 y 1,6, y el punto de la estación en el centro de la mesa.
+- `taller/llamadas.js`: las 2–3 llamadas de cada estación como etiquetas en dos columnas (±0,42 m, 12 cm hacia el alumno) con una
+  línea y un punto rojo hasta su pieza (`PARTS`); siguen al holograma cuando gira o se agarra.
+- `taller/paneles.js`: `crearPanelEstaciones` (las 8 estaciones y VISTA: CORTE · COMPLETO · FLUJO · RECORRIDO · PREGUNTAS (6) · A LA
+  MESA) y `crearPanelPreguntas` (las 6 con su `ORDER`, ✓ o ✗ con la correcta, «n de 6» y el aviso).
+- `taller/main.js`: el panel de la izquierda en espejo del derecho; el recorrido en vivo (cualquier toque del alumno lo para y el motor
+  sigue desde ahí); la pose del holograma que sigue de a poco a la vista de cada estación; las preguntas delante del holograma, que se
+  atenúa; agarrar el holograma (VR: grip cerca; una mano lo lleva y lo gira, dos manos lo agrandan de 0,2 a 1:1 · PC: rueda = tamaño,
+  Shift + arrastre = giro); «A LA MESA» o la tecla M lo devuelven; teclas T (recorrido) y P (preguntas); vistas 10 y 11 de `__ronda`.
+- **Verificado en PC:** el recorrido de 82 s entero (las 8 poses, las palancas solas en la 8 con Ng 78 %, el arranque caliente con la
+  alerta a los 66 s, el corte a los 74 y la vuelta a ralentí a los 79); las 6 preguntas; la rueda, Shift + arrastre y A LA MESA;
+  **rayos desde el ojo y con la cabeza corrida ±8 cm, libres** a los dos paneles, las tres llamadas, el cartel, las preguntas, la
+  leyenda y las puntas de las palancas. Escena: 52–54 llamadas, 38 k tri.
+- **Hallazgos:** (1) a ±0,5 m, la columna izquierda de llamadas tapaba el borde del panel de estaciones: van a ±0,42 m y 12 cm hacia
+  el alumno; (2) la prueba de rayos daba falsos «tapa» con las líneas (three.js las toma con 1 m de margen): ahora mira sólo mallas.
+- **Sólo se puede probar en el Quest:** agarrar el holograma con el grip y agrandarlo con las dos manos, el grip en las palancas, el
+  rayo con el gatillo en los paneles y la pausa con B/Y.
+- Capturas: `Documents/aurav-cabina/capturas_taller/T3_estaciones_preguntas_recorrido.jpg`.
+
 ### T4 — La nave del hangar (3,5 h)
 | Tramo | Qué se hace | Listo cuando |
 |---|---|---|
