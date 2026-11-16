@@ -230,7 +230,8 @@ export function crearPanelAtril({leyenda, ancho = 0.88, alto = 0.48, mecanico = 
   const {g, W, H} = p;
   const M = 30;
   const bwM = (W - 2 * M - 20) / 2;
-  p.botones.push({id: 'modo_piloto', x: M, y: 150, w: bwM, h: 170, t: 'MODO PILOTO', sub: 'El motor en la mesa: arrancarlo, sus estaciones y sus fallas'});
+  // el botón principal (T11): se entra recorriendo el avión; desde su motor se pasa a verlo por dentro, a tamaño real
+  p.botones.push({id: 'recorrer', x: M, y: 150, w: bwM, h: 170, t: 'RECORRER EL AVIÓN', sub: 'Conocé el AT-802 punto por punto y, desde su motor, entrá a verlo por dentro'});
   p.botones.push(mecanico
     ? {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'BORRADOR sin validar: identificar, ubicar e inspeccionar'}
     : {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'En preparación', apagado: true});

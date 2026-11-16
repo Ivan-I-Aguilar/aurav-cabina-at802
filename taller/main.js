@@ -19,6 +19,7 @@ import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261115d';
 import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261115d';
 import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261115d';
 import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261115d';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261115d';
 import {crearLlamadas} from './llamadas.js?v=20261115d';
 import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115d';
 
@@ -717,7 +718,7 @@ escena.add(cartel.malla);
 const camino = {estaciones: new Set(), fallas: new Set(), arranco: false, enCurso: false, preguntas: null};
 function resumenCamino(conPreguntas = true) {
   const p = camino.preguntas === null ? 'sin hacer' : `${camino.preguntas} de ${QUIZ.length}`;
-  return `Estaciones vistas: ${camino.estaciones.size} de ${STATIONS.length} · Fallas probadas: ${camino.fallas.size} de 5 · Arranque normal: ${camino.arranco ? 'hecho' : 'falta'}` + (conPreguntas ? ` · Preguntas: ${p}` : '');
+  return `${fam ? `Avión: ${fam.vistos.size} de ${PUNTOS_AVION.length} puntos · ` : ''}Estaciones vistas: ${camino.estaciones.size} de ${STATIONS.length} · Fallas probadas: ${camino.fallas.size} de 5 · Arranque normal: ${camino.arranco ? 'hecho' : 'falta'}` + (conPreguntas ? ` · Preguntas: ${p}` : '');
 }
 const preguntas = crearPanelPreguntas({quiz: QUIZ, orden: ORDER, resumen: () => resumenCamino(false)}); // el puntaje ya está grande arriba
 preguntas.malla.position.set(0, 1.48, 0.2); // delante de la cara del holograma (z 0,17): en 0,1 el flujo tapaba «Otra vez»
@@ -959,7 +960,10 @@ function accionar(a) {
   else if (a.id === 'v_recorrido') recorrido.activo ? pararRecorrido() : iniciarRecorrido();
   else if (a.id === 'v_preguntas') preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
   else if (a.id === 'v_mesa' || a.id === 'v_real') ponerPresentacion(a.id === 'v_real' ? 'real' : 'mesa');
-  else if (a.id === 'modo_piloto') saltarA('mesa');
+  else if (a.id === 'recorrer' || a.id === 'ir_at802') saltarAPunto(0);
+  else if (a.id === 'fam_sig') saltarAPunto((fam.activo + 1) % PUNTOS_AVION.length);
+  else if (a.id === 'fam_motor') saltarA('mesa');
+  else if (a.id === 'fam_holo') alternarPieza(PUNTOS_AVION[fam.activo].clave);
   else if (a.id === 'modo_mecanico') {
     // sin publicar hasta la validación de AAXOD (decisión 3b): sólo con ?mecanico=1; si no, el botón se ve apagado
     if (PARAM.get('mecanico') === '1') {
@@ -1073,7 +1077,7 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 const soltar = (e) => {
   if (arrastre && !palancaMouse && e && Math.hypot(e.clientX - arrastre.x0, e.clientY - arrastre.y0) < 5) {
     if (arrastre.a && arrastre.a.id) accionar(arrastre.a);
-    else intentarIdentificar(rayoDesdeMouse(e));
+    else if (!tocarMarca(rayoDesdeMouse(e))) intentarIdentificar(rayoDesdeMouse(e));
   }
   arrastre = null;
   palancaMouse = null;
@@ -1149,6 +1153,8 @@ function caminar(dt, ejeX, ejeY) {
 // z −24…−11) va con la nariz al portón (rotation.y = −π/2) y las ruedas principales en (−10; −14,5) [PROVISORIO].
 const AT802 = {x: -10, z: -14.5, v: '20261115a'};
 let avionAT = null;
+let marcoAvion = null; // el objeto cuyo marco local es el del avión (+x nariz, +y arriba, +z derecha)
+let fam = null; // la familiarización con el avión (taller/familiarizacion.js)
 // el choque con el avión: sus triángulos que bajan de 1,9 m (el ala, la cola, el tren), rasterizados en planta en una grilla de 20 cm
 const GRILLA = {paso: 0.2, x0: 0, z0: 0, nx: 0, nz: 0, celdas: null};
 function bloqueado(x, z, r = 0.25) {
@@ -1235,11 +1241,17 @@ if (hangar)
       lod.addLevel(avionAT, 0);
       lod.addLevel(gl.scene, 12);
       hangar.add(lod);
+      marcoAvion = lod;
     } catch (e) {
       console.warn('taller: juegos/at802-lod.glb no cargó; queda el avión entero', e);
       hangar.add(avionAT);
+      marcoAvion = avionAT;
     }
     AT802.celdas = rasterizarChoque(avionAT);
+    // la familiarización (T11): los ocho puntos alrededor del avión, con sus marcas, su tarjeta y los saltos
+    fam = crearFamiliarizacion({avion: marcoAvion, leyenda: LEGEND});
+    escena.add(fam.grupo);
+    paneles.push(fam.tarjeta);
   } catch (e) {
     console.warn('taller: juegos/at802.glb no cargó', e);
   }
@@ -1325,8 +1337,21 @@ function ponerEn(d) {
     pitch = d.pitch;
   }
 }
+/** salta a la marca del piso del punto i del recorrido del avión, mirando a su parte */
+function saltarAPunto(i) {
+  return fam ? saltarA(fam.destino(i)) : saltarA('at802');
+}
+function tocarMarca(r) {
+  const i = fam ? fam.marcaTocada(r) : -1;
+  if (i < 0) return false;
+  saltarAPunto(i);
+  return true;
+}
+// la pieza que está abierta en holograma «en las manos» (§15.2b); la arma piezaholo.js
+let piezaAbierta = null;
+function alternarPieza() {}
 function saltarA(nombre) {
-  const d = DESTINOS[nombre];
+  const d = typeof nombre === 'string' ? DESTINOS[nombre] : nombre;
   if (!d || salto) return false;
   salto = {d, t: 0, movido: false};
   pararRecorrido();
@@ -1357,7 +1382,7 @@ const manos = [0, 1].map((i) => {
     if (panelVR.visible) return panelVR.gatillo(c);
     const a = apuntado(rayoDesdeControl(c));
     if (a && a.id) accionar(a);
-    else intentarIdentificar(rayoDesdeControl(c)); // el modo mecánico: el gatillo sobre el holograma responde «señalá…»
+    else if (!tocarMarca(rayoDesdeControl(c))) intentarIdentificar(rayoDesdeControl(c)); // el modo mecánico: el gatillo sobre el holograma responde «señalá…»
   });
   c.addEventListener('squeezestart', () => Object.assign(c.userData, {grip: true, gripNuevo: true}));
   c.addEventListener('squeezeend', () => (c.userData.grip = false));
@@ -1726,10 +1751,11 @@ function probarMandos() {
     const llego = Math.hypot(jugador.position.x - DESTINOS.bancos.x, jugador.position.z - DESTINOS.bancos.z) < 0.01 && !salto && !fundido.visible;
     ok('atril: gatillo en IR A BANCOS lleva a los bancos (con fundido)', llego, jugador.position.toArray().map((x) => +x.toFixed(2)));
     ponerEn(DESTINOS.partida);
-    gatilloEn(m1, panelAtril.centro('modo_piloto', v), normal(panelAtril.malla));
+    gatilloEn(m1, panelAtril.centro('recorrer', v), normal(panelAtril.malla));
     pasoSalto(0.3);
     pasoSalto(0.4);
-    ok('atril: MODO PILOTO lleva a la mesa', Math.hypot(jugador.position.x - DESTINOS.mesa.x, jugador.position.z - DESTINOS.mesa.z) < 0.01);
+    const d1 = fam ? fam.destino(0) : DESTINOS.at802;
+    ok('atril: RECORRER EL AVIÓN lleva al primer punto', Math.hypot(jugador.position.x - d1.x, jugador.position.z - d1.z) < 0.01);
     jugador.position.copy(jAntes);
     yaw = yawAntes;
     pitch = pitchAntes;
@@ -2366,6 +2392,7 @@ function avanzar(dt) {
   // paneles: el de instrumentos y fallas a 10 Hz; el cartel cuando cambia
   panelT -= dt;
   const hover = renderer.xr.isPresenting ? hoverVR : hoverPC;
+  if (fam) fam.actualizar(renderer.xr.isPresenting ? renderer.xr.getCamera() : camara, reloj, {hover, abierto: piezaAbierta ? piezaAbierta.clave : null});
   if (panelT <= 0) {
     panelT = 0.1;
     panelMotor.actualizar({r: readout(s), fault: inp.fault, hover});
@@ -2575,6 +2602,16 @@ window.__taller = {
   probarMandos,
   /** salto con fundido: 'partida', 'mesa', 'at802', 'cessna', 'bancos', 'oficina' */
   saltar: saltarA,
+  /** la familiarización con el avión: sus puntos, el activo y los vistos */
+  get fam() {
+    return fam;
+  },
+  saltarAPunto,
+  /** ¿el avión ocupa ese lugar del piso? (x, z del mundo; r = radio del cuerpo) */
+  bloqueado,
+  get avion() {
+    return avionAT;
+  },
   /** cuánto se oye el motor (0..1) según la distancia al holograma, y el volumen general que quedó puesto */
   get sonido() {
     return {cerca: +audioCerca.toFixed(2), volumen: audio.master ? +audio.master.gain.value.toFixed(2) : null};
