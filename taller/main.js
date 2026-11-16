@@ -2161,7 +2161,7 @@ function pintarHUD() {
   const f = FAULTS[inp.fault];
   const helice = inp.prop < FEATHER ? 'BANDERA' : `${Math.round(inp.prop * 100)} %`;
   hud.innerHTML =
-    `<b>TALLER DE MOTORES · AURAV</b> <span style="opacity:.7">v${VERSION} · sala de prueba${HOLO ? '' : ' · materiales originales'}</span><br>` +
+    `<b>TALLER DE MOTORES · AURAV</b> <span style="opacity:.7">v${VERSION}${hangar ? '' : ' · sala de prueba'}${HOLO ? '' : ' · materiales originales'}</span><br>` +
     `Ng <b>${r.ng.toFixed(1)}</b> % · ITT <b>${r.itt.toFixed(0)}</b> °C · TORQUE <b>${r.tq.toFixed(0)}</b> % · Np <b>${r.np.toFixed(0)}</b> · FLUJO <b>${r.ff.toFixed(0)}</b> PPH<br>` +
     `POTENCIA ${Math.round(inp.pla * 100)} % · CONDICIÓN ${CL_NAMES[inp.cl]} · HÉLICE ${helice}${s.startOn ? ' · <b>ARRANQUE</b>' : ''}${s.ign ? ' · IGNITORES' : ''}<br>` +
     `FALLA ${f.name} · ${st ? `ESTACIÓN ${st.n} · ${st.name.toUpperCase()}` : 'MOTOR ENTERO'} · ${corte ? 'CORTE' : 'COMPLETO'}${flujo ? ' · FLUJO' : ''}${recorrido.activo ? ` · <b>RECORRIDO ${((reloj - recorrido.t0) % DURATION).toFixed(0)} s</b>` : ''}` +
