@@ -740,6 +740,37 @@ cuadrante, los paneles, las fallas, las preguntas, el banco de componentes ni la
   el botón.]
 - El atril: el botón principal pasa a ser **RECORRER EL AVIÓN**; «IR A» sigue igual (la mesa pasa a llamarse «EL MOTOR»).
 
+### 15.2b Cada tarjeta con su pieza en holograma, «en las manos» (pedido de Iván, 16/11)
+**Qué dijo Iván:** «Podríamos ir trabajando cada una de esas tarjetas (tolva, compuerta, escape, cabina, ala, tren, cola, hélice;
+motor ya está), en la cual se pueda aplicar esto de ver esa pieza tipo en tus manos, en un holograma.»
+
+- **Cómo se ve:** en la tarjeta de cada punto, un botón **VER EN HOLOGRAMA**. La pieza aparece flotando delante del alumno, a la
+  altura del pecho y de un tamaño que entra entre las manos (unos 80 cm), con el mismo aspecto del motor; se agarra, se gira y se
+  agranda o se achica con los mismos gestos (grip de cerca, dos manos, o el rayo; en PC, Shift + arrastrar y la rueda). CERRAR la
+  devuelve al avión. El motor es el único que además se ve a escala real (15.1).
+- **Un solo mecanismo para todas:** el holograma de una pieza es la geometría del avión de `juegos/at802.glb` recortada por una caja
+  (en el marco del avión), con corte limpio en el sombreador, recentrada y escalada. Sólo existe mientras está abierta (≤ 5
+  llamadas de dibujo). Lo que el modelo no trae se modela por script de Blender, como la cabina.
+- **De dónde sale cada una** (lo que hoy trae el modelo: `exterior` en una sola malla, `cabina` y `helice` sueltas):
+
+| Pieza | De dónde sale | Qué le falta para estar bien |
+|---|---|---|
+| Hélice | el nodo `helice` del modelo (5 palas y cono), girando | nada: es la primera |
+| Motor | el holograma del motor (VER EL MOTOR, a escala real) | hecho |
+| Escapes y toma de aire | los caños del modelo recortados + el motor con la estación 7 (escape) aislada | — |
+| Ala, flaps y tren | recorte del exterior (un ala entera con su pata) | los flaps no se mueven en el modelo: para bajarlos hay que modelarlos |
+| Cola y rueda de cola | recorte del exterior | los timones no se mueven en el modelo |
+| Cabina | el nodo `cabina` (la cabina liviana) | más adelante, un botón «ir al simulador de cabina» |
+| Tolva y boca de carga | por fuera, el tramo de fuselaje del modelo | **por dentro hay que modelarla** (paredes, fondo, boca): hacen falta fotos o un plano |
+| Compuerta de descarga | — | **hay que modelarla entera** (hojas, mecanismo del FRDS): hacen falta fotos o un plano |
+
+- **De a una, como pidió:** cada pieza es un trabajo chico con su recorte, su texto de tarjeta y su captura para Iván. Orden
+  propuesto [PROVISORIO]: hélice → ala y tren → cola → escapes → cabina → tolva → compuerta (las dos últimas son las que más
+  enseñan del avión hidrante y las que más trabajo llevan: van cuando haya con qué medirlas).
+- **En el bloque T11** entra el mecanismo y la primera pieza (la hélice); las demás, en un bloque T12 de 3 horas o más.
+- **Lo que no sale del modelo no se inventa a ojo:** la tolva por dentro y la compuerta se hacen con fotos o medidas de AAXOD (las
+  fotos no van al repo), y sus textos quedan [VERIFICAR] hasta que Iván los corrija.
+
 ### 15.3 El bloque de trabajo (T11, 3 horas o más, como los otros)
 | Tramo | Qué se hace | Listo cuando |
 |---|---|---|
@@ -757,6 +788,7 @@ cuadrante, los paneles, las fallas, las preguntas, el banco de componentes ni la
 2. Los textos de las tarjetas: los corrige sobre mi borrador, los dicta o van sólo los nombres.
 3. Si el motor llega parado (se arranca) o ya en marcha a ralentí.
 4. Si quiere ver el motor dentro del capó antes de «ver motor».
+5. El orden de las piezas en holograma (15.2b) y con qué se miden la tolva y la compuerta (fotos, plano o manual).
 
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el
