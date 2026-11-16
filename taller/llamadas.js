@@ -76,8 +76,9 @@ export function crearLlamadas({escena, parts, centro}) {
   grupo.visible = false;
   return {
     grupo,
-    /** estacion: la de content.js (o null); opacidad 0..1; raiz: la raíz del motor (eng.root); camara: para orientar las etiquetas */
-    actualizar(estacion, opacidad, raiz, camara) {
+    /** estacion: la de content.js (o null); opacidad 0..1; raiz: la raíz del motor (eng.root); camara: para orientar las etiquetas;
+     *  c y k (T11): el centro del holograma y cuánto se agrandan las etiquetas y sus columnas (1 en la mesa; 1/0,35 a tamaño real) */
+    actualizar(estacion, opacidad, raiz, camara, c = centro, k = 1) {
       grupo.visible = !!(estacion && opacidad > 0.02);
       if (!grupo.visible) return;
       raiz.updateWorldMatrix(true, false);
@@ -85,39 +86,41 @@ export function crearLlamadas({escena, parts, centro}) {
       const items = estacion.calls.slice(0, 3).map(([clave, nombre, sub]) => ({nombre, sub, punto: raiz.localToWorld(v.set(...parts[clave])).clone()}));
       // dos columnas a los costados del holograma, cada una ordenada por altura, sin pisarse
       const cols = {izq: [], der: []};
-      for (const it of items) (it.punto.x < centro.x ? cols.izq : cols.der).push(it);
+      for (const it of items) (it.punto.x < c.x ? cols.izq : cols.der).push(it);
+      puntos.material.size = 0.012 * k;
       const L = lg.attributes.position.array;
       const P = pg.attributes.position.array;
-      let k = 0;
+      let n = 0;
       for (const [lado, col] of Object.entries(cols)) {
         col.sort((a, b) => b.punto.y - a.punto.y);
-        let y = centro.y + 0.2;
+        let y = c.y + 0.2 * k;
         for (const it of col) {
-          y = Math.min(y, Math.max(centro.y - 0.16, it.punto.y + 0.05));
-          const x = centro.x + (lado === 'izq' ? -COLUMNA : COLUMNA);
-          const z = centro.z + ADELANTE;
-          const e = etiquetas[k];
+          y = Math.min(y, Math.max(c.y - 0.16 * k, it.punto.y + 0.05 * k));
+          const x = c.x + (lado === 'izq' ? -COLUMNA : COLUMNA) * k;
+          const z = c.z + ADELANTE * k;
+          const e = etiquetas[n];
           e.poner(it.nombre, it.sub);
           e.malla.position.set(x, y, z);
+          e.malla.scale.setScalar(k);
           e.malla.rotation.set(0, Math.atan2(cam.x - x, cam.z - z), 0);
           e.malla.material.opacity = opacidad;
           e.malla.visible = true;
-          const borde = x + (lado === 'izq' ? ANCHO / 2 : -ANCHO / 2);
-          L.set([borde, y - ALTO / 2 + 0.006, z, it.punto.x, it.punto.y, it.punto.z], k * 6);
-          P.set([it.punto.x, it.punto.y, it.punto.z], k * 3);
-          y -= ALTO + 0.018;
-          k++;
+          const borde = x + ((lado === 'izq' ? ANCHO : -ANCHO) / 2) * k;
+          L.set([borde, y - (ALTO / 2 - 0.006) * k, z, it.punto.x, it.punto.y, it.punto.z], n * 6);
+          P.set([it.punto.x, it.punto.y, it.punto.z], n * 3);
+          y -= (ALTO + 0.018) * k;
+          n++;
         }
       }
-      for (let i = k; i < 3; i++) {
+      for (let i = n; i < 3; i++) {
         etiquetas[i].malla.visible = false;
         L.fill(0, i * 6, i * 6 + 6);
         P.fill(0, i * 3, i * 3 + 3);
       }
       lg.attributes.position.needsUpdate = true;
       pg.attributes.position.needsUpdate = true;
-      lg.setDrawRange(0, k * 2);
-      pg.setDrawRange(0, k);
+      lg.setDrawRange(0, n * 2);
+      pg.setDrawRange(0, n);
       lineas.material.opacity = 0.8 * opacidad;
       puntos.material.opacity = opacidad;
     },

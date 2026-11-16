@@ -234,7 +234,7 @@ export function crearPanelAtril({leyenda, ancho = 0.88, alto = 0.48, mecanico = 
   p.botones.push(mecanico
     ? {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'BORRADOR sin validar: identificar, ubicar e inspeccionar'}
     : {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'En preparación', apagado: true});
-  const IR = [['ir_mesa', 'LA MESA'], ['ir_at802', 'AT-802'], ['ir_cessna', 'CESSNA'], ['ir_bancos', 'BANCOS'], ['ir_oficina', 'CRÉDITOS']];
+  const IR = [['ir_mesa', 'EL MOTOR'], ['ir_at802', 'AT-802'], ['ir_cessna', 'CESSNA'], ['ir_bancos', 'BANCOS'], ['ir_oficina', 'CRÉDITOS']];
   const bwI = (W - 2 * M - 4 * 14) / 5;
   IR.forEach(([id, t], i) => p.botones.push({id, t, x: M + i * (bwI + 14), y: 400, w: bwI, h: 96}));
   let firma = '';
@@ -291,7 +291,7 @@ export function crearPanelEstaciones({estaciones, leyenda, ancho = 0.68, alto = 
   const sy0 = 104;
   estaciones.forEach((s, i) => p.botones.push({id: `st${s.n}`, x: M, y: sy0 + i * (sh + 8), w: W - 2 * M, h: sh, n: s.n, nombre: s.name}));
   const yV = sy0 + estaciones.length * (sh + 8) + 26;
-  const VISTA = [['v_corte', 'CORTE'], ['v_completo', 'COMPLETO'], ['v_flujo', 'FLUJO'], ['v_recorrido', 'RECORRIDO'], ['v_preguntas', 'PREGUNTAS (6)'], ['v_mesa', 'A LA MESA']];
+  const VISTA = [['v_corte', 'CORTE'], ['v_completo', 'COMPLETO'], ['v_flujo', 'FLUJO'], ['v_recorrido', 'RECORRIDO'], ['v_real', 'TAMAÑO REAL'], ['v_mesa', 'A LA MESA'], ['v_preguntas', 'PREGUNTAS (6)']];
   const bw = (W - 2 * M - 2 * 14) / 3;
   const bh = 80;
   VISTA.forEach(([id, t], i) => p.botones.push({id, t, x: M + (i % 3) * (bw + 14), y: yV + 58 + Math.floor(i / 3) * (bh + 14), w: bw, h: bh}));
@@ -317,7 +317,13 @@ export function crearPanelEstaciones({estaciones, leyenda, ancho = 0.68, alto = 
         texto(g, b.nombre, b.x + 92, b.y + b.h / 2 + 2, 40, activo ? '#ffffff' : C.ink, {negrita: true, base: 'middle'});
         continue;
       }
-      const on = (b.id === 'v_corte' && e.corte) || (b.id === 'v_completo' && !e.corte) || (b.id === 'v_flujo' && e.flujo) || (b.id === 'v_recorrido' && e.recorrido);
+      const on =
+        (b.id === 'v_corte' && e.corte) ||
+        (b.id === 'v_completo' && !e.corte) ||
+        (b.id === 'v_flujo' && e.flujo) ||
+        (b.id === 'v_recorrido' && e.recorrido) ||
+        (b.id === 'v_real' && e.presentacion === 'real') ||
+        (b.id === 'v_mesa' && e.presentacion === 'mesa');
       const rojo = b.id === 'v_preguntas';
       const fondo = rojo ? C.red : on ? C.ink : e.hover === b.id ? '#eef0f2' : '#ffffff';
       caja(g, b.x, b.y, b.w, b.h, 12, fondo, rojo ? C.red : on ? C.ink : C.line);
@@ -332,7 +338,7 @@ export function crearPanelEstaciones({estaciones, leyenda, ancho = 0.68, alto = 
   return {
     ...p,
     actualizar(e) {
-      const f = JSON.stringify([e.estacion, e.corte, e.flujo, e.recorrido, e.hover]);
+      const f = JSON.stringify([e.estacion, e.corte, e.flujo, e.recorrido, e.hover, e.presentacion]);
       if (f === firma) return;
       firma = f;
       dibujar(e);

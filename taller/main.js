@@ -56,7 +56,7 @@ escena.add(jugador);
 const camara = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.02, 700);
 camara.rotation.order = 'YXZ';
 jugador.add(camara);
-const INICIO = {pos: new THREE.Vector3(0, 0, 0.95), yaw: 0, pitch: -0.32};
+const INICIO = {pos: new THREE.Vector3(0, 0, 0.95), yaw: 0, pitch: -0.07}; // mirando al motor a tamaño real (con -0,32 miraba la mesa)
 let yaw = INICIO.yaw;
 let pitch = INICIO.pitch;
 jugador.position.copy(INICIO.pos);
@@ -615,7 +615,7 @@ eng.root.traverse((m) => {
   else if (tag === 3 && mat0 === eng.M.brass) m.userData.pieza = 'inyector';
   else if (tag === 4 && mat0 === eng.M.turb) m.userData.pieza = 'alabe';
 });
-let s = initState(true);
+let s = initState(false); // llega PARADO y en silencio (T11): lo primero que hace el alumno es arrancarlo
 let holo = null;
 let motorGrupo;
 const planoLocal = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
@@ -637,16 +637,36 @@ let poseManual = false;
 const vPose = new THREE.Vector3();
 const ePose = new THREE.Euler(0, 0, 0, 'XYZ');
 const tPose = {pos: new THREE.Vector3(), quat: new THREE.Quaternion(), esc: ESCALA_HOLO};
+// Las PRESENTACIONES del holograma (T11, pedido de Iván del 16/11: «la primera impresión tiene que ser impactante, a escala, a una
+// buena distancia donde se pueda contemplar todo»). REAL: a escala 1:1 sobre el aro de proyección del piso, 2,3 m detrás de la mesa;
+// desde el lugar del alumno queda a 3,2 m, entra entero y a la altura de los ojos, apenas inclinado hacia él. MESA: al 35 % sobre el
+// proyector de la mesa (lo de las T1–T3). La escala de una pose es relativa al tamaño natural de la presentación (k).
+const PRESENTACIONES = {
+  real: {centro: new THREE.Vector3(0, 1.45, -2.3), k: 1 / ESCALA_HOLO, inclinar: 0.17, escalaTour: [0.85, 1.15], cartel: {pos: [0, 2.3, -2.3], k: 2.4}, llamadas: 1 / ESCALA_HOLO},
+  mesa: {centro: CENTRO_HOLO, k: 1, inclinar: 0, escalaTour: [0.85, 1.6], cartel: {pos: [0, 1.66, -0.12], k: 1}, llamadas: 1},
+};
+let presentacion = 'real';
+const PRES = () => PRESENTACIONES[presentacion];
+function ponerPresentacion(cual) {
+  presentacion = cual;
+  poseManual = false; // el holograma vuela solo a su lugar (seguirPose)
+}
 /** la transformación del grupo del motor para una pose: giro sobre la vertical, después la inclinación hacia el alumno (eje x del
- *  mundo), la escala, y el punto «objetivo» del motor (m, marco del motor) en el centro de la mesa */
+ *  mundo), la escala, y el punto «objetivo» del motor (m, marco del motor) en el centro de la presentación */
 function transformDePose(p, out = tPose) {
-  ePose.set(p.pitch, p.yaw, 0, 'XYZ');
+  const pr = PRES();
+  ePose.set(p.pitch + pr.inclinar, p.yaw, 0, 'XYZ');
   out.quat.setFromEuler(ePose);
-  out.esc = ESCALA_HOLO * p.escala;
+  out.esc = ESCALA_HOLO * pr.k * p.escala;
   vPose.set(...p.objetivo).add(motorCentro.position).applyQuaternion(out.quat).multiplyScalar(out.esc);
-  out.pos.copy(CENTRO_HOLO).sub(vPose);
+  out.pos.copy(pr.centro).sub(vPose);
   return out;
 }
+// el aro de proyección del piso, para el motor a tamaño real (el de la mesa queda para el 35 %)
+const proyectorPiso = crearProyector({radio: 1.3, radioLente: 0.5, radioArriba: 1.05, altoCono: 0.98});
+proyectorPiso.grupo.name = 'proyector-piso';
+proyectorPiso.grupo.position.set(PRESENTACIONES.real.centro.x, 0, PRESENTACIONES.real.centro.z);
+escena.add(proyectorPiso.grupo);
 function aplicarPose() {
   transformDePose(pose);
   motorGrupo.position.copy(tPose.pos);
@@ -729,7 +749,7 @@ addEventListener('pointerdown', iniciarAudio);
 addEventListener('keydown', iniciarAudio);
 
 // ------------------------------------------------------------ la lógica de live.js: palancas, arranque, fallas, estaciones
-const inp = {pla: 0, cl: 1, prop: 1, fault: 'none', start: false};
+const inp = {pla: 0, cl: 0, prop: 1, fault: 'none', start: false};
 let autoCL = false;
 let estacion = 0;
 let desdeEstacion = -9;
@@ -938,7 +958,7 @@ function accionar(a) {
   else if (a.id === 'v_flujo') flujo = flujo ? 0 : 1;
   else if (a.id === 'v_recorrido') recorrido.activo ? pararRecorrido() : iniciarRecorrido();
   else if (a.id === 'v_preguntas') preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
-  else if (a.id === 'v_mesa') poseManual = false;
+  else if (a.id === 'v_mesa' || a.id === 'v_real') ponerPresentacion(a.id === 'v_real' ? 'real' : 'mesa');
   else if (a.id === 'modo_piloto') saltarA('mesa');
   else if (a.id === 'modo_mecanico') {
     // sin publicar hasta la validación de AAXOD (decisión 3b): sólo con ?mecanico=1; si no, el botón se ve apagado
@@ -963,7 +983,7 @@ function accionar(a) {
 
 // ------------------------------------------------------------ teclado y mouse (PC)
 const teclas = {};
-const AYUDA = 'WASD caminar · arrastrar = mirar · arrastrar una palanca = moverla · clic en botones y paneles · rueda = tamaño del holograma · Shift + arrastrar = girarlo · ↑↓ potencia · ←→ hélice · C condición · Enter arrancar · R a ralentí · G falla siguiente · 1–8 estación (0 todas) · K corte · L flujo · T recorrido · P preguntas · M a la mesa · H ayuda';
+const AYUDA = 'WASD caminar · arrastrar = mirar · arrastrar una palanca = moverla · clic en botones y paneles · rueda = tamaño del holograma · Shift + arrastrar = girarlo · ↑↓ potencia · ←→ hélice · C condición · Enter arrancar · R a ralentí · G falla siguiente · 1–8 estación (0 todas) · K corte · L flujo · T recorrido · P preguntas · E tamaño real · M a la mesa · H ayuda';
 let verAyuda = true;
 addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -971,7 +991,8 @@ addEventListener('keydown', (e) => {
   teclas[k] = true;
   if (k === 't') return recorrido.activo ? pararRecorrido() : iniciarRecorrido();
   if (k === 'p') return preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
-  if (k === 'm') return (poseManual = false);
+  if (k === 'm') return ponerPresentacion('mesa');
+  if (k === 'e') return ponerPresentacion('real');
   if (recorrido.activo && ['c', 'enter', 'r', 'g', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) pararRecorrido();
   if (k === 'c') {
     inp.cl = (inp.cl + 1) % 3;
@@ -1017,7 +1038,7 @@ renderer.domElement.addEventListener(
     e.preventDefault();
     poseManual = true;
     pararRecorrido();
-    pose.escala = clamp(pose.escala * Math.exp(-e.deltaY * 0.0012), 0.2 / ESCALA_HOLO, 1 / ESCALA_HOLO);
+    pose.escala = clamp(pose.escala * Math.exp(-e.deltaY * 0.0012), 0.2 / (ESCALA_HOLO * PRES().k), 1 / (ESCALA_HOLO * PRES().k)); // de 20 % a tamaño real
     aplicarPose();
   },
   {passive: false},
@@ -1410,6 +1431,17 @@ function brilloPorCabeza() {
   const adentro = Math.min(ojoLocal.x - min.x, max.x - ojoLocal.x, ojoLocal.y - min.y, max.y - ojoLocal.y, ojoLocal.z - min.z, max.z - ojoLocal.z);
   return adentro <= 0 ? 1 : 1 - 0.8 * ss(0, 0.25, adentro * motorGrupo.scale.x);
 }
+let giroRayo = null;
+function angulosDelRayo(c) {
+  const d = rayoDesdeControl(c).ray.direction;
+  return {yaw: Math.atan2(d.x, -d.z), pitch: Math.asin(clamp(d.y, -1, 1))};
+}
+function rayoTocaHolograma(c) {
+  const r = rayoDesdeControl(c);
+  cajaHolo.makeEmpty();
+  for (const o of holo ? holo.cuerpos.map((x) => x.malla) : [motorGrupo]) cajaHolo.union(cajaTmp.setFromObject(o));
+  return r.ray.intersectsBox(cajaHolo);
+}
 function manosVR() {
   hoverVR = null;
   for (const c of manos) {
@@ -1417,12 +1449,19 @@ function manosVR() {
     if (ubicar.mano === c && !c.userData.grip) soltarPieza();
     if (c.userData.gripNuevo && !panelVR.visible && !ubicar.pieza) agarroControl = tomarConMano(c); // las piezas del banco (T8)
     if (controles && !panelVR.visible && !agarroControl) agarroControl = controles.manoVR(c, c.userData.grip, c.userData.gripNuevo);
-    if (c.userData.gripNuevo && !agarroControl && !panelVR.visible && cercaDelHolograma(c)) {
+    const gripLibre = c.userData.gripNuevo && !agarroControl && !panelVR.visible;
+    if (gripLibre && cercaDelHolograma(c)) {
       motorGrupo.updateMatrixWorld(true);
       agarreHolo.push({mano: c, rel: new THREE.Matrix4().copy(c.matrixWorld).invert().multiply(motorGrupo.matrixWorld)});
       poseManual = true;
       pararRecorrido();
+    } else if (gripLibre && !giroRayo && rayoTocaHolograma(c)) {
+      // de lejos (T11): el grip con el rayo sobre el holograma lo gira en su lugar, como un plato
+      giroRayo = {mano: c, ...angulosDelRayo(c), yaw0: pose.yaw, pitch0: pose.pitch};
+      poseManual = true;
+      pararRecorrido();
     }
+    if (giroRayo && giroRayo.mano === c && !c.userData.grip) giroRayo = null;
     if (!c.userData.grip)
       for (let i = agarreHolo.length - 1; i >= 0; i--)
         if (agarreHolo[i].mano === c) {
@@ -1440,6 +1479,13 @@ function manosVR() {
     if (a && a.tipo === 'panel') hoverVR = a.id;
   }
   if (controles) controles.actualizar();
+  if (giroRayo && !agarreHolo.length) {
+    // mover el rayo a los costados lo gira sobre la vertical; subirlo o bajarlo lo inclina (3 veces el ángulo de la mano)
+    const a = angulosDelRayo(giroRayo.mano);
+    pose.yaw = giroRayo.yaw0 + (a.yaw - giroRayo.yaw) * 3;
+    pose.pitch = clamp(giroRayo.pitch0 - (a.pitch - giroRayo.pitch) * 3, -1.2, 1.2);
+    aplicarPose();
+  }
   if (agarreHolo.length) {
     const {mano, rel} = agarreHolo[0];
     mHolo.multiplyMatrices(mano.matrixWorld, rel).decompose(motorGrupo.position, motorGrupo.quaternion, vEsc);
@@ -1493,6 +1539,8 @@ const guardarCamino = () => ({...camino, estaciones: new Set(camino.estaciones),
 const restaurarCamino = (c) => Object.assign(camino, c);
 function probarMandos() {
   const caminoAntes = guardarCamino();
+  const sAntes = {...s};
+  const inpAntes = {...inp};
   const vozAntes = audio.vozOn;
   audio.vozOn = false; // que la prueba no hable
   const res = [];
@@ -1608,7 +1656,11 @@ function probarMandos() {
   }
   ok('pausa: gatillo en «Motor a ralentí» la cierra y pone ralentí', !panelVR.visible && inp.pla === 0, {pausa: panelVR.visible});
   if (panelVR.visible) panelVR.ocultar(); // que no se coma los gatillos de las pruebas que siguen
-  // 8) el holograma con una mano: lo lleva 20 cm y lo gira 30°
+  // 8) el holograma con una mano: lo lleva 20 cm y lo gira 30° (en la presentación de la mesa, al 35 %)
+  const presAntes = presentacion;
+  presentacion = 'mesa';
+  Object.assign(pose, {...POSE_BASE, objetivo: [...POSE_BASE.objetivo]});
+  aplicarPose();
   for (const c of manos) ponerMano(c, lejos);
   cuadroVR();
   motorGrupo.updateMatrixWorld(true);
@@ -1710,7 +1762,53 @@ function probarMandos() {
     }
     Object.assign(ubicar, {aciertos: antes.aciertos, errores: antes.errores, marcaHasta: 0});
   }
-  // dejar todo como al principio: el holograma a la mesa, sin estación, sin corte, motor a ralentí
+  // 13) a tamaño real (T11): 1:1, centrado sobre su aro y entero a la vista desde el lugar del alumno; los botones lo llevan y lo traen
+  {
+    for (const c of manos) ponerMano(c, lejos);
+    cuadroVR();
+    accionar({tipo: 'panel', id: 'v_real'});
+    Object.assign(pose, {...POSE_BASE, objetivo: [...POSE_BASE.objetivo]});
+    aplicarPose();
+    motorGrupo.updateMatrixWorld(true); // la caja se mide con las matrices al día (fuera del cuadro no se actualizan solas)
+    cajaHolo.makeEmpty();
+    for (const o of holo ? holo.cuerpos.map((x) => x.malla) : [motorGrupo]) cajaHolo.union(cajaTmp.setFromObject(o));
+    const tam = cajaHolo.getSize(new THREE.Vector3());
+    const cen = cajaHolo.getCenter(new THREE.Vector3());
+    const C = PRESENTACIONES.real.centro;
+    // el ojo del alumno en su lugar, mirando al centro, con el campo de un casco (90° de ancho y de alto)
+    const ojo = new THREE.PerspectiveCamera(90, 1, 0.05, 50);
+    ojo.position.set(INICIO.pos.x, ALTURA_OJOS, INICIO.pos.z);
+    ojo.lookAt(C);
+    ojo.updateMatrixWorld(true);
+    let peor = 0;
+    for (const x of [cajaHolo.min.x, cajaHolo.max.x]) for (const y of [cajaHolo.min.y, cajaHolo.max.y]) for (const z of [cajaHolo.min.z, cajaHolo.max.z]) {
+      const q = new THREE.Vector3(x, y, z).project(ojo);
+      peor = Math.max(peor, Math.abs(q.x), Math.abs(q.y));
+    }
+    ok('tamaño real: escala 1:1 y 1,9 m de largo', Math.abs(motorGrupo.scale.x - 1) < 1e-6 && tam.x > 1.8 && tam.x < 2.1, {largo: +tam.x.toFixed(2), alto: +tam.y.toFixed(2), fondo: +tam.z.toFixed(2)});
+    ok('tamaño real: centrado sobre el aro del piso', Math.hypot(cen.x - C.x, cen.z - C.z) < 0.2 && Math.abs(cen.y - C.y) < 0.2, cen.toArray().map((x) => +x.toFixed(2)));
+    ok('tamaño real: entra entero desde el lugar del alumno', peor < 0.75, {ocupa: +peor.toFixed(2), distancia: +ojo.position.distanceTo(C).toFixed(2)});
+    // girarlo de lejos con el rayo: 10° de la mano a la derecha son 30° del motor
+    const yaw0 = pose.yaw;
+    const desde = new THREE.Vector3(0.25, 1.25, INICIO.pos.z);
+    ponerMano(m0, desde, C);
+    apretarGrip(m0);
+    cuadroVR();
+    const tomado = !!giroRayo && !agarreHolo.length;
+    const dir = C.clone().sub(desde).applyAxisAngle(new THREE.Vector3(0, 1, 0), -THREE.MathUtils.degToRad(10));
+    ponerMano(m0, desde, desde.clone().add(dir));
+    cuadroVR();
+    const girado = THREE.MathUtils.radToDeg(pose.yaw - yaw0);
+    soltarGrip(m0);
+    cuadroVR();
+    ok('tamaño real: el grip con el rayo lo gira en su lugar (10° de la mano → 30°)', tomado && Math.abs(girado - 30) < 1.5 && !giroRayo, {grados: +girado.toFixed(1)});
+    accionar({tipo: 'panel', id: 'v_mesa'});
+    Object.assign(pose, {...POSE_BASE, objetivo: [...POSE_BASE.objetivo]});
+    aplicarPose();
+    ok('A LA MESA lo deja al 35 % sobre la mesa', presentacion === 'mesa' && Math.abs(motorGrupo.scale.x - ESCALA_HOLO) < 1e-6 && motorGrupo.position.distanceTo(CENTRO_HOLO) < 0.5, +motorGrupo.scale.x.toFixed(3));
+    presentacion = presAntes;
+  }
+  // dejar todo como al principio: el holograma en su lugar, sin estación, sin corte, motor a ralentí
   for (const c of manos) ponerMano(c, lejos);
   cuadroVR();
   poseManual = false;
@@ -1718,7 +1816,8 @@ function probarMandos() {
   aplicarPose(); // de una: sin cuadros (la pestaña de fondo) el holograma quedaba a tamaño real
   estacion = 0;
   corte = false;
-  aRalenti();
+  s = sAntes; // el motor, como estaba (parado si nadie lo arrancó)
+  Object.assign(inp, inpAntes);
   restaurarCamino(caminoAntes);
   audio.vozOn = vozAntes;
   const fallaron = res.filter((r) => !r.ok);
@@ -1988,6 +2087,11 @@ function pasoMecanico() {
   const enMano = ubicar.pieza ? INSPECCION[ubicar.pieza.userData.pieza] : null;
   panelMecanico.actualizar({tareas, pieza: enMano, resultado});
 }
+/** con el motor parado y nada más que mostrar, el cartel dice cómo ponerlo en marcha [AGREGADO] */
+const AVISO_PARADO = {titulo: 'MOTOR PARADO', texto: 'Apretá ARRANCAR, el botón verde de la mesa, para ponerlo en marcha.'};
+function avisoParado() {
+  return !s.lit && !s.startOn && s.ng < 1 && !estacion && !preguntasAbiertas && inp.fault === 'none' ? AVISO_PARADO : null;
+}
 function tareaCartel() {
   if (!mecanico.activo) return null;
   if (reloj < mecanico.hasta && mecanico.mensaje) return mecanico.mensaje;
@@ -2051,6 +2155,8 @@ function probarMecanico() {
 // síntoma, el recorrido de 82 s (las 8 estaciones y la alerta del arranque caliente) y las 6 preguntas (todas bien y todas mal).
 function probarPiloto() {
   const caminoAntes = guardarCamino();
+  const sAntes = {...s};
+  const inpAntes = {...inp};
   const vozAntes = audio.vozOn;
   audio.vozOn = false;
   const res = [];
@@ -2144,7 +2250,8 @@ function probarPiloto() {
   accionar({tipo: 'panel', id: 'q_cerrar'});
   ok('preguntas: CERRAR las esconde', !preguntasAbiertas);
   // dejar el motor a ralentí, sin estación
-  aRalenti();
+  s = sAntes; // el motor, como estaba
+  Object.assign(inp, inpAntes);
   estacion = 0;
   const resumen = resumenCamino();
   restaurarCamino(caminoAntes);
@@ -2196,7 +2303,7 @@ function avanzar(dt) {
   pasoMecanico(); // las tareas del modo mecánico (T9)
   // el recorrido pone las palancas, la estación y las fallas del guion; la pose del holograma sigue a la vista de cada estación
   const metaTour = recorrido.activo ? pasoRecorrido() : null;
-  if (!poseManual && !agarreHolo.length) seguirPose(metaTour || POSE_BASE, dt);
+  if (!poseManual && !agarreHolo.length) seguirPose(metaTour ? {...metaTour, escala: clamp(metaTour.escala, ...PRES().escalaTour)} : POSE_BASE, dt);
   sincronizarPalancas(dt);
   acum = Math.min(acum + dt, 0.25);
   while (acum >= PASO) {
@@ -2233,6 +2340,11 @@ function avanzar(dt) {
   planoLocal.constant = 0;
   eng.CLIP.copy(planoLocal).applyMatrix4(eng.root.matrixWorld);
   proyector.actualizar(reloj);
+  proyectorPiso.actualizar(reloj);
+  proyector.cono.visible = presentacion === 'mesa';
+  proyectorPiso.cono.visible = presentacion === 'real';
+  cartel.malla.position.set(...PRES().cartel.pos);
+  cartel.malla.scale.setScalar(PRES().cartel.k);
   // el sonido: la turbina sigue a Ng y a Np (más bajo que en la cabina: es un holograma); un golpe en cada estampido de la pérdida
   audio.actualizar(dt, {ng: s.ng, rpm: s.np, dentro: true});
   // el ruido del motor es del HOLOGRAMA: en el hangar no hay motores en marcha (pedido de Iván, 16/11). Entero a menos de 4 m del
@@ -2257,15 +2369,15 @@ function avanzar(dt) {
   if (panelT <= 0) {
     panelT = 0.1;
     panelMotor.actualizar({r: readout(s), fault: inp.fault, hover});
-    panelEstaciones.actualizar({estacion, corte, flujo: !!flujo, recorrido: recorrido.activo, hover});
+    panelEstaciones.actualizar({estacion, corte, flujo: !!flujo, recorrido: recorrido.activo, hover, presentacion});
     if (panelAtril) panelAtril.actualizar({hover});
     if (preguntasAbiertas) preguntas.pasarPor(hover && hover.startsWith('q_') ? hover : null);
   }
   const st = STATIONS.find((x) => x.n === estacion);
-  cartel.actualizar({estacion: preguntasAbiertas || mecanico.activo ? null : st || null, alerta: !preguntasAbiertas && alertaVisible() ? FAULTS[inp.fault] : null, tarea: tareaCartel()});
+  cartel.actualizar({estacion: preguntasAbiertas || mecanico.activo ? null : st || null, alerta: !preguntasAbiertas && alertaVisible() ? FAULTS[inp.fault] : null, tarea: tareaCartel() || avisoParado()});
   // las llamadas de la estación (aparecen de a poco, como en el escritorio) y el holograma atenuado mientras están las preguntas o
   // con la cabeza adentro
-  llamadas.actualizar(preguntasAbiertas ? null : st || null, estacion ? ss(0.8, 1.3, since) : 0, eng.root, renderer.xr.isPresenting ? renderer.xr.getCamera() : camara);
+  llamadas.actualizar(preguntasAbiertas ? null : st || null, estacion ? ss(0.8, 1.3, since) : 0, eng.root, renderer.xr.isPresenting ? renderer.xr.getCamera() : camara, PRES().centro, PRES().llamadas);
   if (holo) holo.ajustes.uBrillo.value += (Math.min(preguntasAbiertas ? 0.3 : 1, brilloPorCabeza()) - holo.ajustes.uBrillo.value) * Math.min(1, dt * 6);
   hudT -= dt;
   if (hudT <= 0 && !renderer.xr.isPresenting) {
@@ -2313,6 +2425,11 @@ const RONDA = [
   // 25 y 26 (T8, tramo 1 adelantado): el banco de componentes
   {nombre: 'el banco de componentes', pos: [1.05, 1.6, 1.75], mira: [2.05, 0.9, 1.75], hfov: 75},
   {nombre: 'el banco desde la mesa', pos: [0, 1.6, 0.95], mira: [2.0, 1.0, 1.75], hfov: 75},
+  // 27 a 30 (T11): el motor a escala real sobre su aro de piso
+  {nombre: 'el motor a escala real, desde el lugar del alumno', pos: [0, ALTURA_OJOS, 0.95], mira: [0, 1.42, -2.3], hfov: 90},
+  {nombre: 'el motor a escala real, de 3/4', pos: [-2.3, 1.6, 0.3], mira: [0, 1.4, -2.3], hfov: 80},
+  {nombre: 'el motor a escala real con la mesa y los paneles (desde atrás del alumno)', pos: [0, 1.75, 3.2], mira: [0, 1.35, -2.3], hfov: 80},
+  {nombre: 'el motor a escala real, de cerca (a 1 m)', pos: [0.4, 1.6, -1.1], mira: [0, 1.45, -2.3], hfov: 90},
 ];
 function ponerCamara(pos, mira, hfov = 75) {
   jugador.position.set(pos[0], 0, pos[2]);
@@ -2435,7 +2552,11 @@ window.__taller = {
   get pose() {
     return {...pose, manual: poseManual, escalaMundo: +motorGrupo.scale.x.toFixed(3)};
   },
-  aLaMesa: () => (poseManual = false),
+  aLaMesa: () => ponerPresentacion('mesa'),
+  tamanoReal: () => ponerPresentacion('real'),
+  get presentacion() {
+    return presentacion;
+  },
   /** acciona un botón del panel ('f_hot'…) o de la mesa ('btnARRANCAR', 'btnRALENTI') como si se lo tocara */
   tocar: (id) => accionar(id.startsWith('btn') ? {tipo: 'boton', id} : id.startsWith('lev') ? {tipo: 'palanca', id} : {tipo: 'panel', id}),
   /** mueve una palanca 3D como si la agarrara una mano: nombre ('levPLA', 'levPROP', 'levCL') y ángulo (−0,9 adelante … 0,15 atrás) */
