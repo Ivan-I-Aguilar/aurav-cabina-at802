@@ -758,21 +758,24 @@ function montarPanel(p, x, y, z) {
   p.position.set(x, y, z);
   p.rotation.y = Math.atan2(INICIO.pos.x - x, INICIO.pos.z - z);
   escena.add(p);
-  const marco = new THREE.Mesh(new THREE.BoxGeometry(PANEL.ancho + 0.02, PANEL.alto + 0.02, 0.025), metalPanel);
-  marco.position.copy(p.position).addScaledVector(new THREE.Vector3(Math.sin(p.rotation.y), 0, Math.cos(p.rotation.y)), -0.014);
-  marco.rotation.y = p.rotation.y;
-  escena.add(marco);
-  const poste = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, y - PANEL.alto / 2, 16), metalPanel);
-  poste.position.set(marco.position.x, (y - PANEL.alto / 2) / 2, marco.position.z);
-  escena.add(poste);
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.03, 32), metalPanel);
-  base.position.set(marco.position.x, 0.015, marco.position.z);
-  escena.add(base);
+  // el marco, el poste y la base van a una sola malla con los del otro panel (T11: de 6 llamadas a 1)
+  const pm = p.position.clone().addScaledVector(new THREE.Vector3(Math.sin(p.rotation.y), 0, Math.cos(p.rotation.y)), -0.014);
+  soportesPanel.push(
+    new THREE.BoxGeometry(PANEL.ancho + 0.02, PANEL.alto + 0.02, 0.025).applyMatrix4(new THREE.Matrix4().makeRotationY(p.rotation.y).setPosition(pm)),
+    new THREE.CylinderGeometry(0.025, 0.025, y - PANEL.alto / 2, 16).translate(pm.x, (y - PANEL.alto / 2) / 2, pm.z),
+    new THREE.CylinderGeometry(0.2, 0.22, 0.03, 32).translate(pm.x, 0.015, pm.z),
+  );
 }
+const soportesPanel = [];
 const panelMotor = crearPanelMotor({gauges: GAUGES, faults: FAULTS, faultKeys: FAULT_KEYS, leyenda: LEGEND, ...PANEL});
 montarPanel(panelMotor.malla, 0.92, 1.4, 0.18);
 const panelEstaciones = crearPanelEstaciones({estaciones: STATIONS, leyenda: LEGEND, ...PANEL});
 montarPanel(panelEstaciones.malla, -0.92, 1.4, 0.18);
+{
+  const soportes = new THREE.Mesh(mergeGeometries(soportesPanel), metalPanel);
+  soportes.name = 'soportes-paneles';
+  escena.add(soportes);
+}
 const cartel = crearCartel();
 cartel.malla.position.set(0, 1.66, -0.12);
 cartel.malla.visible = false;
@@ -1368,6 +1371,7 @@ function abrirPausa() {
     (id) => {
       panelVR.ocultar();
       if (id === 'ralenti') aRalenti();
+      else if (id === 'ir_at802') saltarAPunto(0);
       else if (id.startsWith('ir_')) saltarA(id.slice(3));
       else if (id === 'salir') renderer.xr.getSession()?.end();
     },
@@ -2520,6 +2524,12 @@ function pintarHUD() {
     (verAyuda ? `<div id="ayuda">${AYUDA}</div>` : '');
 }
 
+// lo chico del puesto de trabajo, para no dibujarlo de lejos (ver avanzar)
+const detallesLejos = ['placa-cuadrante', 'riel-banco', 'leyenda-mesa', 'proyector', 'ranura', 'btnARRANCAR', 'btnRALENTI', 'lampARRANQUE', 'lampIGNITORES', 'lampCOMBUSTIBLE', 'piv_levPLA', 'piv_levPROP', 'piv_levCL']
+  .map((n) => escena.getObjectByName(n))
+  .filter(Boolean)
+  .concat(Object.values(piezasBanco));
+
 // ------------------------------------------------------------ el cuadro
 let ultimo = performance.now();
 let acum = 0;
@@ -2548,6 +2558,10 @@ function avanzar(dt) {
   // el recorrido pone las palancas, la estación y las fallas del guion; la pose del holograma sigue a la vista de cada estación
   const metaTour = recorrido.activo ? pasoRecorrido() : null;
   pasoCapo((renderer.xr.isPresenting ? renderer.xr.getCamera() : camara).getWorldPosition(tmp));
+  // lo chico del puesto de trabajo (palancas, botones, lámparas, rótulos, las piezas del banco) no se dibuja a más de 14 m: de
+  // lejos no se ve y son 22 llamadas en la peor vista (T11)
+  const lejosDelPuesto = Math.hypot(tmp.x, tmp.z) > 14;
+  for (const o of detallesLejos) if (o !== (ubicar.pieza || null)) o.visible = !lejosDelPuesto;
   if (piezaAbierta) {
     piezaAbierta.actualizar(dt, reloj);
     if (!agarrePieza.length && tmp.distanceTo(piezaAbierta.grupo.position) > 4) cerrarPieza(); // el alumno se fue: se cierra sola

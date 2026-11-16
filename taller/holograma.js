@@ -413,6 +413,7 @@ export function crearHolograma(eng, {estado0, conjuntos = {}, color = '#62d8ff',
         m.blending = on ? THREE.NormalBlending : THREE.AdditiveBlending;
         m.depthTest = !on;
       }
+      for (const c of cuerpos) if (c.lineas) c.lineas.visible = !on; // en la radiografía los contornos no suman: 3 llamadas menos
     },
     /** ops como en engine.js: {station, fade, flow, fault, inp}; t en segundos (para el barrido y el parpadeo) */
     update(s, ops = {}, t = 0) {
