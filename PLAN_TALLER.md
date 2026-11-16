@@ -29,6 +29,9 @@ decidir qué entra (§3).
   Iván, 15/11; §9). Primero el holograma (lo más riesgoso para el Quest) en una sala gris; después la mesa y los paneles; después
   el hangar y las aeronaves; al final los dos modos, el rendimiento y el Quest.
 - **Cuánto:** unas 33 horas: 10 bloques de 3 a 3,5 horas (§14).
+- **Cambio de dinámica (16/11, §15):** Iván lo miró en la PC y pidió que se entre recorriendo el avión (familiarización), que
+  desde su motor se elija «ver motor» y que el motor se presente a escala real; espera su ok. El ruido del motor ya quedó sólo
+  junto al holograma.
 - **Cómo sabemos que quedó:** chequeo automático de presupuesto y de carga antes de mirar; ronda fija de vistas que se le manda a
   Iván; él prueba en el Quest (desde acá no se puede). Publicar, sólo con su ok.
 - **Qué hace falta de Iván:** el ok al plan, bajar el Cessna de Sketchfab con su cuenta y decir quién de AAXOD valida el modo
@@ -685,6 +688,75 @@ relleno.
 | T9 | Modo mecánico 2: identificar, inspeccionar y resultado | 3 | pasa la tabla a quien valide |
 | T10 | Rendimiento, Quest y publicar | 3 | prueba en el Quest y decide si se publica |
 | | **Total** | **≈ 33** | |
+
+## 15. La dinámica nueva: recorrer el avión → «ver motor» → el motor a escala real (pedido de Iván, 16/11)
+**Qué dijo Iván al mirarlo en la PC (16/11), tal cual:** «Ni bien entrás, ya se escucha el ruido de un motor encendido. No tiene
+sentido porque dentro del hangar no pueden estar encendidos los motores; por ahí se puede utilizar como ayuda cuando se abra el
+holograma del motor. Se me ocurrió cambiar un poco la dinámica: acercarse al avión, hacer tipo un recorrido de la aeronave, una
+especie de familiarización, y sobre la turbina poder seleccionar que te dé la opción de ver motor. Y ahí sí, aparecés en el banco
+de trabajo con el motor así como lo tenemos preparado. Trabajaría un poco más en el tamaño: manteniendo la escala del ser humano,
+el avión y esa relación, que el motor lo puedas ver en escala y rotar con la mano en esa escala. Después uno lo achica o lo
+agranda según lo que considere, pero la primera impresión tiene que ser impactante, a escala, a una buena distancia donde se pueda
+contemplar todo desde un punto de vista.»
+
+**Lo que cambia (y lo que no):** cambia la ENTRADA y la PRESENTACIÓN del motor. No cambian el motor, su contenido, la mesa con el
+cuadrante, los paneles, las fallas, las preguntas, el banco de componentes ni la nave, que ya tienen el ok del 15/11.
+
+| | Hoy | Con la dinámica nueva |
+|---|---|---|
+| Sonido | la turbina se oía desde la partida | **HECHO el 16/11:** el motor (y la voz) sólo se oyen junto al holograma: enteros a menos de 4 m, nada a más de 9 m |
+| Entrada | atril → MODO PILOTO → la mesa | atril → **RECORRER EL AVIÓN** → el AT-802 → en el motor, **VER EL MOTOR** → el motor a escala real |
+| El avión | de adorno, con calzas y conos | **familiarización:** puntos numerados alrededor del avión, cada uno con su tarjeta (nombre y una o dos líneas) |
+| El motor al llegar | holograma al 35 % (66 cm) sobre la mesa | **a tamaño real** (1,90 m de largo), entero a la vista desde unos 3 m; se gira con la mano a esa escala |
+| Tamaño | rueda o dos manos, de 20 % a tamaño real | igual, más dos botones: **TAMAÑO REAL** y **A LA MESA** (el 35 % de hoy) |
+
+### 15.1 El motor a escala real (la primera impresión)
+- **Dónde:** en el sector del taller, el motor flota a 1:1 sobre un aro de proyección en el piso (Ø 2,6 m), con el eje horizontal y
+  el costado cortado hacia el alumno, centrado a 1,45 m de alto (de 1,04 a 1,86 m: se mira de frente, parado), 2,3 m detrás de la
+  mesa. El alumno aparece donde está hoy (frente a la mesa): el motor queda a **3,2 m y entra entero** (ocupa unos 33° de ancho).
+- **La mesa pasa a ser el tablero de mando:** el cuadrante, los botones, las lámparas y la leyenda quedan donde están, entre el
+  alumno y el motor (la tapa, a 0,90 m, no tapa nada); los dos paneles, a los costados, como hoy. El cartel de la estación y las
+  llamadas se agrandan con el motor.
+- **Girarlo con la mano a esa escala:** de cerca, con el grip (como hoy: una mano lo lleva y lo gira, dos lo achican o lo
+  agrandan); desde el lugar del alumno, apuntando con el rayo + grip: arrastrar a los costados lo gira como un plato y arriba o
+  abajo lo inclina [PROVISORIO]. En PC, Shift + arrastrar, como hoy. Con la cabeza adentro se apaga de a poco (ya está).
+- **Llega parado y en silencio** [PROVISORIO, a confirmar]: lo primero que hace el alumno es ARRANCAR, y ahí aparecen el sonido, las
+  lámparas y la llama. Así el sonido «ayuda», como pidió Iván.
+- **Lo que hay que rehacer:** la pose base y las del recorrido (hoy pensadas para el 35 % sobre la mesa), el lugar del cartel, de
+  las llamadas y del aro, los umbrales de agarre, y las pruebas por consola (mandos, piloto, mecánico), que suponen el motor al 35 %.
+
+### 15.2 La familiarización con el AT-802
+- **Recorrido alrededor del avión**, en el orden de una inspección caminando: 8 puntos numerados [PROVISORIO], cada uno un disco
+  con su número flotando junto a la parte y una marca en el piso que sugiere el camino. Al acercarse (a menos de 1,5 m) o al
+  señalarlo (rayo + gatillo, o clic) se abre su **tarjeta**: el nombre y una o dos líneas. Un contador («3 de 8») y, al terminar,
+  el resumen en el atril y en la pausa.
+- **Los puntos** (salen de los anclajes del avión de `juegos/` más algunos a mano): 1 hélice · 2 **motor** (el capó) · 3 escapes y
+  toma de aire · 4 tolva y boca de carga · 5 compuerta de descarga · 6 cabina · 7 ala, flaps y tren · 8 cola y rueda de cola.
+- **Los textos:** un BORRADOR mío [AGREGADO, VERIFICAR], corto, con los números de «Números del avión» de `CLAUDE.md` (que ya están
+  «a validar»); Iván los corrige o los dicta. Sin su visto, no se publican.
+- **En el punto del motor:** el mismo holograma aparece **a tamaño real dentro del capó** (para ver dónde va y qué tamaño tiene al
+  lado del avión y de una persona) y un botón **VER EL MOTOR**: fundido, y el alumno aparece frente al motor a escala real (15.1).
+  Es UN solo holograma que cambia de lugar: no suma llamadas de dibujo. [PROVISORIO: si dentro del capó no se entiende, queda sólo
+  el botón.]
+- El atril: el botón principal pasa a ser **RECORRER EL AVIÓN**; «IR A» sigue igual (la mesa pasa a llamarse «EL MOTOR»).
+
+### 15.3 El bloque de trabajo (T11, 3 horas o más, como los otros)
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:15–1:30 | El motor a escala real: aro de piso, pose base a 1:1, cartel y llamadas a esa escala, TAMAÑO REAL / A LA MESA, girar con el rayo, llega parado | desde el lugar del alumno entra entero; rayos desde el ojo libres al cartel y a los paneles |
+| 1:30–2:45 | La familiarización: los 8 puntos con su disco y su tarjeta, la marca del camino, el contador, el motor dentro del capó y VER EL MOTOR | se recorren los 8 en PC y con los mandos simulados; el salto deja al alumno frente al motor |
+| 2:45–3:30 | El camino nuevo: el atril, el resumen, las pruebas por consola al día, el presupuesto en la peor vista (tope 75 llamadas) | las pruebas pasan enteras |
+| 3:30–4:00 | Cierre: la ronda de vistas (la llegada al motor, cada punto del avión), este plan y `CLAUDE.md` al día, commit local | — |
+
+- **Reserva:** la voz de las tarjetas (Sabina); más puntos del avión; la llegada al motor con una entrada suave (aparece de a poco).
+- **Lo que no se puede probar acá:** el casco. Justo ESTO es lo que más depende del Quest: si a 3,2 m el motor entero se ve
+  «impactante» y nítido, y si girarlo con el rayo es cómodo. Las capturas de la PC no alcanzan para decidirlo.
+
+### 15.4 Lo que tiene que decir Iván (de a una; mientras tanto vale lo provisorio)
+1. El ok a este plan (y por dónde arrancar).
+2. Los textos de las tarjetas: los corrige sobre mi borrador, los dicta o van sólo los nombres.
+3. Si el motor llega parado (se arranca) o ya en marcha a ralentí.
+4. Si quiere ver el motor dentro del capó antes de «ver motor».
 
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el
