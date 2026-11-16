@@ -724,6 +724,7 @@ escena.add(panelVR.malla);
 // el sonido de la turbina (audio.js de la cabina: silbido y hélice que siguen a Ng y Np); arranca con el primer gesto
 const audio = new Audio();
 const iniciarAudio = () => audio.iniciar();
+let audioCerca = 0; // 0..1: cuánto se oye el motor según la distancia al holograma (para las pruebas)
 addEventListener('pointerdown', iniciarAudio);
 addEventListener('keydown', iniciarAudio);
 
@@ -2234,6 +2235,16 @@ function avanzar(dt) {
   proyector.actualizar(reloj);
   // el sonido: la turbina sigue a Ng y a Np (más bajo que en la cabina: es un holograma); un golpe en cada estampido de la pérdida
   audio.actualizar(dt, {ng: s.ng, rpm: s.np, dentro: true});
+  // el ruido del motor es del HOLOGRAMA: en el hangar no hay motores en marcha (pedido de Iván, 16/11). Entero a menos de 4 m del
+  // holograma, nada a más de 9 m; la voz del tutor, igual
+  if (audio.ctx) {
+    (renderer.xr.isPresenting ? renderer.xr.getCamera() : camara).getWorldPosition(tmp);
+    motorGrupo.getWorldPosition(tmp2);
+    const cerca = 1 - ss(4, 9, tmp.distanceTo(tmp2));
+    audio.master.gain.setTargetAtTime(0.6 * cerca, audio.ctx.currentTime, 0.25);
+    if (audio.gVoz) audio.gVoz.gain.setTargetAtTime(1.6 * cerca, audio.ctx.currentTime, 0.25);
+    audioCerca = cerca;
+  }
   if (s.surge > 0.9 && !estampido) audio.golpe();
   estampido = s.surge > 0.9;
   // lámparas (como console.js: arranque, ignitores, combustible) y botones que se hunden al tocarlos
@@ -2443,6 +2454,10 @@ window.__taller = {
   probarMandos,
   /** salto con fundido: 'partida', 'mesa', 'at802', 'cessna', 'bancos', 'oficina' */
   saltar: saltarA,
+  /** cuánto se oye el motor (0..1) según la distancia al holograma, y el volumen general que quedó puesto */
+  get sonido() {
+    return {cerca: +audioCerca.toFixed(2), volumen: audio.master ? +audio.master.gain.value.toFixed(2) : null};
+  },
   /** identificar (T9): la pieza que dice el rayo desde el ojo hacia el lugar de cada pieza */
   probarIdentificar,
   /** el modo mecánico (T9, borrador; sólo con ?mecanico=1 desde el atril): la prueba entera y el arranque a mano */
