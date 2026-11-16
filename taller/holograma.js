@@ -46,6 +46,7 @@ uniform float uAcc;
 uniform float uCorte;
 uniform vec3 uCorteN;
 uniform float uBrillo;
+uniform float uRayos;
 varying float vTag;
 varying float vPrim;
 varying vec3 vM;
@@ -70,7 +71,9 @@ void main() {
   bool acc = acento();
   vec3 col = acc ? uAcento : uColor;
   float i = (uBase + uBorde * f) * barrido() * parpadeo() * visible() * uBrillo * (acc ? 1.6 : 1.0);
-  gl_FragColor = vec4(col * i, 1.0);
+  // uRayos = 1: «radiografía» con mezcla normal (un azul oscuro translúcido, más denso en los bordes): sobre la chapa blanca del
+  // capó la luz sumada no se ve, así que el motor se dibuja como una sombra azul
+  gl_FragColor = uRayos > 0.5 ? vec4(0.02, 0.13, 0.30, clamp(i * 2.4, 0.0, 0.8)) : vec4(col * i, 1.0);
   #include <colorspace_fragment>
 }`;
 const VERT_L = /* glsl */ `
@@ -94,7 +97,8 @@ void main() {
   if (uCorte > 0.5 && dot(vM, uCorteN) < 0.0) discard;
   bool acc = acento();
   vec3 col = acc ? uAcento : uColor;
-  gl_FragColor = vec4(col * uLinea * barrido() * parpadeo() * visible() * uBrillo * (acc ? 1.8 : 1.0), 1.0);
+  float l = uLinea * barrido() * parpadeo() * visible() * uBrillo * (acc ? 1.8 : 1.0);
+  gl_FragColor = uRayos > 0.5 ? vec4(0.01, 0.08, 0.22, clamp(l * 1.6, 0.0, 0.9)) : vec4(col * l, 1.0);
   #include <colorspace_fragment>
 }`;
 
@@ -206,6 +210,7 @@ export function crearHolograma(eng, {estado0, conjuntos = {}, color = '#62d8ff',
     uCorteN: {value: new THREE.Vector3(-1, 0, 0)},
     uRaizInv: {value: new THREE.Matrix4()},
     uBrillo: {value: 1},
+    uRayos: {value: 0},
     // por capa: el holograma suma todas sus capas (aditivo); con 0,07 / 1,0 la cámara de combustión y los discos de canto se
     // saturaban en blanco (15/11)
     uBase: {value: 0.035},
@@ -401,6 +406,14 @@ export function crearHolograma(eng, {estado0, conjuntos = {}, color = '#62d8ff',
     puntos,
     ajustes: U,
     materiales: {solido: matSolido, linea: matLinea, puntos: puntos && puntos.material},
+    /** la «radiografía» (T11): el holograma como una sombra azul que se ve a través de lo que tenga adelante (el capó del avión) */
+    rayos(on) {
+      U.uRayos.value = on ? 1 : 0;
+      for (const m of [matSolido, matLinea]) {
+        m.blending = on ? THREE.NormalBlending : THREE.AdditiveBlending;
+        m.depthTest = !on;
+      }
+    },
     /** ops como en engine.js: {station, fade, flow, fault, inp}; t en segundos (para el barrido y el parpadeo) */
     update(s, ops = {}, t = 0) {
       eng.update(s, ops);

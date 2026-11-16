@@ -20,6 +20,7 @@ import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20
 import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261115d';
 import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261115d';
 import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261115d';
+import {crearPiezaHolo} from './piezaholo.js?v=20261115d';
 import {crearLlamadas} from './llamadas.js?v=20261115d';
 import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261115d';
 
@@ -668,6 +669,69 @@ const proyectorPiso = crearProyector({radio: 1.3, radioLente: 0.5, radioArriba: 
 proyectorPiso.grupo.name = 'proyector-piso';
 proyectorPiso.grupo.position.set(PRESENTACIONES.real.centro.x, 0, PRESENTACIONES.real.centro.z);
 escena.add(proyectorPiso.grupo);
+// EN EL CAPÓ (T11): cuando el alumno está junto al avión, el mismo holograma va a tamaño real DENTRO del capó del AT-802, parado y
+// como una radiografía, para ver dónde va el motor y qué tamaño tiene al lado del avión y de una persona. VER EL MOTOR (o irse
+// del avión) lo devuelve al taller. El eje del motor (+z, hacia la hélice) va sobre el eje de la hélice del avión y su cubo
+// (0; 0; Z.prop) en el cubo de la hélice. Los números del avión son los de juegos/at802_informe.json. [PROVISORIO: el motor del
+// simulador es genérico; cómo entra en este capó, a ojo]
+const CAPO = {cubo: [2.3126, 2.5364, -0.0093], eje: [0.99225, 0.12427, 0], atras: 0, t: null};
+let enCapo = false;
+function transformCapo() {
+  if (CAPO.t || !marcoAvion) return CAPO.t;
+  marcoAvion.updateWorldMatrix(true, false);
+  const qa = marcoAvion.getWorldQuaternion(new THREE.Quaternion());
+  const eje = new THREE.Vector3(...CAPO.eje).applyQuaternion(qa).normalize(); // hacia la hélice
+  const arriba = new THREE.Vector3(-CAPO.eje[1], CAPO.eje[0], 0).applyQuaternion(qa).normalize();
+  const lado = new THREE.Vector3().crossVectors(arriba, eje); // x = y × z
+  const quat = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(lado, arriba, eje));
+  // dónde cae el cubo del motor con esa orientación y sin mover el grupo; de ahí sale la posición
+  const antes = {p: motorGrupo.position.clone(), q: motorGrupo.quaternion.clone(), s: motorGrupo.scale.x};
+  motorGrupo.position.set(0, 0, 0);
+  motorGrupo.quaternion.copy(quat);
+  motorGrupo.scale.setScalar(1);
+  motorGrupo.updateMatrixWorld(true);
+  const cubo0 = eng.root.localToWorld(new THREE.Vector3(...eng.PARTS.propHub).setX(0).setY(0));
+  const cuboAvion = marcoAvion.localToWorld(new THREE.Vector3(...CAPO.cubo)).addScaledVector(eje, -CAPO.atras);
+  motorGrupo.position.copy(antes.p);
+  motorGrupo.quaternion.copy(antes.q);
+  motorGrupo.scale.setScalar(antes.s);
+  CAPO.t = {pos: cuboAvion.sub(cubo0), quat, esc: 1, nariz: marcoAvion.localToWorld(new THREE.Vector3(...CAPO.cubo))};
+  return CAPO.t;
+}
+function ponerEnCapo() {
+  const t = transformCapo();
+  motorGrupo.position.copy(t.pos);
+  motorGrupo.quaternion.copy(t.quat);
+  motorGrupo.scale.setScalar(t.esc);
+}
+/** entra o sale del capó según dónde esté el alumno: a menos de 9 m de la nariz del avión entra; a más de 11 m, sale */
+function pasoCapo(ojo) {
+  const t = transformCapo();
+  if (!t || !holo) return;
+  const d = Math.hypot(ojo.x - t.nariz.x, ojo.z - t.nariz.z);
+  const debe = enCapo ? d < 11 : d < 9;
+  if (debe === enCapo) return;
+  enCapo = debe;
+  holo.rayos(enCapo);
+  agarreHolo.length = 0;
+  giroRayo = null;
+  poseManual = false;
+  if (enCapo) {
+    // junto al avión no hay motores en marcha: se para, sin estación ni recorrido ni preguntas
+    pararRecorrido();
+    cerrarPreguntas();
+    apagar();
+    inp.fault = 'none';
+    estacion = 0;
+    CAPO.corteAntes = corte;
+    corte = false; // dentro del capó, el motor entero (con el corte faltaba la mitad vista desde arriba)
+    ponerEnCapo();
+  } else {
+    corte = CAPO.corteAntes ?? corte;
+    Object.assign(pose, {...POSE_BASE, objetivo: [...POSE_BASE.objetivo]});
+    aplicarPose(); // de una: no cruza el hangar volando
+  }
+}
 function aplicarPose() {
   transformDePose(pose);
   motorGrupo.position.copy(tPose.pos);
@@ -1023,13 +1087,13 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
   ultimoMouse = e;
   if (clicPieza(e)) return; // tomar o dejar una pieza del banco (T8)
   const a = apuntado(rayoDesdeMouse(e));
-  arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a, girarHolo: e.shiftKey};
+  arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a, girarHolo: e.shiftKey && (!enCapo || !!piezaAbierta)};
   if (a && a.tipo === 'palanca' && a.id !== 'levCL') {
     palancaMouse = a.palanca;
     arrastre.ang0 = a.palanca.ang;
     pararRecorrido();
   }
-  if (e.shiftKey) {
+  if (e.shiftKey && !enCapo) {
     poseManual = true;
     pararRecorrido();
   }
@@ -1040,6 +1104,12 @@ renderer.domElement.addEventListener(
   'wheel',
   (e) => {
     e.preventDefault();
+    if (piezaAbierta) {
+      const g = piezaAbierta.grupo;
+      g.scale.setScalar(clamp(g.scale.x * Math.exp(-e.deltaY * 0.0012), 0.3 * piezaAbierta.escala0, 3 * piezaAbierta.escala0));
+      return;
+    }
+    if (enCapo) return; // dentro del capó no se toca
     poseManual = true;
     pararRecorrido();
     pose.escala = clamp(pose.escala * Math.exp(-e.deltaY * 0.0012), 0.2 / (ESCALA_HOLO * PRES().k), 1 / (ESCALA_HOLO * PRES().k)); // de 20 % a tamaño real
@@ -1059,6 +1129,16 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   if (palancaMouse) {
     palancaMouse.ang = clamp(arrastre.ang0 + (e.clientY - arrastre.y0) * 0.006, A_MIN, A_MAX); // arrastrar hacia arriba = adelante
     controles._aplicarPalanca(palancaMouse);
+    return;
+  }
+  if (arrastre.girarHolo && piezaAbierta) {
+    // la pieza abierta: a los costados gira sobre la vertical; arriba y abajo, sobre el eje que va de izquierda a derecha de la cámara
+    const g = piezaAbierta.grupo;
+    g.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), (e.clientX - arrastre.x) * 0.008);
+    camara.matrixWorld.extractBasis(tmp, tmp2, new THREE.Vector3());
+    g.rotateOnWorldAxis(tmp.setY(0).normalize(), (e.clientY - arrastre.y) * 0.006);
+    arrastre.x = e.clientX;
+    arrastre.y = e.clientY;
     return;
   }
   if (arrastre.girarHolo) {
@@ -1349,7 +1429,66 @@ function tocarMarca(r) {
 }
 // la pieza que está abierta en holograma «en las manos» (§15.2b); la arma piezaholo.js
 let piezaAbierta = null;
-function alternarPieza() {}
+// de dónde sale cada pieza (de a una, §15.2b). La hélice es la primera: el nodo «helice» del avión entero, girando sobre su eje (x)
+const PIEZAS_HOLO = {
+  helice() {
+    const nodo = avionAT.getObjectByName('helice');
+    const mallas = [];
+    nodo.traverse((o) => o.isMesh && mallas.push(o));
+    return crearPiezaHolo({clave: 'helice', fuentes: mallas, marco: nodo, tam: 0.85, gira: {eje: 'x', vel: 1.1}});
+  },
+};
+function cerrarPieza() {
+  if (!piezaAbierta) return;
+  piezaAbierta.liberar();
+  piezaAbierta = null;
+  agarrePieza.length = 0;
+  dosManosPieza = null;
+}
+/** abre la pieza delante del alumno, a la altura del pecho y con su eje hacia él; si ya estaba abierta, la cierra */
+function alternarPieza(clave) {
+  const era = piezaAbierta && piezaAbierta.clave;
+  cerrarPieza();
+  if (era === clave || !PIEZAS_HOLO[clave] || !avionAT) return;
+  piezaAbierta = PIEZAS_HOLO[clave]();
+  const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camara;
+  cam.getWorldPosition(tmp);
+  cam.getWorldDirection(tmp2);
+  tmp2.setY(0).normalize();
+  const g = piezaAbierta.grupo;
+  g.position.copy(tmp).addScaledVector(tmp2, 0.95);
+  g.position.y = 1.3;
+  g.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), tmp2.clone().negate());
+  escena.add(g);
+}
+// agarrar la pieza abierta (VR): una mano la lleva y la gira; dos manos la agrandan o la achican (de 0,3 a 3 veces)
+const agarrePieza = [];
+let dosManosPieza = null;
+function tomarPiezaHolo(c) {
+  if (!piezaAbierta) return false;
+  const g = piezaAbierta.grupo;
+  if (c.getWorldPosition(tmp).distanceTo(g.position) > (piezaAbierta.radio * g.scale.x) / piezaAbierta.escala0 + 0.12) return false;
+  g.updateMatrixWorld(true);
+  agarrePieza.push({mano: c, rel: new THREE.Matrix4().copy(c.matrixWorld).invert().multiply(g.matrixWorld)});
+  return true;
+}
+function seguirPiezaHolo() {
+  for (let i = agarrePieza.length - 1; i >= 0; i--)
+    if (!agarrePieza[i].mano.userData.grip) {
+      agarrePieza.splice(i, 1);
+      dosManosPieza = null;
+    }
+  if (!piezaAbierta || !agarrePieza.length) return;
+  const g = piezaAbierta.grupo;
+  const {mano, rel} = agarrePieza[0];
+  mHolo.multiplyMatrices(mano.matrixWorld, rel).decompose(g.position, g.quaternion, vEsc);
+  if (agarrePieza.length > 1) {
+    const d = agarrePieza[0].mano.getWorldPosition(tmp).distanceTo(agarrePieza[1].mano.getWorldPosition(tmp2));
+    if (!dosManosPieza) dosManosPieza = {d0: d, s0: g.scale.x};
+    g.scale.setScalar(clamp((dosManosPieza.s0 * d) / Math.max(0.05, dosManosPieza.d0), 0.3 * piezaAbierta.escala0, 3 * piezaAbierta.escala0));
+    agarrePieza[0].rel.copy(mano.matrixWorld).invert().multiply(g.updateMatrix() || g.matrix);
+  } else g.scale.copy(vEsc);
+}
 function saltarA(nombre) {
   const d = typeof nombre === 'string' ? DESTINOS[nombre] : nombre;
   if (!d || salto) return false;
@@ -1472,15 +1611,16 @@ function manosVR() {
   for (const c of manos) {
     let agarroControl = false;
     if (ubicar.mano === c && !c.userData.grip) soltarPieza();
-    if (c.userData.gripNuevo && !panelVR.visible && !ubicar.pieza) agarroControl = tomarConMano(c); // las piezas del banco (T8)
+    if (c.userData.gripNuevo && !panelVR.visible) agarroControl = tomarPiezaHolo(c); // la pieza abierta en holograma (T11)
+    if (c.userData.gripNuevo && !panelVR.visible && !ubicar.pieza && !agarroControl) agarroControl = tomarConMano(c); // las piezas del banco (T8)
     if (controles && !panelVR.visible && !agarroControl) agarroControl = controles.manoVR(c, c.userData.grip, c.userData.gripNuevo);
     const gripLibre = c.userData.gripNuevo && !agarroControl && !panelVR.visible;
-    if (gripLibre && cercaDelHolograma(c)) {
+    if (gripLibre && !enCapo && cercaDelHolograma(c)) {
       motorGrupo.updateMatrixWorld(true);
       agarreHolo.push({mano: c, rel: new THREE.Matrix4().copy(c.matrixWorld).invert().multiply(motorGrupo.matrixWorld)});
       poseManual = true;
       pararRecorrido();
-    } else if (gripLibre && !giroRayo && rayoTocaHolograma(c)) {
+    } else if (gripLibre && !enCapo && !giroRayo && rayoTocaHolograma(c)) {
       // de lejos (T11): el grip con el rayo sobre el holograma lo gira en su lugar, como un plato
       giroRayo = {mano: c, ...angulosDelRayo(c), yaw0: pose.yaw, pitch0: pose.pitch};
       poseManual = true;
@@ -1504,6 +1644,7 @@ function manosVR() {
     if (a && a.tipo === 'panel') hoverVR = a.id;
   }
   if (controles) controles.actualizar();
+  seguirPiezaHolo();
   if (giroRayo && !agarreHolo.length) {
     // mover el rayo a los costados lo gira sobre la vertical; subirlo o bajarlo lo inclina (3 veces el ángulo de la mano)
     const a = angulosDelRayo(giroRayo.mano);
@@ -2116,7 +2257,7 @@ function pasoMecanico() {
 /** con el motor parado y nada más que mostrar, el cartel dice cómo ponerlo en marcha [AGREGADO] */
 const AVISO_PARADO = {titulo: 'MOTOR PARADO', texto: 'Apretá ARRANCAR, el botón verde de la mesa, para ponerlo en marcha.'};
 function avisoParado() {
-  return !s.lit && !s.startOn && s.ng < 1 && !estacion && !preguntasAbiertas && inp.fault === 'none' ? AVISO_PARADO : null;
+  return !enCapo && !s.lit && !s.startOn && s.ng < 1 && !estacion && !preguntasAbiertas && inp.fault === 'none' ? AVISO_PARADO : null;
 }
 function tareaCartel() {
   if (!mecanico.activo) return null;
@@ -2171,6 +2312,83 @@ function probarMecanico() {
   }
   Object.assign(ubicar, {aciertos: 0, errores: 0, marcaHasta: 0});
   mecanico.activo = false;
+  audio.vozOn = vozAntes;
+  return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res};
+}
+
+// ------------------------------------------------------------ prueba del recorrido del avión (T11)
+// Con el mismo cuadro del juego: el atril lleva al primer punto; SIGUIENTE pasa por los ocho (en cada uno se abre su tarjeta y el
+// lugar está libre de choque); junto al avión el motor va dentro del capó, parado y con su cubo en la hélice del avión; la hélice
+// se abre en holograma delante del alumno, se agarra con el grip simulado y se cierra; VER EL MOTOR deja al alumno frente al motor
+// a escala real. Deja todo como estaba.
+function probarRecorrido() {
+  const res = [];
+  const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
+  if (!fam) return {pruebas: 0, fallaron: 0, detalle: [], nota: 'el avión no cargó'};
+  const antes = {pos: jugador.position.clone(), yaw, pitch, vistos: [...fam.vistos], sAntes: {...s}, inpAntes: {...inp}};
+  const vozAntes = audio.vozOn;
+  audio.vozOn = false;
+  const saltar = () => {
+    avanzar(0.3);
+    avanzar(0.4);
+    avanzar(1 / 60);
+  };
+  fam.reiniciar();
+  cerrarPieza();
+  accionar({tipo: 'panel', id: 'recorrer'});
+  saltar();
+  for (let i = 0; i < PUNTOS_AVION.length; i++) {
+    const libre = !bloqueado(jugador.position.x, jugador.position.z, 0.3);
+    ok(`punto ${i + 1} (${PUNTOS_AVION[i].titulo}): se llega, el lugar está libre y se abre su tarjeta`, fam.activo === i && fam.tarjeta.malla.visible && libre, {activo: fam.activo, libre});
+    if (i === 0) {
+      // en el avión, el motor va dentro del capó
+      motorGrupo.updateMatrixWorld(true);
+      const cuboMotor = eng.root.localToWorld(new THREE.Vector3(0, 0, eng.PARTS.propHub[2]));
+      const cuboAvion = marcoAvion.localToWorld(new THREE.Vector3(...CAPO.cubo));
+      ok('junto al avión el motor va dentro del capó: a tamaño real, parado y con su cubo en la hélice', enCapo && !s.lit && s.ng < 1 && Math.abs(motorGrupo.scale.x - 1) < 1e-6 && cuboMotor.distanceTo(cuboAvion) < 0.05, {enCapo, cm: +(cuboMotor.distanceTo(cuboAvion) * 100).toFixed(1)});
+      // la hélice en holograma: se abre delante, se agarra y se cierra
+      accionar({tipo: 'panel', id: 'fam_holo'});
+      const g = piezaAbierta && piezaAbierta.grupo;
+      const ojo = camara.getWorldPosition(new THREE.Vector3());
+      ok('hélice en holograma: se abre delante del alumno, entre las manos', !!g && Math.abs(Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z) - 0.95) < 0.05 && piezaAbierta.radio < 0.6, g && {distancia: +Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z).toFixed(2), radio: +piezaAbierta.radio.toFixed(2), triangulos: piezaAbierta.triangulos});
+      if (g) {
+        const [m0] = manos;
+        const p0 = g.position.clone();
+        ponerMano(m0, p0);
+        apretarGrip(m0);
+        cuadroVR();
+        ponerMano(m0, p0.clone().add(new THREE.Vector3(0.2, 0.1, 0)));
+        cuadroVR();
+        const movida = g.position.distanceTo(p0.clone().add(new THREE.Vector3(0.2, 0.1, 0)));
+        soltarGrip(m0);
+        cuadroVR();
+        ponerMano(m0, new THREE.Vector3(0, -5, 0));
+        ok('hélice en holograma: el grip la agarra y la lleva con la mano', movida < 0.002 && !agarrePieza.length, {errorMm: +(movida * 1000).toFixed(1)});
+      }
+      accionar({tipo: 'panel', id: 'fam_holo'});
+      ok('hélice en holograma: el mismo botón la cierra', !piezaAbierta);
+    }
+    if (i < PUNTOS_AVION.length - 1) {
+      accionar({tipo: 'panel', id: 'fam_sig'});
+      saltar();
+    }
+  }
+  ok('los ocho puntos quedan vistos', fam.vistos.size === PUNTOS_AVION.length, [...fam.vistos]);
+  accionar({tipo: 'panel', id: 'fam_motor'});
+  saltar();
+  motorGrupo.updateMatrixWorld(true);
+  const enSuLugar = Math.hypot(jugador.position.x - DESTINOS.mesa.x, jugador.position.z - DESTINOS.mesa.z) < 0.01;
+  ok('VER EL MOTOR: el alumno queda frente al motor a escala real, fuera del capó', enSuLugar && !enCapo && presentacion === 'real' && Math.abs(motorGrupo.scale.x - 1) < 0.01 && motorGrupo.position.distanceTo(PRESENTACIONES.real.centro) < 1.2, {enCapo, escala: +motorGrupo.scale.x.toFixed(3)});
+  // dejar todo como estaba
+  cerrarPieza();
+  fam.reiniciar();
+  for (const i of antes.vistos) fam.vistos.add(i);
+  jugador.position.copy(antes.pos);
+  yaw = antes.yaw;
+  pitch = antes.pitch;
+  s = antes.sAntes;
+  Object.assign(inp, antes.inpAntes);
+  avanzar(1 / 60);
   audio.vozOn = vozAntes;
   return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res};
 }
@@ -2329,7 +2547,13 @@ function avanzar(dt) {
   pasoMecanico(); // las tareas del modo mecánico (T9)
   // el recorrido pone las palancas, la estación y las fallas del guion; la pose del holograma sigue a la vista de cada estación
   const metaTour = recorrido.activo ? pasoRecorrido() : null;
-  if (!poseManual && !agarreHolo.length) seguirPose(metaTour ? {...metaTour, escala: clamp(metaTour.escala, ...PRES().escalaTour)} : POSE_BASE, dt);
+  pasoCapo((renderer.xr.isPresenting ? renderer.xr.getCamera() : camara).getWorldPosition(tmp));
+  if (piezaAbierta) {
+    piezaAbierta.actualizar(dt, reloj);
+    if (!agarrePieza.length && tmp.distanceTo(piezaAbierta.grupo.position) > 4) cerrarPieza(); // el alumno se fue: se cierra sola
+  }
+  if (enCapo) ponerEnCapo();
+  else if (!poseManual && !agarreHolo.length) seguirPose(metaTour ? {...metaTour, escala: clamp(metaTour.escala, ...PRES().escalaTour)} : POSE_BASE, dt);
   sincronizarPalancas(dt);
   acum = Math.min(acum + dt, 0.25);
   while (acum >= PASO) {
@@ -2367,8 +2591,8 @@ function avanzar(dt) {
   eng.CLIP.copy(planoLocal).applyMatrix4(eng.root.matrixWorld);
   proyector.actualizar(reloj);
   proyectorPiso.actualizar(reloj);
-  proyector.cono.visible = presentacion === 'mesa';
-  proyectorPiso.cono.visible = presentacion === 'real';
+  proyector.cono.visible = presentacion === 'mesa' && !enCapo;
+  proyectorPiso.cono.visible = presentacion === 'real' && !enCapo;
   cartel.malla.position.set(...PRES().cartel.pos);
   cartel.malla.scale.setScalar(PRES().cartel.k);
   // el sonido: la turbina sigue a Ng y a Np (más bajo que en la cabina: es un holograma); un golpe en cada estampido de la pérdida
@@ -2602,6 +2826,17 @@ window.__taller = {
   probarMandos,
   /** salto con fundido: 'partida', 'mesa', 'at802', 'cessna', 'bancos', 'oficina' */
   saltar: saltarA,
+  /** la pieza del avión abierta en holograma (o null); alternarPieza('helice') la abre o la cierra */
+  get pieza() {
+    return piezaAbierta;
+  },
+  alternarPieza,
+  /** ¿el holograma está dentro del capó del avión? (el alumno está junto al AT-802) */
+  get enCapo() {
+    return enCapo;
+  },
+  /** la prueba del recorrido del avión: los 8 puntos, el motor en el capó, la hélice en holograma y VER EL MOTOR */
+  probarRecorrido,
   /** la familiarización con el avión: sus puntos, el activo y los vistos */
   get fam() {
     return fam;
