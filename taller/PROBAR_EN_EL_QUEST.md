@@ -11,21 +11,39 @@ python servidor.py 8766
 
 En la PC se abre `http://localhost:8766/taller.html` (arranca en la partida; `?inicio=mesa` arranca en la mesa).
 
-## 2. Abrirlo en el Quest por el cable (sin publicar) [a probar]
-WebXR sólo anda en una página «segura»: `localhost` cuenta como segura, una IP de la red de la casa no. Por eso se usa el cable USB
-y `adb reverse`, que hace que el `localhost` del Quest sea el de la PC:
+## 2. Abrirlo en el Quest sin publicar: dos caminos [ninguno probado todavía]
+WebXR sólo anda en una página «segura»: `localhost` cuenta como segura, una IP de la red de la casa no. Hay dos formas de
+arreglarlo sin publicar. La primera vez conviene probar la A, que no pide instalar nada.
 
-1. El Quest en **modo desarrollador** (app Meta Horizon en el celular → el casco → Modo desarrollador).
-2. En la PC, las **platform-tools de Android** (traen `adb`). Con el cable conectado, aceptar en el casco «Permitir depuración USB».
-3. En la PC:
+### A. Sin cable, por el Wi-Fi (un ajuste en el navegador del Quest)
+1. La PC y el Quest en el **mismo Wi-Fi**. El servidor del paso 1 corriendo.
+2. La dirección de la PC en la red: en la PC, `ipconfig` → «Dirección IPv4» del Wi-Fi (el 16/11 era `192.168.1.21`; puede cambiar).
+3. En el **navegador del Quest**, escribir en la barra `chrome://flags`, buscar **insecure origins** y, en «Insecure origins treated
+   as secure», escribir `http://192.168.1.21:8766` (con la dirección del paso 2), elegir **Enabled** y tocar **Relaunch**.
+4. Abrir `http://192.168.1.21:8766/taller.html` → botón **Entrar en VR**.
+- Si la página no carga: la primera vez Windows pregunta si deja pasar a Python por el firewall; hay que decir que sí para redes
+  privadas (eso lo decide Iván, no Claude).
+- Si la página carga pero no aparece «Entrar en VR», el ajuste del paso 3 no quedó puesto (revisar que la dirección sea la misma).
+
+### B. Por el cable, con `adb reverse` (el `localhost` del Quest pasa a ser el de la PC)
+Pide tres cosas la primera vez; después es un solo comando.
+1. **Modo desarrollador en el Quest** (lo hace Iván, una sola vez): hace falta una cuenta de desarrollador de Meta, que es gratis
+   (en developers.meta.com se crea una «organización»; puede pedir verificar la cuenta). Después, en la app **Meta Horizon** del
+   celular: el casco → Configuración del casco → **Modo desarrollador** → activar, y reiniciar el casco. [Los nombres del menú
+   cambian según la versión de la app.]
+2. **`adb` en la PC** (una sola vez): viene en las «platform-tools» de Android, de Google. El 16/11 no estaba instalado; Claude lo
+   puede bajar si Iván le da permiso.
+3. **El cable USB** (que sea de datos) entre el Quest y la PC; adentro del casco aparece «¿Permitir depuración por USB?»: aceptar
+   (conviene tildar «Permitir siempre desde esta computadora»).
+4. En la PC (hay que repetirlo cada vez que se vuelve a enchufar el cable):
 
 ```bash
 adb reverse tcp:8766 tcp:8766
 ```
 
-4. En el navegador del Quest: `http://localhost:8766/taller.html` → botón **Entrar en VR**.
+5. En el navegador del Quest: `http://localhost:8766/taller.html` → botón **Entrar en VR**.
 
-Si no anda, la otra vía es publicarlo (sólo con tu ok): queda en GitHub Pages, como la cabina.
+Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda en GitHub Pages, como la cabina.
 
 ## 3. Qué mirar en el casco
 - **Fluidez:** que no tironee en ningún lugar (en la mesa, mirando la nave entera desde el portón, junto al AT-802). En la PC, la peor
