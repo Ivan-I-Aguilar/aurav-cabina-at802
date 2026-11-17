@@ -2092,7 +2092,9 @@ function soltarPieza() {
   p.getWorldPosition(vPieza);
   const lugar = lugarEnMundo(clave, new THREE.Vector3());
   let resultado = 'lejos';
-  if (vPieza.distanceTo(lugar) < 0.12) {
+  // qué tan cerca de su lugar hay que soltarla: 12 cm con el holograma en la mesa (35 %), hasta 22 cm a tamaño real
+  const tolerancia = 0.12 + 0.1 * clamp((motorGrupo.scale.x - ESCALA_HOLO) / (1 - ESCALA_HOLO), 0, 1);
+  if (vPieza.distanceTo(lugar) < tolerancia) {
     resultado = 'acierto';
     ubicar.aciertos++;
     if (!ubicar.puestas[clave]) {
@@ -2136,7 +2138,7 @@ function pasoUbicar() {
   if (clave) {
     lugarEnMundo(clave, marcaLugar.position);
     const k = 0.5 + 0.5 * Math.sin(reloj * 9);
-    marcaLugar.scale.setScalar(0.022 + 0.01 * k);
+    marcaLugar.scale.setScalar((0.022 + 0.01 * k) * Math.max(1, motorGrupo.scale.x / ESCALA_HOLO / 1.6)); // más grande con el motor a tamaño real
     marcaLugar.material.opacity = 0.45 + 0.5 * k;
   }
 }
@@ -2767,7 +2769,8 @@ window.__renderer = renderer;
 // 3 mesa de 3/4 desde la izquierda · 4 holograma de cerca con una estación aislada · 5 banco de componentes · 6 AT-802 de 3/4
 // delantero · 7 Cessna con su crédito (falta el avión: T6) · 8 bancos y herramientas · 9 portón desde adentro · 10 la nave entera
 // desde el portón · 11 techo
-const RONDA_FIJA = [null, 21, 1, 2, 4, 25, 23, null, 17, 12, 13, 14];
+// (desde la T11 la mesa «de frente», «de 3/4» y «de cerca» son las vistas del motor a escala real: 27, 28 y 30)
+const RONDA_FIJA = [null, 21, 27, 28, 30, 25, 23, null, 17, 12, 13, 14];
 window.__rondaFija = async (n) => {
   if (!n) return RONDA_FIJA.map((k, i) => (i ? `${i}: ${k ? RONDA[k].nombre : 'falta (el Cessna, T6)'}` : null)).filter(Boolean);
   const k = RONDA_FIJA[n];
