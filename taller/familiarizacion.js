@@ -10,7 +10,7 @@
 // metros, origen en el piso entre las ruedas principales) y están puestas mirando la planta que ocupa el avión [PROVISORIO].
 // Todo en 3 llamadas de dibujo: las 16 marcas (discos y piso) en una malla con un atlas, las líneas, y la tarjeta.
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261115d';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261116a';
 
 export const PUNTOS = [
   {

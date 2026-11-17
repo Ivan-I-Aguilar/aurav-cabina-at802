@@ -30,8 +30,9 @@ decidir qué entra (§3).
   el hangar y las aeronaves; al final los dos modos, el rendimiento y el Quest.
 - **Cuánto:** unas 33 horas: 10 bloques de 3 a 3,5 horas (§14).
 - **Cambio de dinámica (16/11, §15):** Iván lo miró en la PC y pidió que se entre recorriendo el avión (familiarización), que
-  desde su motor se elija «ver motor» y que el motor se presente a escala real; espera su ok. El ruido del motor ya quedó sólo
-  junto al holograma.
+  desde su motor se elija «ver motor», que el motor se presente a escala real y que cada parte del avión se pueda ver en holograma
+  «en las manos». **HECHO en el bloque T11 del 16/11** (falta su prueba en el Quest y lo que no sale del modelo: la tolva por dentro
+  y la compuerta).
 - **Cómo sabemos que quedó:** chequeo automático de presupuesto y de carga antes de mirar; ronda fija de vistas que se le manda a
   Iván; él prueba en el Quest (desde acá no se puede). Publicar, sólo con su ok.
 - **Qué hace falta de Iván:** el ok al plan, bajar el Cessna de Sketchfab con su cuenta y decir quién de AAXOD valida el modo
@@ -783,12 +784,55 @@ motor ya está), en la cual se pueda aplicar esto de ver esa pieza tipo en tus m
 - **Lo que no se puede probar acá:** el casco. Justo ESTO es lo que más depende del Quest: si a 3,2 m el motor entero se ve
   «impactante» y nítido, y si girarlo con el rayo es cómodo. Las capturas de la PC no alcanzan para decidirlo.
 
+**T11 HECHA el 16/11/2026 (bloque arrancado a las 20:38, con el ok de Iván: «Sí, en ese orden»; v=20261116a; sin publicar; en el
+Quest no se probó nada).** Lo que quedó:
+- **El motor a escala real** (`PRESENTACIONES` en `taller/main.js`): REAL, a 1:1 (1,90 m) sobre un aro de proyección en el piso,
+  2,3 m detrás de la mesa, con su centro a 1,4 m del piso y apenas inclinado (10°) hacia el alumno, que lo ve entero desde su lugar a 3,25 m; y
+  MESA, al 35 % sobre el proyector de la mesa. Botones **TAMAÑO REAL** y **A LA MESA** en el panel de estaciones (teclas E y M): el
+  holograma vuela solo de un lugar al otro. El cartel y las llamadas se agrandan con la presentación. En VR, de lejos, el grip con el
+  rayo sobre el holograma lo gira en su lugar (10° de la mano = 30° del motor); de cerca sigue el agarre con una y dos manos. **Llega
+  parado y en silencio**, con el aviso «MOTOR PARADO · Apretá ARRANCAR…». Al llegar con VER EL MOTOR se enciende de a poco (2,2 s).
+- **La familiarización** (`taller/familiarizacion.js`): ocho puntos alrededor del avión, en el orden de una vuelta que TERMINA en el
+  motor: 1 hélice · 2 escapes y toma de aire · 3 tolva y boca de carga · 4 cabina · 5 cola y rueda de cola · 6 compuerta de
+  descarga · 7 ala, flaps y tren · 8 motor. Cada uno: un disco numerado que mira al alumno (verde con tilde cuando se vio) con una
+  línea a su parte, una marca en el piso donde pararse y una tarjeta (nombre, dos líneas, la leyenda) que se abre a menos de 1,9 m.
+  SIGUIENTE salta con fundido al punto que sigue; tocar un disco o una marca del piso lleva a ese punto. El atril: **RECORRER EL
+  AVIÓN** (primer punto); «IR A · EL MOTOR». El resumen cuenta los puntos vistos. Los textos son un borrador [AGREGADO, VERIFICAR].
+- **El motor dentro del capó:** a menos de 9 m de la nariz del avión, el MISMO holograma va a tamaño real dentro del capó (su eje
+  sobre el de la hélice, su cubo en el cubo de la hélice), parado, entero y como una **radiografía azul** que se ve a través de la
+  chapa (`holo.rayos(on)`); VER EL MOTOR, en la tarjeta del punto 8, o alejarse más de 11 m, lo devuelve al taller.
+- **Piezas en holograma «en las manos»** (`taller/piezaholo.js`, §15.2b): desde su tarjeta, a 0,95 m del alumno, girables y
+  escalables (grip y dos manos; en PC, Shift + arrastrar y la rueda): la **hélice** (el nodo suelto, girando), la **cola**, el **ala
+  con su pata** (inclinada 55°), los **escapes** (la nariz) y la **cabina**. Las cuatro últimas se recortan del exterior con una
+  caja [PROVISORIA]. **Faltan la tolva por dentro y la compuerta:** no salen del modelo, esperan fotos o medidas.
+- **Presupuesto (PC):** desde la partida y el portón, 44 llamadas y 66 k tri; junto al avión 44 y 124 k (45 y 127 k con la hélice
+  abierta); frente al motor a escala real 38 y 51 k (47 y 53 k en marcha y con una estación); el puesto entero desde atrás, 61 y
+  56 k, el peor (tope 75 y 200 k). Se juntaron los soportes de los paneles (de 6 llamadas a 1) y lo chico del puesto de trabajo no
+  se dibuja a más de 14 m.
+- **Pruebas por consola:** `__taller.probarRecorrido()` 18 (los ocho puntos libres de choque y con su tarjeta, el motor en el capó
+  con su cubo a 0 cm del de la hélice, la hélice que se abre, se agarra y se cierra, las otras cuatro piezas, VER EL MOTOR),
+  `probarMandos()` 29 (5 nuevas: 1:1 y 1,9 m, centrado, entra entero, giro con el rayo, A LA MESA), `probarPiloto()` 15 y
+  `probarMecanico()` 5: todas bien. Las pruebas dejan el motor, el camino y al alumno como los encontraron.
+- **Hallazgos:** (1) la luz sumada del holograma no se ve sobre el capó blanco: en el capó va con mezcla normal, como una sombra
+  azul; (2) con el corte activo, dentro del capó faltaba medio motor visto desde arriba: ahí va entero; (3) el ala de canto es una
+  línea: inclinada; (4) la cabina, con tantas capas sumadas, daba un bloque blanco: brillo 0,28; (5) la escalera está del lado
+  izquierdo del capó: el punto del motor va del derecho; (6) fuera del cuadro las matrices no se actualizan solas: la prueba que mide
+  la caja del motor las actualiza antes; (7) las capturas del navegador salen un cuadro atrasadas si no se dibuja a mano
+  (`__taller.medir()` o `__ronda(n)` dos veces); (8) un comando con comillas invertidas dentro de comillas dobles fue frenado por el
+  control de seguridad del shell: las ediciones con texto de JavaScript van con la herramienta de edición o con un script en archivo.
+- **Provisorio, a confirmar con Iván:** los textos de las tarjetas; que el motor llegue parado; la distancia (3,25 m) y la inclinación
+  del motor a escala real; ver el motor dentro del capó; el orden de los puntos; las cajas de recorte de las piezas.
+- Capturas: `Documents/aurav-cabina/capturas_taller/T11_dinamica_nueva.jpg`.
+
 ### 15.4 Lo que tiene que decir Iván (de a una; mientras tanto vale lo provisorio)
-1. El ok a este plan (y por dónde arrancar).
+1. El ok a este plan (y por dónde arrancar). **Dado el 16/11: «Sí, en ese orden»** (primero el motor a escala real y el recorrido
+   con las 8 tarjetas; después las piezas de a una, empezando por la hélice; la tolva y la compuerta, cuando haya fotos o medidas).
 2. Los textos de las tarjetas: los corrige sobre mi borrador, los dicta o van sólo los nombres.
 3. Si el motor llega parado (se arranca) o ya en marcha a ralentí.
 4. Si quiere ver el motor dentro del capó antes de «ver motor».
-5. El orden de las piezas en holograma (15.2b) y con qué se miden la tolva y la compuerta (fotos, plano o manual).
+5. El orden de las piezas en holograma (15.2b) y con qué se miden la tolva y la compuerta (fotos, plano o manual). **Hechas en la
+   T11 las que salen del modelo** (hélice, cola, ala con tren, escapes, cabina); queda pendiente sólo la referencia para la tolva
+   por dentro y la compuerta.
 
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el

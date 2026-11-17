@@ -46,8 +46,18 @@ adb reverse tcp:8766 tcp:8766
 Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda en GitHub Pages, como la cabina.
 
 ## 3. Qué mirar en el casco
-- **Fluidez:** que no tironee en ningún lugar (en la mesa, mirando la nave entera desde el portón, junto al AT-802). En la PC, la peor
-  vista da 68 llamadas y 73 k triángulos (tope del plan: 75 y 200 k); el número que manda es el del casco.
+- **La dinámica nueva (16/11), que es lo que más depende del casco:**
+  - *El recorrido del avión:* atril → RECORRER EL AVIÓN → los ocho puntos. ¿Se leen los discos y las tarjetas? ¿Los saltos de
+    SIGUIENTE marean? ¿Se llega bien tocando un disco o una marca del piso con el rayo?
+  - *El motor dentro del capó:* junto al avión se ve como una radiografía azul. ¿Se entiende dónde va y qué tamaño tiene?
+  - *VER EL MOTOR:* la primera impresión a escala real, a 3,2 m. ¿Impacta? ¿Entra entero en la vista? ¿Se ve nítido o empastado?
+  - *Girarlo:* de cerca con el grip (una mano lo lleva, dos lo achican o lo agrandan) y de lejos con el rayo + grip (como un plato).
+    Los botones TAMAÑO REAL y A LA MESA.
+  - *Las piezas en holograma:* la hélice, la cola, el ala con el tren, los escapes y la cabina, desde su tarjeta. ¿El tamaño «entre
+    las manos» está bien? ¿Se agarran?
+- **Fluidez:** que no tironee en ningún lugar (frente al motor, mirando la nave entera desde el portón, junto al AT-802). En la PC, la
+  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 45 y 127 k (tope del plan: 75 y 200 k); el número que manda es el
+  del casco.
 - **Mareo:** caminar con el joystick izquierdo, girar de a 30° con el derecho, y los saltos con fundido del atril y de la pausa.
 - **Legibilidad:** el atril, los paneles de la mesa (instrumentos, estaciones), el cartel de arriba del holograma, las preguntas, el
   riel del banco, el pizarrón de los créditos y la leyenda.
@@ -62,5 +72,5 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 
 ## 4. Lo que no se pudo probar desde la PC
 Todo lo de arriba que dice «grip», «gatillo», «joystick», «B o Y», «sacarse el casco» y la fluidez real: en la PC se probó con los
-mandos simulados por código (`__taller.probarMandos()`, 24 pruebas) y el piloto de prueba (`__taller.probarPiloto()`, 15), pero eso
-no reemplaza ponerse el casco.
+mandos simulados por código (`__taller.probarMandos()`, 29 pruebas), el piloto de prueba (`__taller.probarPiloto()`, 15) y el
+recorrido del avión (`__taller.probarRecorrido()`, 18), pero eso no reemplaza ponerse el casco.
