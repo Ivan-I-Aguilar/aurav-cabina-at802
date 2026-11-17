@@ -876,8 +876,45 @@ Quest no se probó nada).** Lo que quedó:
 3. Si el motor llega parado (se arranca) o ya en marcha a ralentí.
 4. Si quiere ver el motor dentro del capó antes de «ver motor».
 5. El orden de las piezas en holograma (15.2b) y con qué se miden la tolva y la compuerta (fotos, plano o manual). **Hechas en la
-   T11 las que salen del modelo** (hélice, cola, ala con tren, escapes, cabina); queda pendiente sólo la referencia para la tolva
-   por dentro y la compuerta.
+   T11 las que salen del modelo** (hélice, cola, ala, tren, escapes, cabina, y la tolva y la compuerta por fuera). **Las fotos
+   aparecieron el 16/11** (las de Iván del 24/9, §15.3): con ellas se puede hacer la T12 (15.5); falta su ok.
+6. (16/11) Si el tren queda como punto propio (nueve puntos) o vuelve a ir con el ala.
+
+### 15.5 La T12, propuesta: la compuerta y la tapa de la tolva, con las fotos (espera el ok de Iván)
+**Qué cambia para el alumno:** al abrir la COMPUERTA en holograma ve lo que hay debajo del avión hidrante de verdad: la panza con
+sus dos hojas largas, los rieles, el caño de venteo y la cañería de carga con sus bocas; y, si Iván quiere, las hojas se abren
+y se cierran. Al abrir la TOLVA ve el lomo con su tapa, sus trabas y su venteo, y la escala de la mirilla.
+
+- **De dónde sale cada cosa** (fotos de `Documents/aurav-cabina/fotos/detalles/`, números de `hoja_detalles.jpg`; no van al repo):
+
+| Pieza | Qué se modela | Fotos | Lo que queda inventado o sin hacer |
+|---|---|---|---|
+| Compuerta | la panza (su forma y sus medidas salen del modelo: 2,5 m de largo, 1,1 de ancho, baja hasta 0,78 m), las dos hojas a lo largo con sus rieles de bulones, el caño de venteo | 0–18 (12 y 13, la hoja; 16–18, la panza en V) | cómo se ve ABIERTA y por dentro: sin foto, [PROVISORIO] |
+| Cañería de carga | las dos bocas con acople rápido, los caños con sus acoples verdes, la válvula mariposa con su palanca | 22–29, 37, 38 | el recorrido exacto de los caños dentro de la panza |
+| Tapa de la tolva | el lomo verde oliva, la tapa negra de dos hojas, la barra de trabas con sus manijas, la manija en U, la tapa roja redonda, la cúpula de venteo | 32, 34, 69–72, 81, 82, 95–100 | — |
+| Nivel de la tolva | la escala de la mirilla, 650 a 800 galones | 89 | — |
+| Interior de la tolva | paredes, fondo y la boca hacia la compuerta | no hay | un corte esquemático [AGREGADO] o esperar fotos: lo decide Iván |
+
+- **Cómo:** dos scripts de Blender en segundo plano (`herramientas/taller_compuerta.py` → `taller/compuerta.glb`,
+  `herramientas/taller_tolva.py` → `taller/tolva.glb`), geometría por vértices, pocos triángulos y sin texturas (se ven como
+  holograma); las medidas grandes salen del modelo del avión y las proporciones de las fotos, todo [VERIFICAR]. `piezaholo.js`
+  ya arma una pieza con cualquier malla: sólo hay que cargar el GLB la primera vez que se abre. Las hojas que abren serían
+  dos mallas con su bisagra y un botón ABRIR / CERRAR en el rótulo de la pieza.
+- **El bloque (3 horas o más):**
+
+| Tramo | Qué se hace | Listo cuando |
+|---|---|---|
+| 0:00–0:20 | Mirar las fotos de cerca y medir la panza y el lomo en el modelo | un croquis con medidas en el plan |
+| 0:20–1:20 | La compuerta: panza, hojas, rieles, venteo y cañería; render de control al lado de las fotos (fuera del repo) | se reconoce contra las fotos 12, 13 y 16 |
+| 1:20–2:00 | En el taller: cargar el GLB, la pieza en holograma, las hojas que abren (si Iván quiere) | se abre y se cierra con el mouse y con los mandos simulados |
+| 2:00–2:45 | La tapa de la tolva y la escala de la mirilla | se reconoce contra las fotos 70 y 98 |
+| 2:45–3:15 | Pruebas por consola, presupuesto (tope 75 llamadas, 200 k triángulos), capturas | las pruebas pasan enteras |
+| 3:15–3:30 | Cierre: plan y `CLAUDE.md` al día, commit local, lámina para Iván | — |
+
+- **Reserva:** la voz de las tarjetas (cuando Iván apruebe los textos); el interior de la tolva en esquema.
+- **Lo que tiene que decir Iván:** el ok; si las hojas se abren en el holograma; si del interior de la tolva va un esquema
+  o se espera a tener fotos; y si puede sacar dos fotos más (la compuerta abierta y la tolva por dentro, por la tapa).
+- **Lo que no se puede probar acá:** el casco, como siempre.
 
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el
