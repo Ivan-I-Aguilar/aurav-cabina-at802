@@ -762,8 +762,8 @@ motor ya está), en la cual se pueda aplicar esto de ver esa pieza tipo en tus m
 | Ala, flaps y tren | recorte del exterior (un ala entera con su pata) | los flaps no se mueven en el modelo: para bajarlos hay que modelarlos |
 | Cola y rueda de cola | recorte del exterior | los timones no se mueven en el modelo |
 | Cabina | el nodo `cabina` (la cabina liviana) | más adelante, un botón «ir al simulador de cabina» |
-| Tolva y boca de carga | por fuera, el tramo de fuselaje del modelo | **por dentro hay que modelarla** (paredes, fondo, boca): hacen falta fotos o un plano |
-| Compuerta de descarga | — | **hay que modelarla entera** (hojas, mecanismo del FRDS): hacen falta fotos o un plano |
+| Tolva y boca de carga | por fuera, el tramo de fuselaje del modelo (hecho en la T11) | **por dentro hay que modelarla** (paredes, fondo, boca): hacen falta fotos o un plano. La tapa de arriba sí tiene fotos (16/11) |
+| Compuerta de descarga | por fuera, la panza roja del modelo (hecho en la T11) | las hojas, los rieles y la cañería tienen fotos (16/11); **abierta y por dentro**, hacen falta fotos o un plano |
 
 - **De a una, como pidió:** cada pieza es un trabajo chico con su recorte, su texto de tarjeta y su captura para Iván. Orden
   propuesto [PROVISORIO]: hélice → ala y tren → cola → escapes → cabina → tolva → compuerta (las dos últimas son las que más
@@ -849,8 +849,25 @@ Quest no se probó nada).** Lo que quedó:
   cualquier cantidad de puntos, y el rótulo de la pieza va justo arriba de lo que la pieza sube de verdad (con el radio de la
   esfera, mirando hacia abajo, se salía de la pantalla). Pruebas: recorrido 30 (9 puntos), mandos 29, piloto 15, mecánico 5.
   Sumar un punto es agregar su entrada en `PUNTOS` (y su recorte en `PIEZAS_HOLO` si tiene pieza).
-- Capturas: `Documents/aurav-cabina/capturas_taller/T11_dinamica_nueva.jpg`, del repaso `T11_repaso_pc.jpg` y del tren
-  `T11_tren.jpg`.
+- **Tolva y compuerta, primera versión «por fuera» (v=20261116d):** mirando el modelo desde abajo resultó que `juegos/at802.glb`
+  SÍ trae la panza roja de la compuerta (cuelga bajo la tolva de x 0,1 a −2,4; baja hasta 0,78 m) y, claro, el tramo de fuselaje
+  de la tolva (el lomo a 2,93 m, de x 2 a −1,75). Las dos tarjetas ya abren su holograma recortado del modelo, y el rótulo de la
+  pieza dice lo que falta: «POR FUERA · EL INTERIOR, MÁS ADELANTE» y «POR FUERA · LAS HOJAS Y EL MECANISMO, MÁS ADELANTE»
+  (`holoNota` en `PUNTOS`). **Las nueve tarjetas tienen pieza.** Pruebas: recorrido 32, mandos 29, piloto 15, mecánico 5.
+- **HAY FOTOS para hacerlas bien (hallazgo del 16/11):** en `Documents/aurav-cabina/fotos/` (fuera del repo; las fotos no se
+  publican) están las de Iván del avión blanco y rojo, del 24/9: `detalles/DETALLES IMPORTANTES/` (101 fotos, hoja de contactos
+  `hoja_detalles.jpg`, numeradas de 0 a 100 en el orden de los archivos) y `general/AVION EN GENERAL/` (25, `hoja_general.jpg`).
+  - *Compuerta:* 0 a 18 (la panza desde abajo y de costado; 12 y 13 = la hoja larga entre sus dos rieles de bulones, con el caño
+    de venteo; 16 a 18 = la panza en V, la quilla y los caños), 37 y 38 (el caño de carga con sus acoples verdes y la válvula
+    mariposa con su palanca), 22 a 29 (las bocas de carga con acople rápido, a los dos lados).
+  - *Tolva, por arriba:* 32, 34, 69 a 72 y 95 a 100 (el lomo verde oliva: la tapa negra de dos hojas, la barra de trabas con sus
+    manijas, la manija en U, la tapa roja redonda, la cúpula de venteo, las trabas naranjas), 81 y 82 (la tapa roja de cerca).
+  - *Tolva, nivel:* 89 (la escala de la mirilla: 650 a 800 galones, es decir, la tolva es de 800 galones, unos 3.000 litros).
+  - *Lo que NO hay:* el interior de la tolva (paredes, fondo, cómo desemboca en la compuerta) y la compuerta ABIERTA.
+  Con eso la T12 puede modelar la compuerta por fuera con sus hojas, sus rieles y su cañería, y la tapa de la tolva, calcando
+  proporciones contra el modelo (las medidas reales, [VERIFICAR]); el interior y la compuerta abierta piden fotos nuevas o un plano.
+- Capturas: `Documents/aurav-cabina/capturas_taller/T11_dinamica_nueva.jpg`, del repaso `T11_repaso_pc.jpg` y de las piezas
+  nuevas (tren, tolva y compuerta) `T11_tren.jpg`.
 
 ### 15.4 Lo que tiene que decir Iván (de a una; mientras tanto vale lo provisorio)
 1. El ok a este plan (y por dónde arrancar). **Dado el 16/11: «Sí, en ese orden»** (primero el motor a escala real y el recorrido

@@ -12,19 +12,19 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116c';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116c';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116c';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116c';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116c';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116c';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116c';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116c';
-import {crearPiezaHolo} from './piezaholo.js?v=20261116c';
-import {crearLlamadas} from './llamadas.js?v=20261116c';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116c';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116d';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116d';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116d';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116d';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116d';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116d';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116d';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116d';
+import {crearPiezaHolo} from './piezaholo.js?v=20261116d';
+import {crearLlamadas} from './llamadas.js?v=20261116d';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116d';
 
-export const VERSION = '20261116c';
+export const VERSION = '20261116d';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -1458,6 +1458,12 @@ const PIEZAS_HOLO = {
   // el tren principal derecho: la rueda, la pata de ballesta y su carenado, hasta donde entra en la panza (medido en el modelo: la
   // rueda de x ±0,46, y 0 a 0,92, z 1,2 a 1,6; la pata sube hasta y 1,41 en z 0,43)
   tren: recorte('tren', ['exterior'], [-0.7, 0, 0.25], [0.7, 1.38, 1.75], 0.8, [0.6, 0, 0.8]),
+  // POR FUERA, del modelo (el interior de la tolva, las hojas de la compuerta y su mecanismo se modelan con las fotos del avión
+  // real: T12). La tolva: el tramo alto del fuselaje entre el cortafuegos y el parabrisas (el lomo va a 2,93 m de x 2 a −1,75),
+  // por encima del ala. La compuerta: la panza roja que cuelga bajo la tolva (de x 0,1 a −2,4; la panza baja hasta 0,78 m),
+  // vista desde abajo; la caja corta antes de las patas del tren (y 1,24 en adelante)
+  tolva: recorte('tolva', ['exterior'], [-1.95, 1.8, -0.85], [1.0, 3.1, 0.85], 0.9, [0.25, 0, -1], 0.35),
+  compuerta: recorte('compuerta', ['exterior'], [-2.55, 0.6, -0.72], [0.2, 1.22, 0.72], 0.9, [0.2, 0, 1], -0.75),
   cola: recorte('cola', ['exterior'], [-8.0, 0, -3.1], [-5.4, 4.3, 3.1], 0.95, [-0.75, 0, 0.65]), // deriva, timones, estabilizador y rueda de cola
   escapes: recorte('escapes', ['exterior'], [1.0, 1.5, -0.95], [2.6, 3.3, 0.95], 0.8, [0.55, 0, 0.83]), // la nariz: el capó con los dos escapes y la toma
   cabina: recorte('cabina', ['cabina', 'exterior'], [-4.0, 1.85, -0.85], [-1.7, 3.4, 0.85], 0.9, [0.45, 0, -0.9], 0.25, 0.28), // la cabina liviana con su cúpula (muchas capas: poco brillo)
@@ -1472,7 +1478,7 @@ rotuloPieza.malla.renderOrder = 8;
 escena.add(rotuloPieza.malla);
 paneles.push(rotuloPieza);
 let rotuloFirma = '';
-function pintarRotuloPieza(titulo, sobre) {
+function pintarRotuloPieza(titulo, sobre, nota = '') {
   const {g, W, H} = rotuloPieza;
   rotuloPieza.botones.length = 0;
   g.clearRect(0, 0, W, H);
@@ -1486,7 +1492,13 @@ function pintarRotuloPieza(titulo, sobre) {
   g.font = 'bold 44px Arial';
   const bw = 236;
   const bx = W - bw - 20;
-  g.fillText(titulo.toUpperCase(), 30, H / 2 + 3, bx - 50);
+  g.fillText(titulo.toUpperCase(), 30, nota ? H * 0.36 : H / 2 + 3, bx - 50);
+  if (nota) {
+    // lo que la pieza todavía no muestra (la tolva y la compuerta van sólo por fuera hasta la T12)
+    g.fillStyle = '#9fb4c8';
+    g.font = 'bold 26px Arial';
+    g.fillText(nota.toUpperCase(), 30, H * 0.74, bx - 50);
+  }
   rotuloPieza.botones.push({id: 'pieza_cerrar', x: bx, y: 20, w: bw, h: H - 40});
   g.beginPath();
   g.roundRect(bx, 20, bw, H - 40, 14);
@@ -1541,7 +1553,8 @@ function seguirRotuloPieza(ojo, hover) {
   const f = `${piezaAbierta.clave}|${hover === 'pieza_cerrar'}`;
   if (f !== rotuloFirma) {
     rotuloFirma = f;
-    pintarRotuloPieza((PUNTOS_AVION.find((p) => p.clave === piezaAbierta.clave) || {titulo: piezaAbierta.clave}).titulo, hover === 'pieza_cerrar');
+    const pt = PUNTOS_AVION.find((p) => p.clave === piezaAbierta.clave) || {titulo: piezaAbierta.clave};
+    pintarRotuloPieza(pt.titulo, hover === 'pieza_cerrar', pt.holoNota || '');
   }
 }
 function cerrarPieza() {
