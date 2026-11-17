@@ -381,7 +381,7 @@ ITT crucero ~420+3,8·torque °C, pico de arranque ~700; Ng ralentí 60 %; héli
    con cabina liviana y hélice en `helice-eje` → `helice`) y `juegos/at802-lod.glb` (0,9 MB, 15 k tri; lo simplifica Blender con
    `herramientas/avion_juegos_lod.py`); visor `juegos/ver.html` (`__ver('…')`). **Etapas B (señaleros) y C (sector) HECHAS el
    15/11**, commits locales sin publicar; librea azul (elegida por Iván). **Para un juego nuevo con el AT-802: `juegos/LEEME.md`.**
-   Válvula de sector: la real, centro-izquierda (Iván: «así está bien»). Falta: matrícula, publicar y el Quest. Detalle en el plan
+   Válvula de sector: la real, centro-izquierda (Iván: «así está bien»). Sin matrícula (Iván, 16/11). Falta: publicar y el Quest. Detalle en el plan
    §5. Hallazgo de paso: en el
    exterior del simulador las luces de punta de ala están invertidas (verde a la izquierda, roja a la derecha; el GLB de los juegos
    ya las trae bien; en la cabina queda por corregir).

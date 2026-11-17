@@ -145,7 +145,7 @@ Peso estimado:
 2. **Librea:** **elegida el 15/11: azul, como la cabina** (el GLB ya estaba exportado así; `--librea bordo` queda como opción).
 3. **Válvula de carga en sector:** **elegida el 15/11: «así está bien»**: la real (centro-izquierda), con la manguera que llega por
    debajo desde la derecha (lo que ya está en el commit 8ed9e9a de sector).
-4. **Matrícula:** 1 · sin matrícula, como la cabina · 2 · AUR-AV pintada, como los viejos · 3 · otra.
+4. **Matrícula:** **elegida el 16/11: sin matrícula, como la cabina** (el GLB queda como está; la AUR-AV era de los aviones viejos).
 5. **Publicar** cada repo: sólo con su ok expreso.
 
 ## 5. Avance
@@ -177,4 +177,5 @@ Peso estimado:
   72 con sombra (88).
 - **15/11:** `juegos/LEEME.md` + `juegos/at802glb.js` (copia de referencia del cargador) para usar el avión en juegos nuevos (Iván
   está armando otra capacitación con el AT8T).
-- **Falta:** la pregunta 4 (matrícula), publicar los tres repos (con su ok) y el Quest.
+- **16/11:** sin matrícula (pregunta 4). Las cuatro decisiones de forma están tomadas.
+- **Falta:** publicar los tres repos (sólo con su ok) y el Quest.
