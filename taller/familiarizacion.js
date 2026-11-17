@@ -29,6 +29,7 @@ export const PUNTOS = [
     parte: [2.0, 2.45, -0.55],
     marca: [2.3, 2.0, -1.15],
     pie: [3.0, -2.5],
+    holo: 'escapes',
   },
   {
     clave: 'tolva',
@@ -45,6 +46,7 @@ export const PUNTOS = [
     parte: [-2.8, 2.5, -0.55],
     marca: [-3.0, 2.0, -1.15],
     pie: [-3.6, -2.2],
+    holo: 'cabina',
   },
   {
     clave: 'cola',
@@ -53,6 +55,7 @@ export const PUNTOS = [
     parte: [-7.0, 1.6, 0],
     marca: [-6.2, 1.9, 0.9],
     pie: [-5.0, 2.4],
+    holo: 'cola',
   },
   {
     clave: 'compuerta',
@@ -69,6 +72,7 @@ export const PUNTOS = [
     parte: [-0.9, 1.4, 4.8],
     marca: [-0.3, 1.85, 4.9],
     pie: [1.0, 5.4],
+    holo: 'ala',
   },
   {
     clave: 'motor',

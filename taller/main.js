@@ -1405,6 +1405,7 @@ fundido.renderOrder = 999;
 fundido.visible = false;
 camara.add(fundido);
 let salto = null;
+let aparicion = 1; // 0..1: el holograma que se enciende al llegar frente al motor (2,2 s)
 const eSalto = new THREE.Euler(0, 0, 0, 'YXZ');
 function ponerEn(d) {
   if (renderer.xr.isPresenting) {
@@ -1433,14 +1434,23 @@ function tocarMarca(r) {
 }
 // la pieza que está abierta en holograma «en las manos» (§15.2b); la arma piezaholo.js
 let piezaAbierta = null;
-// de dónde sale cada pieza (de a una, §15.2b). La hélice es la primera: el nodo «helice» del avión entero, girando sobre su eje (x)
+// De dónde sale cada pieza (de a una, §15.2b). La hélice y la cabina vienen sueltas en el modelo (nodos «helice» y «cabina»); el
+// ala con su pata, la cola y los escapes se RECORTAN del exterior con una caja en el marco del avión (+x nariz, +y arriba, +z
+// derecha, metros) [cajas PROVISORIAS, puestas mirando el modelo]. «frente» es el lado de la pieza que queda hacia el alumno.
+// La tolva por dentro y la compuerta no salen del modelo: se modelan cuando haya fotos o medidas.
+const mallasDe = (nombre) => {
+  const out = [];
+  avionAT.getObjectByName(nombre).traverse((o) => o.isMesh && out.push(o));
+  return out;
+};
+const recorte = (clave, nodos, min, max, tam, frente, inclinar = 0, brillo = 1) => () =>
+  Object.assign(crearPiezaHolo({clave, fuentes: nodos.flatMap(mallasDe), marco: avionAT, caja: new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)), tam, brillo}), {frente, inclinar});
 const PIEZAS_HOLO = {
-  helice() {
-    const nodo = avionAT.getObjectByName('helice');
-    const mallas = [];
-    nodo.traverse((o) => o.isMesh && mallas.push(o));
-    return crearPiezaHolo({clave: 'helice', fuentes: mallas, marco: nodo, tam: 0.85, gira: {eje: 'x', vel: 1.1}});
-  },
+  helice: () => Object.assign(crearPiezaHolo({clave: 'helice', fuentes: mallasDe('helice'), marco: avionAT.getObjectByName('helice'), tam: 0.85, gira: {eje: 'x', vel: 1.1}}), {frente: [1, 0, 0]}),
+  ala: recorte('ala', ['exterior'], [-2.8, 0, 0.62], [1.0, 2.4, 9.3], 1.3, [1, 0, 0.35], 0.95), // el ala derecha entera con su pata y su rueda, inclinada 55°
+  cola: recorte('cola', ['exterior'], [-8.0, 0, -3.1], [-5.4, 4.3, 3.1], 0.95, [-0.75, 0, 0.65]), // deriva, timones, estabilizador y rueda de cola
+  escapes: recorte('escapes', ['exterior'], [1.0, 1.5, -0.95], [2.6, 3.3, 0.95], 0.8, [0.55, 0, 0.83]), // la nariz: el capó con los dos escapes y la toma
+  cabina: recorte('cabina', ['cabina', 'exterior'], [-4.0, 1.85, -0.85], [-1.7, 3.4, 0.85], 0.9, [0.45, 0, -0.9], 0.25, 0.28), // la cabina liviana con su cúpula (muchas capas: poco brillo)
 };
 function cerrarPieza() {
   if (!piezaAbierta) return;
@@ -1462,7 +1472,11 @@ function alternarPieza(clave) {
   const g = piezaAbierta.grupo;
   g.position.copy(tmp).addScaledVector(tmp2, 0.95);
   g.position.y = 1.3;
-  g.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), tmp2.clone().negate());
+  // derecha (sin inclinarla), con su «frente» hacia el alumno: un giro sobre la vertical
+  const f = piezaAbierta.frente || [1, 0, 0];
+  g.rotation.set(0, Math.atan2(-tmp2.x, -tmp2.z) - Math.atan2(f[0], f[2]), 0);
+  // las piezas chatas (el ala) se inclinan hacia el alumno para verles la planta: un giro sobre el eje que va de su izquierda a su derecha
+  if (piezaAbierta.inclinar) g.rotateOnWorldAxis(new THREE.Vector3(-tmp2.z, 0, tmp2.x), piezaAbierta.inclinar);
   escena.add(g);
 }
 // agarrar la pieza abierta (VR): una mano la lleva y la gira; dos manos la agrandan o la achican (de 0,3 a 3 veces)
@@ -1506,6 +1520,7 @@ function pasoSalto(dt) {
   if (!salto.movido && salto.t >= 0.25) {
     ponerEn(salto.d);
     salto.movido = true;
+    if (salto.d === DESTINOS.mesa) aparicion = 0; // al llegar frente al motor, el holograma aparece de a poco (reserva de la T11)
   }
   const t = salto.t;
   fundido.material.opacity = t < 0.25 ? t / 0.25 : t < 0.35 ? 1 : Math.max(0, 1 - (t - 0.35) / 0.3);
@@ -2372,6 +2387,15 @@ function probarRecorrido() {
       accionar({tipo: 'panel', id: 'fam_holo'});
       ok('hélice en holograma: el mismo botón la cierra', !piezaAbierta);
     }
+    const pz = PUNTOS_AVION[i].holo;
+    if (i > 0 && pz && pz !== 'motor') {
+      // las otras piezas que ya salen del modelo: se abren desde su tarjeta, con su recorte, y se cierran
+      accionar({tipo: 'panel', id: 'fam_holo'});
+      const abierta = piezaAbierta && piezaAbierta.clave === pz;
+      const dato = piezaAbierta && {triangulos: piezaAbierta.triangulos};
+      accionar({tipo: 'panel', id: 'fam_holo'});
+      ok(PUNTOS_AVION[i].titulo + ' en holograma: se abre desde su tarjeta y se cierra', abierta && dato.triangulos > 500 && !piezaAbierta, dato);
+    }
     if (i < PUNTOS_AVION.length - 1) {
       accionar({tipo: 'panel', id: 'fam_sig'});
       saltar();
@@ -2643,7 +2667,8 @@ function avanzar(dt) {
   // las llamadas de la estación (aparecen de a poco, como en el escritorio) y el holograma atenuado mientras están las preguntas o
   // con la cabeza adentro
   llamadas.actualizar(preguntasAbiertas ? null : st || null, estacion ? ss(0.8, 1.3, since) : 0, eng.root, renderer.xr.isPresenting ? renderer.xr.getCamera() : camara, PRES().centro, PRES().llamadas);
-  if (holo) holo.ajustes.uBrillo.value += (Math.min(preguntasAbiertas ? 0.3 : 1, brilloPorCabeza()) - holo.ajustes.uBrillo.value) * Math.min(1, dt * 6);
+  aparicion = Math.min(1, aparicion + dt / 2.2);
+  if (holo) holo.ajustes.uBrillo.value += (Math.min(preguntasAbiertas ? 0.3 : 1, brilloPorCabeza()) * suave(aparicion) - holo.ajustes.uBrillo.value) * Math.min(1, dt * 6);
   hudT -= dt;
   if (hudT <= 0 && !renderer.xr.isPresenting) {
     hudT = 0.1;

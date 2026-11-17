@@ -43,7 +43,7 @@ void main() {
  * Devuelve {clave, grupo, interior, radio, triangulos, actualizar(dt, t), liberar()}: el grupo se pone, se gira y se escala desde
  * afuera; «interior» es lo que gira solo.
  */
-export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam = 0.8, color = '#62d8ff', gira = null}) {
+export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam = 0.8, color = '#62d8ff', gira = null, brillo = 1}) {
   const ref = marco || fuentes[0];
   ref.updateWorldMatrix(true, false);
   const inv = new THREE.Matrix4().copy(ref.matrixWorld).invert();
@@ -94,7 +94,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   const U = {
     uColor: {value: new THREE.Color(color)},
     uTiempo: {value: 0},
-    uBrillo: {value: 1},
+    uBrillo: {value: brillo}, // menos en las piezas con muchas capas (la cabina), que sumadas dan un bloque blanco
     uCaja: {value: caja ? 1 : 0},
     uMin: {value: caja ? caja.min.clone().sub(centro) : new THREE.Vector3()},
     uMax: {value: caja ? caja.max.clone().sub(centro) : new THREE.Vector3()},
