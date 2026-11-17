@@ -178,4 +178,10 @@ Peso estimado:
 - **15/11:** `juegos/LEEME.md` + `juegos/at802glb.js` (copia de referencia del cargador) para usar el avión en juegos nuevos (Iván
   está armando otra capacitación con el AT8T).
 - **16/11:** sin matrícula (pregunta 4). Las cuatro decisiones de forma están tomadas.
-- **Falta:** publicar los tres repos (sólo con su ok) y el Quest.
+- **16/11: señaleros y sector PUBLICADOS** (ok de Iván: «Sí, publicá»): push bf01a05 (`aurav-senales`) y 8ed9e9a (`aurav-sector`).
+  Verificado en las páginas publicadas con el navegador de PC: cargan sin errores ni archivos faltantes (los GLB con
+  `?v=20261115a`), el avión es el nuevo (`origen` aurav-cabina-at802, librea azul) con la hélice girando, y en sector la manguera
+  llega a la boca de carga. Este repo NO se subió: encima de lo del avión están los commits del taller, que no tienen el ok para
+  publicar (lo del avión acá son el plan, los scripts y `juegos/`; los juegos no lo necesitan, cada uno lleva su copia).
+- **Falta:** el Quest (Iván). Y el texto de inicio de sector dice «cargando agua por la válvula derecha» (del 24/9, de antes del
+  avión nuevo; la boca real está bajo la panza, centro-izquierda, y la manguera llega desde la derecha): lo decide Iván.
