@@ -809,7 +809,7 @@ Quest no se probó nada).** Lo que quedó:
   abierta); frente al motor a escala real 38 y 51 k (47 y 53 k en marcha y con una estación); el puesto entero desde atrás, 61 y
   56 k, el peor (tope 75 y 200 k). Se juntaron los soportes de los paneles (de 6 llamadas a 1) y lo chico del puesto de trabajo no
   se dibuja a más de 14 m.
-- **Pruebas por consola:** `__taller.probarRecorrido()` 18 (los ocho puntos libres de choque y con su tarjeta, el motor en el capó
+- **Pruebas por consola:** `__taller.probarRecorrido()` 18, y 27 desde el repaso de más abajo (los ocho puntos libres de choque y con su tarjeta, el motor en el capó
   con su cubo a 0 cm del de la hélice, la hélice que se abre, se agarra y se cierra, las otras cuatro piezas, VER EL MOTOR),
   `probarMandos()` 29 (5 nuevas: 1:1 y 1,9 m, centrado, entra entero, giro con el rayo, A LA MESA), `probarPiloto()` 15 y
   `probarMecanico()` 5: todas bien. Las pruebas dejan el motor, el camino y al alumno como los encontraron.
@@ -822,7 +822,25 @@ Quest no se probó nada).** Lo que quedó:
   control de seguridad del shell: las ediciones con texto de JavaScript van con la herramienta de edición o con un script en archivo.
 - **Provisorio, a confirmar con Iván:** los textos de las tarjetas; que el motor llegue parado; la distancia (3,25 m) y la inclinación
   del motor a escala real; ver el motor dentro del capó; el orden de los puntos; las cajas de recorte de las piezas.
-- Capturas: `Documents/aurav-cabina/capturas_taller/T11_dinamica_nueva.jpg`.
+- **Repaso con el mouse en la PC (16/11, después del cierre; v=20261116b):** recorriendo el camino entero con clics de verdad
+  (atril → RECORRER EL AVIÓN → tarjetas → VER EN HOLOGRAMA → CERRAR → SIGUIENTE → VER EL MOTOR → rueda → Enter) salieron y se
+  corrigieron: (a) en una ventana angosta la tarjeta quedaba cortada a la derecha: ahora se llega a cada punto mirando al medio
+  entre el disco y la tarjeta; (b) **dos tarjetas (tolva y compuerta) quedaban metidas en el ala**, la de la compuerta con
+  SIGUIENTE tapado: todas van a 1,3 m del lugar del alumno y 24° al costado de la dirección al disco (se leen igual en todos los
+  puntos), con su centro a 1,45 m, a la derecha salvo esas dos (`lado: −1`); **la prueba del recorrido ahora tira rayos desde el
+  ojo, con la cabeza corrida ±8 cm, a las esquinas, al centro y a los botones de cada tarjeta y a cada disco** (8 pruebas nuevas:
+  es la regla de «toda placa nueva se verifica con rayos desde el ojo», que con las tarjetas no se había cumplido); (c) la pieza
+  en holograma se abría encimada con la tarjeta (en el casco, justo sobre el botón que el alumno acaba de tocar): ahora **la
+  tarjeta se esconde mientras su pieza está abierta y la pieza lleva arriba su RÓTULO (nombre + CERRAR)**; (d) sobre el fuselaje
+  blanco la pieza casi no se veía (la luz sumada no se ve sobre lo claro): lleva un **TELÓN** oscuro y difuso detrás, de cara al
+  alumno; (e) en la PC la pieza se abre en el centro de la pantalla (en el casco sigue a 1,3 m, la altura de las manos); (f) el
+  radio de las piezas recortadas se medía con los triángulos enteros que cruzan la caja (la cabina, de 0,9 m, daba 1,03 m de
+  radio): ahora es el de la caja; (g) **el holograma del motor se agranda hasta el DOBLE del tamaño real** (`ESCALA_MAX`; antes el
+  tope era 1:1 y no se podía «agrandar», que es lo que pidió Iván: «después uno lo achica o lo agranda según lo que considere»);
+  (h) `rayosDesdeElOjo` contaba como tapa el nivel lejano y escondido del LOD del avión: ahora sólo cuenta lo que se ve.
+  Pruebas después del repaso: recorrido 27, mandos 29, piloto 15, mecánico 5, identificar 6, todas bien y sin errores en consola.
+  Junto al avión, la peor vista: 46 llamadas y 128 k tri (con la hélice o los escapes abiertos). La ronda fija (1 a 11), revisada.
+- Capturas: `Documents/aurav-cabina/capturas_taller/T11_dinamica_nueva.jpg` y, del repaso, `T11_repaso_pc.jpg`.
 
 ### 15.4 Lo que tiene que decir Iván (de a una; mientras tanto vale lo provisorio)
 1. El ok a este plan (y por dónde arrancar). **Dado el 16/11: «Sí, en ese orden»** (primero el motor a escala real y el recorrido

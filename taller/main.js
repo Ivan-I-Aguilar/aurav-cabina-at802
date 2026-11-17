@@ -12,19 +12,19 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116a';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116a';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116a';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116a';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116a';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116a';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116a';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116a';
-import {crearPiezaHolo} from './piezaholo.js?v=20261116a';
-import {crearLlamadas} from './llamadas.js?v=20261116a';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116a';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116b';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116b';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116b';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116b';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116b';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116b';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116b';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116b';
+import {crearPiezaHolo} from './piezaholo.js?v=20261116b';
+import {crearLlamadas} from './llamadas.js?v=20261116b';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116b';
 
-export const VERSION = '20261116a';
+export const VERSION = '20261116b';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -32,6 +32,10 @@ const ALTURA_OJOS = 1.6;
 const MESA = {ancho: 1.6, fondo: 0.8, alto: 0.9};
 const CENTRO_HOLO = new THREE.Vector3(0, 1.27, 0);
 const ESCALA_HOLO = 0.35;
+// hasta dónde se achica o se agranda el holograma del motor (rueda del mouse, dos manos), en veces el tamaño real: del 20 % al
+// doble («después uno lo achica o lo agranda según lo que considere», Iván, 16/11). Hasta la T11 el tope era el tamaño real
+const ESCALA_MIN = 0.2;
+const ESCALA_MAX = 2;
 const FAULT_KEYS = ['hot', 'hung', 'stall', 'fod', 'overtemp', 'none'];
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const suave = (x) => {
@@ -1031,6 +1035,7 @@ function accionar(a) {
   else if (a.id === 'fam_sig') saltarAPunto((fam.activo + 1) % PUNTOS_AVION.length);
   else if (a.id === 'fam_motor') saltarA('mesa');
   else if (a.id === 'fam_holo') alternarPieza(PUNTOS_AVION[fam.activo].clave);
+  else if (a.id === 'pieza_cerrar') cerrarPieza();
   else if (a.id === 'modo_mecanico') {
     // sin publicar hasta la validación de AAXOD (decisión 3b): sólo con ?mecanico=1; si no, el botón se ve apagado
     if (PARAM.get('mecanico') === '1') {
@@ -1115,7 +1120,7 @@ renderer.domElement.addEventListener(
     if (enCapo) return; // dentro del capó no se toca
     poseManual = true;
     pararRecorrido();
-    pose.escala = clamp(pose.escala * Math.exp(-e.deltaY * 0.0012), 0.2 / (ESCALA_HOLO * PRES().k), 1 / (ESCALA_HOLO * PRES().k)); // de 20 % a tamaño real
+    pose.escala = clamp(pose.escala * Math.exp(-e.deltaY * 0.0012), ESCALA_MIN / (ESCALA_HOLO * PRES().k), ESCALA_MAX / (ESCALA_HOLO * PRES().k)); // del 20 % al doble del tamaño real
     aplicarPose();
   },
   {passive: false},
@@ -1452,12 +1457,89 @@ const PIEZAS_HOLO = {
   escapes: recorte('escapes', ['exterior'], [1.0, 1.5, -0.95], [2.6, 3.3, 0.95], 0.8, [0.55, 0, 0.83]), // la nariz: el capó con los dos escapes y la toma
   cabina: recorte('cabina', ['cabina', 'exterior'], [-4.0, 1.85, -0.85], [-1.7, 3.4, 0.85], 0.9, [0.45, 0, -0.9], 0.25, 0.28), // la cabina liviana con su cúpula (muchas capas: poco brillo)
 };
+// El RÓTULO de la pieza abierta: su nombre y CERRAR, flotando arriba de la pieza y de cara al alumno. Mientras la pieza está
+// abierta la tarjeta de su punto se esconde (familiarizacion.js): en el casco la pieza se abre justo donde el alumno miraba, que es
+// el botón de la tarjeta, y encimadas no se leía ninguna de las dos. Va después del holograma en el orden de dibujo, así la luz
+// sumada de la pieza no lo lava.
+const rotuloPieza = crearPanel({ancho: 0.54, alto: 0.1, px: 864, nombre: 'rotulo-pieza', transparente: true});
+rotuloPieza.malla.visible = false;
+rotuloPieza.malla.renderOrder = 8;
+escena.add(rotuloPieza.malla);
+paneles.push(rotuloPieza);
+let rotuloFirma = '';
+function pintarRotuloPieza(titulo, sobre) {
+  const {g, W, H} = rotuloPieza;
+  rotuloPieza.botones.length = 0;
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = '#082440';
+  g.beginPath();
+  g.roundRect(0, 0, W, H, 28);
+  g.fill();
+  g.textBaseline = 'middle';
+  g.textAlign = 'left';
+  g.fillStyle = '#c8e63a';
+  g.font = 'bold 44px Arial';
+  const bw = 236;
+  const bx = W - bw - 20;
+  g.fillText(titulo.toUpperCase(), 30, H / 2 + 3, bx - 50);
+  rotuloPieza.botones.push({id: 'pieza_cerrar', x: bx, y: 20, w: bw, h: H - 40});
+  g.beginPath();
+  g.roundRect(bx, 20, bw, H - 40, 14);
+  g.fillStyle = sobre ? '#b81426' : '#d6182b';
+  g.fill();
+  g.fillStyle = '#ffffff';
+  g.font = 'bold 40px Arial';
+  g.textAlign = 'center';
+  g.fillText('CERRAR', bx + bw / 2, H / 2 + 3);
+  rotuloPieza.pintado();
+}
+// El TELÓN de la pieza: un disco oscuro y difuso detrás de ella, siempre de cara al alumno. La luz sumada del holograma no se ve
+// sobre lo blanco (el fuselaje, el capó): con el fondo oscurecido la pieza se lee contra cualquier cosa. No escribe profundidad y
+// se dibuja antes que la pieza (y después de las marcas, que quedan atenuadas detrás).
+const telonPieza = (() => {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const g = cv.getContext('2d');
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(3,10,18,0.72)');
+  grad.addColorStop(0.55, 'rgba(3,10,18,0.6)');
+  grad.addColorStop(1, 'rgba(3,10,18,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({map: tex, transparent: true, depthWrite: false, toneMapped: false}));
+  m.name = 'telon-pieza';
+  m.renderOrder = 6.5;
+  m.visible = false;
+  escena.add(m);
+  return m;
+})();
+/** el rótulo y el telón siguen a la pieza: el rótulo arriba de ella (sin pasar de 2,05 m), los dos de cara al alumno; ojo = la cámara */
+function seguirRotuloPieza(ojo, hover) {
+  const m = rotuloPieza.malla;
+  m.visible = telonPieza.visible = !!piezaAbierta;
+  if (!piezaAbierta) return;
+  const g = piezaAbierta.grupo;
+  const r = (piezaAbierta.radio * g.scale.x) / piezaAbierta.escala0;
+  m.position.set(g.position.x, Math.min(g.position.y + r + 0.1, 2.05), g.position.z);
+  m.rotation.set(0, Math.atan2(ojo.x - m.position.x, ojo.z - m.position.z), 0);
+  telonPieza.position.copy(g.position);
+  telonPieza.lookAt(ojo);
+  telonPieza.scale.setScalar(r * 1.3);
+  const f = `${piezaAbierta.clave}|${hover === 'pieza_cerrar'}`;
+  if (f !== rotuloFirma) {
+    rotuloFirma = f;
+    pintarRotuloPieza((PUNTOS_AVION.find((p) => p.clave === piezaAbierta.clave) || {titulo: piezaAbierta.clave}).titulo, hover === 'pieza_cerrar');
+  }
+}
 function cerrarPieza() {
   if (!piezaAbierta) return;
   piezaAbierta.liberar();
   piezaAbierta = null;
   agarrePieza.length = 0;
   dosManosPieza = null;
+  rotuloPieza.malla.visible = telonPieza.visible = false;
 }
 /** abre la pieza delante del alumno, a la altura del pecho y con su eje hacia él; si ya estaba abierta, la cierra */
 function alternarPieza(clave) {
@@ -1465,13 +1547,16 @@ function alternarPieza(clave) {
   cerrarPieza();
   if (era === clave || !PIEZAS_HOLO[clave] || !avionAT) return;
   piezaAbierta = PIEZAS_HOLO[clave]();
-  const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camara;
+  const enVR = renderer.xr.isPresenting;
+  const cam = enVR ? renderer.xr.getCamera() : camara;
   cam.getWorldPosition(tmp);
   cam.getWorldDirection(tmp2);
+  const sube = clamp(tmp2.y, -0.6, 0.6); // el cabeceo de la mirada (su seno)
   tmp2.setY(0).normalize();
   const g = piezaAbierta.grupo;
   g.position.copy(tmp).addScaledVector(tmp2, 0.95);
-  g.position.y = 1.3;
+  // en el casco, a la altura de las manos; en la PC, al centro de la pantalla (sigue el cabeceo de la mirada), para que entre entera
+  g.position.y = enVR ? 1.3 : clamp(tmp.y + (0.95 * sube) / Math.sqrt(1 - sube * sube), 1.15, 1.75);
   // derecha (sin inclinarla), con su «frente» hacia el alumno: un giro sobre la vertical
   const f = piezaAbierta.frente || [1, 0, 0];
   g.rotation.set(0, Math.atan2(-tmp2.x, -tmp2.z) - Math.atan2(f[0], f[2]), 0);
@@ -1677,7 +1762,7 @@ function manosVR() {
     if (agarreHolo.length > 1) {
       const d = agarreHolo[0].mano.getWorldPosition(tmp).distanceTo(agarreHolo[1].mano.getWorldPosition(tmp2));
       if (!dosManos) dosManos = {d0: d, s0: motorGrupo.scale.x};
-      motorGrupo.scale.setScalar(clamp((dosManos.s0 * d) / Math.max(0.05, dosManos.d0), 0.2, 1));
+      motorGrupo.scale.setScalar(clamp((dosManos.s0 * d) / Math.max(0.05, dosManos.d0), ESCALA_MIN, ESCALA_MAX));
       agarreHolo[0].rel.copy(mano.matrixWorld).invert().multiply(motorGrupo.updateMatrix() || motorGrupo.matrix);
     } else motorGrupo.scale.copy(vEsc);
   }
@@ -1866,7 +1951,7 @@ function probarMandos() {
   const qe = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(esperado));
   const qr = motorGrupo.getWorldQuaternion(new THREE.Quaternion());
   ok('una mano lo lleva y lo gira con ella', pe.distanceTo(pr) < 0.002 && qe.angleTo(qr) < 0.01, {errorMm: +(pe.distanceTo(pr) * 1000).toFixed(2), errorGrados: +THREE.MathUtils.radToDeg(qe.angleTo(qr)).toFixed(2)});
-  // 9) con las dos manos: separarlas al doble lo agranda al doble; al triple, tope 1:1
+  // 9) con las dos manos: separarlas al doble lo agranda al doble; al séxtuple, el tope (el doble del tamaño real)
   const s0 = motorGrupo.scale.x;
   const pA = m0.getWorldPosition(new THREE.Vector3());
   const pB = pA.clone().add(new THREE.Vector3(-0.2, 0, 0));
@@ -1876,10 +1961,13 @@ function probarMandos() {
   ok('el grip de la otra mano se suma', agarreHolo.length === 2);
   ponerMano(m1, pA.clone().add(new THREE.Vector3(-0.4, 0, 0)));
   cuadroVR();
-  ok('manos al doble de distancia → el doble de tamaño', Math.abs(motorGrupo.scale.x - Math.min(1, 2 * s0)) < 0.005, {antes: +s0.toFixed(3), despues: +motorGrupo.scale.x.toFixed(3)});
-  ponerMano(m1, pA.clone().add(new THREE.Vector3(-1.2, 0, 0)));
+  ok('manos al doble de distancia → el doble de tamaño', Math.abs(motorGrupo.scale.x - Math.min(ESCALA_MAX, 2 * s0)) < 0.005, {antes: +s0.toFixed(3), despues: +motorGrupo.scale.x.toFixed(3)});
+  ponerMano(m1, pA.clone().add(new THREE.Vector3(-1.6, 0, 0)));
   cuadroVR();
-  ok('al separarlas mucho, tope 1:1 del real', Math.abs(motorGrupo.scale.x - 1) < 1e-6, +motorGrupo.scale.x.toFixed(3));
+  ok('al separarlas mucho, tope: el doble del tamaño real', Math.abs(motorGrupo.scale.x - ESCALA_MAX) < 1e-6, +motorGrupo.scale.x.toFixed(3));
+  // de vuelta a tamaño real antes de soltar (las pruebas que siguen están hechas con el motor a 1:1)
+  ponerMano(m1, pA.clone().add(new THREE.Vector3(-0.2 / s0, 0, 0)));
+  cuadroVR();
   soltarGrip(m0);
   soltarGrip(m1);
   cuadroVR();
@@ -2361,6 +2449,28 @@ function probarRecorrido() {
   for (let i = 0; i < PUNTOS_AVION.length; i++) {
     const libre = !bloqueado(jugador.position.x, jugador.position.z, 0.3);
     ok(`punto ${i + 1} (${PUNTOS_AVION[i].titulo}): se llega, el lugar está libre y se abre su tarjeta`, fam.activo === i && fam.tarjeta.malla.visible && libre, {activo: fam.activo, libre});
+    {
+      // la tarjeta y el disco se ven ENTEROS desde el lugar: rayos desde el ojo, con la cabeza corrida ±8 cm, a las cuatro esquinas,
+      // al centro y a los botones de la tarjeta, y al disco (el 16/11 dos tarjetas quedaban metidas en el ala)
+      const pt = fam.puntos[i];
+      const ojoP = new THREE.Vector3(pt.pieM.x, ALTURA_OJOS, pt.pieM.z);
+      const tj = fam.tarjeta.malla;
+      tj.updateWorldMatrix(true, false);
+      const blancos = [
+        ['centro', tj.localToWorld(new THREE.Vector3(0, 0, 0))],
+        ['arriba izq.', tj.localToWorld(new THREE.Vector3(-0.38, 0.23, 0))],
+        ['arriba der.', tj.localToWorld(new THREE.Vector3(0.38, 0.23, 0))],
+        ['abajo izq.', tj.localToWorld(new THREE.Vector3(-0.38, -0.23, 0))],
+        ['abajo der.', tj.localToWorld(new THREE.Vector3(0.38, -0.23, 0))],
+      ];
+      for (const id of ['fam_holo', 'fam_motor', 'fam_sig']) {
+        const c = fam.tarjeta.centro(id);
+        if (c) blancos.push([id, c]);
+      }
+      const tapados = blancos.filter(([, w]) => rayosDesdeElOjo(w, tj, ojoP).some((r) => r !== 'libre')).map(([k]) => k);
+      if (rayosDesdeElOjo(pt.marcaM.clone(), escena.getObjectByName('marcas-recorrido'), ojoP).some((r) => r !== 'libre')) tapados.push('disco');
+      ok(`punto ${i + 1}: la tarjeta y el disco se ven enteros desde el lugar (rayos desde el ojo, cabeza ±8 cm)`, !tapados.length, tapados);
+    }
     if (i === 0) {
       // en el avión, el motor va dentro del capó
       motorGrupo.updateMatrixWorld(true);
@@ -2386,8 +2496,17 @@ function probarRecorrido() {
         ponerMano(m0, new THREE.Vector3(0, -5, 0));
         ok('hélice en holograma: el grip la agarra y la lleva con la mano', movida < 0.002 && !agarrePieza.length, {errorMm: +(movida * 1000).toFixed(1)});
       }
-      accionar({tipo: 'panel', id: 'fam_holo'});
-      ok('hélice en holograma: el mismo botón la cierra', !piezaAbierta);
+      // con la pieza abierta su tarjeta se esconde y la pieza lleva su rótulo, arriba, con CERRAR
+      avanzar(1 / 60);
+      const rot = rotuloPieza.malla;
+      const sobreLaPieza = !!g && rot.visible && rot.position.y > g.position.y && Math.hypot(rot.position.x - g.position.x, rot.position.z - g.position.z) < 0.01;
+      ok('hélice en holograma: su tarjeta se esconde y la pieza lleva su rótulo con CERRAR', !fam.tarjeta.malla.visible && sobreLaPieza && !!rotuloPieza.centro('pieza_cerrar'), {tarjeta: fam.tarjeta.malla.visible, rotulo: rot.visible, alto: +rot.position.y.toFixed(2)});
+      // CERRAR con el rayo del mando y el gatillo, como en el casco
+      const cerrar = rotuloPieza.centro('pieza_cerrar');
+      if (cerrar) gatilloEn(manos[1], cerrar, new THREE.Vector3(0, 0, 1).applyQuaternion(rot.getWorldQuaternion(new THREE.Quaternion())));
+      ponerMano(manos[1], new THREE.Vector3(0, -5, 0));
+      avanzar(1 / 60);
+      ok('hélice en holograma: el gatillo en CERRAR la cierra y vuelve la tarjeta', !piezaAbierta && fam.tarjeta.malla.visible && !rot.visible && !telonPieza.visible);
     }
     const pz = PUNTOS_AVION[i].holo;
     if (i > 0 && pz && pz !== 'motor') {
@@ -2657,6 +2776,7 @@ function avanzar(dt) {
   panelT -= dt;
   const hover = renderer.xr.isPresenting ? hoverVR : hoverPC;
   if (fam) fam.actualizar(renderer.xr.isPresenting ? renderer.xr.getCamera() : camara, reloj, {hover, abierto: piezaAbierta ? piezaAbierta.clave : null});
+  seguirRotuloPieza((renderer.xr.isPresenting ? renderer.xr.getCamera() : camara).getWorldPosition(tmp), hover);
   if (panelT <= 0) {
     panelT = 0.1;
     panelMotor.actualizar({r: readout(s), fault: inp.fault, hover});
@@ -2749,8 +2869,13 @@ function rayosDesdeElOjo(blanco, objeto, ojo = new THREE.Vector3(0, ALTURA_OJOS,
   escena.updateMatrixWorld(true);
   const tapan = [];
   // sólo mallas: las líneas no tapan y three.js las toma con un margen de 1 m (daba falsos «tapa LineSegments»)
+  // lo que se ve de verdad: una malla con un antecesor escondido no tapa (el nivel lejano del LOD del avión quedaba contando)
+  const seVe = (o) => {
+    for (let p = o; p; p = p.parent) if (!p.visible) return false;
+    return true;
+  };
   escena.traverse((o) => {
-    if (o.isMesh && o.visible && o.layers.test(camara.layers) && o !== objeto && !o.name.startsWith('holo') && !(o.material && o.material.blending === THREE.AdditiveBlending)) tapan.push(o);
+    if (o.isMesh && seVe(o) && o.layers.test(camara.layers) && o !== objeto && !o.name.startsWith('holo') && !(o.material && o.material.blending === THREE.AdditiveBlending)) tapan.push(o);
   });
   for (const dx of [-0.08, 0, 0.08])
     for (const dy of [-0.08, 0, 0.08]) {

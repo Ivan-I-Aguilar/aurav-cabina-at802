@@ -4,13 +4,16 @@
 // flota junto a la parte y mira siempre al alumno, con una línea fina hasta la parte), una marca en el PISO donde pararse, y una
 // TARJETA (nombre y una o dos líneas) que se abre al llegar a menos de 1,9 m de su marca del piso. La tarjeta trae SIGUIENTE
 // (salto con fundido al punto que sigue), VER EN HOLOGRAMA donde la pieza ya está (§15.2b) y, en el motor, VER EL MOTOR.
+// Mientras la pieza del punto está abierta en holograma su tarjeta se esconde (una cosa por vez: en el casco la pieza se abre
+// justo donde el alumno estaba mirando, que es la tarjeta); la pieza lleva su propio rótulo con CERRAR (main.js).
+// Se llega a cada punto mirando al medio entre el disco y la tarjeta, que va por debajo de los discos para no tocarse con ellos.
 //
 // Los textos son un BORRADOR [AGREGADO, VERIFICAR]: los corrige o los dicta Iván; los números salen de «Números del avión» de
 // CLAUDE.md, que están «a validar». Las coordenadas van en el MARCO DEL AVIÓN de juegos/at802.glb (+x nariz, +y arriba, +z derecha,
 // metros, origen en el piso entre las ruedas principales) y están puestas mirando la planta que ocupa el avión [PROVISORIO].
 // Todo en 3 llamadas de dibujo: las 16 marcas (discos y piso) en una malla con un atlas, las líneas, y la tarjeta.
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261116a';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261116b';
 
 export const PUNTOS = [
   {
@@ -38,6 +41,7 @@ export const PUNTOS = [
     parte: [-0.5, 2.5, -0.6],
     marca: [0.0, 2.0, -1.25],
     pie: [0.7, -3.1],
+    lado: -1, // la tarjeta a la izquierda del disco (hacia la nariz): a la derecha quedaba metida en el ala
   },
   {
     clave: 'cabina',
@@ -64,6 +68,7 @@ export const PUNTOS = [
     parte: [-1.2, 0.8, 0.1],
     marca: [-2.7, 1.3, 1.0],
     pie: [-3.6, 2.2],
+    lado: -1, // a la izquierda del disco (hacia la cola): a la derecha el borde de fuga del ala le tapaba SIGUIENTE
   },
   {
     clave: 'ala',
@@ -88,6 +93,9 @@ export const PUNTOS = [
 const RADIO_MARCA = 0.14;
 const RADIO_PISO = 0.34;
 const CERCA = 1.9; // a menos de esto de la marca del piso se abre la tarjeta
+const ALTO_TARJETA = 1.45; // el centro de la tarjeta (su borde de arriba queda a 1,70 m: los discos van de 1,76 m para arriba)
+const DIST_TARJETA = 1.3; // del lugar del alumno a su tarjeta (m)
+const ANG_TARJETA = 0.42; // cuánto se abre la tarjeta de la dirección al disco (rad: 24°)
 
 /** el atlas: 4 × 4 casillas; arriba los números pendientes (lima), abajo los vistos (verde, con tilde) */
 function atlas() {
@@ -123,7 +131,7 @@ function atlas() {
  *  grupo (para la escena), tarjeta (un panel de paneles.js: va a la lista de paneles para el rayo), vistos (Set de índices),
  *  activo (índice del punto donde está el alumno, o −1), destino(i) = {x, z, yaw, pitch} para saltar a su marca del piso,
  *  marcaTocada(raycaster) = índice del punto cuya marca (disco o piso) toca el rayo, o −1, y actualizar(camara, tiempo, abierto)
- *  (abierto = la clave de la pieza que está abierta en holograma, para el rótulo del botón).
+ *  (abierto = la clave de la pieza que está abierta en holograma: la tarjeta de ese punto se esconde mientras tanto).
  */
 export function crearFamiliarizacion({avion, leyenda}) {
   const grupo = new THREE.Group();
@@ -132,6 +140,17 @@ export function crearFamiliarizacion({avion, leyenda}) {
   const aMundo = (p) => avion.localToWorld(new THREE.Vector3(...p));
   const N = PUNTOS.length;
   const P = PUNTOS.map((p) => ({...p, parteM: aMundo(p.parte), marcaM: aMundo(p.marca), pieM: aMundo([p.pie[0], 0.012, p.pie[1]])}));
+  /**
+   * el centro de la tarjeta del punto p: SIEMPRE a 1,3 m del lugar del alumno (se lee igual en todos los puntos, esté el disco
+   * cerca o lejos) y 24° al costado de la dirección al disco. Va a la derecha, salvo en los puntos con lado: −1, donde a la
+   * derecha la tapa el avión (se comprueba con rayos desde el ojo: probarRecorrido)
+   */
+  const lugarTarjeta = (p, out = new THREE.Vector3()) => {
+    const d = new THREE.Vector3().subVectors(p.marcaM, p.pieM).setY(0).normalize(); // del lugar al disco
+    const c = Math.cos(ANG_TARJETA);
+    const s = Math.sin(ANG_TARJETA) * (p.lado ?? 1); // la derecha de quien mira hacia d es (−d.z, d.x)
+    return out.set(p.pieM.x + (d.x * c - d.z * s) * DIST_TARJETA, ALTO_TARJETA, p.pieM.z + (d.z * c + d.x * s) * DIST_TARJETA);
+  };
 
   // ---- las 16 marcas en una malla: N discos que miran a la cámara + N marcas de piso
   const tex = atlas();
@@ -191,7 +210,7 @@ export function crearFamiliarizacion({avion, leyenda}) {
     if (l) lineasT.push(l);
     return lineasT;
   }
-  function dibujar(i, hover, abierto) {
+  function dibujar(i, hover) {
     const p = P[i];
     tarjeta.botones.length = 0;
     g.clearRect(0, 0, W, H);
@@ -241,7 +260,7 @@ export function crearFamiliarizacion({avion, leyenda}) {
       g.textBaseline = 'alphabetic';
     };
     if (p.holo === 'motor') boton('fam_motor', 'VER EL MOTOR', M, true);
-    else if (p.holo) boton('fam_holo', abierto === p.clave ? 'CERRAR EL HOLOGRAMA' : 'VER EN HOLOGRAMA', M, true);
+    else if (p.holo) boton('fam_holo', 'VER EN HOLOGRAMA', M, true);
     boton('fam_sig', i === N - 1 ? '← PUNTO 1' : 'SIGUIENTE →', M + bw + 20, false);
     pieLeyenda(g, W, H - 96, 96, leyenda, 27);
     tarjeta.pintado();
@@ -267,8 +286,10 @@ export function crearFamiliarizacion({avion, leyenda}) {
     /** dónde pararse y hacia dónde mirar en el punto i (para el salto con fundido) */
     destino(i) {
       const p = P[i];
-      const d = new THREE.Vector3().subVectors(p.marcaM, p.pieM);
-      return {x: p.pieM.x, z: p.pieM.z, yaw: Math.atan2(-d.x, -d.z), pitch: THREE.MathUtils.clamp(Math.atan2((p.marcaM.y + 1.5) / 2 - 1.6, Math.hypot(d.x, d.z)), -0.5, 0.6)}; // entre el disco y la tarjeta
+      // se llega mirando al medio entre el disco y la tarjeta: los dos quedan enteros a la vista, también en una ventana angosta de PC
+      const medio = lugarTarjeta(p).add(p.marcaM).multiplyScalar(0.5);
+      const d = medio.clone().sub(p.pieM);
+      return {x: p.pieM.x, z: p.pieM.z, yaw: Math.atan2(-d.x, -d.z), pitch: THREE.MathUtils.clamp(Math.atan2(medio.y - 1.6, Math.hypot(d.x, d.z)), -0.5, 0.6)};
     },
     /** el punto cuya marca (el disco o la del piso) toca el rayo, o −1 */
     marcaTocada(raycaster) {
@@ -304,22 +325,20 @@ export function crearFamiliarizacion({avion, leyenda}) {
           geo.attributes.uv.needsUpdate = true;
         }
         if (activo >= 0) {
-          // la tarjeta: a la derecha del disco, a la altura de los ojos, de cara a la marca del piso
+          // la tarjeta: a la derecha del disco, un poco por debajo de los ojos, de cara a la marca del piso
           const p = P[activo];
-          const haciaPie = new THREE.Vector3().subVectors(p.pieM, p.marcaM).setY(0).normalize();
-          const lado = new THREE.Vector3(haciaPie.z, 0, -haciaPie.x); // la derecha de quien mira desde el piso hacia la marca
-          tarjeta.malla.position.copy(p.marcaM).addScaledVector(lado, 0.56).addScaledVector(haciaPie, 0.25);
-          tarjeta.malla.position.y = 1.55;
+          lugarTarjeta(p, tarjeta.malla.position);
           tarjeta.malla.rotation.set(0, Math.atan2(p.pieM.x - tarjeta.malla.position.x, p.pieM.z - tarjeta.malla.position.z), 0);
         }
         firma = '';
       }
-      tarjeta.malla.visible = activo >= 0;
-      if (activo >= 0) {
-        const f = `${activo}|${hover}|${abierto}`;
+      // con la pieza de este punto abierta en holograma, la tarjeta se esconde (la pieza trae su rótulo con CERRAR)
+      tarjeta.malla.visible = activo >= 0 && abierto !== P[activo].clave;
+      if (tarjeta.malla.visible) {
+        const f = `${activo}|${hover}`;
         if (f !== firma) {
           firma = f;
-          dibujar(activo, hover, abierto);
+          dibujar(activo, hover);
         }
       }
     },

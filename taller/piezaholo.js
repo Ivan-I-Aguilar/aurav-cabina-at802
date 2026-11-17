@@ -105,7 +105,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     new THREE.ShaderMaterial({uniforms: U, vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false}),
   );
   malla.name = `pieza-holo-${clave}`;
-  malla.renderOrder = 5;
+  malla.renderOrder = 7; // después de las marcas del recorrido (6): la pieza está más cerca del alumno que los discos
   const interior = new THREE.Group();
   interior.add(malla);
   const grupo = new THREE.Group();
@@ -117,7 +117,9 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     grupo,
     interior,
     escala0: k,
-    radio: geo.boundingSphere.radius * k,
+    // el radio de lo que SE VE: con caja, el de la caja recortada (los triángulos grandes que la cruzan inflaban la esfera: la
+    // cabina, de 0,9 m, daba 1,03 m de radio)
+    radio: (caja ? Math.min(geo.boundingSphere.radius, lado.length() / 2) : geo.boundingSphere.radius) * k,
     triangulos: pos.length / 9,
     actualizar(dt, t) {
       U.uTiempo.value = t;
