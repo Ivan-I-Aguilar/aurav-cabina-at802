@@ -792,7 +792,7 @@ Quest no se probó nada).** Lo que quedó:
   holograma vuela solo de un lugar al otro. El cartel y las llamadas se agrandan con la presentación. En VR, de lejos, el grip con el
   rayo sobre el holograma lo gira en su lugar (10° de la mano = 30° del motor); de cerca sigue el agarre con una y dos manos. **Llega
   parado y en silencio**, con el aviso «MOTOR PARADO · Apretá ARRANCAR…». Al llegar con VER EL MOTOR se enciende de a poco (2,2 s).
-- **La familiarización** (`taller/familiarizacion.js`): ocho puntos alrededor del avión, en el orden de una vuelta que TERMINA en el
+- **La familiarización** (`taller/familiarizacion.js`): ocho puntos (nueve desde que el tren va aparte: ver más abajo) alrededor del avión, en el orden de una vuelta que TERMINA en el
   motor: 1 hélice · 2 escapes y toma de aire · 3 tolva y boca de carga · 4 cabina · 5 cola y rueda de cola · 6 compuerta de
   descarga · 7 ala, flaps y tren · 8 motor. Cada uno: un disco numerado que mira al alumno (verde con tilde cuando se vio) con una
   línea a su parte, una marca en el piso donde pararse y una tarjeta (nombre, dos líneas, la leyenda) que se abre a menos de 1,9 m.
@@ -840,7 +840,17 @@ Quest no se probó nada).** Lo que quedó:
   (h) `rayosDesdeElOjo` contaba como tapa el nivel lejano y escondido del LOD del avión: ahora sólo cuenta lo que se ve.
   Pruebas después del repaso: recorrido 27, mandos 29, piloto 15, mecánico 5, identificar 6, todas bien y sin errores en consola.
   Junto al avión, la peor vista: 46 llamadas y 128 k tri (con la hélice o los escapes abiertos). La ronda fija (1 a 11), revisada.
-- Capturas: `Documents/aurav-cabina/capturas_taller/T11_dinamica_nueva.jpg` y, del repaso, `T11_repaso_pc.jpg`.
+- **El tren como punto propio (reserva del bloque, «más puntos del avión»; v=20261116c):** Iván nombró el tren aparte del ala
+  («tolva, compuerta, escape, cabina, ala, tren, cola, hélice, motor»): el recorrido tiene ahora **NUEVE puntos** (1 hélice ·
+  2 escapes y toma de aire · 3 tolva y boca de carga · 4 cabina · 5 cola y rueda de cola · 6 compuerta de descarga · 7 ala y
+  flaps · 8 tren de aterrizaje · 9 motor). El punto 8 se para delante del ala derecha, mirando la rueda principal; su pieza en
+  holograma es el tren principal derecho (rueda, pata de ballesta y carenado, hasta donde entra en la panza), recortado con una
+  caja medida en el modelo; el ala quedó sola (su caja ya no toma la pata ni la rueda). El atlas de las marcas sirve para
+  cualquier cantidad de puntos, y el rótulo de la pieza va justo arriba de lo que la pieza sube de verdad (con el radio de la
+  esfera, mirando hacia abajo, se salía de la pantalla). Pruebas: recorrido 30 (9 puntos), mandos 29, piloto 15, mecánico 5.
+  Sumar un punto es agregar su entrada en `PUNTOS` (y su recorte en `PIEZAS_HOLO` si tiene pieza).
+- Capturas: `Documents/aurav-cabina/capturas_taller/T11_dinamica_nueva.jpg`, del repaso `T11_repaso_pc.jpg` y del tren
+  `T11_tren.jpg`.
 
 ### 15.4 Lo que tiene que decir Iván (de a una; mientras tanto vale lo provisorio)
 1. El ok a este plan (y por dónde arrancar). **Dado el 16/11: «Sí, en ese orden»** (primero el motor a escala real y el recorrido

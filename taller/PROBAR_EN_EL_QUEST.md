@@ -47,13 +47,13 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 
 ## 3. Qué mirar en el casco
 - **La dinámica nueva (16/11), que es lo que más depende del casco:**
-  - *El recorrido del avión:* atril → RECORRER EL AVIÓN → los ocho puntos. ¿Se leen los discos y las tarjetas? ¿Los saltos de
+  - *El recorrido del avión:* atril → RECORRER EL AVIÓN → los nueve puntos. ¿Se leen los discos y las tarjetas? ¿Los saltos de
     SIGUIENTE marean? ¿Se llega bien tocando un disco o una marca del piso con el rayo?
   - *El motor dentro del capó:* junto al avión se ve como una radiografía azul. ¿Se entiende dónde va y qué tamaño tiene?
   - *VER EL MOTOR:* la primera impresión a escala real, a 3,2 m. ¿Impacta? ¿Entra entero en la vista? ¿Se ve nítido o empastado?
   - *Girarlo:* de cerca con el grip (una mano lo lleva, dos lo achican o lo agrandan) y de lejos con el rayo + grip (como un plato).
     Los botones TAMAÑO REAL y A LA MESA.
-  - *Las piezas en holograma:* la hélice, la cola, el ala con el tren, los escapes y la cabina, desde su tarjeta. ¿El tamaño «entre
+  - *Las piezas en holograma:* la hélice, la cola, el ala, el tren, los escapes y la cabina, desde su tarjeta. ¿El tamaño «entre
     las manos» está bien? ¿Se agarran? Al abrirse, la tarjeta se esconde y la pieza trae arriba un rótulo con CERRAR: ¿se le
     acierta con el rayo? ¿El fondo oscuro que lleva detrás ayuda o molesta?
 - **Fluidez:** que no tironee en ningún lugar (frente al motor, mirando la nave entera desde el portón, junto al AT-802). En la PC, la
@@ -74,4 +74,4 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 ## 4. Lo que no se pudo probar desde la PC
 Todo lo de arriba que dice «grip», «gatillo», «joystick», «B o Y», «sacarse el casco» y la fluidez real: en la PC se probó con los
 mandos simulados por código (`__taller.probarMandos()`, 29 pruebas), el piloto de prueba (`__taller.probarPiloto()`, 15) y el
-recorrido del avión (`__taller.probarRecorrido()`, 27, con rayos desde el ojo a cada tarjeta), pero eso no reemplaza ponerse el casco.
+recorrido del avión (`__taller.probarRecorrido()`, 30, con rayos desde el ojo a cada tarjeta), pero eso no reemplaza ponerse el casco.

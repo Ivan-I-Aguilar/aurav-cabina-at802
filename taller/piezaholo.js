@@ -40,8 +40,8 @@ void main() {
  * clave: el nombre de la pieza; fuentes: las mallas de donde sale; marco: el objeto en cuyo marco local queda la pieza (por
  * omisión, la primera fuente); caja: Box3 en ese marco para recortar (o null: la malla entera); tam: cuánto mide su lado más largo
  * (m); gira: {eje: 'x' | 'y' | 'z', vel: rad/s} si la pieza gira sobre un eje de su marco (la hélice).
- * Devuelve {clave, grupo, interior, radio, triangulos, actualizar(dt, t), liberar()}: el grupo se pone, se gira y se escala desde
- * afuera; «interior» es lo que gira solo.
+ * Devuelve {clave, grupo, interior, radio, mitad, triangulos, actualizar(dt, t), liberar()}: el grupo se pone, se gira y se
+ * escala desde afuera; «interior» es lo que gira solo; «mitad» es la media caja de lo que se ve (para saber hasta dónde sube).
  */
 export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam = 0.8, color = '#62d8ff', gira = null, brillo = 1}) {
   const ref = marco || fuentes[0];
@@ -121,6 +121,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     // cabina, de 0,9 m, daba 1,03 m de radio)
     radio: (caja ? Math.min(geo.boundingSphere.radius, lado.length() / 2) : geo.boundingSphere.radius) * k,
     triangulos: pos.length / 9,
+    mitad: lado.clone().multiplyScalar(0.5), // la mitad de lo que mide lo que se ve, en el marco de la pieza (sin escalar)
     actualizar(dt, t) {
       U.uTiempo.value = t;
       if (gira) interior.rotation[gira.eje] += gira.vel * dt;

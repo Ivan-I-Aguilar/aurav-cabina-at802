@@ -1,6 +1,7 @@
 // La FAMILIARIZACIÓN con el AT-802 (T11, 16/11/2026; PLAN_TALLER.md §15.2, pedido de Iván: «acercarse al avión, hacer tipo un
 // recorrido de la aeronave, una especie de familiarización, y sobre la turbina poder seleccionar que te dé la opción de ver motor»).
-// Ocho puntos alrededor del avión, en el orden de una vuelta caminando. Cada uno tiene: una MARCA (un disco con su número que
+// Nueve puntos alrededor del avión (los que nombró Iván: hélice, escapes, tolva, cabina, cola, compuerta, ala, tren y motor), en
+// el orden de una vuelta caminando que termina en el motor. Cada uno tiene: una MARCA (un disco con su número que
 // flota junto a la parte y mira siempre al alumno, con una línea fina hasta la parte), una marca en el PISO donde pararse, y una
 // TARJETA (nombre y una o dos líneas) que se abre al llegar a menos de 1,9 m de su marca del piso. La tarjeta trae SIGUIENTE
 // (salto con fundido al punto que sigue), VER EN HOLOGRAMA donde la pieza ya está (§15.2b) y, en el motor, VER EL MOTOR.
@@ -11,9 +12,10 @@
 // Los textos son un BORRADOR [AGREGADO, VERIFICAR]: los corrige o los dicta Iván; los números salen de «Números del avión» de
 // CLAUDE.md, que están «a validar». Las coordenadas van en el MARCO DEL AVIÓN de juegos/at802.glb (+x nariz, +y arriba, +z derecha,
 // metros, origen en el piso entre las ruedas principales) y están puestas mirando la planta que ocupa el avión [PROVISORIO].
-// Todo en 3 llamadas de dibujo: las 16 marcas (discos y piso) en una malla con un atlas, las líneas, y la tarjeta.
+// Todo en 3 llamadas de dibujo: las marcas (un disco y una marca de piso por punto) en una malla con un atlas, las líneas, y la
+// tarjeta. Sumar un punto es agregar su entrada en PUNTOS (y, si tiene pieza en holograma, su recorte en PIEZAS_HOLO de main.js).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261116b';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261116c';
 
 export const PUNTOS = [
   {
@@ -72,12 +74,22 @@ export const PUNTOS = [
   },
   {
     clave: 'ala',
-    titulo: 'Ala, flaps y tren',
-    texto: 'Ala baja de unos 18 metros de punta a punta, con flaps para volar más lento al despegar y al aterrizar. Tren fijo, de ballesta.',
+    titulo: 'Ala y flaps',
+    texto: 'Ala baja de unos 18 metros de punta a punta, con flaps para volar más lento al despegar y al aterrizar.',
     parte: [-0.9, 1.4, 4.8],
     marca: [-0.3, 1.85, 4.9],
     pie: [1.0, 5.4],
     holo: 'ala',
+  },
+  {
+    // el tren, aparte del ala (Iván lo nombró solo: «ala, tren, cola…»); la rueda principal derecha está en (0; 0,46; 1,4…1,6)
+    clave: 'tren',
+    titulo: 'Tren de aterrizaje',
+    texto: 'Tren fijo y convencional: dos ruedas principales sobre ballestas, que absorben el golpe del aterrizaje, y la rueda de cola atrás.',
+    parte: [0.0, 0.6, 1.62],
+    marca: [0.3, 1.2, 2.15],
+    pie: [1.0, 3.6],
+    holo: 'tren',
   },
   {
     clave: 'motor',
@@ -97,28 +109,32 @@ const ALTO_TARJETA = 1.45; // el centro de la tarjeta (su borde de arriba queda 
 const DIST_TARJETA = 1.3; // del lugar del alumno a su tarjeta (m)
 const ANG_TARJETA = 0.42; // cuánto se abre la tarjeta de la dirección al disco (rad: 24°)
 
-/** el atlas: 4 × 4 casillas; arriba los números pendientes (lima), abajo los vistos (verde, con tilde) */
+// el atlas de las marcas: COLS casillas de ancho; arriba, FILAS filas con los números pendientes (lima); abajo, otras tantas con
+// los vistos (verde, con tilde). Sirve para cualquier cantidad de puntos
+const COLS = 4;
+const FILAS = Math.ceil(PUNTOS.length / COLS);
 function atlas() {
-  const T = 256;
+  const T = 192;
   const cv = document.createElement('canvas');
-  cv.width = cv.height = 4 * T;
+  cv.width = COLS * T;
+  cv.height = 2 * FILAS * T;
   const g = cv.getContext('2d');
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   for (let i = 0; i < PUNTOS.length; i++)
     for (const visto of [0, 1]) {
-      const x = (i % 4) * T + T / 2;
-      const y = (Math.floor(i / 4) + 2 * visto) * T + T / 2;
+      const x = (i % COLS) * T + T / 2;
+      const y = (Math.floor(i / COLS) + FILAS * visto) * T + T / 2;
       g.beginPath();
       g.arc(x, y, T * 0.46, 0, Math.PI * 2);
       g.fillStyle = visto ? '#2f9e5b' : '#c8e63a';
       g.fill();
-      g.lineWidth = 12;
+      g.lineWidth = T * 0.047;
       g.strokeStyle = visto ? '#ffffff' : '#082440';
       g.stroke();
       g.fillStyle = visto ? '#ffffff' : '#082440';
-      g.font = `bold ${visto ? 120 : 150}px Arial`;
-      g.fillText(visto ? `${i + 1} ✓` : String(i + 1), x, y + 8);
+      g.font = `bold ${Math.round(T * (visto ? 0.47 : 0.586))}px Arial`;
+      g.fillText(visto ? `${i + 1} ✓` : String(i + 1), x, y + T / 32);
     }
   const t = new THREE.CanvasTexture(cv);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -152,7 +168,7 @@ export function crearFamiliarizacion({avion, leyenda}) {
     return out.set(p.pieM.x + (d.x * c - d.z * s) * DIST_TARJETA, ALTO_TARJETA, p.pieM.z + (d.z * c + d.x * s) * DIST_TARJETA);
   };
 
-  // ---- las 16 marcas en una malla: N discos que miran a la cámara + N marcas de piso
+  // ---- las marcas en una malla: N discos que miran a la cámara + N marcas de piso
   const tex = atlas();
   const pos = new Float32Array(2 * N * 4 * 3);
   const uv = new Float32Array(2 * N * 4 * 2);
@@ -168,9 +184,11 @@ export function crearFamiliarizacion({avion, leyenda}) {
   marcas.renderOrder = 6;
   grupo.add(marcas);
   const ponerUV = (q, i, visto) => {
-    const u0 = (i % 4) / 4;
-    const v1 = 1 - (Math.floor(i / 4) + 2 * visto) / 4;
-    uv.set([u0, v1 - 0.25, u0 + 0.25, v1 - 0.25, u0 + 0.25, v1, u0, v1], q * 8);
+    const du = 1 / COLS;
+    const dv = 1 / (2 * FILAS);
+    const u0 = (i % COLS) * du;
+    const v1 = 1 - (Math.floor(i / COLS) + FILAS * visto) * dv;
+    uv.set([u0, v1 - dv, u0 + du, v1 - dv, u0 + du, v1, u0, v1], q * 8);
   };
   // las del piso no se mueven: un cuadrado acostado, con el número derecho para quien llega de frente al avión
   P.forEach((p, i) => {

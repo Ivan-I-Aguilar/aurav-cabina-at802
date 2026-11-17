@@ -12,19 +12,19 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116b';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116b';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116b';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116b';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116b';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116b';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116b';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116b';
-import {crearPiezaHolo} from './piezaholo.js?v=20261116b';
-import {crearLlamadas} from './llamadas.js?v=20261116b';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116b';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116c';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116c';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116c';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116c';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116c';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116c';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116c';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116c';
+import {crearPiezaHolo} from './piezaholo.js?v=20261116c';
+import {crearLlamadas} from './llamadas.js?v=20261116c';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116c';
 
-export const VERSION = '20261116b';
+export const VERSION = '20261116c';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -1336,7 +1336,7 @@ if (hangar)
       marcoAvion = avionAT;
     }
     AT802.celdas = rasterizarChoque(avionAT);
-    // la familiarización (T11): los ocho puntos alrededor del avión, con sus marcas, su tarjeta y los saltos
+    // la familiarización (T11): los puntos alrededor del avión, con sus marcas, su tarjeta y los saltos
     fam = crearFamiliarizacion({avion: marcoAvion, leyenda: LEGEND});
     escena.add(fam.grupo);
     paneles.push(fam.tarjeta);
@@ -1440,7 +1440,7 @@ function tocarMarca(r) {
 // la pieza que está abierta en holograma «en las manos» (§15.2b); la arma piezaholo.js
 let piezaAbierta = null;
 // De dónde sale cada pieza (de a una, §15.2b). La hélice y la cabina vienen sueltas en el modelo (nodos «helice» y «cabina»); el
-// ala con su pata, la cola y los escapes se RECORTAN del exterior con una caja en el marco del avión (+x nariz, +y arriba, +z
+// ala, el tren, la cola y los escapes se RECORTAN del exterior con una caja en el marco del avión (+x nariz, +y arriba, +z
 // derecha, metros) [cajas PROVISORIAS, puestas mirando el modelo]. «frente» es el lado de la pieza que queda hacia el alumno.
 // La tolva por dentro y la compuerta no salen del modelo: se modelan cuando haya fotos o medidas.
 const mallasDe = (nombre) => {
@@ -1452,7 +1452,12 @@ const recorte = (clave, nodos, min, max, tam, frente, inclinar = 0, brillo = 1) 
   Object.assign(crearPiezaHolo({clave, fuentes: nodos.flatMap(mallasDe), marco: avionAT, caja: new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)), tam, brillo}), {frente, inclinar});
 const PIEZAS_HOLO = {
   helice: () => Object.assign(crearPiezaHolo({clave: 'helice', fuentes: mallasDe('helice'), marco: avionAT.getObjectByName('helice'), tam: 0.85, gira: {eje: 'x', vel: 1.1}}), {frente: [1, 0, 0]}),
-  ala: recorte('ala', ['exterior'], [-2.8, 0, 0.62], [1.0, 2.4, 9.3], 1.3, [1, 0, 0.35], 0.95), // el ala derecha entera con su pata y su rueda, inclinada 55°
+  // el ala derecha sola, inclinada 55° (la caja deja afuera la pata y la rueda: el intradós va de 1,30 m para arriba, la rueda llega
+  // a 0,92 m y el tramo alto de la pata queda antes de z 0,9)
+  ala: recorte('ala', ['exterior'], [-2.8, 1.0, 0.95], [1.0, 2.4, 9.3], 1.3, [1, 0, 0.35], 0.95),
+  // el tren principal derecho: la rueda, la pata de ballesta y su carenado, hasta donde entra en la panza (medido en el modelo: la
+  // rueda de x ±0,46, y 0 a 0,92, z 1,2 a 1,6; la pata sube hasta y 1,41 en z 0,43)
+  tren: recorte('tren', ['exterior'], [-0.7, 0, 0.25], [0.7, 1.38, 1.75], 0.8, [0.6, 0, 0.8]),
   cola: recorte('cola', ['exterior'], [-8.0, 0, -3.1], [-5.4, 4.3, 3.1], 0.95, [-0.75, 0, 0.65]), // deriva, timones, estabilizador y rueda de cola
   escapes: recorte('escapes', ['exterior'], [1.0, 1.5, -0.95], [2.6, 3.3, 0.95], 0.8, [0.55, 0, 0.83]), // la nariz: el capó con los dos escapes y la toma
   cabina: recorte('cabina', ['cabina', 'exterior'], [-4.0, 1.85, -0.85], [-1.7, 3.4, 0.85], 0.9, [0.45, 0, -0.9], 0.25, 0.28), // la cabina liviana con su cúpula (muchas capas: poco brillo)
@@ -1522,7 +1527,13 @@ function seguirRotuloPieza(ojo, hover) {
   if (!piezaAbierta) return;
   const g = piezaAbierta.grupo;
   const r = (piezaAbierta.radio * g.scale.x) / piezaAbierta.escala0;
-  m.position.set(g.position.x, Math.min(g.position.y + r + 0.1, 2.05), g.position.z);
+  // hasta dónde sube la pieza, como está girada y escalada (las ocho esquinas de su caja): el rótulo va justo arriba. Con el
+  // radio de la esfera quedaba demasiado alto y, mirando hacia abajo (el tren), se salía de la pantalla
+  g.updateMatrixWorld(true);
+  const mt = piezaAbierta.mitad;
+  let tope = g.position.y;
+  for (let i = 0; i < 8; i++) tope = Math.max(tope, tmp2.set(i & 1 ? mt.x : -mt.x, i & 2 ? mt.y : -mt.y, i & 4 ? mt.z : -mt.z).applyMatrix4(g.matrixWorld).y);
+  m.position.set(g.position.x, Math.min(tope + 0.1, 2.05), g.position.z);
   m.rotation.set(0, Math.atan2(ojo.x - m.position.x, ojo.z - m.position.z), 0);
   telonPieza.position.copy(g.position);
   telonPieza.lookAt(ojo);
@@ -2426,7 +2437,7 @@ function probarMecanico() {
 }
 
 // ------------------------------------------------------------ prueba del recorrido del avión (T11)
-// Con el mismo cuadro del juego: el atril lleva al primer punto; SIGUIENTE pasa por los ocho (en cada uno se abre su tarjeta y el
+// Con el mismo cuadro del juego: el atril lleva al primer punto; SIGUIENTE pasa por todos (en cada uno se abre su tarjeta y el
 // lugar está libre de choque); junto al avión el motor va dentro del capó, parado y con su cubo en la hélice del avión; la hélice
 // se abre en holograma delante del alumno, se agarra con el grip simulado y se cierra; VER EL MOTOR deja al alumno frente al motor
 // a escala real. Deja todo como estaba.
@@ -2522,7 +2533,7 @@ function probarRecorrido() {
       saltar();
     }
   }
-  ok('los ocho puntos quedan vistos', fam.vistos.size === PUNTOS_AVION.length, [...fam.vistos]);
+  ok('todos los puntos del recorrido quedan vistos', fam.vistos.size === PUNTOS_AVION.length, [...fam.vistos]);
   accionar({tipo: 'panel', id: 'fam_motor'});
   saltar();
   motorGrupo.updateMatrixWorld(true);
@@ -3002,7 +3013,7 @@ window.__taller = {
   get enCapo() {
     return enCapo;
   },
-  /** la prueba del recorrido del avión: los 8 puntos, el motor en el capó, la hélice en holograma y VER EL MOTOR */
+  /** la prueba del recorrido del avión: todos los puntos, el motor en el capó, la hélice en holograma y VER EL MOTOR */
   probarRecorrido,
   /** la familiarización con el avión: sus puntos, el activo y los vistos */
   get fam() {
