@@ -12,19 +12,19 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116d';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116d';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116d';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116d';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116d';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116d';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116d';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116d';
-import {crearPiezaHolo} from './piezaholo.js?v=20261116d';
-import {crearLlamadas} from './llamadas.js?v=20261116d';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116d';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116e';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116e';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116e';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116e';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116e';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116e';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116e';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116e';
+import {crearPiezaHolo} from './piezaholo.js?v=20261116e';
+import {crearLlamadas} from './llamadas.js?v=20261116e';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116e';
 
-export const VERSION = '20261116d';
+export const VERSION = '20261116e';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -1036,6 +1036,9 @@ function accionar(a) {
   else if (a.id === 'fam_motor') saltarA('mesa');
   else if (a.id === 'fam_holo') alternarPieza(PUNTOS_AVION[fam.activo].clave);
   else if (a.id === 'pieza_cerrar') cerrarPieza();
+  else if (a.id === 'pieza_hojas') {
+    if (piezaAbierta && piezaAbierta.tieneMoviles) piezaAbierta.abrir(!piezaAbierta.abierta);
+  }
   else if (a.id === 'modo_mecanico') {
     // sin publicar hasta la validación de AAXOD (decisión 3b): sólo con ?mecanico=1; si no, el botón se ve apagado
     if (PARAM.get('mecanico') === '1') {
@@ -1242,6 +1245,7 @@ function caminar(dt, ejeX, ejeY) {
 const AT802 = {x: -10, z: -14.5, v: '20261115a'};
 let avionAT = null;
 let marcoAvion = null; // el objeto cuyo marco local es el del avión (+x nariz, +y arriba, +z derecha)
+const modelosPiezas = {}; // los modelos propios de las piezas que el avión no trae con detalle (T12): compuerta
 let fam = null; // la familiarización con el avión (taller/familiarizacion.js)
 // el choque con el avión: sus triángulos que bajan de 1,9 m (el ala, la cola, el tren), rasterizados en planta en una grilla de 20 cm
 const GRILLA = {paso: 0.2, x0: 0, z0: 0, nx: 0, nz: 0, celdas: null};
@@ -1340,6 +1344,19 @@ if (hangar)
     fam = crearFamiliarizacion({avion: marcoAvion, leyenda: LEGEND});
     escena.add(fam.grupo);
     paneles.push(fam.tarjeta);
+    // T12: las piezas que el modelo del avión no trae con detalle van en un modelo propio, hecho en el MARCO DEL AVIÓN con las
+    // fotos del avión real (herramientas/taller_compuerta.py). Quedan escondidas bajo el marco del avión: sólo son la fuente de
+    // su holograma
+    for (const [clave, ruta] of [['compuerta', './taller/compuerta.glb']])
+      try {
+        const gp = await new GLTFLoader().loadAsync(`${ruta}?v=${VERSION}`);
+        gp.scene.name = `modelo-${clave}`;
+        gp.scene.visible = false;
+        marcoAvion.add(gp.scene);
+        modelosPiezas[clave] = gp.scene;
+      } catch (e) {
+        console.warn(`taller: ${ruta} no cargó; esa pieza queda recortada del modelo del avión`, e);
+      }
   } catch (e) {
     console.warn('taller: juegos/at802.glb no cargó', e);
   }
@@ -1463,7 +1480,23 @@ const PIEZAS_HOLO = {
   // por encima del ala. La compuerta: la panza roja que cuelga bajo la tolva (de x 0,1 a −2,4; la panza baja hasta 0,78 m),
   // vista desde abajo; la caja corta antes de las patas del tren (y 1,24 en adelante)
   tolva: recorte('tolva', ['exterior'], [-1.95, 1.8, -0.85], [1.0, 3.1, 0.85], 0.9, [0.25, 0, -1], 0.35),
-  compuerta: recorte('compuerta', ['exterior'], [-2.55, 0.6, -0.72], [0.2, 1.22, 0.72], 0.9, [0.2, 0, 1], -0.75),
+  // la COMPUERTA con sus dos hojas, sus rieles, el venteo y la cañería de carga: modelo propio (taller/compuerta.glb, T12, hecho
+  // con las fotos del avión real). Las hojas son partes móviles: giran sobre su bisagra (userData.bisagra de cada una). Si el
+  // modelo no cargó, queda la panza recortada del avión, por fuera
+  compuerta: () => {
+    const modelo = modelosPiezas.compuerta;
+    if (!modelo) return recorte('compuerta', ['exterior'], [-2.55, 0.6, -0.72], [0.2, 1.22, 0.72], 0.9, [0.2, 0, 1], -0.75)();
+    const fijas = [];
+    const moviles = [];
+    modelo.traverse((o) => {
+      if (!o.isMesh || o.name === 'compuerta_panza') return; // la chapa de la panza es contexto para verla sólida: de canto encandila
+      if (o.userData.bisagra) {
+        const bis = JSON.parse(o.userData.bisagra);
+        moviles.push({fuentes: [o], a: new THREE.Vector3(...bis.a), b: new THREE.Vector3(...bis.b), angulo: bis.abre});
+      } else fijas.push(o);
+    });
+    return Object.assign(crearPiezaHolo({clave: 'compuerta', fuentes: fijas, moviles, marco: marcoAvion, tam: 1.2}), {frente: [0.3, 0, 1], inclinar: -0.8});
+  },
   cola: recorte('cola', ['exterior'], [-8.0, 0, -3.1], [-5.4, 4.3, 3.1], 0.95, [-0.75, 0, 0.65]), // deriva, timones, estabilizador y rueda de cola
   escapes: recorte('escapes', ['exterior'], [1.0, 1.5, -0.95], [2.6, 3.3, 0.95], 0.8, [0.55, 0, 0.83]), // la nariz: el capó con los dos escapes y la toma
   cabina: recorte('cabina', ['cabina', 'exterior'], [-4.0, 1.85, -0.85], [-1.7, 3.4, 0.85], 0.9, [0.45, 0, -0.9], 0.25, 0.28), // la cabina liviana con su cúpula (muchas capas: poco brillo)
@@ -1510,6 +1543,38 @@ function pintarRotuloPieza(titulo, sobre, nota = '') {
   g.fillText('CERRAR', bx + bw / 2, H / 2 + 3);
   rotuloPieza.pintado();
 }
+// El botón de ACCIÓN de la pieza: sólo en las que traen partes que se mueven (la compuerta: ABRIR / CERRAR LAS HOJAS). Va entre
+// el rótulo y la pieza, con una línea chica que dice lo que esa acción tiene de provisorio
+const accionPieza = crearPanel({ancho: 0.46, alto: 0.1, px: 736, nombre: 'accion-pieza', transparente: true});
+accionPieza.malla.visible = false;
+accionPieza.malla.renderOrder = 8;
+escena.add(accionPieza.malla);
+paneles.push(accionPieza);
+let accionFirma = '';
+function pintarAccionPieza(texto, nota, sobre) {
+  const {g, W, H} = accionPieza;
+  const hb = Math.round(H * 0.66);
+  accionPieza.botones.length = 0;
+  g.clearRect(0, 0, W, H);
+  accionPieza.botones.push({id: 'pieza_hojas', x: 0, y: 0, w: W, h: hb});
+  g.beginPath();
+  g.roundRect(3, 3, W - 6, hb - 6, 22);
+  g.fillStyle = sobre ? '#e4f77a' : '#c8e63a';
+  g.fill();
+  g.fillStyle = '#082440';
+  g.font = 'bold 46px Arial';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(texto, W / 2, hb / 2 + 2, W - 40);
+  g.beginPath();
+  g.roundRect(60, hb + 4, W - 120, H - hb - 8, 12);
+  g.fillStyle = 'rgba(8,36,64,0.88)';
+  g.fill();
+  g.fillStyle = '#9fb4c8';
+  g.font = 'bold 24px Arial';
+  g.fillText(nota, W / 2, hb + 4 + (H - hb - 8) / 2 + 1, W - 150);
+  accionPieza.pintado();
+}
 // El TELÓN de la pieza: un disco oscuro y difuso detrás de ella, siempre de cara al alumno. La luz sumada del holograma no se ve
 // sobre lo blanco (el fuselaje, el capó): con el fondo oscurecido la pieza se lee contra cualquier cosa. No escribe profundidad y
 // se dibuja antes que la pieza (y después de las marcas, que quedan atenuadas detrás).
@@ -1536,6 +1601,7 @@ const telonPieza = (() => {
 function seguirRotuloPieza(ojo, hover) {
   const m = rotuloPieza.malla;
   m.visible = telonPieza.visible = !!piezaAbierta;
+  accionPieza.malla.visible = !!piezaAbierta && piezaAbierta.tieneMoviles;
   if (!piezaAbierta) return;
   const g = piezaAbierta.grupo;
   const r = (piezaAbierta.radio * g.scale.x) / piezaAbierta.escala0;
@@ -1545,8 +1611,26 @@ function seguirRotuloPieza(ojo, hover) {
   const mt = piezaAbierta.mitad;
   let tope = g.position.y;
   for (let i = 0; i < 8; i++) tope = Math.max(tope, tmp2.set(i & 1 ? mt.x : -mt.x, i & 2 ? mt.y : -mt.y, i & 4 ? mt.z : -mt.z).applyMatrix4(g.matrixWorld).y);
-  m.position.set(g.position.x, Math.min(tope + 0.1, 2.05), g.position.z);
+  // con botón de acción, el rótulo sube un renglón y el botón queda debajo de él
+  const renglon = piezaAbierta.tieneMoviles ? 0.115 : 0;
+  let yRot = Math.min(tope + 0.1 + renglon, 2.05);
+  if (!renderer.xr.isPresenting) {
+    // en la PC el rótulo no se sale de la pantalla: como mucho 27° por encima del centro de la mirada (la caja de una pieza
+    // larga e inclinada, como la compuerta con su cañería, sube más que la pieza y lo mandaba afuera)
+    const sube = clamp(camara.getWorldDirection(tmp2).y, -0.7, 0.7);
+    yRot = Math.min(yRot, ojo.y + Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z) * Math.tan(Math.asin(sube) + 0.47) - 0.05);
+  }
+  m.position.set(g.position.x, yRot, g.position.z);
   m.rotation.set(0, Math.atan2(ojo.x - m.position.x, ojo.z - m.position.z), 0);
+  if (piezaAbierta.tieneMoviles) {
+    accionPieza.malla.position.set(m.position.x, m.position.y - renglon, m.position.z);
+    accionPieza.malla.rotation.copy(m.rotation);
+    const fa = `${piezaAbierta.clave}|${piezaAbierta.abierta}|${hover === 'pieza_hojas'}`;
+    if (fa !== accionFirma) {
+      accionFirma = fa;
+      pintarAccionPieza(piezaAbierta.abierta ? 'CERRAR LAS HOJAS' : 'ABRIR LAS HOJAS', 'ABIERTA: SIN FOTO · A VERIFICAR', hover === 'pieza_hojas');
+    }
+  }
   telonPieza.position.copy(g.position);
   telonPieza.lookAt(ojo);
   telonPieza.scale.setScalar(r * 1.3);
@@ -1563,7 +1647,7 @@ function cerrarPieza() {
   piezaAbierta = null;
   agarrePieza.length = 0;
   dosManosPieza = null;
-  rotuloPieza.malla.visible = telonPieza.visible = false;
+  rotuloPieza.malla.visible = telonPieza.visible = accionPieza.malla.visible = false;
 }
 /** abre la pieza delante del alumno, a la altura del pecho y con su eje hacia él; si ya estaba abierta, la cierra */
 function alternarPieza(clave) {
@@ -2538,6 +2622,28 @@ function probarRecorrido() {
       accionar({tipo: 'panel', id: 'fam_holo'});
       const abierta = piezaAbierta && piezaAbierta.clave === pz;
       const dato = piezaAbierta && {triangulos: piezaAbierta.triangulos};
+      if (pz === 'compuerta' && piezaAbierta) {
+        // las HOJAS (T12): el botón de la pieza las abre girando sobre su bisagra y las vuelve a cerrar. Se aprieta con el rayo
+        // y el gatillo simulados; abierta, el centro de cada hoja queda más abajo que cerrada
+        avanzar(1 / 60);
+        const hoja = piezaAbierta.grupo.getObjectByName('pieza-holo-compuerta-movil-0');
+        const cHojas = accionPieza.centro('pieza_hojas');
+        if (cHojas) gatilloEn(manos[1], cHojas, new THREE.Vector3(0, 0, 1).applyQuaternion(accionPieza.malla.getWorldQuaternion(new THREE.Quaternion())));
+        ponerMano(manos[1], new THREE.Vector3(0, -5, 0));
+        avanzar(0.7);
+        avanzar(0.7);
+        let baja = 0;
+        if (hoja) {
+          hoja.geometry.computeBoundingBox();
+          const c0 = hoja.geometry.boundingBox.getCenter(new THREE.Vector3());
+          baja = c0.y - c0.clone().applyMatrix4(hoja.matrix).y;
+        }
+        const abiertas = piezaAbierta.tieneMoviles && piezaAbierta.abierta && piezaAbierta.abertura === 1 && baja > 0.05;
+        accionar({tipo: 'panel', id: 'pieza_hojas'});
+        avanzar(0.7);
+        avanzar(0.7);
+        ok('compuerta en holograma: el modelo propio, con dos hojas que su botón abre y vuelve a cerrar', !!hoja && abiertas && !piezaAbierta.abierta && piezaAbierta.abertura === 0, {moviles: piezaAbierta.tieneMoviles, bajaCm: +(baja * 100).toFixed(1), abertura: piezaAbierta.abertura});
+      }
       accionar({tipo: 'panel', id: 'fam_holo'});
       ok(PUNTOS_AVION[i].titulo + ' en holograma: se abre desde su tarjeta y se cierra', abierta && dato.triangulos > 500 && !piezaAbierta, dato);
     }
@@ -3022,6 +3128,8 @@ window.__taller = {
     return piezaAbierta;
   },
   alternarPieza,
+  /** abre (true) o cierra (false) las hojas de la pieza abierta, si las tiene */
+  hojas: (si) => !!piezaAbierta && piezaAbierta.tieneMoviles && (piezaAbierta.abrir(si), true),
   /** ¿el holograma está dentro del capó del avión? (el alumno está junto al AT-802) */
   get enCapo() {
     return enCapo;

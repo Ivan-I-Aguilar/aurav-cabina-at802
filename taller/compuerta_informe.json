@@ -1,0 +1,41 @@
+{
+ "etapa": "T12",
+ "triangulos": {
+  "compuerta_caja": 1124,
+  "compuerta_hoja_der": 432,
+  "compuerta_hoja_izq": 432,
+  "compuerta_carga": 1792,
+  "compuerta_panza": 24
+ },
+ "mallas": 5,
+ "mb": 0.389,
+ "medidas": {
+  "marco": "avión: +x nariz, +y arriba, +z derecha, m; origen en el piso entre las ruedas principales",
+  "hojas_x": [
+   -0.1,
+   -1.85
+  ],
+  "largo_hojas": 1.769,
+  "ancho_hoja": 0.334,
+  "quilla_y": [
+   1.022,
+   0.765
+  ],
+  "pendiente_grados": 8.3,
+  "proa_x": 0.16,
+  "popa_x": -2.5,
+  "media_anchura": 0.5,
+  "bulones_por_riel": 17,
+  "abre_grados": 78,
+  "cano_m": 0.08,
+  "bocas": {
+   "x": -2.95,
+   "y": 0.967,
+   "z": [
+    -0.5,
+    0.5
+   ]
+  }
+ },
+ "nota": "envolvente medida en juegos/at802.glb; forma y detalles de las fotos del avión real; medidas chicas [VERIFICAR]; abierta [PROVISORIO]"
+}

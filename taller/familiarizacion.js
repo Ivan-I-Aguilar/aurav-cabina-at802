@@ -15,7 +15,7 @@
 // Todo en 3 llamadas de dibujo: las marcas (un disco y una marca de piso por punto) en una malla con un atlas, las líneas, y la
 // tarjeta. Sumar un punto es agregar su entrada en PUNTOS (y, si tiene pieza en holograma, su recorte en PIEZAS_HOLO de main.js).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261116d';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261116e';
 
 export const PUNTOS = [
   {
@@ -74,7 +74,7 @@ export const PUNTOS = [
     pie: [-3.6, 2.2],
     lado: -1, // a la izquierda del disco (hacia la cola): a la derecha el borde de fuga del ala le tapaba SIGUIENTE
     holo: 'compuerta',
-    holoNota: 'por fuera · las hojas y el mecanismo, más adelante',
+    holoNota: 'modelada con fotos · medidas a verificar',
   },
   {
     clave: 'ala',
