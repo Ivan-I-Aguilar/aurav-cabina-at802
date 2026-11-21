@@ -12,19 +12,21 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261121b';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261121b';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261121b';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261121b';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261121b';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261121b';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261121b';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261121b';
-import {crearPiezaHolo} from './piezaholo.js?v=20261121b';
-import {crearLlamadas} from './llamadas.js?v=20261121b';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261121b';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261121c';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261121c';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261121c';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261121c';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261121c';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261121c';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261121c';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261121c';
+import {crearPiezaHolo} from './piezaholo.js?v=20261121c';
+import {LECCIONES} from './lecciones.js?v=20261121c';
+import {crearPanelLeccion, crearRotulosPartes, crearRepaso} from './leccion.js?v=20261121c';
+import {crearLlamadas} from './llamadas.js?v=20261121c';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261121c';
 
-export const VERSION = '20261121b';
+export const VERSION = '20261121c';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -786,10 +788,14 @@ cartel.malla.visible = false;
 escena.add(cartel.malla);
 // las preguntas: delante del holograma, a la altura de los ojos (el holograma se atenúa mientras están abiertas)
 // el camino del modo piloto (T7, adelantado): lo que el alumno ya vio e hizo, para el resumen del final y la pausa [PROVISORIO]
-const camino = {estaciones: new Set(), fallas: new Set(), arranco: false, enCurso: false, preguntas: null};
+// «lecciones» (T13): por cada pieza con lección, los estados que el alumno ya puso y su mejor puntaje en el repaso
+const camino = {estaciones: new Set(), fallas: new Set(), arranco: false, enCurso: false, preguntas: null, lecciones: {}};
+const avanceLeccion = (clave) => (camino.lecciones[clave] ??= {estados: new Set(), repaso: null});
+/** una lección queda hecha cuando el alumno puso todos sus estados e hizo el repaso */
+const leccionesHechas = () => Object.entries(LECCIONES).filter(([k, l]) => camino.lecciones[k] && camino.lecciones[k].repaso !== null && l.estados.every((e) => camino.lecciones[k].estados.has(e.id))).length;
 function resumenCamino(conPreguntas = true) {
   const p = camino.preguntas === null ? 'sin hacer' : `${camino.preguntas} de ${QUIZ.length}`;
-  return `${fam ? `Avión: ${fam.vistos.size} de ${PUNTOS_AVION.length} puntos · ` : ''}Estaciones vistas: ${camino.estaciones.size} de ${STATIONS.length} · Fallas probadas: ${camino.fallas.size} de 5 · Arranque normal: ${camino.arranco ? 'hecho' : 'falta'}` + (conPreguntas ? ` · Preguntas: ${p}` : '');
+  return `${fam ? `Avión: ${fam.vistos.size} de ${PUNTOS_AVION.length} puntos · Lecciones: ${leccionesHechas()} de ${Object.keys(LECCIONES).length} · ` : ''}Estaciones vistas: ${camino.estaciones.size} de ${STATIONS.length} · Fallas probadas: ${camino.fallas.size} de 5 · Arranque normal: ${camino.arranco ? 'hecho' : 'falta'}` + (conPreguntas ? ` · Preguntas: ${p}` : '');
 }
 const preguntas = crearPanelPreguntas({quiz: QUIZ, orden: ORDER, resumen: () => resumenCamino(false)}); // el puntaje ya está grande arriba
 preguntas.malla.position.set(0, 1.48, 0.2); // delante de la cara del holograma (z 0,17): en 0,1 el flujo tapaba «Otra vez»
@@ -1036,6 +1042,7 @@ function accionar(a) {
   else if (a.id === 'fam_motor') saltarA('mesa');
   else if (a.id === 'fam_holo') alternarPieza(PUNTOS_AVION[fam.activo].clave);
   else if (a.id === 'pieza_cerrar') cerrarPieza();
+  else if (a.id.startsWith('lec_')) accionLeccion(a.id);
   else if (a.id === 'pieza_hojas') {
     if (piezaAbierta && piezaAbierta.tieneMoviles) piezaAbierta.abrir(!piezaAbierta.abierta);
   }
@@ -1468,6 +1475,8 @@ let piezaAbierta = null;
 // mientras el alumno la tiene o la arrastra y vuelve a girar a los 6 s de soltarla
 let piezaTocada = 0;
 const GIRO_SOLA = 0.22; // rad/s
+const DIST_LECCION_PC = 1.05; // m: a cuánto se abre en la PC una pieza con lección (las demás, y todas en el casco, a 0,95)
+const ESCALA_LECCION_PC = 1.2; // en la PC el panel de la lección va un 20 % más grande (la pantalla es chica; en el casco, 1)
 const EJE_Y = new THREE.Vector3(0, 1, 0);
 const vRayoPieza = new THREE.Vector3();
 /** el rayo (del mouse) pasa por la pieza abierta: por su esfera, achicada un poco */
@@ -1489,7 +1498,20 @@ const mallasDe = (nombre) => {
 const recorte = (clave, nodos, min, max, tam, frente, inclinar = 0, brillo = 1) => () =>
   Object.assign(crearPiezaHolo({clave, fuentes: nodos.flatMap(mallasDe), marco: avionAT, caja: new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)), tam, brillo}), {frente, inclinar});
 const PIEZAS_HOLO = {
-  helice: () => Object.assign(crearPiezaHolo({clave: 'helice', fuentes: mallasDe('helice'), marco: avionAT.getObjectByName('helice'), tam: 0.85, gira: {eje: 'x', vel: 1.1}}), {frente: [1, 0, 0]}),
+  // La HÉLICE, la primera pieza con LECCIÓN (T13): las cinco palas vienen sueltas dentro de la malla (islas de 460 a 654
+  // triángulos, de 1,3 m de largo; el cono, la placa de atrás y dos piezas chicas quedan fijos) y cada una gira sobre su propio
+  // eje, que sale del cubo por el medio de la pala (medido: pasa a 5 mm del origen del nodo): eso es el cambio de PASO. Lleva
+  // un flujo de aire a lo largo de su eje. Se abre de tres cuartos, para ver a la vez el disco y el ángulo de las palas
+  helice: () => {
+    const elegir = (isla) => {
+      if (isla.n < 300 || Math.max(isla.max.y - isla.min.y, isla.max.z - isla.min.z) < 0.8) return null;
+      const r = Math.hypot(isla.centro.y, isla.centro.z);
+      const a = new THREE.Vector3(isla.centro.x, 0, 0);
+      return {a, b: new THREE.Vector3(isla.centro.x, isla.centro.y / r, isla.centro.z / r), angulo: 1}; // «valor» = el paso, en radianes
+    };
+    const pieza = crearPiezaHolo({clave: 'helice', fuentes: mallasDe('helice'), marco: avionAT.getObjectByName('helice'), tam: 0.78, gira: {eje: 'x', vel: 1.1}, elegir, velocidad: 1.1, flujo: {n: 90, radio: 1.2, desde: 0.9, hasta: -1.3, tam: 0.011}});
+    return Object.assign(pieza, {frente: [0.75, 0, 0.66]});
+  },
   // el ala derecha sola, inclinada 55° (la caja deja afuera la pata y la rueda: el intradós va de 1,30 m para arriba, la rueda llega
   // a 0,92 m y el tramo alto de la pata queda antes de z 0,9)
   ala: recorte('ala', ['exterior'], [-2.8, 1.0, 0.95], [1.0, 2.4, 9.3], 1.3, [1, 0, 0.35], 0.95),
@@ -1610,6 +1632,51 @@ function pintarAccionPieza(texto, nota, sobre) {
   g.fillText(nota, W / 2, hb + 4 + (H - hb - 8) / 2 + 1, W - 150);
   accionPieza.pintado();
 }
+// La LECCIÓN de la pieza abierta (T13; PLAN_TALLER.md §16, pedido de Iván: «ver su funcionamiento, como se hace con el motor»).
+// Las piezas que tienen lección en lecciones.js llevan, en lugar del rótulo simple, el PANEL DE LA LECCIÓN: un botón por cada
+// cosa que la pieza hace (sus «estados»), la frase de ese estado, con qué se maneja de verdad, y el REPASO. En el estado PARTES
+// la pieza se queda quieta y salen los nombres de sus partes, al costado
+let leccion = null; // {clave, datos (de lecciones.js), estado, repaso}
+const rotuloLeccion = crearPanelLeccion();
+rotuloLeccion.malla.visible = false;
+rotuloLeccion.malla.renderOrder = 8;
+escena.add(rotuloLeccion.malla);
+paneles.push(rotuloLeccion);
+const rotulosPartes = crearRotulosPartes({escena});
+let leccionFirma = '';
+/** pone la pieza en uno de los estados de su lección: las partes móviles van a su posición y cambian el giro y el flujo.
+ * cuenta: queda anotado en el camino del alumno (no cuando lo pone el repaso para mostrar una respuesta) */
+function ponerEstadoLeccion(id, ya = false, cuenta = true) {
+  if (!piezaAbierta || !leccion) return false;
+  const e = leccion.datos.estados.find((x) => x.id === id);
+  if (!e) return false;
+  leccion.estado = id;
+  piezaAbierta.irA(THREE.MathUtils.degToRad(e.paso), ya);
+  piezaAbierta.ponerGiro(e.giro, ya);
+  piezaAbierta.ponerFlujo(e.flujo);
+  if (e.partes) posePieza = ya ? 0 : 1.5; // para señalar las partes, la pieza vuelve a su presentación
+  if (cuenta) avanceLeccion(leccion.clave).estados.add(id);
+  return true;
+}
+/** los botones del panel de la lección: los estados, el repaso y sus respuestas */
+function accionLeccion(id) {
+  if (!piezaAbierta || !leccion) return;
+  const rp = leccion.repaso;
+  if (id.startsWith('lec_e_')) {
+    if (!rp) ponerEstadoLeccion(id.slice(6));
+  } else if (id === 'lec_repaso') leccion.repaso = crearRepaso(leccion.datos.preguntas);
+  else if (id === 'lec_volver') leccion.repaso = null;
+  else if (id.startsWith('lec_r_') && rp) {
+    // respondida, la pieza muestra la respuesta
+    if (rp.elegir(+id.slice(6)) && rp.actual().muestra) ponerEstadoLeccion(rp.actual().muestra, false, false);
+  } else if (id === 'lec_sig' && rp) {
+    rp.siguiente();
+    if (rp.estado.fin) {
+      const av = avanceLeccion(leccion.clave);
+      av.repaso = Math.max(av.repaso ?? 0, rp.estado.puntaje);
+    }
+  }
+}
 // El TELÓN de la pieza: un disco oscuro y difuso detrás de ella, siempre de cara al alumno. La luz sumada del holograma no se ve
 // sobre lo blanco (el fuselaje, el capó): con el fondo oscurecido la pieza se lee contra cualquier cosa. No escribe profundidad y
 // se dibuja antes que la pieza (y después de las marcas, que quedan atenuadas detrás).
@@ -1632,12 +1699,20 @@ const telonPieza = (() => {
   escena.add(m);
   return m;
 })();
-/** el rótulo y el telón siguen a la pieza: el rótulo arriba de ella (sin pasar de 2,05 m), los dos de cara al alumno; ojo = la cámara */
+/** el rótulo (o el panel de la lección) y el telón siguen a la pieza: el rótulo arriba de ella, los dos de cara al alumno; ojo = la cámara */
 function seguirRotuloPieza(ojo, hover) {
-  const m = rotuloPieza.malla;
-  m.visible = telonPieza.visible = !!piezaAbierta;
-  accionPieza.malla.visible = !!piezaAbierta && piezaAbierta.tieneMoviles;
-  if (!piezaAbierta) return;
+  const conLeccion = !!(piezaAbierta && leccion);
+  const m = (conLeccion ? rotuloLeccion : rotuloPieza).malla;
+  rotuloPieza.malla.visible = !!piezaAbierta && !conLeccion;
+  rotuloLeccion.malla.visible = conLeccion;
+  telonPieza.visible = !!piezaAbierta;
+  // el botón de acción (las hojas de la compuerta) es de las piezas SIN lección: con lección, los estados van en su panel
+  const conAccion = !!piezaAbierta && !conLeccion && piezaAbierta.tieneMoviles;
+  accionPieza.malla.visible = conAccion;
+  if (!piezaAbierta) {
+    rotulosPartes.actualizar(null);
+    return;
+  }
   const g = piezaAbierta.grupo;
   const r = (piezaAbierta.radio * g.scale.x) / piezaAbierta.escala0;
   // hasta dónde sube la pieza, como está girada y escalada (las ocho esquinas de su caja): el rótulo va justo arriba. Con el
@@ -1646,18 +1721,24 @@ function seguirRotuloPieza(ojo, hover) {
   const mt = piezaAbierta.mitad;
   let tope = g.position.y;
   for (let i = 0; i < 8; i++) tope = Math.max(tope, tmp2.set(i & 1 ? mt.x : -mt.x, i & 2 ? mt.y : -mt.y, i & 4 ? mt.z : -mt.z).applyMatrix4(g.matrixWorld).y);
+  const escalaPanel = conLeccion && !renderer.xr.isPresenting ? ESCALA_LECCION_PC : 1;
+  if (conLeccion) m.scale.setScalar(escalaPanel);
+  const medio = conLeccion ? (rotuloLeccion.alto * escalaPanel) / 2 : 0.065; // la mitad del alto del rótulo
   // con botón de acción, el rótulo sube un renglón y el botón queda debajo de él
-  const renglon = piezaAbierta.tieneMoviles ? 0.13 : 0;
-  let yRot = Math.min(tope + 0.115 + renglon, 2.05);
+  const renglon = conAccion ? 0.13 : 0;
+  // el tope de altura: el rótulo simple, 2,05 m; el panel de la lección, 1,95 m en el casco (en la PC manda la pantalla)
+  let yRot = Math.min(tope + 0.05 + medio + renglon, !conLeccion ? 2.05 : renderer.xr.isPresenting ? 1.95 : 9);
   if (!renderer.xr.isPresenting) {
-    // en la PC el rótulo no se sale de la pantalla: como mucho 27° por encima del centro de la mirada (la caja de una pieza
-    // larga e inclinada, como la compuerta con su cañería, sube más que la pieza y lo mandaba afuera)
+    // en la PC el rótulo no se sale de la pantalla. El simple: su centro, como mucho 27° por encima del centro de la mirada (la
+    // caja de una pieza larga e inclinada, como la compuerta con su cañería, sube más que la pieza y lo mandaba afuera). El panel
+    // de la lección, que es alto: su borde de arriba, a 1,5° del borde de la pantalla
     const sube = clamp(camara.getWorldDirection(tmp2).y, -0.7, 0.7);
-    yRot = Math.min(yRot, ojo.y + Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z) * Math.tan(Math.asin(sube) + 0.47) - 0.05);
+    const dist = Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z);
+    yRot = Math.min(yRot, conLeccion ? ojo.y + dist * Math.tan(Math.asin(sube) + THREE.MathUtils.degToRad(camara.fov / 2 - 1.5)) - medio : ojo.y + dist * Math.tan(Math.asin(sube) + 0.47) - 0.05);
   }
   m.position.set(g.position.x, yRot, g.position.z);
   m.rotation.set(0, Math.atan2(ojo.x - m.position.x, ojo.z - m.position.z), 0);
-  if (piezaAbierta.tieneMoviles) {
+  if (conAccion) {
     accionPieza.malla.position.set(m.position.x, m.position.y - renglon, m.position.z);
     accionPieza.malla.rotation.copy(m.rotation);
     const fa = `${piezaAbierta.clave}|${piezaAbierta.abierta}|${hover === 'pieza_hojas'}`;
@@ -1670,11 +1751,27 @@ function seguirRotuloPieza(ojo, hover) {
   telonPieza.lookAt(ojo);
   telonPieza.scale.setScalar(r * 1.3);
   const enVR = renderer.xr.isPresenting;
+  const pt = PUNTOS_AVION.find((p) => p.clave === piezaAbierta.clave) || {titulo: piezaAbierta.clave};
+  const ayuda = enVR ? 'AGARRALA CON EL GRIP · CON LAS DOS MANOS CAMBIA DE TAMAÑO' : 'ARRASTRALA PARA GIRARLA · LA RUEDA CAMBIA EL TAMAÑO';
+  if (conLeccion) {
+    const rp = leccion.repaso;
+    const hv = hover && (hover.startsWith('lec_') || hover === 'pieza_cerrar') ? hover : '';
+    const f = `${leccion.clave}|${leccion.estado}|${hv}|${enVR}|${rp ? `${rp.estado.i},${rp.estado.elegida},${rp.estado.fin}` : '-'}`;
+    if (f !== leccionFirma) {
+      leccionFirma = f;
+      rotuloLeccion.pintar({titulo: pt.titulo, nota: pt.holoNota || '', ayuda, leccion: leccion.datos, estado: leccion.estado, hover: hv, repaso: rp});
+    }
+    // los nombres de las partes: en el estado que los pide (PARTES), con la pieza ya quieta y fuera del repaso
+    const est = rp ? null : leccion.datos.estados.find((x) => x.id === leccion.estado);
+    const quieta = Math.abs(piezaAbierta.giro) < 0.1 && piezaAbierta.valor === piezaAbierta.objetivo;
+    if (est && est.partes && quieta) rotulosPartes.actualizar(leccion.datos.partes, {centro: g.position, radio: r, aMundo: (p, out) => piezaAbierta.aMundo(p, out)}, ojo);
+    else rotulosPartes.actualizar(null);
+    return;
+  }
+  rotulosPartes.actualizar(null);
   const f = `${piezaAbierta.clave}|${hover === 'pieza_cerrar'}|${enVR}`;
   if (f !== rotuloFirma) {
     rotuloFirma = f;
-    const pt = PUNTOS_AVION.find((p) => p.clave === piezaAbierta.clave) || {titulo: piezaAbierta.clave};
-    const ayuda = enVR ? 'AGARRALA CON EL GRIP · CON LAS DOS MANOS CAMBIA DE TAMAÑO' : 'ARRASTRALA PARA GIRARLA · LA RUEDA CAMBIA EL TAMAÑO';
     pintarRotuloPieza(pt.titulo, hover === 'pieza_cerrar', pt.holoNota || '', ayuda);
   }
 }
@@ -1682,9 +1779,32 @@ function cerrarPieza() {
   if (!piezaAbierta) return;
   piezaAbierta.liberar();
   piezaAbierta = null;
+  leccion = null;
+  leccionFirma = '';
+  posePieza = 0;
   agarrePieza.length = 0;
   dosManosPieza = null;
-  rotuloPieza.malla.visible = telonPieza.visible = accionPieza.malla.visible = false;
+  rotuloPieza.malla.visible = rotuloLeccion.malla.visible = telonPieza.visible = accionPieza.malla.visible = false;
+  rotulosPartes.actualizar(null);
+}
+// La orientación de PRESENTACIÓN de la pieza abierta, vista desde donde está el alumno (ojo): derecha, con su «frente» hacia él
+// (un giro sobre la vertical); las piezas chatas (el ala) además se inclinan hacia el alumno para verles la planta (un giro sobre
+// el eje que va de su izquierda a su derecha). Con ella se abre la pieza, y a ella vuelve sola cuando la lección muestra los
+// nombres de las partes (posePieza: el giro que falta se hace de a poco, salvo que el alumno la tenga agarrada)
+const qPosePieza = new THREE.Quaternion();
+const qInclinarPieza = new THREE.Quaternion();
+const ePosePieza = new THREE.Euler();
+const vPosePieza = new THREE.Vector3();
+let posePieza = 0; // segundos que le quedan a la vuelta a la presentación (0 = no se está posando)
+function orientacionPieza(ojo, out) {
+  const g = piezaAbierta.grupo;
+  const dx = g.position.x - ojo.x;
+  const dz = g.position.z - ojo.z;
+  const n = Math.hypot(dx, dz) || 1;
+  const f = piezaAbierta.frente || [1, 0, 0];
+  out.setFromEuler(ePosePieza.set(0, Math.atan2(-dx / n, -dz / n) - Math.atan2(f[0], f[2]), 0));
+  if (piezaAbierta.inclinar) out.premultiply(qInclinarPieza.setFromAxisAngle(vPosePieza.set(-dz / n, 0, dx / n), piezaAbierta.inclinar));
+  return out;
 }
 /** abre la pieza delante del alumno, a la altura del pecho y con su eje hacia él; si ya estaba abierta, la cierra */
 function alternarPieza(clave) {
@@ -1692,6 +1812,7 @@ function alternarPieza(clave) {
   cerrarPieza();
   if (era === clave || !PIEZAS_HOLO[clave] || !avionAT) return;
   piezaAbierta = PIEZAS_HOLO[clave]();
+  leccion = LECCIONES[clave] ? {clave, datos: LECCIONES[clave], estado: null, repaso: null} : null;
   const enVR = renderer.xr.isPresenting;
   const cam = enVR ? renderer.xr.getCamera() : camara;
   cam.getWorldPosition(tmp);
@@ -1699,16 +1820,20 @@ function alternarPieza(clave) {
   const sube = clamp(tmp2.y, -0.6, 0.6); // el cabeceo de la mirada (su seno)
   tmp2.setY(0).normalize();
   const g = piezaAbierta.grupo;
-  g.position.copy(tmp).addScaledVector(tmp2, 0.95);
-  // en el casco, a la altura de las manos; en la PC, al centro de la pantalla (sigue el cabeceo de la mirada), para que entre entera
-  g.position.y = enVR ? 1.3 : clamp(tmp.y + (0.95 * sube) / Math.sqrt(1 - sube * sube), 1.15, 1.75);
-  // derecha (sin inclinarla), con su «frente» hacia el alumno: un giro sobre la vertical
-  const f = piezaAbierta.frente || [1, 0, 0];
-  g.rotation.set(0, Math.atan2(-tmp2.x, -tmp2.z) - Math.atan2(f[0], f[2]), 0);
-  // las piezas chatas (el ala) se inclinan hacia el alumno para verles la planta: un giro sobre el eje que va de su izquierda a su derecha
-  if (piezaAbierta.inclinar) g.rotateOnWorldAxis(new THREE.Vector3(-tmp2.z, 0, tmp2.x), piezaAbierta.inclinar);
+  // en la PC la pieza con lección va un poco más lejos: tienen que entrar en la pantalla ella y su panel, uno arriba del otro
+  const dist = !enVR && leccion ? DIST_LECCION_PC : 0.95;
+  g.position.copy(tmp).addScaledVector(tmp2, dist);
+  if (enVR) g.position.y = leccion ? 1.2 : 1.3; // en el casco, a la altura de las manos (con lección, más abajo: arriba va su panel)
+  else {
+    // en la PC, al centro de la pantalla (sigue el cabeceo de la mirada), para que entre entera; con lección, lo que queda al
+    // centro es el conjunto de la pieza y su panel
+    const centroMirada = tmp.y + (dist * sube) / Math.sqrt(1 - sube * sube);
+    g.position.y = leccion ? clamp(centroMirada + 0.05 - (0.05 + rotuloLeccion.alto * ESCALA_LECCION_PC) / 2, 0.95, 1.6) : clamp(centroMirada, 1.15, 1.75); // 5 cm más arriba: abajo está la leyenda fija
+  }
+  g.quaternion.copy(orientacionPieza(tmp, qPosePieza));
   escena.add(g);
   piezaTocada = reloj - 4; // empieza a girar sola a los 2 s
+  if (leccion) ponerEstadoLeccion(leccion.datos.inicial, true); // la lección arranca con la pieza funcionando
 }
 // agarrar la pieza abierta (VR): una mano la lleva y la gira; dos manos la agrandan o la achican (de 0,3 a 3 veces)
 const agarrePieza = [];
@@ -1951,7 +2076,12 @@ function gatilloEn(c, punto, normal) {
   cuadroVR();
 }
 /** las pruebas no tienen que dejar marcas en el camino del alumno */
-const guardarCamino = () => ({...camino, estaciones: new Set(camino.estaciones), fallas: new Set(camino.fallas)});
+const guardarCamino = () => ({
+  ...camino,
+  estaciones: new Set(camino.estaciones),
+  fallas: new Set(camino.fallas),
+  lecciones: Object.fromEntries(Object.entries(camino.lecciones).map(([k, v]) => [k, {estados: new Set(v.estados), repaso: v.repaso}])),
+});
 const restaurarCamino = (c) => Object.assign(camino, c);
 function probarMandos() {
   const caminoAntes = guardarCamino();
@@ -2580,7 +2710,7 @@ function probarRecorrido() {
   const res = [];
   const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
   if (!fam) return {pruebas: 0, fallaron: 0, detalle: [], nota: 'el avión no cargó'};
-  const antes = {pos: jugador.position.clone(), yaw, pitch, vistos: [...fam.vistos], sAntes: {...s}, inpAntes: {...inp}};
+  const antes = {pos: jugador.position.clone(), yaw, pitch, vistos: [...fam.vistos], sAntes: {...s}, inpAntes: {...inp}, camino: guardarCamino()};
   const vozAntes = audio.vozOn;
   audio.vozOn = false;
   const saltar = () => {
@@ -2627,7 +2757,8 @@ function probarRecorrido() {
       accionar({tipo: 'panel', id: 'fam_holo'});
       const g = piezaAbierta && piezaAbierta.grupo;
       const ojo = camara.getWorldPosition(new THREE.Vector3());
-      ok('hélice en holograma: se abre delante del alumno, entre las manos', !!g && Math.abs(Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z) - 0.95) < 0.05 && piezaAbierta.radio < 0.6, g && {distancia: +Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z).toFixed(2), radio: +piezaAbierta.radio.toFixed(2), triangulos: piezaAbierta.triangulos});
+      const distAbre = leccion ? DIST_LECCION_PC : 0.95; // con lección, en la PC, un poco más lejos: entra con su panel
+      ok('hélice en holograma: se abre delante del alumno, entre las manos', !!g && Math.abs(Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z) - distAbre) < 0.05 && piezaAbierta.radio < 0.6, g && {distancia: +Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z).toFixed(2), radio: +piezaAbierta.radio.toFixed(2), triangulos: piezaAbierta.triangulos});
       if (g) {
         const [m0] = manos;
         const p0 = g.position.clone();
@@ -2642,13 +2773,16 @@ function probarRecorrido() {
         ponerMano(m0, new THREE.Vector3(0, -5, 0));
         ok('hélice en holograma: el grip la agarra y la lleva con la mano', movida < 0.002 && !agarrePieza.length, {errorMm: +(movida * 1000).toFixed(1)});
       }
-      // con la pieza abierta su tarjeta se esconde y la pieza lleva su rótulo, arriba, con CERRAR
+      // con la pieza abierta su tarjeta se esconde y la pieza lleva su rótulo, arriba, con CERRAR (con lección, el panel de la lección)
       avanzar(1 / 60);
-      const rot = rotuloPieza.malla;
+      const rotP = leccion ? rotuloLeccion : rotuloPieza;
+      const rot = rotP.malla;
       const sobreLaPieza = !!g && rot.visible && rot.position.y > g.position.y && Math.hypot(rot.position.x - g.position.x, rot.position.z - g.position.z) < 0.01;
-      ok('hélice en holograma: su tarjeta se esconde y la pieza lleva su rótulo con CERRAR', !fam.tarjeta.malla.visible && sobreLaPieza && !!rotuloPieza.centro('pieza_cerrar'), {tarjeta: fam.tarjeta.malla.visible, rotulo: rot.visible, alto: +rot.position.y.toFixed(2)});
+      ok('hélice en holograma: su tarjeta se esconde y la pieza lleva su rótulo con CERRAR', !fam.tarjeta.malla.visible && sobreLaPieza && !!rotP.centro('pieza_cerrar'), {tarjeta: fam.tarjeta.malla.visible, rotulo: rot.visible, alto: +rot.position.y.toFixed(2)});
+      // la LECCIÓN de la hélice (T13): los estados con el gatillo, el ángulo de las palas, los nombres de las partes y el repaso
+      if (leccion) probarLeccion(ok);
       // CERRAR con el rayo del mando y el gatillo, como en el casco
-      const cerrar = rotuloPieza.centro('pieza_cerrar');
+      const cerrar = rotP.centro('pieza_cerrar');
       if (cerrar) gatilloEn(manos[1], cerrar, new THREE.Vector3(0, 0, 1).applyQuaternion(rot.getWorldQuaternion(new THREE.Quaternion())));
       ponerMano(manos[1], new THREE.Vector3(0, -5, 0));
       avanzar(1 / 60);
@@ -2705,9 +2839,159 @@ function probarRecorrido() {
   pitch = antes.pitch;
   s = antes.sAntes;
   Object.assign(inp, antes.inpAntes);
+  restaurarCamino(antes.camino);
   avanzar(1 / 60);
   audio.vozOn = vozAntes;
   return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res};
+}
+/**
+ * Las pruebas de la LECCIÓN de la pieza abierta (T13), con el rayo y el gatillo simulados sobre su panel. Se llaman desde
+ * probarRecorrido, parado en el punto de la pieza y con ella abierta; la vuelven a abrir (limpia) y la dejan abierta.
+ */
+function probarLeccion(ok) {
+  const clave = leccion.clave;
+  const titulo = `lección de ${PUNTOS_AVION.find((p) => p.clave === clave).titulo.toLowerCase()}`;
+  // se abre de nuevo: la prueba del grip la dejó corrida
+  cerrarPieza();
+  accionar({tipo: 'panel', id: 'fam_holo'});
+  avanzar(1 / 60);
+  const pz = piezaAbierta;
+  const datos = leccion.datos;
+  camara.updateMatrixWorld(true);
+  const ojo = camara.getWorldPosition(new THREE.Vector3());
+  const lejos = new THREE.Vector3(0, -5, 0);
+  const apretar = (id) => {
+    const c = rotuloLeccion.centro(id);
+    if (!c) return false;
+    gatilloEn(manos[1], c, new THREE.Vector3(0, 0, 1).applyQuaternion(rotuloLeccion.malla.getWorldQuaternion(new THREE.Quaternion())));
+    ponerMano(manos[1], lejos);
+    avanzar(1 / 60);
+    return true;
+  };
+  const esperar = (t) => {
+    for (let k = 0; k < Math.ceil(t / 0.5); k++) avanzar(0.5);
+  };
+  const est = (id) => datos.estados.find((e) => e.id === id);
+  // 1) abre funcionando, en su estado inicial
+  const e0 = est(datos.inicial);
+  ok(`${titulo}: se abre funcionando, en «${e0.boton}», con sus partes móviles y sin el botón de las hojas`, leccion.estado === datos.inicial && pz.tieneMoviles && Math.abs(pz.giro - e0.giro) < 0.01 && pz.flujo === e0.flujo && rotuloLeccion.malla.visible && !rotuloPieza.malla.visible && !accionPieza.malla.visible, {estado: leccion.estado, moviles: pz.partes.length, giro: +pz.giro.toFixed(2), flujo: pz.flujo});
+  // 2) el panel se ve entero desde el lugar: rayos desde el ojo (cabeza ±8 cm) a las esquinas, al centro y a cada botón
+  {
+    const m = rotuloLeccion.malla;
+    m.updateWorldMatrix(true, false);
+    const a = rotuloLeccion.ancho / 2 - 0.01;
+    const h = rotuloLeccion.alto / 2 - 0.01;
+    const blancos = [
+      ['centro', m.localToWorld(new THREE.Vector3(0, 0, 0))],
+      ['arriba izq.', m.localToWorld(new THREE.Vector3(-a, h, 0))],
+      ['arriba der.', m.localToWorld(new THREE.Vector3(a, h, 0))],
+      ['abajo izq.', m.localToWorld(new THREE.Vector3(-a, -h, 0))],
+      ['abajo der.', m.localToWorld(new THREE.Vector3(a, -h, 0))],
+    ];
+    for (const b of rotuloLeccion.botones) blancos.push([b.id, rotuloLeccion.centro(b.id)]);
+    const tapados = blancos.filter(([, w]) => rayosDesdeElOjo(w, m, ojo).some((r) => r !== 'libre')).map(([k]) => k);
+    // y entra en la pantalla de la PC: las cuatro esquinas, proyectadas
+    const afuera = blancos.slice(1, 5).filter(([, w]) => {
+      const p = w.clone().project(camara);
+      return Math.abs(p.x) > 1 || Math.abs(p.y) > 1;
+    }).map(([k]) => k);
+    ok(`${titulo}: el panel se ve entero desde el lugar (rayos desde el ojo, cabeza ±8 cm) y entra en la pantalla`, !tapados.length && !afuera.length && rotuloLeccion.botones.length === datos.estados.length + 2, {tapados, afuera, botones: rotuloLeccion.botones.length});
+  }
+  // 3) cada estado, con el gatillo en su botón: las partes van a su posición (el giro de cada una, medido en su matriz), y el
+  // giro y el flujo son los del estado
+  const q = new THREE.Quaternion();
+  const giroDePartes = () =>
+    pz.partes.map((p) => {
+      q.setFromRotationMatrix(p.malla.matrix);
+      const ang = 2 * Math.atan2(Math.hypot(q.x, q.y, q.z), q.w);
+      return (ang * Math.sign(q.x * p.eje.x + q.y * p.eje.y + q.z * p.eje.z || 1)) / p.angulo; // la posición («valor») que da ese giro
+    });
+  const malos = [];
+  for (const e of datos.estados) {
+    if (!apretar(`lec_e_${e.id}`)) {
+      malos.push(`${e.id}: sin botón`);
+      continue;
+    }
+    esperar(3);
+    const meta = THREE.MathUtils.degToRad(e.paso);
+    const giros = giroDePartes();
+    const bien = leccion.estado === e.id && Math.abs(pz.valor - meta) < 1e-6 && giros.every((g) => Math.abs(g - meta) < 1e-3) && Math.abs(pz.giro - e.giro) < 0.02 && pz.flujo === e.flujo;
+    if (!bien) malos.push(`${e.id}: paso ${THREE.MathUtils.radToDeg(pz.valor).toFixed(1)}° (pide ${e.paso}°), giro ${pz.giro.toFixed(2)}, flujo ${pz.flujo}`);
+  }
+  ok(`${titulo}: el gatillo en cada botón pone su estado (las ${pz.partes.length} partes en su ángulo, el giro y el flujo)`, !malos.length && camino.lecciones[clave].estados.size === datos.estados.length, malos.length ? malos : [...camino.lecciones[clave].estados]);
+  if (clave === 'helice') {
+    // la hélice: las cinco palas, cada una sobre su eje radial; en BANDERA la cuerda queda a lo largo del eje de la hélice (de
+    // canto al viento) y en PASO FINO casi de plano: se mide la cuerda de una pala a tres cuartos de su largo, ya girada
+    const cuerda = () => {
+      const p = pz.partes[0];
+      const P = p.malla.geometry.attributes.position;
+      const v = new THREE.Vector3();
+      const lat = new THREE.Vector3(1, 0, 0).cross(p.eje).normalize(); // a lo ancho del disco
+      let x0 = 1e9, x1 = -1e9, l0 = 1e9, l1 = -1e9;
+      for (let i = 0; i < P.count; i++) {
+        v.fromBufferAttribute(P, i);
+        const s = v.clone().sub(p.p).dot(p.eje); // a qué distancia del eje de la hélice, a lo largo de la pala
+        if (s < 1.1 || s > 1.2) continue;
+        v.applyMatrix4(p.malla.matrix).sub(p.p);
+        x0 = Math.min(x0, v.x);
+        x1 = Math.max(x1, v.x);
+        l0 = Math.min(l0, v.dot(lat));
+        l1 = Math.max(l1, v.dot(lat));
+      }
+      return {eje: x1 - x0, disco: l1 - l0};
+    };
+    pz.irA(THREE.MathUtils.degToRad(est('fino').paso), true);
+    const fino = cuerda();
+    pz.irA(THREE.MathUtils.degToRad(est('bandera').paso), true);
+    const bandera = cuerda();
+    pz.irA(THREE.MathUtils.degToRad(est(leccion.estado).paso), true);
+    const radiales = pz.partes.every((p) => Math.abs(p.eje.x) < 1e-6);
+    ok('lección de hélice: cinco palas sobre su eje radial; en bandera la cuerda queda a lo largo del eje y en paso fino, de plano', pz.partes.length === 5 && radiales && bandera.eje > 2.5 * fino.eje && fino.disco > 2.5 * bandera.disco, {finoCm: [+(fino.eje * 100).toFixed(1), +(fino.disco * 100).toFixed(1)], banderaCm: [+(bandera.eje * 100).toFixed(1), +(bandera.disco * 100).toFixed(1)]});
+  }
+  // 4) los nombres de las partes: en el estado que los muestra, con la pieza quieta; cada rótulo a la derecha de la pieza, a la
+  // vista desde el ojo, y su punto dentro de la pieza
+  const conPartes = datos.estados.find((e) => e.partes);
+  if (conPartes) {
+    apretar(`lec_e_${conPartes.id}`);
+    esperar(3);
+    const g = pz.grupo;
+    const radio = (pz.radio * g.scale.x) / pz.escala0;
+    const der = new THREE.Vector3(-(g.position.z - ojo.z), 0, g.position.x - ojo.x).normalize();
+    const lista = rotulosPartes.estado;
+    const mal = [];
+    lista.forEach((it, i) => {
+      if (it.punto.distanceTo(g.position) > radio + 0.01) mal.push(`${it.nombre}: su punto está fuera de la pieza`);
+      if (it.rotulo.clone().sub(g.position).dot(der) < radio) mal.push(`${it.nombre}: el rótulo no está a la derecha de la pieza`);
+      const malla = rotulosPartes.grupo.getObjectByName(`rotulo-parte-${i}`);
+      if (rayosDesdeElOjo(it.rotulo.clone(), malla, ojo).some((r) => r !== 'libre')) mal.push(`${it.nombre}: el rótulo está tapado`);
+      const p = it.rotulo.clone().addScaledVector(der, rotulosPartes.ancho / 2).project(camara);
+      if (Math.abs(p.x) > 1 || Math.abs(p.y) > 1) mal.push(`${it.nombre}: el rótulo se sale de la pantalla`);
+    });
+    const quieta = Math.abs(pz.giro) < 0.05;
+    ok(`${titulo}: en «${conPartes.boton}» la pieza se queda quieta y salen los nombres de sus partes, a la vista y a su derecha`, rotulosPartes.grupo.visible && lista.length === datos.partes.length && quieta && !mal.length, {nombres: lista.map((it) => it.nombre), mal});
+    apretar(`lec_e_${datos.inicial}`);
+    esperar(1);
+    ok(`${titulo}: al volver a un estado que funciona, los nombres se van`, !rotulosPartes.grupo.visible && leccion.estado === datos.inicial);
+  }
+  // 5) el repaso: se responde cada pregunta con el gatillo (la correcta), la pieza muestra la respuesta, y queda el puntaje
+  apretar('lec_repaso');
+  const muestra = [];
+  let botonesFuera = true;
+  while (leccion.repaso && !leccion.repaso.estado.fin) {
+    const rp = leccion.repaso;
+    botonesFuera &&= !rotuloLeccion.centro(`lec_e_${datos.inicial}`); // en el repaso no están los botones de los estados
+    const j = rp.opciones().findIndex((o) => o.correcta);
+    const pide = rp.actual().muestra;
+    if (!apretar(`lec_r_${j}`)) break;
+    esperar(3);
+    muestra.push(!pide || leccion.estado === pide);
+    if (!apretar('lec_sig')) break;
+  }
+  const rp = leccion.repaso;
+  const total = datos.preguntas.length;
+  ok(`${titulo}: el repaso se responde con el gatillo, la pieza muestra cada respuesta y el puntaje queda en el camino`, !!rp && rp.estado.fin && rp.estado.puntaje === total && muestra.length === total && muestra.every(Boolean) && botonesFuera && camino.lecciones[clave].repaso === total, {puntaje: rp && rp.estado.puntaje, muestra, enElCamino: camino.lecciones[clave].repaso});
+  apretar('lec_volver');
+  ok(`${titulo}: VOLVER A LA PIEZA deja otra vez los botones de los estados, y la lección cuenta como hecha`, !leccion.repaso && !!rotuloLeccion.centro(`lec_e_${datos.inicial}`) && leccionesHechas() >= 1, {hechas: leccionesHechas()});
 }
 
 // ------------------------------------------------------------ piloto de prueba del modo piloto (T7, tramo 3 adelantado)
@@ -2878,7 +3162,15 @@ function avanzar(dt) {
   if (piezaAbierta) {
     piezaAbierta.actualizar(dt, reloj);
     if (!agarrePieza.length && tmp.distanceTo(piezaAbierta.grupo.position) > 4) cerrarPieza(); // el alumno se fue: se cierra sola
-    else if (agarrePieza.length || (arrastre && arrastre.girarHolo)) piezaTocada = reloj;
+    else if (agarrePieza.length || (arrastre && arrastre.girarHolo)) {
+      piezaTocada = reloj;
+      posePieza = 0; // el alumno la tiene: no se la posa
+    } else if (posePieza > 0) {
+      // vuelve a su presentación (la lección va a señalar sus partes)
+      posePieza -= dt;
+      piezaTocada = reloj;
+      piezaAbierta.grupo.quaternion.slerp(orientacionPieza(tmp, qPosePieza), 1 - Math.exp(-dt * 5));
+    } else if (rotulosPartes.grupo.visible) piezaTocada = reloj; // con los nombres de las partes a la vista no gira sola
     else if (reloj - piezaTocada > 6) piezaAbierta.grupo.rotateOnWorldAxis(EJE_Y, GIRO_SOLA * dt);
   }
   if (enCapo) ponerEnCapo();
@@ -3045,7 +3337,8 @@ function rayosDesdeElOjo(blanco, objeto, ojo = new THREE.Vector3(0, ALTURA_OJOS,
     return true;
   };
   escena.traverse((o) => {
-    if (o.isMesh && seVe(o) && o.layers.test(camara.layers) && o !== objeto && !o.name.startsWith('holo') && !(o.material && o.material.blending === THREE.AdditiveBlending)) tapan.push(o);
+    // (el telón de la pieza en holograma es un fondo oscuro que va detrás de ella: no tapa)
+    if (o.isMesh && seVe(o) && o.layers.test(camara.layers) && o !== objeto && o !== telonPieza && !o.name.startsWith('holo') && !(o.material && o.material.blending === THREE.AdditiveBlending)) tapan.push(o);
   });
   for (const dx of [-0.08, 0, 0.08])
     for (const dy of [-0.08, 0, 0.08]) {
@@ -3170,6 +3463,17 @@ window.__taller = {
   alternarPieza,
   /** abre (true) o cierra (false) las hojas de la pieza abierta, si las tiene */
   hojas: (si) => !!piezaAbierta && piezaAbierta.tieneMoviles && (piezaAbierta.abrir(si), true),
+  /** la lección de la pieza abierta (o null): su estado, sus estados y el repaso; estadoLeccion('bandera') pone uno de sus estados */
+  get leccion() {
+    return leccion && {clave: leccion.clave, estado: leccion.estado, estados: leccion.datos.estados.map((e) => e.id), repaso: leccion.repaso ? {...leccion.repaso.estado} : null};
+  },
+  estadoLeccion: (id) => ponerEstadoLeccion(id),
+  /** los nombres de las partes que se están mostrando (estado PARTES de una lección): [{nombre, rotulo, punto}] en el mundo */
+  get partes() {
+    return rotulosPartes.grupo.visible ? rotulosPartes.estado : [];
+  },
+  /** el panel de la lección (para apuntarle en las pruebas: rotuloLeccion.centro('lec_e_bandera')) */
+  rotuloLeccion,
   /** ¿el holograma está dentro del capó del avión? (el alumno está junto al AT-802) */
   get enCapo() {
     return enCapo;
@@ -3209,7 +3513,8 @@ window.__taller = {
   /** el piloto de prueba del modo piloto: arranques, fallas, recorrido y preguntas por consola */
   probarPiloto,
   get camino() {
-    return {estaciones: [...camino.estaciones], fallas: [...camino.fallas], arranco: camino.arranco, preguntas: camino.preguntas, resumen: resumenCamino()};
+    const lecciones = Object.fromEntries(Object.entries(camino.lecciones).map(([k, v]) => [k, {estados: [...v.estados], repaso: v.repaso}]));
+    return {estaciones: [...camino.estaciones], fallas: [...camino.fallas], arranco: camino.arranco, preguntas: camino.preguntas, lecciones, resumen: resumenCamino()};
   },
   panelAtril,
   choquesMuebles,

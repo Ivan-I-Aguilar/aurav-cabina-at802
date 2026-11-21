@@ -4,7 +4,8 @@
 // el orden de una vuelta caminando que termina en el motor. Cada uno tiene: una MARCA (un disco con su número que
 // flota junto a la parte y mira siempre al alumno, con una línea fina hasta la parte), una marca en el PISO donde pararse, y una
 // TARJETA (nombre y una o dos líneas) que se abre al llegar a menos de 1,9 m de su marca del piso. La tarjeta trae SIGUIENTE
-// (salto con fundido al punto que sigue), VER EN HOLOGRAMA donde la pieza ya está (§15.2b) y, en el motor, VER EL MOTOR.
+// (salto con fundido al punto que sigue), VER EN HOLOGRAMA donde la pieza ya está (§15.2b; VER CÓMO FUNCIONA si la pieza tiene
+// lección en lecciones.js, T13) y, en el motor, VER EL MOTOR.
 // Mientras la pieza del punto está abierta en holograma su tarjeta se esconde (una cosa por vez: en el casco la pieza se abre
 // justo donde el alumno estaba mirando, que es la tarjeta); la pieza lleva su propio rótulo con CERRAR (main.js).
 // Se llega a cada punto mirando al medio entre el disco y la tarjeta, que va por debajo de los discos para no tocarse con ellos.
@@ -15,7 +16,8 @@
 // Todo en 3 llamadas de dibujo: las marcas (un disco y una marca de piso por punto) en una malla con un atlas, las líneas, y la
 // tarjeta. Sumar un punto es agregar su entrada en PUNTOS (y, si tiene pieza en holograma, su recorte en PIEZAS_HOLO de main.js).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261121b';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261121c';
+import {LECCIONES} from './lecciones.js?v=20261121c';
 
 export const PUNTOS = [
   {
@@ -282,7 +284,7 @@ export function crearFamiliarizacion({avion, leyenda}) {
       g.textBaseline = 'alphabetic';
     };
     if (p.holo === 'motor') boton('fam_motor', 'VER EL MOTOR', M, true);
-    else if (p.holo) boton('fam_holo', 'VER EN HOLOGRAMA', M, true);
+    else if (p.holo) boton('fam_holo', LECCIONES[p.holo] ? 'VER CÓMO FUNCIONA' : 'VER EN HOLOGRAMA', M, true); // con lección (T13), la pieza funciona
     boton('fam_sig', i === N - 1 ? '← PUNTO 1' : 'SIGUIENTE →', M + bw + 20, false);
     pieLeyenda(g, W, H - 96, 96, leyenda, 27);
     tarjeta.pintado();
