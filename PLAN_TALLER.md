@@ -916,7 +916,7 @@ y se cierran. Al abrir la TOLVA ve el lomo con su tapa, sus trabas y su venteo, 
   o se espera a tener fotos; y si puede sacar dos fotos más (la compuerta abierta y la tolva por dentro, por la tapa).
 - **Lo que no se puede probar acá:** el casco, como siempre.
 
-**T12 HECHA (16/11, la compuerta, 22:11–22:50; 21/11, la tapa de la tolva, 12:29–13:00; v=20261121a; con el ok de Iván: «Sí,
+**T12 HECHA (16/11, la compuerta, 22:11–22:50; 21/11, la tapa de la tolva, 12:29–12:40; v=20261121a; con el ok de Iván: «Sí,
 arrancá T12» y «Sí, seguí»; sin publicar; en el Quest no se probó nada).** Lo que quedó:
 - **La COMPUERTA** (`herramientas/taller_compuerta.py` → `taller/compuerta.glb`, 3.804 triángulos, 0,39 MB, en el marco del avión):
   la panza en V con su proa redonda y su popa afinada, las **dos hojas** de 1,75 m (cada una de la quilla a su bisagra de afuera,
