@@ -1002,7 +1002,18 @@ Es el mismo camino que siguió el motor, puesto por escrito para repetirlo con c
 al repo, nada se publica sin el ok). Va como skill local de Claude Code (`~/.claude/skills/<nombre>/`, como «fernando», «lichi» y
 «graphify»), con el paquete de Teardown adentro (su kit, sus tres ejemplos, sus scripts), más la parte nueva del holograma y el
 motor del taller como ejemplo resuelto. La de la cuenta de claude.ai («teardown») no se puede renombrar desde acá: queda un zip
-listo para que Iván la reemplace si quiere. **El nombre lo elige Iván.**
+listo para que Iván la reemplace si quiere. **El nombre lo eligió Iván el 21/11: «Despiece».**
+
+**La skill quedó escrita ese día (primera versión):** `~/.claude/skills/despiece/` (en la carpeta de usuario de Iván, fuera de
+este repo; Claude Code la toma sola cuando él dice «despiece», «holograma», «algo como el turbohélice»…). Trae `SKILL.md` (el
+camino en cinco etapas: encargo, referencias y medidas, despiece, holograma, lección, y la verificación del cierre),
+`references/` (`despiece-teardown.md` = la guía original de Teardown; `holograma.md` = cómo se lleva una máquina o una pieza a
+VR, con lo que ya salió mal una vez; `leccion.md` = la forma de cada lección del curso; `aurav.md` = las reglas de la casa),
+`teardown/` (el kit de Teardown tal cual, con su licencia MIT y la revisión de Nacho) y `holo/` (copia de los módulos del
+holograma de este taller y de los dos scripts de Blender, para partir de ellos en otro proyecto). Teardown es de un tercero
+(elvarofficial, MIT): va adentro sin cambios y con su atribución. **Su prueba de verdad es usarla con la primera pieza (la
+hélice, T13)**: no se corrieron evaluaciones aparte porque cada corrida sería armar un simulador entero; sí se la dio a leer a
+un agente sin contexto para ver si se entiende sola.
 
 ### 16.3 Qué funciona en cada lección, y con qué se cuenta (medido en el modelo el 21/11)
 Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cortar nada.
@@ -1031,7 +1042,7 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 Cada bloque cierra como los otros: pruebas, capturas revisadas, plan y `CLAUDE.md` al día, commit local, y lo que no se pudo probar.
 
 ### 16.5 Lo que tiene que decir Iván (de a una)
-1. **El nombre de la skill.**
+1. **El nombre de la skill.** Elegido el 21/11: «Despiece».
 2. Si cada pieza lleva también su página de escritorio, como `turbohelice.html`, o va directo al taller (más rápido).
 3. Por qué pieza se empieza (propuesta: la hélice, que se maneja con una palanca que ya está).
 4. De dónde salen los contenidos de cada lección y quién los valida (el manual de entrenamiento, Bruno, AAXOD).
