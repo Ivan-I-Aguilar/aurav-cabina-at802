@@ -956,6 +956,88 @@ arrancá T12» y «Sí, seguí»; sin publicar; en el Quest no se probó nada).*
   una regla); para qué sirve cada tapa (no se afirma en ningún lado); dónde está la escala en la pared.
 - Capturas: `Documents/aurav-cabina/capturas_taller/T12_compuerta_y_tolva.jpg`.
 
+## 16. El curso de familiarización: cada pieza «como el motor», y una skill que haga todo el proceso (pedido de Iván, 21/11)
+**Qué dijo Iván** al ver los hologramas de las piezas en la PC (21/11):
+- «Los hologramas están logrados […] pero parece que muchos están un poco fijos; estaría bueno que con la mano los podamos mover e
+  incluso ver su funcionamiento, como se hace con el motor.»
+- «Pensémoslo como un curso / capacitación de familiarización con la aeronave.»
+- «No me acuerdo con qué skill llegamos a esto [turbohelice.html]; después hicimos los hologramas: algo así para cada pieza.»
+- «Y podríamos dejar una skill que haga todo el proceso, desde el despiece hasta el holograma, o actualizar la que ya está y
+  renombrarla a un nombre que yo recuerde.»
+
+**Lo que ya se hizo ese día (v=20261121b):** en la PC, arrastrar sobre la pieza la gira (antes hacía falta Shift y no se descubría);
+la pieza gira sola, despacio; y su rótulo dice cómo se mueve (en el casco ya se agarraba con el grip y se agrandaba con las dos
+manos: eso no se probó en el Quest). **La skill con que se hizo `turbohelice.html` es Teardown** (la revisó Nacho).
+
+### 16.1 La idea: un curso, nueve lecciones, la misma forma en todas
+**Qué cambia para el alumno:** el recorrido del avión pasa a ser un CURSO. Cada punto es una lección con los mismos cuatro pasos,
+y el motor (que ya los tiene) es el modelo de las demás:
+
+| Paso | Qué hace el alumno | Hoy |
+|---|---|---|
+| 1 · QUÉ ES | lee (y escucha) la tarjeta junto a la parte, en el avión | hecho (textos en borrador) |
+| 2 · EN TUS MANOS | abre la pieza en holograma, la agarra, la gira, la agranda | hecho en las nueve |
+| 3 · CÓMO FUNCIONA | la hace funcionar: mandos que la mueven, el flujo, el corte, el nombre de sus partes | sólo el motor (entero) y la compuerta (las hojas) |
+| 4 · REPASO | dos o tres preguntas de la lección | sólo el motor (6 preguntas) |
+
+Al terminar: el resumen de lo visto, de lo que hizo funcionar y del repaso (más adelante, constancia y envío al aula virtual: hoy
+fuera de alcance).
+
+### 16.2 El proceso, del despiece al holograma (lo que va a hacer la skill)
+Es el mismo camino que siguió el motor, puesto por escrito para repetirlo con cada pieza:
+1. **Referencias.** Nunca de la imaginación (regla 1 de Teardown): fotos del avión real (`Documents/aurav-cabina/fotos/`, fuera del
+   repo), el manual de entrenamiento (PDF, fuera del repo), y medidas tomadas con rayos contra `juegos/at802.glb`.
+2. **El despiece** (Teardown, como está): la máquina en una carpeta (la matemática con medidas reales y UNA entrada que mueve todo,
+   la geometría hecha por código, el estudio, la consola, la película y la página en vivo) → una página de escritorio que se
+   abre sin red, como `turbohelice.html`.
+3. **Del despiece al holograma** (lo que hicieron la T1 a la T3 con el motor): la geometría marcada por parte y por estación se
+   junta por cuerpo que se mueve y se dibuja con el sombreador del holograma; la matemática se usa TAL CUAL; la consola pasa a
+   paneles 3D; los mandos, a palancas y botones para la mano y el mouse; las llamadas, a 3D; el recorrido guiado y las preguntas.
+4. **En el curso:** la pieza entra como una lección del recorrido (tarjeta → holograma → funcionamiento → repaso), con la leyenda
+   fija y todo lo no validado marcado [VERIFICAR].
+5. **Verificación:** pruebas por consola con los mandos simulados, rayos desde el ojo a cada placa, presupuesto (75 llamadas,
+   200 k triángulos), el camino entero con el mouse de verdad, capturas revisadas; el casco lo prueba Iván.
+
+**La skill** junta Teardown (pasos 1 y 2) con los pasos 3 a 5 y con las reglas de AURAV (la leyenda, [VERIFICAR], las fotos nunca
+al repo, nada se publica sin el ok). Va como skill local de Claude Code (`~/.claude/skills/<nombre>/`, como «fernando», «lichi» y
+«graphify»), con el paquete de Teardown adentro (su kit, sus tres ejemplos, sus scripts), más la parte nueva del holograma y el
+motor del taller como ejemplo resuelto. La de la cuenta de claude.ai («teardown») no se puede renombrar desde acá: queda un zip
+listo para que Iván la reemplace si quiere. **El nombre lo elige Iván.**
+
+### 16.3 Qué funciona en cada lección, y con qué se cuenta (medido en el modelo el 21/11)
+Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cortar nada.
+
+| Lección | Qué se ve funcionar | Con qué se maneja | Lo que ya está en el modelo | Lo que falta |
+|---|---|---|---|---|
+| Hélice | el paso variable y la bandera; gira con el motor | la palanca HÉLICE (la misma del motor) | las 5 palas vienen sueltas (460 a 654 triángulos cada una) y el cubo: cada pala gira sobre su eje | el mecanismo del cubo por dentro (gobernador, contrapesos): con el manual |
+| Ala y flaps | los flaps que bajan; los alerones | botón FLAPS; el bastón | el flap (z 1,08 a 5,01) y el alerón (z 5,03 a 8,06) vienen sueltos | cuánto bajan de verdad [VERIFICAR] |
+| Cola | el timón de profundidad, el de dirección, la rueda de cola que se traba | el bastón y los pedales | los dos timones de profundidad vienen sueltos; el de dirección está pegado a la deriva (se corta por su bisagra); la rueda de cola, suelta | recorridos [VERIFICAR] |
+| Tren | la ballesta que cede al apoyar, la rueda que gira, el freno | botones ATERRIZAR y FRENAR | rueda, llanta, disco y pata vienen sueltas | cuánto cede la ballesta |
+| Escapes y toma | por dónde entra el aire y por dónde salen los gases | botón FLUJO (como en el motor) | los caños; el flujo se dibuja con puntos | — (se enlaza con las estaciones 1 y 7 del motor) |
+| Tolva | la carga, el nivel en la escala, la descarga | CARGAR y DESCARGAR | el lomo y la escala (T12) | el interior: sin fotos |
+| Compuerta | las hojas (hecho), la descarga según la cobertura, la descarga de emergencia | el botón de las hojas; el nivel de cobertura | el modelo propio (T12) | abierta de verdad y el sistema por dentro: sin fotos, con el manual |
+| Cabina | los mandos que mueven todo lo anterior | — | la cabina liviana | enlazarla con el simulador de cabina |
+| Motor | hecho: 8 estaciones, 3 palancas, 5 fallas, recorrido y 6 preguntas | — | — | — |
+
+### 16.4 Los bloques (3 horas o más cada uno; cada pieza, de a una)
+| Bloque | Qué se hace | Listo cuando |
+|---|---|---|
+| T13 | **La skill** (escrita con el motor como ejemplo resuelto; `holograma.js` y `piezaholo.js` pasan a un módulo de «lección» que sirve para cualquier pieza) **y la primera lección completa, de muestra: la HÉLICE** (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso) | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corre de punta a punta sobre ella |
+| T14 | Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
+| T15 | Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
+| T16 | Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
+| T17 | El curso entero: orden, avance, repaso por lección, resumen final, voz; la cabina | se recorre de punta a punta y da el resumen |
+
+Cada bloque cierra como los otros: pruebas, capturas revisadas, plan y `CLAUDE.md` al día, commit local, y lo que no se pudo probar.
+
+### 16.5 Lo que tiene que decir Iván (de a una)
+1. **El nombre de la skill.**
+2. Si cada pieza lleva también su página de escritorio, como `turbohelice.html`, o va directo al taller (más rápido).
+3. Por qué pieza se empieza (propuesta: la hélice, que se maneja con una palanca que ya está).
+4. De dónde salen los contenidos de cada lección y quién los valida (el manual de entrenamiento, Bruno, AAXOD).
+5. Si el curso lleva repaso con puntaje y resumen final.
+- **Lo que no se puede probar acá:** el casco.
+
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el
 capó abierto y su motor de verdad, varios alumnos a la vez o un instructor en vivo, y el fotorrealismo (las fotos no van al repo).
