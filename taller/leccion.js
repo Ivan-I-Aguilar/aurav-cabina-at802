@@ -1,7 +1,8 @@
 // El PANEL DE LA LECCIÓN de una pieza (T13, 21/11/2026; PLAN_TALLER.md §16): lo que convierte la pieza en holograma en una lección
 // «como el motor». Es el rótulo de la pieza (su nombre y CERRAR) con dos caras:
 //  - FUNCIONAMIENTO: un botón por cada cosa que la pieza hace (los «estados» de lecciones.js), la frase del estado elegido, con
-//    qué se maneja de verdad, y abajo cómo se mueve la pieza y el botón REPASO;
+//    qué se maneja de verdad, la PALANCA de la lección si la tiene (un mando continuo: la pieza va a cualquier punto entre dos
+//    estados), y abajo cómo se mueve la pieza y el botón REPASO;
 //  - REPASO: las preguntas de la lección, de a una, con tres opciones; al final, el puntaje.
 // Y los RÓTULOS DE LAS PARTES: hasta tres nombres al costado de la pieza, cada uno con su línea al punto que señala (el mismo
 // aspecto que las llamadas del motor).
@@ -59,8 +60,9 @@ export function crearRepaso(preguntas) {
 }
 
 /**
- * el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso, vistos, mejor}); vistos = los estados
- * que el alumno ya puso (llevan una tilde) y mejor = su mejor puntaje en el repaso (o null). «alto» es el de lo que cambia; con
+ * el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso, vistos, mejor, palanca}); vistos = los
+ * estados que el alumno ya puso (llevan una tilde), mejor = su mejor puntaje en el repaso (o null) y palanca = {u, activa} = dónde
+ * está la perilla de la palanca de la lección (si la lección tiene «palanca»). «alto» es el de lo que cambia; con
  * «leyenda» (la leyenda fija del taller) se le suma abajo una franja con ella: mientras la pieza está abierta la tarjeta de su
  * punto, que es la que la lleva, está escondida, y en el casco la leyenda tiene que seguir a la vista
  */
@@ -89,11 +91,73 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
     g.textAlign = alinear;
     g.fillText(texto, alinear === 'center' ? x + w / 2 : x + 22, y + h / 2 + 2, w - 28);
   };
+  // La PALANCA de la lección: una pista con su perilla, que el alumno toca o arrastra (el botón 'lec_palanca': el lugar donde cae
+  // el rayo dice a dónde va). Arriba, los estados que recorre; en rojo, la zona de la traba; abajo, hacia dónde es atrás y adelante
+  const dibujarPalanca = (leccion, {u, activa}, sobre) => {
+    const pl = leccion.palanca;
+    const y = 380;
+    const x0 = M + 262;
+    const x1 = W - M - 16;
+    const largo = x1 - x0;
+    const yt = y + 30; // la pista
+    const ht = 30;
+    p.botones.push({id: 'lec_palanca', x: x0, y: y + 4, w: largo, h: 76});
+    g.textBaseline = 'middle';
+    g.textAlign = 'left';
+    g.fillStyle = LIMA;
+    g.font = 'bold 25px Arial';
+    g.fillText(pl.rotulo, M, yt + 2, 250);
+    g.fillStyle = '#8fa3b8';
+    g.font = 'bold 20px Arial';
+    g.fillText('TOCALA O ARRASTRALA', M, yt + 34, 250);
+    g.beginPath();
+    g.roundRect(x0, yt, largo, ht, 15);
+    g.fillStyle = sobre ? '#17467a' : '#0f335a';
+    g.fill();
+    if (pl.traba) {
+      g.save();
+      g.beginPath();
+      g.roundRect(x0, yt, largo, ht, 15);
+      g.clip();
+      g.fillStyle = 'rgba(214,24,43,0.62)';
+      g.fillRect(x0, yt, pl.traba * largo, ht);
+      g.restore();
+    }
+    g.lineWidth = 3;
+    g.strokeStyle = LIMA;
+    g.beginPath();
+    g.roundRect(x0, yt, largo, ht, 15);
+    g.stroke();
+    g.font = 'bold 20px Arial';
+    const ultimo = pl.puntos.length - 1;
+    pl.puntos.forEach(([up, id], i) => {
+      const e = leccion.estados.find((x) => x.id === id);
+      const x = x0 + up * largo;
+      g.fillStyle = '#9fe3ff';
+      g.textAlign = i === 0 ? 'left' : i === ultimo ? 'right' : 'center';
+      g.fillText(e ? e.boton : id, i === 0 ? x0 + 4 : i === ultimo ? x1 - 4 : x, y + 14);
+      if (i > 0 && i < ultimo) g.fillRect(x - 1.5, yt - 5, 3, ht + 10);
+    });
+    g.fillStyle = '#8fa3b8';
+    g.font = 'bold 19px Arial';
+    g.textAlign = 'left';
+    g.fillText(`← ${pl.atras}`, x0 + 4, yt + ht + 17);
+    g.textAlign = 'right';
+    g.fillText(`${pl.adelante} →`, x1 - 4, yt + ht + 17);
+    const xk = x0 + Math.min(1, Math.max(0, u)) * largo;
+    g.beginPath();
+    g.roundRect(xk - 15, yt - 12, 30, ht + 24, 10);
+    g.fillStyle = activa ? LIMA : AZUL; // hueca cuando el estado de la pieza no es de la palanca (las partes, la reversa)
+    g.fill();
+    g.lineWidth = 3;
+    g.strokeStyle = activa ? '#ffffff' : '#8fa3b8';
+    g.stroke();
+  };
   return {
     ...p,
     ancho,
     alto: altoTotal,
-    pintar({titulo, nota = '', ayuda = '', leccion, estado, hover = null, repaso = null, vistos = null, mejor = null}) {
+    pintar({titulo, nota = '', ayuda = '', leccion, estado, hover = null, repaso = null, vistos = null, mejor = null, palanca = null}) {
       p.botones.length = 0;
       g.clearRect(0, 0, W, p.H);
       g.save();
@@ -131,17 +195,24 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
           }
         });
         const e = leccion.estados.find((x) => x.id === estado) || leccion.estados[0];
+        const pl = leccion.palanca; // con palanca: dos renglones para la frase y uno para el mando; sin ella, tres y dos
         g.textAlign = 'left';
+        g.textBaseline = 'middle';
         g.fillStyle = '#ffffff';
         g.font = '31px Arial';
         envolver(g, e.texto, W - 2 * M)
-          .slice(0, 3)
-          .forEach((l, k) => g.fillText(l, M, 276 + k * 40));
+          .slice(0, pl ? 2 : 3)
+          .forEach((l, k) => g.fillText(l, M, (pl ? 272 : 276) + k * (pl ? 38 : 40)));
         g.fillStyle = '#9fe3ff';
         g.font = '25px Arial';
-        envolver(g, leccion.mando, W - 2 * M)
-          .slice(0, 2)
-          .forEach((l, k) => g.fillText(l, M, 406 + k * 31));
+        if (pl) g.fillText(leccion.mando, M, 350, W - 2 * M);
+        else
+          envolver(g, leccion.mando, W - 2 * M)
+            .slice(0, 2)
+            .forEach((l, k) => g.fillText(l, M, 406 + k * 31));
+        if (pl) dibujarPalanca(leccion, palanca || {u: 1, activa: false}, hover === 'lec_palanca');
+        g.textAlign = 'left';
+        g.textBaseline = 'middle';
         g.fillStyle = '#8fa3b8';
         g.font = 'bold 24px Arial';
         g.fillText(ayuda, M, H - 37, W - 2 * M - 290);

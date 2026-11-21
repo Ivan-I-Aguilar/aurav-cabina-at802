@@ -4,7 +4,8 @@
 // [VERIFICAR]: no reemplaza el manual del fabricante, el procedimiento de la empresa ni la instrucción. No trae límites ni
 // procedimientos: sólo qué es cada cosa y cómo se mueve.
 //
-// Cada lección: «mando» (con qué se maneja de verdad, en la cabina), «inicial» (el estado con que se abre), «estados» (un botón por
+// Cada lección: «mando» (con qué se maneja de verdad, en la cabina), «palanca» (opcional: un mando continuo que recorre varios
+// estados), «inicial» (el estado con que se abre), «estados» (un botón por
 // cada cosa que hace: el texto que se lee; «paso» = a qué posición van las partes móviles, en grados desde como está el modelo;
 // «giro» = a qué velocidad gira la pieza, rad/s; «flujo» = hacia dónde y qué tan rápido va el flujo, con signo, 0 = sin flujo;
 // «partes: true» = en ese estado se ven los nombres de las partes), «partes» (los nombres, con el punto de la pieza que señalan,
@@ -15,8 +16,12 @@
 // cuántos grados gira cada pala sobre su eje desde ahí: los ángulos son ILUSTRATIVOS [VERIFICAR con el manual de la hélice].
 export const LECCIONES = {
   helice: {
-    mando: 'En la cabina, la palanca HÉLICE elige las vueltas y un gobernador acomoda las palas solo para mantenerlas.',
+    mando: 'En la cabina: la palanca HÉLICE elige las vueltas; un gobernador acomoda las palas.',
     inicial: 'fino',
+    // la PALANCA de la lección (el mando continuo, como la de la cabina): en qué lugar de su recorrido (0 = atrás del todo, 1 =
+    // adelante del todo) queda cada estado; entre uno y otro, el paso, las vueltas y el flujo cambian de a poco. «traba»: de ahí
+    // para atrás vale el primer punto, sin pasos intermedios (la traba de bandera de la palanca de verdad) [VERIFICAR]
+    palanca: {rotulo: 'PALANCA HÉLICE', atras: 'ATRÁS', adelante: 'ADELANTE', puntos: [[0, 'bandera'], [0.3, 'grueso'], [1, 'fino']], traba: 0.15},
     estados: [
       {id: 'partes', boton: 'PARTES', paso: 0, giro: 0, flujo: 0, partes: true, texto: 'Cinco palas y un cubo. Cada pala puede girar sobre su propio eje: a ese ángulo se le dice «paso».'},
       {id: 'fino', boton: 'PASO FINO', paso: 0, giro: 2.4, flujo: -1.1, texto: 'Palas casi de plano: cada vuelta muerde poco aire y el motor gira rápido. Vueltas altas, para despegar y aterrizar.'},

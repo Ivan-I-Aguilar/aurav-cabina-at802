@@ -1007,7 +1007,7 @@ function apuntado(r) {
   };
   for (const p of paneles) {
     const h = p.impacto(r);
-    if (h) tomar({tipo: 'panel', id: h.id, distancia: h.distancia, panel: p});
+    if (h) tomar({tipo: 'panel', id: h.id, distancia: h.distancia, panel: p, u: h.u, v: h.v});
   }
   for (const [nombre, b] of Object.entries(botones3D)) {
     const h = r.intersectObject(b.malla, false)[0];
@@ -1042,7 +1042,7 @@ function accionar(a) {
   else if (a.id === 'fam_motor') saltarA('mesa');
   else if (a.id === 'fam_holo') alternarPieza(PUNTOS_AVION[fam.activo].clave);
   else if (a.id === 'pieza_cerrar') cerrarPieza();
-  else if (a.id.startsWith('lec_')) accionLeccion(a.id);
+  else if (a.id.startsWith('lec_')) accionLeccion(a.id, a.u);
   else if (a.id === 'pieza_hojas') {
     if (piezaAbierta && piezaAbierta.tieneMoviles) piezaAbierta.abrir(!piezaAbierta.abierta);
   }
@@ -1109,6 +1109,8 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
   // desde cualquier lado, como antes
   const sobrePieza = !(a && a.id) && rayoTocaPieza(rayo);
   arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a, girarHolo: sobrePieza || (e.shiftKey && (!enCapo || !!piezaAbierta))};
+  // la palanca de la lección se arrastra: desde que se aprieta sobre ella, sigue al mouse
+  if (a && a.id === 'lec_palanca') arrastre.palancaLeccion = ponerPalancaLeccion(a.u);
   if (a && a.tipo === 'palanca' && a.id !== 'levCL') {
     palancaMouse = a.palanca;
     arrastre.ang0 = a.palanca.ang;
@@ -1146,6 +1148,11 @@ renderer.domElement.addEventListener('pointermove', (e) => {
     const a = apuntado(rayoDesdeMouse(e));
     hoverPC = a && a.tipo === 'panel' ? a.id : null;
     renderer.domElement.style.cursor = a && a.id ? 'pointer' : rayoTocaPieza(rayo) ? 'grab' : 'default';
+    return;
+  }
+  if (arrastre.palancaLeccion) {
+    const a = apuntado(rayoDesdeMouse(e));
+    if (a && a.id === 'lec_palanca') ponerPalancaLeccion(a.u);
     return;
   }
   if (palancaMouse) {
@@ -1651,6 +1658,10 @@ function ponerEstadoLeccion(id, ya = false, cuenta = true) {
   const e = leccion.datos.estados.find((x) => x.id === id);
   if (!e) return false;
   leccion.estado = id;
+  // la perilla de la palanca va al lugar de ese estado; si el estado no es de la palanca (las partes, la reversa), queda hueca
+  const enPalanca = leccion.datos.palanca && leccion.datos.palanca.puntos.find(([, eid]) => eid === id);
+  leccion.enPalanca = !!enPalanca;
+  if (enPalanca) leccion.palanca = enPalanca[0];
   piezaAbierta.irA(THREE.MathUtils.degToRad(e.paso), ya);
   piezaAbierta.ponerGiro(e.giro, ya);
   piezaAbierta.ponerFlujo(e.flujo);
@@ -1658,11 +1669,46 @@ function ponerEstadoLeccion(id, ya = false, cuenta = true) {
   if (cuenta) avanceLeccion(leccion.clave).estados.add(id);
   return true;
 }
-/** los botones del panel de la lección: los estados, el repaso y sus respuestas */
-function accionLeccion(id) {
+/**
+ * La PALANCA de la lección en u (0 = atrás del todo, 1 = adelante del todo): entre un estado y el que sigue, el paso, el giro y
+ * el flujo cambian de a poco; de la traba para atrás vale el primer punto. Devuelve {paso, giro, flujo, cerca: el estado más cercano}
+ */
+function valoresPalanca(datos, u) {
+  const pl = datos.palanca;
+  const est = (id) => datos.estados.find((e) => e.id === id);
+  const pts = pl.puntos;
+  if (pl.traba && u < pl.traba) {
+    const e = est(pts[0][1]);
+    return {paso: e.paso, giro: e.giro, flujo: e.flujo, cerca: e.id};
+  }
+  let i = pl.traba ? 1 : 0;
+  while (i < pts.length - 2 && u > pts[i + 1][0]) i++;
+  const A = est(pts[i][1]);
+  const B = est(pts[Math.min(i + 1, pts.length - 1)][1]);
+  const k = i + 1 < pts.length ? clamp((u - pts[i][0]) / (pts[i + 1][0] - pts[i][0]), 0, 1) : 0;
+  const mezcla = (a, b) => a + (b - a) * k;
+  return {paso: mezcla(A.paso, B.paso), giro: mezcla(A.giro, B.giro), flujo: mezcla(A.flujo, B.flujo), cerca: k < 0.5 ? A.id : B.id};
+}
+/** el alumno puso la palanca de la lección en u: la pieza la sigue (sin el arranque suave de los botones: se puede arrastrar) */
+function ponerPalancaLeccion(u) {
+  if (!piezaAbierta || !leccion || !leccion.datos.palanca || leccion.repaso) return false;
+  const uu = clamp(u ?? 0.5, 0, 1);
+  const v = valoresPalanca(leccion.datos, uu);
+  leccion.palanca = uu;
+  leccion.enPalanca = true;
+  leccion.estado = v.cerca;
+  piezaAbierta.seguir(THREE.MathUtils.degToRad(v.paso));
+  piezaAbierta.ponerGiro(v.giro);
+  piezaAbierta.ponerFlujo(v.flujo);
+  avanceLeccion(leccion.clave).estados.add(v.cerca);
+  return true;
+}
+/** los botones del panel de la lección: los estados, la palanca, el repaso y sus respuestas (u: dónde cayó el rayo en el botón) */
+function accionLeccion(id, u) {
   if (!piezaAbierta || !leccion) return;
   const rp = leccion.repaso;
-  if (id.startsWith('lec_e_')) {
+  if (id === 'lec_palanca') ponerPalancaLeccion(u);
+  else if (id.startsWith('lec_e_')) {
     if (!rp) ponerEstadoLeccion(id.slice(6));
   } else if (id === 'lec_repaso') leccion.repaso = crearRepaso(leccion.datos.preguntas);
   else if (id === 'lec_volver') leccion.repaso = null;
@@ -1757,10 +1803,11 @@ function seguirRotuloPieza(ojo, hover) {
     const rp = leccion.repaso;
     const hv = hover && (hover.startsWith('lec_') || hover === 'pieza_cerrar') ? hover : '';
     const av = avanceLeccion(leccion.clave);
-    const f = `${leccion.clave}|${leccion.estado}|${hv}|${enVR}|${rp ? `${rp.estado.i},${rp.estado.elegida},${rp.estado.fin}` : '-'}|${av.estados.size}|${av.repaso}`;
+    // (la perilla de la palanca, de a 2 % de su recorrido: mientras se la arrastra el panel no se repinta en cada cuadro)
+    const f = `${leccion.clave}|${leccion.estado}|${hv}|${enVR}|${rp ? `${rp.estado.i},${rp.estado.elegida},${rp.estado.fin}` : '-'}|${av.estados.size}|${av.repaso}|${leccion.enPalanca}|${Math.round(leccion.palanca * 50)}`;
     if (f !== leccionFirma) {
       leccionFirma = f;
-      rotuloLeccion.pintar({titulo: pt.titulo, nota: pt.holoNota || '', ayuda, leccion: leccion.datos, estado: leccion.estado, hover: hv, repaso: rp, vistos: av.estados, mejor: av.repaso});
+      rotuloLeccion.pintar({titulo: pt.titulo, nota: pt.holoNota || '', ayuda, leccion: leccion.datos, estado: leccion.estado, hover: hv, repaso: rp, vistos: av.estados, mejor: av.repaso, palanca: {u: leccion.palanca, activa: leccion.enPalanca}});
     }
     // los nombres de las partes: en el estado que los pide (PARTES), con la pieza ya quieta y fuera del repaso
     const est = rp ? null : leccion.datos.estados.find((x) => x.id === leccion.estado);
@@ -1817,7 +1864,7 @@ function alternarPieza(clave) {
   cerrarPieza();
   if (era === clave || !PIEZAS_HOLO[clave] || !avionAT) return;
   piezaAbierta = PIEZAS_HOLO[clave]();
-  leccion = LECCIONES[clave] ? {clave, datos: LECCIONES[clave], estado: null, repaso: null} : null;
+  leccion = LECCIONES[clave] ? {clave, datos: LECCIONES[clave], estado: null, repaso: null, palanca: 1, enPalanca: false} : null;
   const enVR = renderer.xr.isPresenting;
   const cam = enVR ? renderer.xr.getCamera() : camara;
   cam.getWorldPosition(tmp);
@@ -1895,8 +1942,10 @@ const manos = [0, 1].map((i) => {
   const linea = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]), new THREE.LineBasicMaterial({color: 0x9fe3ff, transparent: true, opacity: 0.7}));
   linea.scale.z = 0.6;
   c.add(linea);
-  c.userData = {linea, grip: false, gripNuevo: false};
+  c.userData = {linea, grip: false, gripNuevo: false, gatillo: false};
+  c.addEventListener('selectend', () => (c.userData.gatillo = false));
   c.addEventListener('selectstart', () => {
+    c.userData.gatillo = true; // mientras sigue apretado, la palanca de la lección sigue al rayo (manosVR)
     audio.iniciar();
     if (panelVR.visible) return panelVR.gatillo(c);
     const a = apuntado(rayoDesdeControl(c));
@@ -2022,6 +2071,7 @@ function manosVR() {
     const a = apuntado(rayoDesdeControl(c));
     c.userData.linea.scale.z = a ? a.distancia : 0.6;
     if (a && a.tipo === 'panel') hoverVR = a.id;
+    if (c.userData.gatillo && a && a.id === 'lec_palanca') ponerPalancaLeccion(a.u); // con el gatillo apretado, la palanca sigue al rayo
   }
   if (controles) controles.actualizar();
   seguirPiezaHolo();
@@ -2079,6 +2129,7 @@ function gatilloEn(c, punto, normal) {
   ponerMano(c, punto.clone().addScaledVector(normal, 0.4), punto);
   c.dispatchEvent({type: 'selectstart'});
   cuadroVR();
+  c.dispatchEvent({type: 'selectend'});
 }
 /** las pruebas no tienen que dejar marcas en el camino del alumno */
 const guardarCamino = () => ({
@@ -2900,7 +2951,7 @@ function probarLeccion(ok) {
       const p = w.clone().project(camara);
       return Math.abs(p.x) > 1 || Math.abs(p.y) > 1;
     }).map(([k]) => k);
-    ok(`${titulo}: el panel se ve entero desde el lugar (rayos desde el ojo, cabeza ±8 cm) y entra en la pantalla`, !tapados.length && !afuera.length && rotuloLeccion.botones.length === datos.estados.length + 2, {tapados, afuera, botones: rotuloLeccion.botones.length});
+    ok(`${titulo}: el panel se ve entero desde el lugar (rayos desde el ojo, cabeza ±8 cm) y entra en la pantalla`, !tapados.length && !afuera.length && rotuloLeccion.botones.length === datos.estados.length + 2 + (datos.palanca ? 1 : 0), {tapados, afuera, botones: rotuloLeccion.botones.length});
   }
   // 3) cada estado, con el gatillo en su botón: las partes van a su posición (el giro de cada una, medido en su matriz), y el
   // giro y el flujo son los del estado
@@ -2924,6 +2975,50 @@ function probarLeccion(ok) {
     if (!bien) malos.push(`${e.id}: paso ${THREE.MathUtils.radToDeg(pz.valor).toFixed(1)}° (pide ${e.paso}°), giro ${pz.giro.toFixed(2)}, flujo ${pz.flujo}`);
   }
   ok(`${titulo}: el gatillo en cada botón pone su estado (las ${pz.partes.length} partes en su ángulo, el giro y el flujo)`, !malos.length && camino.lecciones[clave].estados.size === datos.estados.length, malos.length ? malos : [...camino.lecciones[clave].estados]);
+  if (datos.palanca) {
+    // la PALANCA: el gatillo en tres lugares de su recorrido. A mitad de camino entre sus dos últimos estados, la pieza queda a
+    // mitad de camino (el paso, el giro y el flujo); adelante del todo, en el último estado; y dentro de la traba, en el primero
+    const pl = datos.palanca;
+    const enPalanca = (u) => {
+      const c = rotuloLeccion.centro('lec_palanca', new THREE.Vector3(), u, 0.5);
+      if (!c) return null;
+      gatilloEn(manos[1], c, new THREE.Vector3(0, 0, 1).applyQuaternion(rotuloLeccion.malla.getWorldQuaternion(new THREE.Quaternion())));
+      ponerMano(manos[1], lejos);
+      esperar(2);
+      return {estado: leccion.estado, paso: +THREE.MathUtils.radToDeg(pz.valor).toFixed(2), giro: +pz.giro.toFixed(3), flujo: +pz.flujo.toFixed(3), u: +leccion.palanca.toFixed(3)};
+    };
+    const [uA, idA] = pl.puntos[pl.puntos.length - 2];
+    const [uB, idB] = pl.puntos[pl.puntos.length - 1];
+    const A = est(idA);
+    const B = est(idB);
+    const e0p = est(pl.puntos[0][1]);
+    const medio = enPalanca((uA + uB) / 2);
+    const fin = enPalanca(0.999);
+    const atras = pl.traba ? enPalanca(pl.traba / 2) : null;
+    const okMedio = !!medio && Math.abs(medio.paso - (A.paso + B.paso) / 2) < 0.3 && Math.abs(medio.giro - (A.giro + B.giro) / 2) < 0.03 && Math.abs(medio.flujo - (A.flujo + B.flujo) / 2) < 0.02;
+    const okFin = !!fin && Math.abs(fin.paso - B.paso) < 0.3 && fin.estado === idB;
+    const okAtras = !pl.traba || (!!atras && Math.abs(atras.paso - e0p.paso) < 0.3 && atras.estado === e0p.id && Math.abs(atras.giro - e0p.giro) < 0.03);
+    ok(`${titulo}: la palanca lleva la pieza a cualquier punto entre sus estados (a mitad de camino, la mitad; en la traba, «${e0p.boton}»)`, okMedio && okFin && okAtras && leccion.enPalanca, {medio, fin, atras});
+    // con el gatillo apretado la palanca sigue al rayo (se la arrastra); al soltarlo, se queda donde estaba
+    const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(rotuloLeccion.malla.getWorldQuaternion(new THREE.Quaternion()));
+    const apuntarA = (u) => {
+      const c = rotuloLeccion.centro('lec_palanca', new THREE.Vector3(), u, 0.5);
+      ponerMano(manos[1], c.clone().addScaledVector(normal, 0.4), c);
+    };
+    apuntarA(0.4);
+    manos[1].dispatchEvent({type: 'selectstart'});
+    cuadroVR();
+    const u1 = leccion.palanca;
+    apuntarA(0.8);
+    cuadroVR();
+    const u2 = leccion.palanca;
+    manos[1].dispatchEvent({type: 'selectend'});
+    apuntarA(0.4);
+    cuadroVR();
+    const u3 = leccion.palanca;
+    ponerMano(manos[1], lejos);
+    ok(`${titulo}: con el gatillo apretado la palanca sigue al rayo, y al soltarlo se queda`, Math.abs(u1 - 0.4) < 0.01 && Math.abs(u2 - 0.8) < 0.01 && Math.abs(u3 - 0.8) < 0.01, {u1: +u1.toFixed(3), u2: +u2.toFixed(3), u3: +u3.toFixed(3)});
+  }
   if (clave === 'helice') {
     // la hélice: las cinco palas, cada una sobre su eje radial; en BANDERA la cuerda queda a lo largo del eje de la hélice (de
     // canto al viento) y en PASO FINO casi de plano: se mide la cuerda de una pala a tres cuartos de su largo, ya girada
@@ -3474,9 +3569,11 @@ window.__taller = {
   hojas: (si) => !!piezaAbierta && piezaAbierta.tieneMoviles && (piezaAbierta.abrir(si), true),
   /** la lección de la pieza abierta (o null): su estado, sus estados y el repaso; estadoLeccion('bandera') pone uno de sus estados */
   get leccion() {
-    return leccion && {clave: leccion.clave, estado: leccion.estado, estados: leccion.datos.estados.map((e) => e.id), repaso: leccion.repaso ? {...leccion.repaso.estado} : null};
+    return leccion && {clave: leccion.clave, estado: leccion.estado, estados: leccion.datos.estados.map((e) => e.id), palanca: leccion.palanca, enPalanca: leccion.enPalanca, repaso: leccion.repaso ? {...leccion.repaso.estado} : null};
   },
   estadoLeccion: (id) => ponerEstadoLeccion(id),
+  /** pone la palanca de la lección en u (0 = atrás del todo, 1 = adelante del todo) */
+  palancaLeccion: (u) => ponerPalancaLeccion(u),
   /** los nombres de las partes que se están mostrando (estado PARTES de una lección): [{nombre, rotulo, punto}] en el mundo */
   get partes() {
     return rotulosPartes.grupo.visible ? rotulosPartes.estado : [];

@@ -35,7 +35,8 @@ export function crearPanel({ancho, alto, px = 1024, nombre = 'panel', transparen
     pintado() {
       tex.needsUpdate = true;
     },
-    /** {distancia, id} del botón que toca el rayo (id null si toca la placa fuera de los botones) o null */
+    /** {distancia, id, u, v} del botón que toca el rayo (id null si toca la placa fuera de los botones) o null; u, v = en qué
+     * lugar del botón cayó, de 0 a 1 desde su esquina de arriba a la izquierda (para los mandos continuos: una palanca) */
     impacto(raycaster) {
       if (!malla.visible) return null;
       const h = raycaster.intersectObject(malla, false)[0];
@@ -43,14 +44,15 @@ export function crearPanel({ancho, alto, px = 1024, nombre = 'panel', transparen
       const u = h.uv.x * W;
       const v = (1 - h.uv.y) * H;
       const b = botones.find((b) => u >= b.x && u <= b.x + b.w && v >= b.y && v <= b.y + b.h);
-      return {distancia: h.distance, id: b ? b.id : null};
+      return {distancia: h.distance, id: b ? b.id : null, u: b ? (u - b.x) / b.w : 0, v: b ? (v - b.y) / b.h : 0};
     },
-    /** el centro de un botón en el mundo (para apuntarle con un mando simulado en las pruebas) o null */
-    centro(id, out = new THREE.Vector3()) {
+    /** el centro de un botón en el mundo (para apuntarle con un mando simulado en las pruebas) o null; fx, fy: otro lugar del
+     * botón, de 0 a 1 desde su esquina de arriba a la izquierda */
+    centro(id, out = new THREE.Vector3(), fx = 0.5, fy = 0.5) {
       const b = botones.find((x) => x.id === id);
       if (!b) return null;
       malla.updateWorldMatrix(true, false);
-      return malla.localToWorld(out.set(((b.x + b.w / 2) / W - 0.5) * ancho, (0.5 - (b.y + b.h / 2) / H) * alto, 0));
+      return malla.localToWorld(out.set(((b.x + b.w * fx) / W - 0.5) * ancho, (0.5 - (b.y + b.h * fy) / H) * alto, 0));
     },
   };
 }

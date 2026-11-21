@@ -122,8 +122,8 @@ function islasDe(pos) {
  * velocidad: cuánto cambia v por segundo. flujo: {n, radio, desde, hasta, cola, tam, color} = estelas de luz a lo largo del eje x
  * del marco, dentro de ese radio, entre esas dos x (cola: su largo a velocidad 1); ponerFlujo(v) las mueve a v unidades del marco
  * por segundo (con signo; 0 las apaga).
- * Devuelve {clave, grupo, interior, radio, mitad, centro, triangulos, tieneMoviles, abierta, abertura, valor, objetivo, irA, abrir,
- * ponerGiro, ponerFlujo, aMundo, actualizar(dt, t), liberar()}: el grupo se pone, se gira y se escala desde afuera; «interior» es
+ * Devuelve {clave, grupo, interior, radio, mitad, centro, triangulos, tieneMoviles, abierta, abertura, valor, objetivo, irA, seguir,
+ * abrir, ponerGiro, giro, ponerFlujo, flujo, aMundo, actualizar(dt, t), liberar()}: el grupo se pone, se gira y se escala desde afuera; «interior» es
  * lo que gira solo; «mitad» es la media caja de lo que se ve, en reposo; aMundo(p) lleva un punto del marco al mundo.
  */
 export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam = 0.8, color = '#62d8ff', gira = null, brillo = 1, moviles = [], elegir = null, velocidad = 1 / 1.2, flujo = null}) {
@@ -280,6 +280,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   let hacia = 0;
   let avance = 1;
   let duracion = 1;
+  let persigue = false; // seguir(v): persigue un blanco que se mueve
   const ida = new THREE.Matrix4();
   const giro = new THREE.Matrix4();
   const vuelta = new THREE.Matrix4();
@@ -328,14 +329,24 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
       if (ya) {
         valor = desde = hacia = v;
         avance = 1;
+        persigue = false;
         mover();
         return;
       }
-      if (v === hacia) return;
+      const perseguia = persigue;
+      persigue = false;
+      if (v === hacia && !(perseguia && valor !== hacia)) return;
       desde = valor;
       hacia = v;
       avance = 0;
       duracion = Math.max(0.35, Math.abs(hacia - desde) / velocidad);
+    },
+    /** las partes móviles persiguen la posición v, que puede cambiar en cada cuadro (un mando continuo que el alumno arrastra):
+     * sin el arranque suave de irA, que con un blanco que se mueve las dejaba siempre atrás */
+    seguir(v) {
+      hacia = v;
+      persigue = true;
+      avance = 1;
     },
     /** abre (true) o cierra (false) las partes móviles */
     abrir(si, ya = false) {
@@ -370,6 +381,10 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
       if (avance < 1) {
         avance = Math.min(1, avance + dt / duracion);
         valor = avance >= 1 ? hacia : desde + (hacia - desde) * suave(avance);
+        mover();
+      } else if (persigue && valor !== hacia) {
+        valor += (hacia - valor) * Math.min(1, dt * 9);
+        if (Math.abs(hacia - valor) < 2e-4) valor = hacia;
         mover();
       }
       if (estelas) {
