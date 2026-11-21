@@ -762,8 +762,8 @@ motor ya está), en la cual se pueda aplicar esto de ver esa pieza tipo en tus m
 | Ala, flaps y tren | recorte del exterior (un ala entera con su pata) | los flaps no se mueven en el modelo: para bajarlos hay que modelarlos |
 | Cola y rueda de cola | recorte del exterior | los timones no se mueven en el modelo |
 | Cabina | el nodo `cabina` (la cabina liviana) | más adelante, un botón «ir al simulador de cabina» |
-| Tolva y boca de carga | por fuera, el tramo de fuselaje del modelo (hecho en la T11) | **por dentro hay que modelarla** (paredes, fondo, boca): hacen falta fotos o un plano. La tapa de arriba sí tiene fotos (16/11) |
-| Compuerta de descarga | por fuera, la panza roja del modelo (hecho en la T11) | las hojas, los rieles y la cañería tienen fotos (16/11); **abierta y por dentro**, hacen falta fotos o un plano |
+| Tolva y boca de carga | el lomo del fuselaje del modelo + `taller/tolva.glb` (lo de arriba y la escala de la mirilla, con las fotos: T12) | **por dentro hay que modelarla** (paredes, fondo, boca): hacen falta fotos o un plano |
+| Compuerta de descarga | `taller/compuerta.glb` (la panza, las dos hojas que abren, los rieles y la cañería de carga, con las fotos: T12) | **abierta y por dentro** hacen falta fotos o un plano (la posición abierta es provisoria) |
 
 - **De a una, como pidió:** cada pieza es un trabajo chico con su recorte, su texto de tarjeta y su captura para Iván. Orden
   propuesto [PROVISORIO]: hélice → ala y tren → cola → escapes → cabina → tolva → compuerta (las dos últimas son las que más
@@ -915,6 +915,46 @@ y se cierran. Al abrir la TOLVA ve el lomo con su tapa, sus trabas y su venteo, 
 - **Lo que tiene que decir Iván:** el ok; si las hojas se abren en el holograma; si del interior de la tolva va un esquema
   o se espera a tener fotos; y si puede sacar dos fotos más (la compuerta abierta y la tolva por dentro, por la tapa).
 - **Lo que no se puede probar acá:** el casco, como siempre.
+
+**T12 HECHA (16/11, la compuerta, 22:11–22:50; 21/11, la tapa de la tolva, 12:29–13:00; v=20261121a; con el ok de Iván: «Sí,
+arrancá T12» y «Sí, seguí»; sin publicar; en el Quest no se probó nada).** Lo que quedó:
+- **La COMPUERTA** (`herramientas/taller_compuerta.py` → `taller/compuerta.glb`, 3.804 triángulos, 0,39 MB, en el marco del avión):
+  la panza en V con su proa redonda y su popa afinada, las **dos hojas** de 1,75 m (cada una de la quilla a su bisagra de afuera,
+  0,33 m de ancho), el riel de la bisagra con sus 17 bulones, el listón dorado de la quilla con sus tornillos, los burletes claros
+  de las puntas, el caño corto de venteo, y detrás la **cañería de carga**: dos bocas con acople rápido (una de cada lado, hacia
+  atrás, abajo y afuera), cada una con su válvula de brida cuadrada y su palanca, el caño transversal, la T, los manguitos verdes
+  con sus abrazaderas y el caño que entra por la popa. La envolvente (largo, ancho, hondura, pendiente de la quilla: 8,3°) se midió
+  con rayos contra el modelo del avión; la forma y los detalles salen de las fotos 0–18, 22–29, 37 y 38.
+- **Las hojas se abren:** `piezaholo.js` acepta PARTES MÓVILES (`moviles: [{fuentes, a, b, angulo}]`: cada una es una malla más que
+  gira sobre su eje). Cada hoja trae en el modelo `userData.bisagra` = los dos extremos de su bisagra y el ángulo que la abre
+  (78°). En el taller, bajo el rótulo de la pieza va el botón **ABRIR LAS HOJAS / CERRAR LAS HOJAS** (`accionPieza`, acción
+  `pieza_hojas`), con la aclaración «ABIERTA: SIN FOTO · A VERIFICAR»: la posición abierta es [PROVISORIA] (giran hacia abajo y
+  afuera, como una bodega).
+- **El LOMO DE LA TOLVA** (`herramientas/taller_tolva.py` → `taller/tolva.glb`, 2.590 triángulos, 0,26 MB): sobre la superficie
+  del lomo medida en el modelo (tabla `LOMO`), la tapa roja con su brida de doce bulones y su manija en T, el panel de adelante con
+  su bisagra y sus dos trabas de palanca naranja, el panel negro antideslizante con sus remaches, la tapa negra levantada, la
+  cúpula de venteo con sus dos trabas, la baranda de dos caños con sus cuatro soportes, la manija en U, la chapa de aluminio y la
+  placa (fotos 32, 34, 69–72, 81, 82, 95–100). En el taller la tolva se ve como el lomo del fuselaje (recortado del avión de
+  2,30 m para arriba: con el tramo entero, sus dos costados sumaban tanta luz que tapaban lo de arriba) con todo eso encima.
+- **La ESCALA DE LA MIRILLA** (foto 89): sobre la pared de atrás de la tolva, rayas cada 25 galones de 650 a 800, con números de
+  siete segmentos (son geometría: no hace falta textura). En el holograma lleva LUZ PROPIA (`userData.luz` en el modelo → atributo
+  `aLuz` del sombreador), porque una cara vista de frente casi no brilla. La tolva llena son 800 galones, unos 3.000 litros.
+- **Lo que NO se hizo:** el interior de la tolva (no hay fotos) y la compuerta abierta de verdad (tampoco). Los textos de las dos
+  tarjetas siguen siendo el borrador.
+- **Pruebas en la PC:** `probarRecorrido()` 33 (suma la compuerta: el gatillo simulado en su botón abre las hojas, el centro de cada
+  hoja baja 8,8 cm, y las vuelve a cerrar), `probarMandos()` 29, `probarPiloto()` 15, `probarMecanico()` 5, identificar 6, sin
+  errores en consola. Con el mouse de verdad: VER EN HOLOGRAMA, ABRIR LAS HOJAS y CERRAR, en las dos piezas.
+- **Presupuesto:** junto al avión, hasta 46 llamadas (con la hélice) y 129 k triángulos (con la tolva); la compuerta abierta, 30
+  llamadas y 120 k. `prevuelo_pages.py` ya cuenta los dos modelos (317 rutas).
+- **Hallazgos:** (1) la chapa de la panza, puesta como contexto, de canto es un plano que encandila en el holograma: quedó en su
+  propia malla (`compuerta_panza`) y el holograma la saltea; (2) la caja de una pieza larga e inclinada sube mucho más que la
+  pieza: en la PC el rótulo se iba de la pantalla; ahora no pasa de 27° sobre el centro de la mirada; (3) una ruta armada con una
+  plantilla no la ve `prevuelo_pages.py`: los modelos se nombran con la ruta entera; (4) el modelo del avión no trae nada arriba de
+  la tolva (una franja gris y dos manijas): todo lo del lomo es del modelo nuevo.
+- **Provisorio, a confirmar con Iván o con AAXOD:** que las hojas se abran en el holograma y cómo abren; todas las medidas chicas
+  (ancho de la hoja, diámetro de los caños, dónde va el venteo, dónde va cada cosa del lomo: no hay ninguna foto de frente ni con
+  una regla); para qué sirve cada tapa (no se afirma en ningún lado); dónde está la escala en la pared.
+- Capturas: `Documents/aurav-cabina/capturas_taller/T12_compuerta_y_tolva.jpg`.
 
 ## Fuera de alcance (por ahora)
 El motor real (hace falta el manual), constancia y envío al aula virtual, celular y modo cámara, manos animadas, el AT-802 con el
