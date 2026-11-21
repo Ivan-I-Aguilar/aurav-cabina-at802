@@ -20,12 +20,12 @@ export const LECCIONES = {
     estados: [
       {id: 'partes', boton: 'PARTES', paso: 0, giro: 0, flujo: 0, partes: true, texto: 'Cinco palas y un cubo. Cada pala puede girar sobre su propio eje: a ese ángulo se le dice «paso».'},
       {id: 'fino', boton: 'PASO FINO', paso: 0, giro: 2.4, flujo: -1.1, texto: 'Palas casi de plano: cada vuelta muerde poco aire y el motor gira rápido. Vueltas altas, para despegar y aterrizar.'},
-      {id: 'grueso', boton: 'PASO GRUESO', paso: 19, giro: 1.5, flujo: -1.4, texto: 'Cada vuelta muerde más aire: la hélice gira más despacio haciendo la misma fuerza. Es la posición de crucero.'},
-      {id: 'bandera', boton: 'BANDERA', paso: 74, giro: 0, flujo: 0, texto: 'De canto al viento: ni empuja ni frena. Es la palanca HÉLICE atrás del todo, y así queda con el motor parado.'},
-      {id: 'reversa', boton: 'REVERSA', paso: -21, giro: 2.0, flujo: 0.9, texto: 'Paso negativo: tira el aire hacia adelante y frena el avión en tierra. Se pone con la palanca de potencia y enciende la luz BETA.'},
+      {id: 'grueso', boton: 'PASO GRUESO', paso: 19, giro: 1.5, flujo: -1.4, texto: 'Cada vuelta muerde más aire y la hélice gira más despacio. Vueltas más bajas, para el crucero.'},
+      {id: 'bandera', boton: 'BANDERA', paso: 74, giro: 0, flujo: 0, texto: 'De canto al viento: no empuja y casi no frena. Es la palanca HÉLICE atrás del todo; así queda con el motor parado.'},
+      {id: 'reversa', boton: 'REVERSA', paso: -21, giro: 2.0, flujo: 0.9, texto: 'Paso negativo: tira el aire hacia adelante y frena el avión en tierra. Se pone llevando la palanca de potencia atrás del ralentí (luz BETA).'},
     ],
     // medido en el modelo (21/11): el cono llega a x 0,407; las palas salen del cono a 0,24 m del eje y llegan a 1,54 m; el eje de
-    // cada pala pasa por x 0,005. «repite: 5» = hay cinco iguales alrededor del eje (se señala la que queda del lado de los rótulos)
+    // cada pala pasa por x 0,005. «repite: 5» = hay cinco iguales alrededor del eje (se señala la que apunta hacia arriba)
     partes: [
       {nombre: 'Cono', sub: 'cubre el cubo', punto: [0.4, 0, 0]},
       {nombre: 'Pala', sub: 'gira sobre su eje', punto: [0.005, 0.95, 0], repite: 5},

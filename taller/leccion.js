@@ -6,7 +6,7 @@
 // Y los RÓTULOS DE LAS PARTES: hasta tres nombres al costado de la pieza, cada uno con su línea al punto que señala (el mismo
 // aspecto que las llamadas del motor).
 import * as THREE from '../three.module.js';
-import {crearPanel} from './paneles.js?v=20261121c';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261121c';
 
 const AZUL = '#082440';
 const LIMA = '#c8e63a';
@@ -58,10 +58,18 @@ export function crearRepaso(preguntas) {
   };
 }
 
-/** el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso}) */
-export function crearPanelLeccion({ancho = 0.76, alto = 0.34} = {}) {
-  const p = crearPanel({ancho, alto, px: 1216, nombre: 'rotulo-leccion', transparente: true});
-  const {g, W, H} = p;
+/**
+ * el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso}). «alto» es el de lo que cambia; con
+ * «leyenda» (la leyenda fija del taller) se le suma abajo una franja con ella: mientras la pieza está abierta la tarjeta de su
+ * punto, que es la que la lleva, está escondida, y en el casco la leyenda tiene que seguir a la vista
+ */
+export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}) {
+  const PX = 1216;
+  const PIE = leyenda ? 86 : 0; // px de la franja de la leyenda
+  const altoTotal = alto + (PIE * ancho) / PX;
+  const p = crearPanel({ancho, alto: altoTotal, px: PX, nombre: 'rotulo-leccion', transparente: true});
+  const {g, W} = p;
+  const H = p.H - PIE; // el alto de lo que cambia
   const M = 30;
   const boton = (id, x, y, w, h, texto, {lleno = false, sobre = false, color = LIMA, tam = 30, alinear = 'center'} = {}) => {
     p.botones.push({id, x, y, w, h});
@@ -83,14 +91,18 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34} = {}) {
   return {
     ...p,
     ancho,
-    alto,
+    alto: altoTotal,
     pintar({titulo, nota = '', ayuda = '', leccion, estado, hover = null, repaso = null}) {
       p.botones.length = 0;
-      g.clearRect(0, 0, W, H);
-      g.fillStyle = AZUL;
+      g.clearRect(0, 0, W, p.H);
+      g.save();
       g.beginPath();
-      g.roundRect(0, 0, W, H, 28);
-      g.fill();
+      g.roundRect(0, 0, W, p.H, 28);
+      g.clip(); // la franja de la leyenda, con las esquinas redondeadas de la placa
+      g.fillStyle = AZUL;
+      g.fillRect(0, 0, W, p.H);
+      if (PIE) pieLeyenda(g, W, H, PIE, leyenda, 24);
+      g.restore();
       // arriba: el nombre de la pieza, lo que tiene de provisorio y CERRAR
       g.textAlign = 'left';
       g.textBaseline = 'middle';
@@ -247,8 +259,10 @@ export function crearRotulosPartes({escena, max = 3, ancho = 0.24, alto = 0.07} 
     estado,
     /**
      * partes: [{nombre, sub, punto: [x, y, z], repite}] en el marco de la pieza (o null para esconderlos). «repite: n» = la parte
-     * está n veces alrededor del eje x de la pieza (las palas): se señala la que queda más cerca de la columna de rótulos.
-     * pieza: {centro: Vector3 (mundo), radio (m), aMundo(Vector3) → Vector3 (mundo)}; ojo: dónde está el alumno (mundo).
+     * está n veces alrededor del eje x de la pieza (las palas): se señala la que apunta hacia arriba.
+     * pieza: {centro: Vector3 (mundo), radio (m), aMundo(Vector3) → Vector3 (mundo), ladoMax}; ojo: dónde está el alumno (mundo).
+     * ladoMax (opcional): lo más lejos del centro de la pieza que puede ir la columna (en la PC, para que no se salga de la pantalla
+     * cuando el alumno agranda la pieza).
      */
     actualizar(partes, pieza, ojo) {
       grupo.visible = !!(partes && partes.length && pieza);
@@ -256,7 +270,10 @@ export function crearRotulosPartes({escena, max = 3, ancho = 0.24, alto = 0.07} 
       if (!grupo.visible) return;
       const {centro, radio} = pieza;
       der.set(-(centro.z - ojo.z), 0, centro.x - ojo.x).normalize(); // la derecha del alumno cuando mira la pieza
-      lado.copy(centro).addScaledVector(der, radio);
+      // de las partes repetidas se señala la que apunta hacia arriba (y un poco a la derecha): sus puntos quedan separados de
+      // los del centro de la pieza y las líneas no se enciman (la que apunta a la derecha se ve en escorzo)
+      lado.copy(centro).addScaledVector(der, radio * 0.35);
+      lado.y += radio;
       const lista = partes.slice(0, max).map((pt) => {
         let mejor = null;
         const n = pt.repite || 1;
@@ -275,7 +292,7 @@ export function crearRotulosPartes({escena, max = 3, ancho = 0.24, alto = 0.07} 
       lista.forEach((it, i) => {
         const e = etiquetas[i];
         pintar(e, it.nombre, it.sub);
-        e.malla.position.copy(centro).addScaledVector(der, radio + 0.06 + ancho / 2);
+        e.malla.position.copy(centro).addScaledVector(der, Math.min(radio + 0.06 + ancho / 2, pieza.ladoMax ?? Infinity));
         e.malla.position.y = centro.y + ((lista.length - 1) / 2 - i) * paso;
         e.malla.rotation.set(0, Math.atan2(ojo.x - e.malla.position.x, ojo.z - e.malla.position.z), 0);
         e.malla.visible = true;

@@ -1475,8 +1475,8 @@ let piezaAbierta = null;
 // mientras el alumno la tiene o la arrastra y vuelve a girar a los 6 s de soltarla
 let piezaTocada = 0;
 const GIRO_SOLA = 0.22; // rad/s
-const DIST_LECCION_PC = 1.05; // m: a cuánto se abre en la PC una pieza con lección (las demás, y todas en el casco, a 0,95)
-const ESCALA_LECCION_PC = 1.2; // en la PC el panel de la lección va un 20 % más grande (la pantalla es chica; en el casco, 1)
+const DIST_LECCION_PC = 1.1; // m: a cuánto se abre en la PC una pieza con lección (las demás, y todas en el casco, a 0,95)
+const ESCALA_LECCION_PC = 1.15; // en la PC el panel de la lección va un 15 % más grande (la pantalla es chica; en el casco, 1)
 const EJE_Y = new THREE.Vector3(0, 1, 0);
 const vRayoPieza = new THREE.Vector3();
 /** el rayo (del mouse) pasa por la pieza abierta: por su esfera, achicada un poco */
@@ -1637,7 +1637,7 @@ function pintarAccionPieza(texto, nota, sobre) {
 // cosa que la pieza hace (sus «estados»), la frase de ese estado, con qué se maneja de verdad, y el REPASO. En el estado PARTES
 // la pieza se queda quieta y salen los nombres de sus partes, al costado
 let leccion = null; // {clave, datos (de lecciones.js), estado, repaso}
-const rotuloLeccion = crearPanelLeccion();
+const rotuloLeccion = crearPanelLeccion({leyenda: LEGEND});
 rotuloLeccion.malla.visible = false;
 rotuloLeccion.malla.renderOrder = 8;
 escena.add(rotuloLeccion.malla);
@@ -1764,7 +1764,11 @@ function seguirRotuloPieza(ojo, hover) {
     // los nombres de las partes: en el estado que los pide (PARTES), con la pieza ya quieta y fuera del repaso
     const est = rp ? null : leccion.datos.estados.find((x) => x.id === leccion.estado);
     const quieta = Math.abs(piezaAbierta.giro) < 0.1 && piezaAbierta.valor === piezaAbierta.objetivo;
-    if (est && est.partes && quieta) rotulosPartes.actualizar(leccion.datos.partes, {centro: g.position, radio: r, aMundo: (p, out) => piezaAbierta.aMundo(p, out)}, ojo);
+    if (est && est.partes && quieta) {
+      // en la PC la columna de nombres no se sale de la pantalla aunque el alumno agrande la pieza (encontrado con la rueda del mouse)
+      const ladoMax = enVR ? Infinity : Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z) * Math.tan(THREE.MathUtils.degToRad(camara.fov / 2)) * camara.aspect * 0.96 - rotulosPartes.ancho / 2;
+      rotulosPartes.actualizar(leccion.datos.partes, {centro: g.position, radio: r, aMundo: (p, out) => piezaAbierta.aMundo(p, out), ladoMax}, ojo);
+    }
     else rotulosPartes.actualizar(null);
     return;
   }
@@ -1823,7 +1827,7 @@ function alternarPieza(clave) {
   // en la PC la pieza con lección va un poco más lejos: tienen que entrar en la pantalla ella y su panel, uno arriba del otro
   const dist = !enVR && leccion ? DIST_LECCION_PC : 0.95;
   g.position.copy(tmp).addScaledVector(tmp2, dist);
-  if (enVR) g.position.y = leccion ? 1.2 : 1.3; // en el casco, a la altura de las manos (con lección, más abajo: arriba va su panel)
+  if (enVR) g.position.y = leccion ? 1.15 : 1.3; // en el casco, a la altura de las manos (con lección, más abajo: arriba va su panel, que queda a la altura de los ojos, de 1,57 a 1,97 m)
   else {
     // en la PC, al centro de la pantalla (sigue el cabeceo de la mirada), para que entre entera; con lección, lo que queda al
     // centro es el conjunto de la pieza y su panel
@@ -3109,6 +3113,10 @@ document.getElementById('leyenda-texto').textContent = LEGEND;
 const hud = document.getElementById('hud');
 let hudT = 0;
 function pintarHUD() {
+  // con una pieza abierta en holograma el HUD se esconde: su rótulo (o el panel de su lección) va arriba, justo donde está el
+  // HUD, y lo que el HUD dice es del motor (encontrado el 21/11 con clics de verdad: el panel de la hélice quedaba tapado)
+  hud.style.visibility = piezaAbierta ? 'hidden' : '';
+  if (piezaAbierta) return;
   const r = readout(s);
   const st = STATIONS.find((x) => x.n === estacion);
   const f = FAULTS[inp.fault];
