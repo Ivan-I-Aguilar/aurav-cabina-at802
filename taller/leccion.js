@@ -59,7 +59,8 @@ export function crearRepaso(preguntas) {
 }
 
 /**
- * el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso}). «alto» es el de lo que cambia; con
+ * el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso, vistos, mejor}); vistos = los estados
+ * que el alumno ya puso (llevan una tilde) y mejor = su mejor puntaje en el repaso (o null). «alto» es el de lo que cambia; con
  * «leyenda» (la leyenda fija del taller) se le suma abajo una franja con ella: mientras la pieza está abierta la tarjeta de su
  * punto, que es la que la lleva, está escondida, y en el casco la leyenda tiene que seguir a la vista
  */
@@ -92,7 +93,7 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
     ...p,
     ancho,
     alto: altoTotal,
-    pintar({titulo, nota = '', ayuda = '', leccion, estado, hover = null, repaso = null}) {
+    pintar({titulo, nota = '', ayuda = '', leccion, estado, hover = null, repaso = null, vistos = null, mejor = null}) {
       p.botones.length = 0;
       g.clearRect(0, 0, W, p.H);
       g.save();
@@ -117,7 +118,18 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
         // FUNCIONAMIENTO: un botón por estado, la frase del elegido, el mando de verdad
         const n = leccion.estados.length;
         const bw = (W - 2 * M - (n - 1) * 12) / n;
-        leccion.estados.forEach((e, i) => boton(`lec_e_${e.id}`, M + i * (bw + 12), 142, bw, 92, e.boton, {lleno: e.id === estado, sobre: hover === `lec_e_${e.id}`, tam: 29}));
+        leccion.estados.forEach((e, i) => {
+          const x = M + i * (bw + 12);
+          boton(`lec_e_${e.id}`, x, 142, bw, 92, e.boton, {lleno: e.id === estado, sobre: hover === `lec_e_${e.id}`, tam: 29});
+          if (vistos && vistos.has(e.id)) {
+            // una tilde chica en la esquina: ese estado ya lo puso el alumno (lo que le falta ver queda a la vista)
+            g.fillStyle = e.id === estado ? AZUL : LIMA;
+            g.font = 'bold 24px Arial';
+            g.textAlign = 'right';
+            g.textBaseline = 'top';
+            g.fillText('✓', x + bw - 9, 148);
+          }
+        });
         const e = leccion.estados.find((x) => x.id === estado) || leccion.estados[0];
         g.textAlign = 'left';
         g.fillStyle = '#ffffff';
@@ -133,7 +145,8 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
         g.fillStyle = '#8fa3b8';
         g.font = 'bold 24px Arial';
         g.fillText(ayuda, M, H - 37, W - 2 * M - 290);
-        boton('lec_repaso', W - M - 250, H - 68, 250, 56, `REPASO (${leccion.preguntas.length})`, {sobre: hover === 'lec_repaso', tam: 27});
+        const total = leccion.preguntas.length;
+        boton('lec_repaso', W - M - 250, H - 68, 250, 56, mejor === null ? `REPASO (${total})` : `REPASO · ${mejor} DE ${total}`, {sobre: hover === 'lec_repaso', tam: 27});
       } else if (!repaso.estado.fin) {
         // REPASO: una pregunta y sus tres opciones
         const r = repaso.estado;

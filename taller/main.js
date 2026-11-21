@@ -1756,10 +1756,11 @@ function seguirRotuloPieza(ojo, hover) {
   if (conLeccion) {
     const rp = leccion.repaso;
     const hv = hover && (hover.startsWith('lec_') || hover === 'pieza_cerrar') ? hover : '';
-    const f = `${leccion.clave}|${leccion.estado}|${hv}|${enVR}|${rp ? `${rp.estado.i},${rp.estado.elegida},${rp.estado.fin}` : '-'}`;
+    const av = avanceLeccion(leccion.clave);
+    const f = `${leccion.clave}|${leccion.estado}|${hv}|${enVR}|${rp ? `${rp.estado.i},${rp.estado.elegida},${rp.estado.fin}` : '-'}|${av.estados.size}|${av.repaso}`;
     if (f !== leccionFirma) {
       leccionFirma = f;
-      rotuloLeccion.pintar({titulo: pt.titulo, nota: pt.holoNota || '', ayuda, leccion: leccion.datos, estado: leccion.estado, hover: hv, repaso: rp});
+      rotuloLeccion.pintar({titulo: pt.titulo, nota: pt.holoNota || '', ayuda, leccion: leccion.datos, estado: leccion.estado, hover: hv, repaso: rp, vistos: av.estados, mejor: av.repaso});
     }
     // los nombres de las partes: en el estado que los pide (PARTES), con la pieza ya quieta y fuera del repaso
     const est = rp ? null : leccion.datos.estados.find((x) => x.id === leccion.estado);
