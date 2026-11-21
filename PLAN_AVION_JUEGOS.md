@@ -183,5 +183,8 @@ Peso estimado:
   `?v=20261115a`), el avión es el nuevo (`origen` aurav-cabina-at802, librea azul) con la hélice girando, y en sector la manguera
   llega a la boca de carga. Este repo NO se subió: encima de lo del avión están los commits del taller, que no tienen el ok para
   publicar (lo del avión acá son el plan, los scripts y `juegos/`; los juegos no lo necesitan, cada uno lleva su copia).
-- **Falta:** el Quest (Iván). Y el texto de inicio de sector dice «cargando agua por la válvula derecha» (del 24/9, de antes del
-  avión nuevo; la boca real está bajo la panza, centro-izquierda, y la manguera llega desde la derecha): lo decide Iván.
+- **21/11: el texto de inicio de sector, cambiado y PUBLICADO** (Iván: «Cambialo y publicá»): decía «cargando agua por la válvula
+  derecha» (del 24/9, de antes del avión nuevo; la boca real está bajo la panza, centro-izquierda, y la manguera llega desde la
+  derecha); ahora dice «desde el lado derecho» y sigue a `LADO_CARGA`. Push 2e18584 (`aurav-sector`, main.js `?v=20261121a`).
+  Verificado en la página publicada: sin errores ni archivos faltantes, y el panel de inicio con el texto nuevo.
+- **Falta:** el Quest (Iván).
