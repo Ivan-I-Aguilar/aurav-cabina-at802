@@ -12,19 +12,19 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261121a';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261121a';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261121a';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261121a';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261121a';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261121a';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261121a';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261121a';
-import {crearPiezaHolo} from './piezaholo.js?v=20261121a';
-import {crearLlamadas} from './llamadas.js?v=20261121a';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261121a';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261121b';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261121b';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261121b';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261121b';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261121b';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261121b';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261121b';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261121b';
+import {crearPiezaHolo} from './piezaholo.js?v=20261121b';
+import {crearLlamadas} from './llamadas.js?v=20261121b';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261121b';
 
-export const VERSION = '20261121a';
+export const VERSION = '20261121b';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -1098,7 +1098,10 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
   ultimoMouse = e;
   if (clicPieza(e)) return; // tomar o dejar una pieza del banco (T8)
   const a = apuntado(rayoDesdeMouse(e));
-  arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a, girarHolo: e.shiftKey && (!enCapo || !!piezaAbierta)};
+  // arrastrar SOBRE la pieza abierta la gira, sin Shift (pedido de Iván, 21/11: «parece que están un poco fijos»); con Shift,
+  // desde cualquier lado, como antes
+  const sobrePieza = !(a && a.id) && rayoTocaPieza(rayo);
+  arrastre = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, a, girarHolo: sobrePieza || (e.shiftKey && (!enCapo || !!piezaAbierta))};
   if (a && a.tipo === 'palanca' && a.id !== 'levCL') {
     palancaMouse = a.palanca;
     arrastre.ang0 = a.palanca.ang;
@@ -1117,6 +1120,7 @@ renderer.domElement.addEventListener(
     e.preventDefault();
     if (piezaAbierta) {
       const g = piezaAbierta.grupo;
+      piezaTocada = reloj;
       g.scale.setScalar(clamp(g.scale.x * Math.exp(-e.deltaY * 0.0012), 0.3 * piezaAbierta.escala0, 3 * piezaAbierta.escala0));
       return;
     }
@@ -1134,7 +1138,7 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   if (!arrastre) {
     const a = apuntado(rayoDesdeMouse(e));
     hoverPC = a && a.tipo === 'panel' ? a.id : null;
-    renderer.domElement.style.cursor = a && a.id ? 'pointer' : 'default';
+    renderer.domElement.style.cursor = a && a.id ? 'pointer' : rayoTocaPieza(rayo) ? 'grab' : 'default';
     return;
   }
   if (palancaMouse) {
@@ -1145,6 +1149,7 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   if (arrastre.girarHolo && piezaAbierta) {
     // la pieza abierta: a los costados gira sobre la vertical; arriba y abajo, sobre el eje que va de izquierda a derecha de la cámara
     const g = piezaAbierta.grupo;
+    piezaTocada = reloj;
     g.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), (e.clientX - arrastre.x) * 0.008);
     camara.matrixWorld.extractBasis(tmp, tmp2, new THREE.Vector3());
     g.rotateOnWorldAxis(tmp.setY(0).normalize(), (e.clientY - arrastre.y) * 0.006);
@@ -1459,6 +1464,19 @@ function tocarMarca(r) {
 }
 // la pieza que está abierta en holograma «en las manos» (§15.2b); la arma piezaholo.js
 let piezaAbierta = null;
+// La pieza abierta GIRA SOLA, despacio, sobre la vertical, para que se le vean todos los lados sin tocarla; se queda quieta
+// mientras el alumno la tiene o la arrastra y vuelve a girar a los 6 s de soltarla
+let piezaTocada = 0;
+const GIRO_SOLA = 0.22; // rad/s
+const EJE_Y = new THREE.Vector3(0, 1, 0);
+const vRayoPieza = new THREE.Vector3();
+/** el rayo (del mouse) pasa por la pieza abierta: por su esfera, achicada un poco */
+function rayoTocaPieza(r) {
+  if (!piezaAbierta) return false;
+  const g = piezaAbierta.grupo;
+  const radio = (0.85 * piezaAbierta.radio * g.scale.x) / piezaAbierta.escala0;
+  return r.ray.direction.dot(vRayoPieza.copy(g.position).sub(r.ray.origin)) > 0 && r.ray.distanceSqToPoint(g.position) < radio * radio;
+}
 // De dónde sale cada pieza (de a una, §15.2b). La hélice y la cabina vienen sueltas en el modelo (nodos «helice» y «cabina»); el
 // ala, el tren, la cola y los escapes se RECORTAN del exterior con una caja en el marco del avión (+x nariz, +y arriba, +z
 // derecha, metros) [cajas PROVISORIAS, puestas mirando el modelo]. «frente» es el lado de la pieza que queda hacia el alumno.
@@ -1517,21 +1535,26 @@ const PIEZAS_HOLO = {
 // abierta la tarjeta de su punto se esconde (familiarizacion.js): en el casco la pieza se abre justo donde el alumno miraba, que es
 // el botón de la tarjeta, y encimadas no se leía ninguna de las dos. Va después del holograma en el orden de dibujo, así la luz
 // sumada de la pieza no lo lava.
-const rotuloPieza = crearPanel({ancho: 0.54, alto: 0.1, px: 864, nombre: 'rotulo-pieza', transparente: true});
+const rotuloPieza = crearPanel({ancho: 0.54, alto: 0.13, px: 864, nombre: 'rotulo-pieza', transparente: true});
 rotuloPieza.malla.visible = false;
 rotuloPieza.malla.renderOrder = 8;
 escena.add(rotuloPieza.malla);
 paneles.push(rotuloPieza);
 let rotuloFirma = '';
-function pintarRotuloPieza(titulo, sobre, nota = '') {
-  const {g, W, H} = rotuloPieza;
+function pintarRotuloPieza(titulo, sobre, nota = '', ayuda = '') {
+  const {g, W} = rotuloPieza;
+  const H = 160; // el alto de la parte de arriba (título y CERRAR); debajo va la línea de ayuda
   rotuloPieza.botones.length = 0;
-  g.clearRect(0, 0, W, H);
+  g.clearRect(0, 0, W, rotuloPieza.H);
   g.fillStyle = '#082440';
   g.beginPath();
-  g.roundRect(0, 0, W, H, 28);
+  g.roundRect(0, 0, W, rotuloPieza.H, 28);
   g.fill();
   g.textBaseline = 'middle';
+  g.textAlign = 'center';
+  g.fillStyle = '#9fe3ff';
+  g.font = 'bold 25px Arial';
+  g.fillText(ayuda, W / 2, (H + rotuloPieza.H) / 2 - 5, W - 40); // cómo se mueve la pieza
   g.textAlign = 'left';
   g.fillStyle = '#c8e63a';
   g.font = 'bold 44px Arial';
@@ -1624,8 +1647,8 @@ function seguirRotuloPieza(ojo, hover) {
   let tope = g.position.y;
   for (let i = 0; i < 8; i++) tope = Math.max(tope, tmp2.set(i & 1 ? mt.x : -mt.x, i & 2 ? mt.y : -mt.y, i & 4 ? mt.z : -mt.z).applyMatrix4(g.matrixWorld).y);
   // con botón de acción, el rótulo sube un renglón y el botón queda debajo de él
-  const renglon = piezaAbierta.tieneMoviles ? 0.115 : 0;
-  let yRot = Math.min(tope + 0.1 + renglon, 2.05);
+  const renglon = piezaAbierta.tieneMoviles ? 0.13 : 0;
+  let yRot = Math.min(tope + 0.115 + renglon, 2.05);
   if (!renderer.xr.isPresenting) {
     // en la PC el rótulo no se sale de la pantalla: como mucho 27° por encima del centro de la mirada (la caja de una pieza
     // larga e inclinada, como la compuerta con su cañería, sube más que la pieza y lo mandaba afuera)
@@ -1646,11 +1669,13 @@ function seguirRotuloPieza(ojo, hover) {
   telonPieza.position.copy(g.position);
   telonPieza.lookAt(ojo);
   telonPieza.scale.setScalar(r * 1.3);
-  const f = `${piezaAbierta.clave}|${hover === 'pieza_cerrar'}`;
+  const enVR = renderer.xr.isPresenting;
+  const f = `${piezaAbierta.clave}|${hover === 'pieza_cerrar'}|${enVR}`;
   if (f !== rotuloFirma) {
     rotuloFirma = f;
     const pt = PUNTOS_AVION.find((p) => p.clave === piezaAbierta.clave) || {titulo: piezaAbierta.clave};
-    pintarRotuloPieza(pt.titulo, hover === 'pieza_cerrar', pt.holoNota || '');
+    const ayuda = enVR ? 'AGARRALA CON EL GRIP · CON LAS DOS MANOS CAMBIA DE TAMAÑO' : 'ARRASTRALA PARA GIRARLA · LA RUEDA CAMBIA EL TAMAÑO';
+    pintarRotuloPieza(pt.titulo, hover === 'pieza_cerrar', pt.holoNota || '', ayuda);
   }
 }
 function cerrarPieza() {
@@ -1683,6 +1708,7 @@ function alternarPieza(clave) {
   // las piezas chatas (el ala) se inclinan hacia el alumno para verles la planta: un giro sobre el eje que va de su izquierda a su derecha
   if (piezaAbierta.inclinar) g.rotateOnWorldAxis(new THREE.Vector3(-tmp2.z, 0, tmp2.x), piezaAbierta.inclinar);
   escena.add(g);
+  piezaTocada = reloj - 4; // empieza a girar sola a los 2 s
 }
 // agarrar la pieza abierta (VR): una mano la lleva y la gira; dos manos la agrandan o la achican (de 0,3 a 3 veces)
 const agarrePieza = [];
@@ -2852,6 +2878,8 @@ function avanzar(dt) {
   if (piezaAbierta) {
     piezaAbierta.actualizar(dt, reloj);
     if (!agarrePieza.length && tmp.distanceTo(piezaAbierta.grupo.position) > 4) cerrarPieza(); // el alumno se fue: se cierra sola
+    else if (agarrePieza.length || (arrastre && arrastre.girarHolo)) piezaTocada = reloj;
+    else if (reloj - piezaTocada > 6) piezaAbierta.grupo.rotateOnWorldAxis(EJE_Y, GIRO_SOLA * dt);
   }
   if (enCapo) ponerEnCapo();
   else if (!poseManual && !agarreHolo.length) seguirPose(metaTour ? {...metaTour, escala: clamp(metaTour.escala, ...PRES().escalaTour)} : POSE_BASE, dt);
