@@ -1033,7 +1033,7 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 ### 16.4 Los bloques (3 horas o más cada uno; cada pieza, de a una)
 | Bloque | Qué se hace | Listo cuando |
 |---|---|---|
-| T13 | **La skill** (escrita con el motor como ejemplo resuelto; `holograma.js` y `piezaholo.js` pasan a un módulo de «lección» que sirve para cualquier pieza) **y la primera lección completa, de muestra: la HÉLICE** (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso) | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corre de punta a punta sobre ella |
+| T13 | **La primera lección completa, de muestra: la HÉLICE**, hecha con la skill «Despiece» por el camino de «sólo el holograma» (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso); de ahí sale el módulo de «lección» que sirve para cualquier pieza, y lo que la skill tenga que corregir | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corrió de punta a punta sobre ella |
 | T14 | Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
 | T15 | Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
 | T16 | Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
@@ -1044,6 +1044,9 @@ Cada bloque cierra como los otros: pruebas, capturas revisadas, plan y `CLAUDE.m
 ### 16.5 Lo que tiene que decir Iván (de a una)
 1. **El nombre de la skill.** Elegido el 21/11: «Despiece».
 2. Si cada pieza lleva también su página de escritorio, como `turbohelice.html`, o va directo al taller (más rápido).
+   **Decidido el 21/11: «Sólo el holograma».** Las piezas del curso van directo al taller; del despiece se conserva el método
+   (la matemática aparte con una sola entrada, números reales, la parte que trabaja se abre, cada pieza con su marca), no la
+   página. La skill ya lo dice.
 3. Por qué pieza se empieza (propuesta: la hélice, que se maneja con una palanca que ya está).
 4. De dónde salen los contenidos de cada lección y quién los valida (el manual de entrenamiento, Bruno, AAXOD).
 5. Si el curso lleva repaso con puntaje y resumen final.
