@@ -12,19 +12,19 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261116e';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261116e';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261116e';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261116e';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261116e';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261116e';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261116e';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261116e';
-import {crearPiezaHolo} from './piezaholo.js?v=20261116e';
-import {crearLlamadas} from './llamadas.js?v=20261116e';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261116e';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261121a';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261121a';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261121a';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261121a';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261121a';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261121a';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261121a';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261121a';
+import {crearPiezaHolo} from './piezaholo.js?v=20261121a';
+import {crearLlamadas} from './llamadas.js?v=20261121a';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261121a';
 
-export const VERSION = '20261116e';
+export const VERSION = '20261121a';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -1245,7 +1245,7 @@ function caminar(dt, ejeX, ejeY) {
 const AT802 = {x: -10, z: -14.5, v: '20261115a'};
 let avionAT = null;
 let marcoAvion = null; // el objeto cuyo marco local es el del avión (+x nariz, +y arriba, +z derecha)
-const modelosPiezas = {}; // los modelos propios de las piezas que el avión no trae con detalle (T12): compuerta
+const modelosPiezas = {}; // los modelos propios de las piezas que el avión no trae con detalle (T12): compuerta y tolva
 let fam = null; // la familiarización con el avión (taller/familiarizacion.js)
 // el choque con el avión: sus triángulos que bajan de 1,9 m (el ala, la cola, el tren), rasterizados en planta en una grilla de 20 cm
 const GRILLA = {paso: 0.2, x0: 0, z0: 0, nx: 0, nz: 0, celdas: null};
@@ -1347,7 +1347,10 @@ if (hangar)
     // T12: las piezas que el modelo del avión no trae con detalle van en un modelo propio, hecho en el MARCO DEL AVIÓN con las
     // fotos del avión real (herramientas/taller_compuerta.py). Quedan escondidas bajo el marco del avión: sólo son la fuente de
     // su holograma
-    for (const [clave, ruta] of [['compuerta', './taller/compuerta.glb']])
+    for (const [clave, ruta] of [
+      ['compuerta', './taller/compuerta.glb'],
+      ['tolva', './taller/tolva.glb'],
+    ])
       try {
         const gp = await new GLTFLoader().loadAsync(`${ruta}?v=${VERSION}`);
         gp.scene.name = `modelo-${clave}`;
@@ -1475,11 +1478,20 @@ const PIEZAS_HOLO = {
   // el tren principal derecho: la rueda, la pata de ballesta y su carenado, hasta donde entra en la panza (medido en el modelo: la
   // rueda de x ±0,46, y 0 a 0,92, z 1,2 a 1,6; la pata sube hasta y 1,41 en z 0,43)
   tren: recorte('tren', ['exterior'], [-0.7, 0, 0.25], [0.7, 1.38, 1.75], 0.8, [0.6, 0, 0.8]),
-  // POR FUERA, del modelo (el interior de la tolva, las hojas de la compuerta y su mecanismo se modelan con las fotos del avión
-  // real: T12). La tolva: el tramo alto del fuselaje entre el cortafuegos y el parabrisas (el lomo va a 2,93 m de x 2 a −1,75),
-  // por encima del ala. La compuerta: la panza roja que cuelga bajo la tolva (de x 0,1 a −2,4; la panza baja hasta 0,78 m),
-  // vista desde abajo; la caja corta antes de las patas del tren (y 1,24 en adelante)
-  tolva: recorte('tolva', ['exterior'], [-1.95, 1.8, -0.85], [1.0, 3.1, 0.85], 0.9, [0.25, 0, -1], 0.35),
+  // La tolva y la compuerta (T12): lo que el avión trae (el tramo alto del fuselaje entre el cortafuegos y el parabrisas, con el
+  // lomo a 2,93 m de x 2 a −1,75; la panza roja que cuelga bajo la tolva, de x 0,1 a −2,4) más un modelo propio hecho con las
+  // fotos del avión real
+  // la TOLVA: el tramo alto del fuselaje, recortado del avión, más lo que lleva arriba (la tapa roja, el panel negro, la tapa
+  // levantada, la cúpula de venteo, la baranda, las trabas) y la escala de la mirilla, de un modelo propio hecho con las fotos
+  // (taller/tolva.glb, T12). El interior no está: no hay fotos. Va con el lomo bien inclinado hacia el alumno
+  tolva: () => {
+    const propias = [];
+    if (modelosPiezas.tolva) modelosPiezas.tolva.traverse((o) => o.isMesh && propias.push(o));
+    // con el modelo propio se deja sólo el LOMO del fuselaje (de 2,30 m para arriba): el tramo entero, con sus dos costados, sumaba
+    // tanta luz que tapaba lo de arriba
+    const caja = new THREE.Box3(new THREE.Vector3(-1.95, propias.length ? 2.3 : 1.8, -0.85), new THREE.Vector3(1.0, 3.1, 0.85));
+    return Object.assign(crearPiezaHolo({clave: 'tolva', fuentes: [...mallasDe('exterior'), ...propias], marco: avionAT, caja, tam: 1.1}), {frente: propias.length ? [-0.45, 0, -1] : [0.25, 0, -1], inclinar: propias.length ? 0.95 : 0.35});
+  },
   // la COMPUERTA con sus dos hojas, sus rieles, el venteo y la cañería de carga: modelo propio (taller/compuerta.glb, T12, hecho
   // con las fotos del avión real). Las hojas son partes móviles: giran sobre su bisagra (userData.bisagra de cada una). Si el
   // modelo no cargó, queda la panza recortada del avión, por fuera

@@ -8,11 +8,14 @@
 import * as THREE from '../three.module.js';
 
 const VERT = /* glsl */ `
+attribute float aLuz;
 varying vec3 vN;
 varying vec3 vV;
 varying vec3 vP;
+varying float vLuz;
 void main() {
   vP = position;
+  vLuz = aLuz;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   vN = normalize(normalMatrix * normal);
   vV = normalize(-mv.xyz);
@@ -29,11 +32,12 @@ uniform float uPaso;
 varying vec3 vN;
 varying vec3 vV;
 varying vec3 vP;
+varying float vLuz;
 void main() {
   if (uCaja > 0.5 && (any(lessThan(vP, uMin)) || any(greaterThan(vP, uMax)))) discard;
   float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.4);
   float barrido = 0.8 + 0.2 * sin(vP.y * uPaso - uTiempo * 2.4);
-  float i = (0.07 + 0.6 * f) * barrido * uBrillo;
+  float i = ((0.07 + 0.6 * f) * barrido + vLuz) * uBrillo; // vLuz: la luz propia de lo que tiene que leerse de frente (una escala)
   gl_FragColor = vec4(uColor * i, 1.0);
   #include <colorspace_fragment>
 }`;
@@ -64,7 +68,9 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   const extraer = (mallas) => {
     const pos = [];
     const nor = [];
+    const luz = [];
     for (const m of mallas) {
+      const propia = +m.userData.luz || 0; // la luz propia de esa malla (userData.luz del modelo: la escala de la mirilla)
       m.updateWorldMatrix(true, false);
       m4.multiplyMatrices(inv, m.matrixWorld);
       n3.getNormalMatrix(m4);
@@ -85,12 +91,13 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
           pos.push(v.x, v.y, v.z);
           na.fromBufferAttribute(N, k).applyMatrix3(n3).normalize();
           nor.push(na.x, na.y, na.z);
+          luz.push(propia);
           cubre.expandByPoint(v);
         }
       }
       if (g !== m.geometry) g.dispose();
     }
-    return {pos, nor};
+    return {pos, nor, luz};
   };
   const fijo = extraer(fuentes);
   const sueltas = moviles.map((mv) => ({...mv, datos: extraer(mv.fuentes)}));
@@ -109,10 +116,11 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   };
   const material = new THREE.ShaderMaterial({uniforms: U, vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false});
   const geos = [];
-  const armar = ({pos, nor}, nombre) => {
+  const armar = ({pos, nor, luz}, nombre) => {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('aLuz', new THREE.Float32BufferAttribute(luz, 1));
     geo.translate(-centro.x, -centro.y, -centro.z);
     geo.computeBoundingSphere();
     geos.push(geo);

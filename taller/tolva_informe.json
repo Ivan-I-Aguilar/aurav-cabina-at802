@@ -1,0 +1,81 @@
+{
+ "etapa": "T12",
+ "triangulos": {
+  "tolva_lomo": 2370,
+  "tolva_escala": 220
+ },
+ "mallas": 2,
+ "mb": 0.256,
+ "medidas": {
+  "marco": "avión: +x nariz, +y arriba, +z derecha, m; origen en el piso entre las ruedas principales",
+  "panel_adelante_x": [
+   0.72,
+   0.28
+  ],
+  "tapa_roja": [
+   0.5,
+   2.92,
+   0.05
+  ],
+  "panel_negro_x": [
+   0.23,
+   -0.49
+  ],
+  "tapa_levantada_x": [
+   -0.41,
+   -0.95
+  ],
+  "cupula": [
+   -1.5,
+   2.924,
+   0.32
+  ],
+  "baranda_x": [
+   0.3,
+   -1.3
+  ],
+  "baranda_z": [
+   -0.4,
+   -0.51
+  ],
+  "escala": {
+   "x": -1.8,
+   "z": [
+    0.07,
+    0.21
+   ],
+   "marcas": [
+    {
+     "galones": 800,
+     "y": 2.8
+    },
+    {
+     "galones": 775,
+     "y": 2.745
+    },
+    {
+     "galones": 750,
+     "y": 2.69
+    },
+    {
+     "galones": 725,
+     "y": 2.635
+    },
+    {
+     "galones": 700,
+     "y": 2.58
+    },
+    {
+     "galones": 675,
+     "y": 2.525
+    },
+    {
+     "galones": 650,
+     "y": 2.47
+    }
+   ],
+   "tolva_llena_galones": 800
+  }
+ },
+ "nota": "superficie del lomo medida en juegos/at802.glb; lo de arriba, de las fotos del avión real, a ojo [VERIFICAR]; el interior de la tolva no está"
+}
