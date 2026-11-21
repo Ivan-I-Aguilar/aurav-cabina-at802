@@ -58,8 +58,13 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
     agrandándola con las dos manos?). ¿El tamaño «entre
     las manos» está bien? ¿Se agarran? Al abrirse, la tarjeta se esconde y la pieza trae arriba un rótulo con CERRAR: ¿se le
     acierta con el rayo? ¿El fondo oscuro que lleva detrás ayuda o molesta?
+  - *La lección de la hélice (T13, 21/11):* punto 1 → VER CÓMO FUNCIONA. La pieza se abre a la altura de la cintura (1,15 m) y
+    su panel queda a la altura de los ojos. ¿Se lee el panel? ¿Se le acierta con el rayo a los cinco botones y a la PALANCA
+    HÉLICE (con el gatillo apretado tiene que seguir al rayo)? ¿Se ve que las palas cambian de ángulo? ¿Las estelas del aire se
+    entienden o molestan? En PARTES, ¿los tres nombres quedan a la vista, a la derecha de la pieza? El REPASO: tres preguntas
+    con el gatillo; al responder, la pieza tiene que mostrar la respuesta.
 - **Fluidez:** que no tironee en ningún lugar (frente al motor, mirando la nave entera desde el portón, junto al AT-802). En la PC, la
-  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (tope del plan: 75 y 200 k); el número que manda es el
+  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (56 y 127 k con la lección de la hélice abierta; tope del plan: 75 y 200 k); el número que manda es el
   del casco.
 - **Mareo:** caminar con el joystick izquierdo, girar de a 30° con el derecho, y los saltos con fundido del atril y de la pausa.
 - **Legibilidad:** el atril, los paneles de la mesa (instrumentos, estaciones), el cartel de arriba del holograma, las preguntas, el
@@ -76,4 +81,4 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 ## 4. Lo que no se pudo probar desde la PC
 Todo lo de arriba que dice «grip», «gatillo», «joystick», «B o Y», «sacarse el casco» y la fluidez real: en la PC se probó con los
 mandos simulados por código (`__taller.probarMandos()`, 29 pruebas), el piloto de prueba (`__taller.probarPiloto()`, 15) y el
-recorrido del avión (`__taller.probarRecorrido()`, 33, con rayos desde el ojo a cada tarjeta), pero eso no reemplaza ponerse el casco.
+recorrido del avión (`__taller.probarRecorrido()`, 44, con rayos desde el ojo a cada tarjeta y al panel de la lección de la hélice), pero eso no reemplaza ponerse el casco.

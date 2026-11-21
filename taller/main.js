@@ -1927,6 +1927,7 @@ function pasoSalto(dt) {
   if (!salto) return;
   salto.t += dt;
   if (!salto.movido && salto.t >= 0.25) {
+    cerrarPieza(); // un salto a otro lugar cierra la pieza abierta (entre dos puntos vecinos quedaba abierta, con su panel, junto a la tarjeta nueva)
     ponerEn(salto.d);
     salto.movido = true;
     if (salto.d === DESTINOS.mesa) aparicion = 0; // al llegar frente al motor, el holograma aparece de a poco (reserva de la T11)
@@ -2882,6 +2883,17 @@ function probarRecorrido() {
     }
   }
   ok('todos los puntos del recorrido quedan vistos', fam.vistos.size === PUNTOS_AVION.length, [...fam.vistos]);
+  {
+    // un salto cierra la pieza abierta: del punto 1 con la hélice abierta al punto 2, que queda a menos de 4 m
+    accionar({tipo: 'panel', id: 'recorrer'});
+    saltar();
+    accionar({tipo: 'panel', id: 'fam_holo'});
+    avanzar(1 / 60);
+    const abierta = !!piezaAbierta;
+    saltarAPunto(1);
+    saltar();
+    ok('un salto a otro punto cierra la pieza abierta y deja a la vista la tarjeta del punto nuevo', abierta && !piezaAbierta && !leccion && fam.activo === 1 && fam.tarjeta.malla.visible && !rotuloLeccion.malla.visible, {abierta, sigue: !!piezaAbierta, activo: fam.activo});
+  }
   accionar({tipo: 'panel', id: 'fam_motor'});
   saltar();
   motorGrupo.updateMatrixWorld(true);

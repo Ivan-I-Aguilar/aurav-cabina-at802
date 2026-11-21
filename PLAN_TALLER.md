@@ -1015,6 +1015,16 @@ holograma de este taller y de los dos scripts de Blender, para partir de ellos e
 hélice, T13)**: no se corrieron evaluaciones aparte porque cada corrida sería armar un simulador entero; sí se la dio a leer a
 un agente sin contexto para ver si se entiende sola.
 
+**Corregida el 21/11 al cierre de la T13 (segunda versión), con lo que dejó la hélice y con esa lectura:** los nombres quedaron
+claros («Despiece» es la skill; lo que arma Teardown es «la página de escritorio»); el camino de «sólo el holograma» dice qué se
+construye (el punto, la pieza en `PIEZAS_HOLO`, la entrada en `lecciones.js`, y un modelo de Blender sólo si falta algo);
+`leccion.md` cuenta la lección como quedó hecha (el contenido, el panel, la palanca, los rótulos, el repaso, la receta paso a
+paso y las pruebas que corren solas); `holograma.md` suma la pieza suelta que funciona (partes móviles sacadas de islas, cómo
+se saca el eje y se comprueba el sentido), el contrato completo de una máquina y lo nuevo que salió mal; `aurav.md` dice dónde
+está el material y las palabras de la casa; `holo/` trae el código al día (más `lecciones.js`, `leccion.js` y `engine.js`); y
+`scripts/` trae el armador de mosaicos de fotos y el de láminas. Validada y empaquetada:
+`Documents/aurav-cabina/skills/despiece.skill` (1 MB), para que Iván la suba a su cuenta de claude.ai si quiere.
+
 ### 16.3 Qué funciona en cada lección, y con qué se cuenta (medido en el modelo el 21/11)
 Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cortar nada.
 
@@ -1033,7 +1043,7 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 ### 16.4 Los bloques (3 horas o más cada uno; cada pieza, de a una)
 | Bloque | Qué se hace | Listo cuando |
 |---|---|---|
-| T13 | **La primera lección completa, de muestra: la HÉLICE**, hecha con la skill «Despiece» por el camino de «sólo el holograma» (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso); de ahí sale el módulo de «lección» que sirve para cualquier pieza, y lo que la skill tenga que corregir | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corrió de punta a punta sobre ella |
+| T13 | **HECHA el 21/11.** **La primera lección completa, de muestra: la HÉLICE**, hecha con la skill «Despiece» por el camino de «sólo el holograma» (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso); de ahí sale el módulo de «lección» que sirve para cualquier pieza, y lo que la skill tenga que corregir | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corrió de punta a punta sobre ella |
 | T14 | Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
 | T15 | Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
 | T16 | Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
@@ -1041,15 +1051,61 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 
 Cada bloque cierra como los otros: pruebas, capturas revisadas, plan y `CLAUDE.md` al día, commit local, y lo que no se pudo probar.
 
+**T13 HECHA el 21/11 (v=20261121c, sin publicar; de 13:30 a 14:45).** La hélice es la primera LECCIÓN completa del curso, hecha
+con la skill «Despiece» por el camino de «sólo el holograma» (etapas 0, 1, 3, 4 y 5).
+- **Qué quedó.** En la tarjeta del punto 1 el botón dice VER CÓMO FUNCIONA y abre la hélice en holograma FUNCIONANDO (paso fino:
+  gira y mueve aire hacia atrás). Arriba de la pieza va el PANEL DE LA LECCIÓN: un botón por estado (PARTES · PASO FINO · PASO
+  GRUESO · BANDERA · REVERSA), la frase de ese estado, con qué se maneja de verdad, la PALANCA HÉLICE (un mando continuo que se
+  toca o se arrastra: adelante del todo, paso fino y vueltas altas; hacia atrás el paso engrosa y las vueltas bajan, de a poco;
+  de la traba para atrás, bandera), el REPASO de tres preguntas (al responder, la pieza muestra la respuesta) y la leyenda fija
+  al pie. Cada estado cambia el paso de las cinco palas (cada una gira sobre su propio eje), las vueltas y un flujo de aire
+  (estelas a lo largo del eje; en reversa van hacia adelante). En PARTES la pieza se queda quieta, vuelve sola a su vista de
+  presentación y salen los nombres de sus partes (Cono, Pala, Raíz de la pala) al costado. Los estados que el alumno ya puso
+  llevan una tilde y el botón del repaso muestra su mejor puntaje; el resumen del camino dice «Lecciones: n de N».
+- **Cómo está hecho (sirve para cualquier pieza).** `taller/lecciones.js` = el CONTENIDO, aparte del código para que lo valide
+  quien corresponda (por lección: `mando`, `palanca`, `inicial`, `estados` con su frase y con `paso` / `giro` / `flujo`, `partes`
+  con el punto que señalan, `preguntas` con `muestra`). `taller/leccion.js` = el panel (dos caras: funcionamiento y repaso), la
+  palanca, el repaso y los rótulos de las partes. `taller/piezaholo.js` ahora lleva las partes móviles a cualquier posición
+  (`irA`, y `seguir` para un mando que se arrastra), las saca de las ISLAS de una malla (`elegir(isla)`: las palas vienen sueltas
+  dentro de la malla de la hélice), cambia el giro (`ponerGiro`) y lleva un flujo de estelas (`ponerFlujo`). En `main.js`: la
+  lección de la pieza abierta (`leccion`, `ponerEstadoLeccion`, `ponerPalancaLeccion`, `accionLeccion`), la pose de presentación
+  (`orientacionPieza`) y las pruebas (`probarLeccion`).
+- **La receta para la próxima lección:** 1) medir en el modelo qué viene suelto (islas) y por dónde pasa su eje; 2) armar la
+  pieza en `PIEZAS_HOLO` con `elegir` (islas) o `moviles` (mallas con su bisagra); 3) escribir su entrada en `lecciones.js`;
+  4) correr `__taller.probarRecorrido()` (las pruebas de la lección corren solas para toda pieza con lección) y recorrerla con
+  clics de verdad. Está también en la skill «Despiece» (`references/leccion.md`).
+- **Medido en el modelo (21/11):** cinco palas (islas de 460 a 654 triángulos), de 0,17 a 1,54 m del eje; el eje de cada pala
+  pasa a 5 mm del origen del nodo; a 1,15 m la pala está a 11,5° (paso fino: así viene el modelo); el cono llega a x 0,407.
+  En BANDERA (+74°) la cuerda a 1,15 m queda 17,6 cm a lo largo del eje y 2 cm de frente (en fino: 4,1 y 17,4 cm). El sentido
+  de giro coincide con la forma de las palas. Los ángulos de cada estado son ILUSTRATIVOS [VERIFICAR].
+- **Encontrado con clics de verdad del mouse (las pruebas por consola pasaban todas):** el HUD de la PC tapaba el panel de la
+  lección y también el rótulo de las demás piezas (ahora el HUD se esconde mientras hay una pieza abierta); al agrandar la pieza
+  con la rueda los nombres de las partes se salían de la pantalla; de las palas se señalaba una que se veía en escorzo.
+- **Pruebas:** `probarRecorrido()` 44 de 44 (11 nuevas: un salto a otro punto cierra la pieza abierta, y 10 de la lección: el gatillo simulado en cada botón, el giro medido en la
+  matriz de cada pala, la cuerda en fino y en bandera, la palanca en tres lugares y con el gatillo apretado, rayos desde el ojo
+  al panel y a los rótulos, el repaso), mandos 29, piloto 15, mecánico 5; prevuelo bien. Con la lección abierta junto al avión:
+  56 llamadas y 127 mil triángulos (tope: 75 y 200 mil). Con el mouse de verdad: el camino entero (RECORRER EL AVIÓN, VER CÓMO
+  FUNCIONA, los estados, la palanca con un clic y arrastrándola, girar y agrandar la pieza, el repaso, CERRAR) y las piezas sin
+  lección (los escapes, la compuerta con sus hojas).
+- **Lo provisorio y lo que falta:** los textos y las preguntas son un borrador [AGREGADO · VERIFICAR] (falta quién los valide,
+  §16.5); el cubo por dentro (gobernador, contrapesos) no está, porque el modelo no lo trae (con el manual), y por eso no se
+  hizo el corte; sin voz ni sonido (T17); la palanca es una barra en el panel, no una palanca 3D como las de la mesa.
+  Lámina: `Documents/aurav-cabina/capturas_taller/T13_helice_leccion.jpg`.
+- **Lo que no se pudo probar:** el casco. Ahí la pieza con lección se abre a 0,95 m, a 1,15 m de alto, y su panel queda de 1,57
+  a 1,97 m (medido con el casco simulado): hay que ver si el panel se lee, si se le acierta con el rayo a los botones y a la
+  palanca, y si los nombres de las partes quedan a la vista.
+
 ### 16.5 Lo que tiene que decir Iván (de a una)
 1. **El nombre de la skill.** Elegido el 21/11: «Despiece».
 2. Si cada pieza lleva también su página de escritorio, como `turbohelice.html`, o va directo al taller (más rápido).
    **Decidido el 21/11: «Sólo el holograma».** Las piezas del curso van directo al taller; del despiece se conserva el método
    (la matemática aparte con una sola entrada, números reales, la parte que trabaja se abre, cada pieza con su marca), no la
    página. La skill ya lo dice.
-3. Por qué pieza se empieza (propuesta: la hélice, que se maneja con una palanca que ya está).
+3. Por qué pieza se empieza (propuesta: la hélice, que se maneja con una palanca que ya está). **Hecho el 21/11: se empezó por
+   la hélice (T13).** Falta que Iván la mire y diga si las demás lecciones van con esa forma.
 4. De dónde salen los contenidos de cada lección y quién los valida (el manual de entrenamiento, Bruno, AAXOD).
-5. Si el curso lleva repaso con puntaje y resumen final.
+5. Si el curso lleva repaso con puntaje y resumen final. (La lección de la hélice ya trae un repaso de tres preguntas y guarda
+   el mejor puntaje; el resumen final del curso es de la T17.)
 - **Lo que no se puede probar acá:** el casco.
 
 ## Fuera de alcance (por ahora)
