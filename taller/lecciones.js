@@ -8,7 +8,8 @@
 // estados), «inicial» (el estado con que se abre), «estados» (un botón por
 // cada cosa que hace: el texto que se lee; «paso» = a qué posición van las partes móviles, en grados desde como está el modelo;
 // «giro» = a qué velocidad gira la pieza, rad/s; «flujo» = hacia dónde y qué tan rápido va el flujo, con signo, 0 = sin flujo;
-// «partes: true» = en ese estado se ven los nombres de las partes), «partes» (los nombres, con el punto de la pieza que señalan,
+// «partes: true» = en ese estado se ven los nombres de las partes; «palanca: u» = dónde queda la palanca en un estado que no es
+// de ella: en reversa la palanca HÉLICE sigue adelante, la reversa se pone con la de potencia), «partes» (los nombres, con el punto de la pieza que señalan,
 // en el marco de la pieza) y «preguntas» (la primera respuesta es la correcta; al mostrarlas se mezclan).
 //
 // HÉLICE. Marco: el del nodo «helice» de juegos/at802.glb (el eje de giro sobre x, hacia adelante; el cubo en el origen). Las palas
@@ -27,7 +28,7 @@ export const LECCIONES = {
       {id: 'fino', boton: 'PASO FINO', paso: 0, giro: 2.4, flujo: -1.1, texto: 'Palas casi de plano: cada vuelta muerde poco aire y el motor gira rápido. Vueltas altas, para despegar y aterrizar.'},
       {id: 'grueso', boton: 'PASO GRUESO', paso: 19, giro: 1.5, flujo: -1.4, texto: 'Cada vuelta muerde más aire y la hélice gira más despacio. Vueltas más bajas, para el crucero.'},
       {id: 'bandera', boton: 'BANDERA', paso: 74, giro: 0, flujo: 0, texto: 'De canto al viento: no empuja y casi no frena. Es la palanca HÉLICE atrás del todo; así queda con el motor parado.'},
-      {id: 'reversa', boton: 'REVERSA', paso: -21, giro: 2.0, flujo: 0.9, texto: 'Paso negativo: tira el aire hacia adelante y frena el avión en tierra. Se pone llevando la palanca de potencia atrás del ralentí (luz BETA).'},
+      {id: 'reversa', boton: 'REVERSA', paso: -21, giro: 2.0, flujo: 0.9, palanca: 1, texto: 'Paso negativo: tira el aire hacia adelante y frena el avión en tierra. Se pone llevando la palanca de potencia atrás del ralentí (luz BETA).'},
     ],
     // medido en el modelo (21/11): el cono llega a x 0,407; las palas salen del cono a 0,24 m del eje y llegan a 1,54 m; el eje de
     // cada pala pasa por x 0,005. «repite: 5» = hay cinco iguales alrededor del eje (se señala la que apunta hacia arriba)

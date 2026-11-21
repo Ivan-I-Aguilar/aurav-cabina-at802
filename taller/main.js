@@ -1662,6 +1662,7 @@ function ponerEstadoLeccion(id, ya = false, cuenta = true) {
   const enPalanca = leccion.datos.palanca && leccion.datos.palanca.puntos.find(([, eid]) => eid === id);
   leccion.enPalanca = !!enPalanca;
   if (enPalanca) leccion.palanca = enPalanca[0];
+  else if (e.palanca !== undefined) leccion.palanca = e.palanca; // dónde queda la palanca en un estado que no es de ella
   piezaAbierta.irA(THREE.MathUtils.degToRad(e.paso), ya);
   piezaAbierta.ponerGiro(e.giro, ya);
   piezaAbierta.ponerFlujo(e.flujo);
