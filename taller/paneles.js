@@ -233,12 +233,14 @@ export function crearPanelAtril({leyenda, ancho = 0.88, alto = 0.48, mecanico = 
   const M = 30;
   const bwM = (W - 2 * M - 20) / 2;
   // el botón principal (T11): se entra recorriendo el avión; desde su motor se pasa a verlo por dentro, a tamaño real
-  p.botones.push({id: 'recorrer', x: M, y: 150, w: bwM, h: 170, t: 'RECORRER EL AVIÓN', sub: 'Conocé el AT-802 punto por punto y, desde su motor, entrá a verlo por dentro'});
+  // (T17: es el CURSO; su título y su renglón dicen por dónde va el alumno: los pone actualizar con «curso»)
+  const recorrer = {id: 'recorrer', x: M, y: 150, w: bwM, h: 170, t: 'EMPEZAR EL CURSO', sub: 'Nueve lecciones alrededor del AT-802: cada parte, en tus manos y funcionando'};
+  p.botones.push(recorrer);
   p.botones.push(mecanico
     ? {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'BORRADOR sin validar: identificar, ubicar e inspeccionar'}
     : {id: 'modo_mecanico', x: M + bwM + 20, y: 150, w: bwM, h: 170, t: 'MODO MECÁNICO', sub: 'En preparación', apagado: true});
-  const IR = [['ir_mesa', 'EL MOTOR'], ['ir_at802', 'AT-802'], ['ir_cessna', 'CESSNA'], ['ir_bancos', 'BANCOS'], ['ir_oficina', 'CRÉDITOS']];
-  const bwI = (W - 2 * M - 4 * 14) / 5;
+  const IR = [['ir_mesa', 'EL MOTOR'], ['ir_at802', 'AT-802'], ['ir_cessna', 'CESSNA'], ['ir_bancos', 'BANCOS'], ['ir_oficina', 'CRÉDITOS'], ['resumen', 'MI AVANCE']];
+  const bwI = (W - 2 * M - 5 * 14) / 6;
   IR.forEach(([id, t], i) => p.botones.push({id, t, x: M + i * (bwI + 14), y: 400, w: bwI, h: 96}));
   let firma = '';
   function dibujar(hover) {
@@ -272,10 +274,16 @@ export function crearPanelAtril({leyenda, ancho = 0.88, alto = 0.48, mecanico = 
   }
   return {
     ...p,
-    actualizar({hover = null} = {}) {
-      const f = String(hover);
+    /** curso: {hechas, total, sigue (el nombre de la lección que sigue)}: el botón del curso dice por dónde va el alumno */
+    actualizar({hover = null, curso = null} = {}) {
+      const f = `${hover}|${curso ? `${curso.hechas},${curso.total},${curso.sigue}` : ''}`;
       if (f === firma) return;
       firma = f;
+      if (curso) {
+        if (curso.hechas >= curso.total) Object.assign(recorrer, {t: 'CURSO COMPLETO', sub: `Las ${curso.total} lecciones, hechas. Podés volver a cualquiera`});
+        else if (curso.hechas > 0 || curso.empezado) Object.assign(recorrer, {t: 'SEGUIR EL CURSO', sub: `Llevás ${curso.hechas} de ${curso.total} lecciones. Sigue: ${curso.sigue}`});
+        else Object.assign(recorrer, {t: 'EMPEZAR EL CURSO', sub: 'Nueve lecciones alrededor del AT-802: cada parte, en tus manos y funcionando'});
+      }
       dibujar(hover);
     },
   };

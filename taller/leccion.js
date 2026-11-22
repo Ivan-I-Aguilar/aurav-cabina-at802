@@ -7,7 +7,7 @@
 // Y los RÓTULOS DE LAS PARTES: hasta cinco nombres al costado de la pieza, cada uno con su línea al punto que señala (el mismo
 // aspecto que las llamadas del motor).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261122c';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261122d';
 
 const AZUL = '#082440';
 const LIMA = '#c8e63a';

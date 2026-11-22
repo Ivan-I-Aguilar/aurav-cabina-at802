@@ -1,4 +1,4 @@
-// El CONTENIDO de las lecciones del curso de familiarización con el AT-802 (T13 a T16, 21 y 22/11/2026; PLAN_TALLER.md §16). Va aparte
+// El CONTENIDO de las lecciones del curso de familiarización con el AT-802 (T13 a T17, 21 y 22/11/2026; PLAN_TALLER.md §16). Va aparte
 // del código para que lo corrija y lo valide quien corresponda (Iván, AAXOD) sin tocar nada más.
 // [AGREGADO] Sale de conocimiento general y de las notas del manual de entrenamiento (herramientas/mapa_cabina.md). Todo es
 // [VERIFICAR]: no reemplaza el manual del fabricante, el procedimiento de la empresa ni la instrucción. No trae límites ni
@@ -17,7 +17,8 @@
 //        lo que entra y lo que sale («carga» y «descarga», en centésimas del recipiente por segundo);
 //      · «alabeo», «cabeceo», «guinada» = cuánto se inclina la pieza entera, en grados (lo que le pasa al avión; + = ala derecha
 //        abajo, nariz arriba, nariz a la derecha).
-//    «partes: true» = en ese estado se ven los nombres de las partes. «palancas: {id: u}» = dónde queda una palanca en un estado
+//    «partes: true» = en ese estado se ven los nombres de las partes (todos, con la pieza quieta); «partes: ['Bastón']» = sólo
+//    esos, sin frenar la pieza (la cabina: cada botón señala un mando). «palancas: {id: u}» = dónde queda una palanca en un estado
 //    que no es de ella (en reversa la palanca HÉLICE sigue adelante: la reversa se pone con la de potencia).
 //  - «palancas»: los mandos continuos (uno o dos), que se tocan o se arrastran. Cada una: «id», «rotulo», «atras» y «adelante»
 //    (cómo se llaman sus extremos), «campos» (cuáles mueve) y «puntos» = [[u, estado, rótulo corto]…]: en qué lugar de su
@@ -243,6 +244,46 @@ export const LECCIONES = {
       {q: '¿Qué cambia con la cobertura?', a: ['Cuánto abren las hojas y cuánta carga sale por segundo', 'La velocidad del avión', 'El tamaño de la tolva'], muestra: 'alta'},
       {q: 'Para largar toda la carga de una vez, ¿cómo quedan las hojas?', a: ['Abiertas del todo', 'Cerradas', 'Apenas abiertas'], muestra: 'salvo'},
       {q: '¿Desde dónde se maneja la compuerta?', a: ['Desde la cabina', 'Desde el piso, con una palanca', 'No se maneja: abre sola'], muestra: 'baja'},
+    ],
+  },
+
+  // CABINA (T17). Marco: el del avión. La cabina liviana del avión de los juegos, con su cúpula. Es la lección que junta las
+  // demás: cada botón señala un mando y dice qué parte mueve. Se mueven el bastón (medido en el modelo: el caño y la empuñadura,
+  // sobre su pivote en x −2,2 · y 2,03) y los pedales (dos almohadillas en x −1,65 · y 2,11, a ±0,2 m del eje); el cuadrante, el
+  // tablero y la mirilla sólo se señalan. «bastonLado» y «bastonLargo», en grados (+ = a la derecha; + = atrás); «pedales», de
+  // −100 a 100 (+ = el derecho adelante). Los recorridos son ILUSTRATIVOS [VERIFICAR]. Para usar la cabina de verdad está el
+  // simulador de cabina de AURAV: acá sólo se muestra dónde está cada mando.
+  cabina: {
+    mando: 'Es la cabina del simulador de AURAV: ahí cada mando se usa de verdad.',
+    inicial: 'baston',
+    palancas: [
+      {id: 'baston', rotulo: 'BASTÓN', atras: 'IZQUIERDA', adelante: 'DERECHA', campos: ['bastonLado'], puntos: [[0, 'bIzq', 'IZQ.'], [0.5, 'centro', 'CENTRO'], [1, 'bDer', 'DER.']]},
+      {id: 'pedales', rotulo: 'PEDALES', atras: 'IZQUIERDO', adelante: 'DERECHO', campos: ['pedales'], puntos: [[0, 'pIzq', 'IZQ.'], [0.5, 'centro', 'CENTRO'], [1, 'pDer', 'DER.']]},
+    ],
+    estados: [
+      {id: 'partes', boton: 'PARTES', bastonLado: 0, bastonLargo: 0, pedales: 0, partes: true, palancas: {baston: 0.5, pedales: 0.5}, texto: 'La cabina, para un solo piloto. Desde acá se maneja todo lo que viste en las otras lecciones: cada mando mueve una parte.'},
+      {id: 'baston', boton: 'BASTÓN', bastonLado: 14, bastonLargo: 10, pedales: 0, partes: ['Bastón'], texto: 'El bastón: a los costados mueve los alerones y el avión se inclina; adelante y atrás, el timón de profundidad, y la nariz baja o sube.'},
+      {id: 'pedal', boton: 'PEDALES', bastonLado: 0, bastonLargo: 0, pedales: 100, partes: ['Pedales'], texto: 'Los pedales mueven el timón de dirección: la nariz gira hacia el pedal que se pisa. Con la punta de cada pedal se frena su rueda.'},
+      {id: 'motor', boton: 'PALANCAS', bastonLado: 0, bastonLargo: 0, pedales: 0, partes: ['Cuadrante'], texto: 'A la izquierda, el cuadrante: potencia, hélice y condición. Son las tres palancas de la lección del motor.'},
+      {id: 'tolva', boton: 'TOLVA', bastonLado: 0, bastonLargo: 0, pedales: 0, partes: ['Mirilla de la tolva', 'Tablero'], texto: 'Adelante, la mirilla: por ahí se ve la escala del nivel de la tolva. La descarga se maneja desde el tablero: es la lección de la compuerta.'},
+      // sin botón: las marcas de las dos palancas (cada una deja a la vista el nombre de lo que mueve: son piezas chicas)
+      {id: 'centro', bastonLado: 0, pedales: 0, partes: ['Bastón', 'Pedales'], texto: 'Mandos al centro. Mové el bastón o los pedales.'},
+      {id: 'bIzq', bastonLado: -16, partes: ['Bastón'], texto: 'Bastón a la izquierda: sube el alerón izquierdo y el avión se inclina a la izquierda.'},
+      {id: 'bDer', bastonLado: 16, partes: ['Bastón'], texto: 'Bastón a la derecha: sube el alerón derecho y el avión se inclina a la derecha.'},
+      {id: 'pIzq', pedales: -100, partes: ['Pedales'], texto: 'Pedal izquierdo adelante: el timón de dirección va a la izquierda y la nariz gira a la izquierda.'},
+      {id: 'pDer', pedales: 100, partes: ['Pedales'], texto: 'Pedal derecho adelante: el timón de dirección va a la derecha y la nariz gira a la derecha.'},
+    ],
+    partes: [
+      {nombre: 'Bastón', sub: 'alerones y timón de profundidad', punto: [-2.235, 2.72, 0]},
+      {nombre: 'Pedales', sub: 'timón de dirección y frenos', punto: [-1.65, 2.11, 0.2]},
+      {nombre: 'Cuadrante', sub: 'potencia · hélice · condición', punto: [-2.54, 2.46, -0.45]},
+      {nombre: 'Tablero', sub: 'instrumentos y descarga', punto: [-2.1, 2.85, 0.1]},
+      {nombre: 'Mirilla de la tolva', sub: 'se ve la escala del nivel', punto: [-1.71, 2.72, 0]},
+    ],
+    preguntas: [
+      {q: '¿Qué mueve el bastón hacia los costados?', a: ['Los alerones', 'El timón de dirección', 'Los flaps'], muestra: 'bDer'},
+      {q: '¿Con qué se mueve el timón de dirección?', a: ['Con los pedales', 'Con el bastón', 'Con la palanca de potencia'], muestra: 'pDer'},
+      {q: '¿Dónde están las palancas del motor?', a: ['En el cuadrante, a la izquierda del piloto', 'En el techo', 'Detrás del asiento'], muestra: 'motor'},
     ],
   },
 };

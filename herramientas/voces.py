@@ -37,6 +37,16 @@ for nombre, campo in (('taller/content.js', 'text'), ('taller/motor.js', 'alert'
         t = m.group(1).replace("\\'", "'")
         frases[clave(t)] = hablado(t)
 
+# el CURSO de familiarización del taller (T17): la frase de cada tarjeta y la de cada estado de cada lección. SÓLO con --curso:
+# esos textos son un borrador sin validar, y se graban recién cuando Iván los apruebe (mientras no estén en frases.json, en la PC
+# los dice la voz del navegador; una vez en frases.json tienen que tener su WAV, o quedan mudos)
+if '--curso' in sys.argv:
+    for nombre in ('taller/familiarizacion.js', 'taller/lecciones.js'):
+        src = open(os.path.join(RAIZ, nombre), encoding='utf-8').read()
+        for m in re.finditer(r"texto: '((?:[^'\\\n]|\\.)*)'", src):
+            t = m.group(1).replace("\\'", "'")
+            frases[clave(t)] = hablado(re.sub(r'[«»]', '', t).replace('3.000', 'tres mil'))
+
 os.makedirs(os.path.join(RAIZ, 'voz'), exist_ok=True)
 json.dump(frases, open(os.path.join(RAIZ, 'voz', 'frases.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
 print(len(frases), 'frases')

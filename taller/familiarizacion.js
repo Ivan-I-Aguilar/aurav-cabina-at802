@@ -15,9 +15,11 @@
 // metros, origen en el piso entre las ruedas principales) y están puestas mirando la planta que ocupa el avión [PROVISORIO].
 // Todo en 3 llamadas de dibujo: las marcas (un disco y una marca de piso por punto) en una malla con un atlas, las líneas, y la
 // tarjeta. Sumar un punto es agregar su entrada en PUNTOS (y, si tiene pieza en holograma, su recorte en PIEZAS_HOLO de main.js).
+// T17 (el curso): cada punto es una LECCIÓN. La tarjeta dice «LECCIÓN n DE 9», lleva el renglón con el avance de esa lección (lo
+// arma main.js con curso.js) y, arriba, el botón MI AVANCE, que abre el resumen del curso.
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261122c';
-import {LECCIONES} from './lecciones.js?v=20261122c';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261122d';
+import {LECCIONES} from './lecciones.js?v=20261122d';
 
 export const PUNTOS = [
   {
@@ -56,8 +58,9 @@ export const PUNTOS = [
     texto: 'Un solo piloto, sentado alto y detrás de la tolva, con buena vista hacia adelante y hacia abajo. Es la cabina del simulador.',
     parte: [-2.8, 2.5, -0.55],
     marca: [-3.0, 2.0, -1.15],
-    pie: [-3.6, -2.2],
+    pie: [-3.7, -2.9], // a 2,1 m del costado del fuselaje (T17): a 1,45 m, el fuselaje de verdad le tapaba el fondo a la cabina en holograma
     holo: 'cabina',
+    holoNota: 'vista desde atrás · bastón, pedales y cruz dibujados',
   },
   {
     clave: 'cola',
@@ -236,7 +239,7 @@ export function crearFamiliarizacion({avion, leyenda}) {
     if (l) lineasT.push(l);
     return lineasT;
   }
-  function dibujar(i, hover) {
+  function dibujar(i, hover, av) {
     const p = P[i];
     tarjeta.botones.length = 0;
     g.clearRect(0, 0, W, H);
@@ -252,11 +255,27 @@ export function crearFamiliarizacion({avion, leyenda}) {
     g.textAlign = 'left';
     g.fillStyle = '#c8e63a';
     g.font = 'bold 40px Arial';
-    g.fillText(`PUNTO ${i + 1} DE ${N}`, M, 62);
+    g.fillText(`LECCIÓN ${i + 1} DE ${N}`, M, 62);
     g.textAlign = 'right';
     g.fillStyle = '#8fa3b8';
     g.font = 'bold 26px Arial';
     g.fillText('[AGREGADO · VERIFICAR]', W - M, 60);
+    // MI AVANCE: el resumen del curso, desde cualquier tarjeta
+    {
+      const bx = W - M - 345 - 232;
+      tarjeta.botones.push({id: 'fam_avance', x: bx, y: 16, w: 232, h: 60});
+      g.beginPath();
+      g.roundRect(bx, 16, 232, 60, 12);
+      g.fillStyle = hover === 'fam_avance' ? '#17467a' : '#0f335a';
+      g.fill();
+      g.lineWidth = 3;
+      g.strokeStyle = '#c8e63a';
+      g.stroke();
+      g.fillStyle = '#c8e63a';
+      g.font = 'bold 30px Arial';
+      g.textAlign = 'center';
+      g.fillText('MI AVANCE', bx + 116, 57);
+    }
     g.textAlign = 'left';
     g.fillStyle = '#16181b';
     g.font = 'bold 60px Arial';
@@ -264,6 +283,23 @@ export function crearFamiliarizacion({avion, leyenda}) {
     g.font = '38px Arial';
     g.fillStyle = '#2b3036';
     envolver(p.texto, W - 2 * M).slice(0, 4).forEach((l, k) => g.fillText(l, M, 232 + k * 48));
+    // cómo va esta lección (T17): sin empezar, en curso o hecha
+    if (av && av.texto) {
+      const [fondo, tinta] = av.hecha ? ['#dff3e7', '#1e7a44'] : av.empezada ? ['#f1f7cc', '#4d5a0d'] : ['#eceef0', '#5b6470'];
+      g.font = 'bold 30px Arial';
+      const ancho = Math.min(W - 2 * M, g.measureText(av.texto).width + 86);
+      g.beginPath();
+      g.roundRect(M, 500, ancho, 62, 31);
+      g.fillStyle = fondo;
+      g.fill();
+      g.beginPath();
+      g.arc(M + 34, 531, 13, 0, Math.PI * 2);
+      g.fillStyle = tinta;
+      g.fill();
+      g.textBaseline = 'middle';
+      g.fillText(av.texto, M + 62, 533, ancho - 80);
+      g.textBaseline = 'alphabetic';
+    }
     // botones: a la izquierda lo propio del punto (holograma o motor); a la derecha, SIGUIENTE
     const by = H - 96 - 104;
     const bh = 84;
@@ -287,7 +323,7 @@ export function crearFamiliarizacion({avion, leyenda}) {
     };
     if (p.holo === 'motor') boton('fam_motor', 'VER EL MOTOR', M, true);
     else if (p.holo) boton('fam_holo', LECCIONES[p.holo] ? 'VER CÓMO FUNCIONA' : 'VER EN HOLOGRAMA', M, true); // con lección (T13), la pieza funciona
-    boton('fam_sig', i === N - 1 ? '← PUNTO 1' : 'SIGUIENTE →', M + bw + 20, false);
+    boton('fam_sig', i === N - 1 ? '← LECCIÓN 1' : 'SIGUIENTE →', M + bw + 20, false);
     pieLeyenda(g, W, H - 96, 96, leyenda, 27);
     tarjeta.pintado();
   }
@@ -312,17 +348,23 @@ export function crearFamiliarizacion({avion, leyenda}) {
     /** dónde pararse y hacia dónde mirar en el punto i (para el salto con fundido) */
     destino(i) {
       const p = P[i];
-      // se llega mirando al medio entre el disco y la tarjeta: los dos quedan enteros a la vista, también en una ventana angosta de PC
-      const medio = lugarTarjeta(p).add(p.marcaM).multiplyScalar(0.5);
-      const d = medio.clone().sub(p.pieM);
-      return {x: p.pieM.x, z: p.pieM.z, yaw: Math.atan2(-d.x, -d.z), pitch: THREE.MathUtils.clamp(Math.atan2(medio.y - 1.6, Math.hypot(d.x, d.z)), -0.5, 0.6)};
+      // se llega mirando al medio entre el disco y la tarjeta: los dos quedan enteros a la vista, también en una ventana angosta de
+      // PC. El medio es EN ÁNGULO (la bisectriz de las dos direcciones), no el punto medio: con el disco lejos y la tarjeta cerca,
+      // el punto medio queda casi en la dirección del disco y la tarjeta se salía por el costado (T17: la de la hélice, en 4:3)
+      const t = lugarTarjeta(p);
+      const hacia = (q) => new THREE.Vector3(q.x - p.pieM.x, 0, q.z - p.pieM.z);
+      const sube = (q) => Math.atan2(q.y - 1.6, hacia(q).length());
+      const d = hacia(p.marcaM).normalize().add(hacia(t).normalize());
+      return {x: p.pieM.x, z: p.pieM.z, yaw: Math.atan2(-d.x, -d.z), pitch: THREE.MathUtils.clamp((sube(p.marcaM) + sube(t)) / 2, -0.5, 0.6)};
     },
     /** el punto cuya marca (el disco o la del piso) toca el rayo, o −1 */
     marcaTocada(raycaster) {
       const h = raycaster.intersectObject(marcas, false)[0];
       return h ? Math.floor(h.faceIndex / 2) % N : -1;
     },
-    actualizar(camara, tiempo, {hover = null, abierto = null} = {}) {
+    /** hover: el botón bajo el rayo; abierto: lo que está abierto delante del alumno (la clave de una pieza, o el resumen): la
+     * tarjeta y los discos se esconden mientras tanto; avance(i) → {texto, hecha, empezada}: cómo va la lección del punto i */
+    actualizar(camara, tiempo, {hover = null, abierto = null, avance = null} = {}) {
       camara.getWorldPosition(cam);
       // los discos miran a la cámara (se recalculan sus cuatro vértices); el del punto activo late
       camara.matrixWorld.extractBasis(der, ac, rc);
@@ -360,15 +402,26 @@ export function crearFamiliarizacion({avion, leyenda}) {
         }
         firma = '';
       }
-      // con la pieza de este punto abierta en holograma, la tarjeta se esconde (la pieza trae su rótulo con CERRAR)
-      tarjeta.malla.visible = activo >= 0 && abierto !== P[activo].clave;
+      // con una pieza abierta en holograma (o el resumen del curso), la tarjeta se esconde: una cosa por vez
+      tarjeta.malla.visible = activo >= 0 && !abierto;
       if (tarjeta.malla.visible) {
-        const f = `${activo}|${hover}`;
+        const av = avance ? avance(activo) : null;
+        const f = `${activo}|${hover}|${av ? av.texto : ''}`;
         if (f !== firma) {
           firma = f;
-          dibujar(activo, hover);
+          dibujar(activo, hover, av);
         }
       }
+    },
+    /** marca como vistos unos puntos (lo guardado de otra vez) */
+    marcar(indices) {
+      for (const i of indices)
+        if (i >= 0 && i < N && !vistos.has(i)) {
+          vistos.add(i);
+          ponerUV(i, i, 1);
+          ponerUV(N + i, i, 1);
+        }
+      geo.attributes.uv.needsUpdate = true;
     },
     /** para las pruebas: olvida lo visto */
     reiniciar() {

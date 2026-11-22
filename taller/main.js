@@ -12,21 +12,22 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261122c';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261122c';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261122c';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261122c';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261122c';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261122c';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261122c';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261122c';
-import {crearPiezaHolo} from './piezaholo.js?v=20261122c';
-import {LECCIONES} from './lecciones.js?v=20261122c';
-import {crearPanelLeccion, crearRotulosPartes, crearRepaso} from './leccion.js?v=20261122c';
-import {crearLlamadas} from './llamadas.js?v=20261122c';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261122c';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261122d';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261122d';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261122d';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261122d';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261122d';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261122d';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261122d';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261122d';
+import {crearPiezaHolo} from './piezaholo.js?v=20261122d';
+import {LECCIONES} from './lecciones.js?v=20261122d';
+import {avanceDeLeccion, textoAvance, crearPanelResumen, leerCurso, guardarCurso, borrarCurso} from './curso.js?v=20261122d';
+import {crearPanelLeccion, crearRotulosPartes, crearRepaso} from './leccion.js?v=20261122d';
+import {crearLlamadas} from './llamadas.js?v=20261122d';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261122d';
 
-export const VERSION = '20261122c';
+export const VERSION = '20261122d';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -797,6 +798,69 @@ function resumenCamino(conPreguntas = true) {
   const p = camino.preguntas === null ? 'sin hacer' : `${camino.preguntas} de ${QUIZ.length}`;
   return `${fam ? `Avión: ${fam.vistos.size} de ${PUNTOS_AVION.length} puntos · Lecciones: ${leccionesHechas()} de ${Object.keys(LECCIONES).length} · ` : ''}Estaciones vistas: ${camino.estaciones.size} de ${STATIONS.length} · Fallas probadas: ${camino.fallas.size} de 5 · Arranque normal: ${camino.arranco ? 'hecho' : 'falta'}` + (conPreguntas ? ` · Preguntas: ${p}` : '');
 }
+// La VOZ del curso (T17): la frase de la tarjeta al llegar a cada punto, y la de cada estado de una lección al tocar su botón.
+// Usa audio.decir() de la cabina: si la frase está grabada (voz/<clave>.wav) suena la grabación; si no, en la PC la dice la voz
+// del navegador y en el casco no suena nada (el navegador del Quest no trae voces). Las frases del curso TODAVÍA NO ESTÁN
+// GRABADAS: los textos son un borrador sin validar; se graban con «herramientas/voces.py --curso» cuando Iván los apruebe.
+let vozDelMotor = false; // la última frase dicha es del motor (se oye sólo cerca del holograma) o del curso (se oye siempre)
+let puntoDicho = -1; // el punto del recorrido cuya tarjeta ya se dijo
+function decirCurso(texto) {
+  vozDelMotor = false;
+  audio.decir(texto);
+}
+// El CURSO (T17): cada punto del recorrido es una lección, y su avance sale del camino del alumno: en las piezas con lección, de
+// los estados que puso y de su repaso; en el motor, de las estaciones que vio y de sus preguntas
+function avanceDePunto(i) {
+  const p = PUNTOS_AVION[i];
+  if (p.holo === 'motor') {
+    const vistos = camino.estaciones.size;
+    return {vistos, total: STATIONS.length, repaso: camino.preguntas, preguntas: QUIZ.length, empezada: vistos > 0 || camino.preguntas !== null || camino.arranco, hecha: vistos === STATIONS.length && camino.preguntas !== null};
+  }
+  return LECCIONES[p.holo] ? avanceDeLeccion(LECCIONES[p.holo], camino.lecciones[p.holo]) : null;
+}
+const SIN_AVANCE = {vistos: 0, total: 0, repaso: null, preguntas: 0, empezada: false, hecha: false};
+/** un renglón por lección, en el orden del recorrido: lo que muestra el resumen */
+const filasCurso = () =>
+  PUNTOS_AVION.map((p, i) => {
+    const a = avanceDePunto(i) || SIN_AVANCE;
+    const loVisto = p.holo === 'motor' ? `estaciones ${a.vistos} de ${a.total} · fallas ${camino.fallas.size} de 5` : a.total ? `viste ${a.vistos} de ${a.total}` : '';
+    return {titulo: p.titulo, ...a, loVisto, visitada: !!fam && fam.vistos.has(i)};
+  });
+/** la primera lección que no está hecha (por ahí se sigue); si están todas, la primera */
+const primerPendiente = () => Math.max(0, PUNTOS_AVION.findIndex((_, i) => !(avanceDePunto(i) || SIN_AVANCE).hecha));
+const cursoCompleto = () => PUNTOS_AVION.every((_, i) => (avanceDePunto(i) || SIN_AVANCE).hecha);
+// el avance QUEDA GUARDADO en el aparato (curso.js): se lee al cargar el avión y se guarda cuando cambia (desde el bucle de
+// dibujo, no desde avanzar(): las pruebas, que corren de un tirón, no guardan nada). Las pruebas usan otra clave
+let claveCurso = undefined;
+let cursoGuardado = '';
+let cursoAvisado = false; // ya se le mostró el resumen del curso completo
+const estadoCurso = () => ({
+  vistos: fam ? [...fam.vistos] : [],
+  lecciones: Object.fromEntries(Object.entries(camino.lecciones).map(([k, v]) => [k, {estados: [...v.estados], repaso: v.repaso}])),
+  motor: {estaciones: [...camino.estaciones], fallas: [...camino.fallas], arranco: camino.arranco, preguntas: camino.preguntas},
+  avisado: cursoAvisado,
+});
+function restaurarCurso(d) {
+  if (!d) return;
+  for (const [k, v] of Object.entries(d.lecciones || {})) if (LECCIONES[k]) camino.lecciones[k] = {estados: new Set(v.estados || []), repaso: v.repaso ?? null};
+  const m = d.motor || {};
+  for (const e of m.estaciones || []) camino.estaciones.add(e);
+  for (const f of m.fallas || []) camino.fallas.add(f);
+  camino.arranco = camino.arranco || !!m.arranco;
+  camino.preguntas = m.preguntas ?? camino.preguntas;
+  cursoAvisado = !!d.avisado;
+  if (fam) fam.marcar(d.vistos || []);
+}
+/** borra todo el avance del alumno: lo anotado y lo guardado */
+function reiniciarCurso() {
+  camino.estaciones.clear();
+  camino.fallas.clear();
+  Object.assign(camino, {arranco: false, enCurso: false, preguntas: null, lecciones: {}});
+  cursoAvisado = false;
+  if (fam) fam.reiniciar();
+  borrarCurso(claveCurso);
+  cursoGuardado = JSON.stringify(estadoCurso());
+}
 const preguntas = crearPanelPreguntas({quiz: QUIZ, orden: ORDER, resumen: () => resumenCamino(false)}); // el puntaje ya está grande arriba
 preguntas.malla.position.set(0, 1.48, 0.2); // delante de la cara del holograma (z 0,17): en 0,1 el flujo tapaba «Otra vez»
 preguntas.malla.visible = false;
@@ -884,7 +948,10 @@ function ponerEstacion(n) {
 // la voz del tutor (T7, tramo 2): la frase de cada estación y el aviso de cada falla, con los WAV de voz/ (Sabina, voces.py)
 function decirEstacion(n) {
   const st = STATIONS.find((x) => x.n === n);
-  if (st) audio.decir(st.text);
+  if (st) {
+    vozDelMotor = true;
+    audio.decir(st.text);
+  }
 }
 let alertaAntes = false;
 /** la alerta sale cuando aparece el síntoma (como en la cabina: arranque caliente con ITT > 750; colgado, Ng estancado) */
@@ -1026,9 +1093,11 @@ function accionar(a) {
   if (!a || !a.id) return false;
   if (recorrido.activo && a.id !== 'v_recorrido') pararRecorrido(); // cualquier toque del alumno toma el control
   if (a.tipo === 'panel' && a.id.startsWith('q_')) {
-    if (preguntas.tocar(a.id) === 'cerrar') cerrarPreguntas();
+    const cerro = preguntas.tocar(a.id) === 'cerrar';
+    if (cerro) cerrarPreguntas();
     const e = preguntas.estado;
     if (e.pregunta >= QUIZ.length) camino.preguntas = Math.max(camino.preguntas ?? 0, e.puntaje);
+    if (cerro) avisarCursoCompleto(); // si con las preguntas del motor quedó hecho todo el curso, sale el resumen
   } else if (a.tipo === 'panel' && a.id.startsWith('f_')) ponerFalla(a.id.slice(2));
   else if (a.tipo === 'panel' && /^st\d$/.test(a.id)) ponerEstacion(+a.id.slice(2));
   else if (a.id === 'v_corte') corte = true;
@@ -1037,11 +1106,26 @@ function accionar(a) {
   else if (a.id === 'v_recorrido') recorrido.activo ? pararRecorrido() : iniciarRecorrido();
   else if (a.id === 'v_preguntas') preguntasAbiertas ? cerrarPreguntas() : abrirPreguntas();
   else if (a.id === 'v_mesa' || a.id === 'v_real') ponerPresentacion(a.id === 'v_real' ? 'real' : 'mesa');
-  else if (a.id === 'recorrer' || a.id === 'ir_at802') saltarAPunto(0);
+  else if (a.id === 'recorrer') saltarAPunto(primerPendiente()); // el curso sigue por la primera lección que no está hecha
+  else if (a.id === 'ir_at802') saltarAPunto(0);
+  else if (a.id === 'fam_avance' || a.id === 'resumen') resumenAbierto ? cerrarResumen() : abrirResumen();
+  else if (a.id === 'res_cerrar') cerrarResumen();
+  else if (a.id === 'res_borrar') resumenConfirmar = true;
+  else if (a.id === 'res_borrar_no') resumenConfirmar = false;
+  else if (a.id === 'res_borrar_si') {
+    reiniciarCurso();
+    resumenConfirmar = false;
+  } else if (a.id.startsWith('res_ir_')) {
+    cerrarResumen();
+    saltarAPunto(+a.id.slice(7));
+  }
   else if (a.id === 'fam_sig') saltarAPunto((fam.activo + 1) % PUNTOS_AVION.length);
   else if (a.id === 'fam_motor') saltarA('mesa');
   else if (a.id === 'fam_holo') alternarPieza(PUNTOS_AVION[fam.activo].clave);
-  else if (a.id === 'pieza_cerrar') cerrarPieza();
+  else if (a.id === 'pieza_cerrar') {
+    cerrarPieza();
+    avisarCursoCompleto(); // si con esa lección quedó hecho todo el curso, sale el resumen
+  }
   else if (a.id.startsWith('lec_')) accionLeccion(a.id, a.u);
   else if (a.id === 'pieza_hojas') {
     if (piezaAbierta && piezaAbierta.tieneMoviles) piezaAbierta.abrir(!piezaAbierta.abierta);
@@ -1276,6 +1360,19 @@ function bloqueado(x, z, r = 0.25) {
       if (i >= 0 && j >= 0 && i < nx && j < nz && celdas[j * nx + i]) return true;
   return false;
 }
+/** ¿hay algo en ese lugar del piso? Los muebles y la mesa, el avión por debajo de 1,9 m y las paredes de la nave (x, z del mundo) */
+function lugarOcupado(x, z, margen = 0.05) {
+  if (bloqueado(x, z, margen)) return true;
+  const mx = MESA.ancho / 2;
+  const mz = MESA.fondo / 2;
+  if (Math.abs(x) < mx + margen && Math.abs(z) < mz + margen) return true;
+  for (const [x0, x1, z0, z1] of choquesMuebles) if (x > x0 - margen && x < x1 + margen && z > z0 - margen && z < z1 + margen) return true;
+  if (!hangar) return Math.abs(x) > 6.9 || Math.abs(z) > 6.9;
+  const zPorton = DESPLAZAR_HANGAR;
+  if (z < zPorton - 60 + margen) return true; /* la pared del fondo */
+  if (z < zPorton && Math.abs(x) > 20 - margen) return true; /* las paredes de los lados */
+  return Math.abs(z - zPorton) < 0.3 + margen && Math.abs(x) > 5.6; /* el frente, a los lados del portón */
+}
 function rasterizarChoque(raiz, alto = 1.9) {
   raiz.updateWorldMatrix(true, true);
   const caja = new THREE.Box3().setFromObject(raiz);
@@ -1363,6 +1460,9 @@ if (hangar)
     fam = crearFamiliarizacion({avion: marcoAvion, leyenda: LEGEND});
     escena.add(fam.grupo);
     paneles.push(fam.tarjeta);
+    // el avance guardado en el aparato (T17): el curso sigue donde quedó
+    restaurarCurso(leerCurso(claveCurso));
+    cursoGuardado = JSON.stringify(estadoCurso());
     // T12: las piezas que el modelo del avión no trae con detalle van en un modelo propio, hecho en el MARCO DEL AVIÓN con las
     // fotos del avión real (herramientas/taller_compuerta.py). Quedan escondidas bajo el marco del avión: sólo son la fuente de
     // su holograma
@@ -1729,7 +1829,61 @@ const PIEZAS_HOLO = {
     });
     return Object.assign(pieza, {frente: [0.55, 0, 0.83], sinGiroSolo: true}); // no gira sola: adelante y atrás tienen que leerse
   },
-  cabina: recorte('cabina', ['cabina', 'exterior'], [-4.0, 1.85, -0.85], [-1.7, 3.4, 0.85], 0.9, [0.45, 0, -0.9], 0.25, 0.28), // la cabina liviana con su cúpula (muchas capas: poco brillo)
+  // La CABINA (T17: la lección «Cabina»): la cabina liviana con su cúpula (muchas capas: poco brillo). Se mueven el BASTÓN (el
+  // caño y la empuñadura vienen sueltos; giran sobre el pivote del piso: a los costados, «bastonLado», y adelante y atrás,
+  // «bastonLargo») y los PEDALES (dos almohadillas sueltas que se corren, una hacia adelante y la otra hacia atrás: «pedales»,
+  // de −100 a 100). Medido en el modelo (22/11): el caño, de y 2,02 a 2,64 en x −2,2 · z 0; la empuñadura, hasta 2,81; los
+  // pedales, en x −1,65 · y 2,11 · z ±0,2. Llevan luz propia: son lo que se mira. El cuadrante, el tablero y la mirilla sólo se
+  // señalan (lecciones.js)
+  cabina: () => {
+    const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const BASTON = {a: V(-2.3, 2.03, 0), b: V(-2.1, 2.03, 0), angulo: 1, canal: 'bastonLado', sobre: {a: V(-2.2, 2.03, -0.1), b: V(-2.2, 2.03, 0.1), angulo: 1, canal: 'bastonLargo'}, junta: 'baston', luz: 1.2};
+    const elegir = (isla) => {
+      // el bastón: el caño y la empuñadura, sobre el eje del avión
+      if (Math.abs(isla.centro.z) < 0.03 && isla.min.x > -2.32 && isla.max.x < -2.1 && isla.min.y > 2.0 && isla.max.y < 2.86 && isla.max.y - isla.min.y > 0.14) return BASTON;
+      // los pedales: dos almohadillas, adelante y abajo, una de cada lado; con «pedales» en + va adelante el derecho
+      if (isla.n >= 150 && isla.min.x > -1.72 && isla.max.x < -1.58 && isla.min.y > 2.02 && isla.max.y < 2.2 && Math.abs(isla.centro.z) > 0.08 && Math.abs(isla.centro.z) < 0.32) return pedal(isla.centro.z > 0 ? 1 : -1);
+      return null;
+    };
+    const pedal = (lado) => ({mueve: V(0.1 * lado, 0, 0), canal: 'pedales', luz: 1.2, junta: lado > 0 ? 'pedalDer' : 'pedalIzq'});
+    // Lo DIBUJADO (mallas de paso, en el marco del avión). El caño del bastón mide 2 cm y las almohadillas de los pedales son
+    // chicas: dentro de la cabina, con todas sus capas, no se los veía moverse (encontrado al mirarla con el mouse). Van, en
+    // grueso: el bastón con una bola en la empuñadura, una placa sobre cada pedal y, quieta, una CRUZ DE GUÍA a la altura de la
+    // empuñadura (izquierda–derecha y adelante–atrás) contra la que se lee para dónde se fue el bastón
+    const deMas = [];
+    const dibujar = (g, luz = 0) => {
+      const m = new THREE.Mesh(g);
+      m.userData.luz = luz;
+      avionAT.add(m);
+      deMas.push(m);
+      return m;
+    };
+    const pie = V(-2.17, 2.04, 0);
+    const punta = V(-2.237, 2.8, 0);
+    const largo = pie.distanceTo(punta);
+    const cano = dibujar(new THREE.CylinderGeometry(0.02, 0.02, largo, 10).translate(0, largo / 2, 0).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), punta.clone().sub(pie).normalize())).translate(pie.x, pie.y, pie.z));
+    const bola = dibujar(new THREE.SphereGeometry(0.05, 14, 10).translate(punta.x, punta.y - 0.03, punta.z));
+    const placas = [-1, 1].map((lado) => ({lado, malla: dibujar(new THREE.BoxGeometry(0.03, 0.15, 0.23).translate(lado > 0 ? -1.67 : -1.65, 2.12, 0.2 * lado))}));
+    const guia = [dibujar(new THREE.BoxGeometry(0.012, 0.012, 0.5).translate(punta.x, punta.y, 0), 0.5), dibujar(new THREE.BoxGeometry(0.44, 0.012, 0.012).translate(punta.x, punta.y, 0), 0.5)];
+    const pieza = crearPiezaHolo({
+      clave: 'cabina',
+      fuentes: [...['cabina', 'exterior'].flatMap(mallasDe), ...guia],
+      marco: avionAT,
+      caja: new THREE.Box3(V(-3.65, 1.85, -0.85), V(-1.55, 3.4, 0.85)), /* de la pared de la tolva al mamparo de atrás del asiento (la cabina termina en x −3,59): con el carenado de atrás, hasta −4,0, todo lo de adentro quedaba un 18 % más chico */
+      tam: 0.9,
+      brillo: 0.22,
+      elegir,
+      velocidad: 2,
+      moviles: [{fuentes: [cano, bola], ...BASTON}, ...placas.map(({lado, malla}) => ({fuentes: [malla], ...pedal(lado)}))],
+    });
+    for (const m of deMas) {
+      m.removeFromParent();
+      m.geometry.dispose();
+    }
+    // se la mira DESDE ATRÁS y un poco de arriba, como la ve el piloto: la derecha queda a la derecha, y el bastón a los costados
+    // se lee de frente (de costado se iba hacia el fondo y no se notaba)
+    return Object.assign(pieza, {frente: [-0.85, 0, -0.5], inclinar: 0.4, sinGiroSolo: true, unidades: {pedales: 0.01}});
+  },
 };
 // El RÓTULO de la pieza abierta: su nombre y CERRAR, flotando arriba de la pieza y de cara al alumno. Mientras la pieza está
 // abierta la tarjeta de su punto se esconde (familiarizacion.js): en el casco la pieza se abre justo donde el alumno miraba, que es
@@ -1821,6 +1975,95 @@ rotuloLeccion.malla.renderOrder = 8;
 escena.add(rotuloLeccion.malla);
 paneles.push(rotuloLeccion);
 const rotulosPartes = crearRotulosPartes({escena});
+// El RESUMEN del curso («MI AVANCE», T17): una placa con las nueve lecciones, delante del alumno. Se abre desde cualquier tarjeta,
+// desde el atril, y sola cuando el curso queda completo. Mientras está abierta se esconden la tarjeta y los discos
+const panelResumen = crearPanelResumen({leyenda: LEGEND});
+panelResumen.malla.visible = false;
+panelResumen.malla.renderOrder = 12;
+escena.add(panelResumen.malla);
+paneles.push(panelResumen);
+let resumenAbierto = false;
+let resumenConfirmar = false; // se pidió EMPEZAR DE NUEVO y falta decir que sí
+let resumenFirma = '';
+function abrirResumen() {
+  cerrarPieza();
+  resumenAbierto = true;
+  resumenConfirmar = false;
+  resumenFirma = '';
+  const enVR = renderer.xr.isPresenting;
+  const cam = enVR ? renderer.xr.getCamera() : camara;
+  cam.getWorldPosition(tmp);
+  cam.getWorldDirection(tmp2);
+  colocarResumen(tmp, tmp2, enVR);
+  panelResumen.malla.visible = true;
+}
+// Dónde va la placa del resumen: ojo y mira (hacia dónde mira el alumno), en el mundo. A 1,2 m la letra de los renglones (1,9 cm)
+// queda en algo más de 1,5 cm por metro. Devuelve cuánto hubo que acercarla (1 = nada)
+const dirResumen = new THREE.Vector3();
+const lugarResumen = new THREE.Vector3();
+function colocarResumen(ojo, mira, enVR) {
+  const dist = 1.2;
+  const m = panelResumen.malla;
+  m.scale.setScalar(1);
+  if (enVR) {
+    /* en el casco: vertical, delante del alumno, con el centro un poco por debajo de los ojos */
+    dirResumen.copy(mira).setY(0).normalize();
+    m.position.copy(ojo).addScaledVector(dirResumen, dist);
+    m.position.y = Math.min(1.55, ojo.y - 0.08);
+    m.rotation.set(0, Math.atan2(ojo.x - m.position.x, ojo.z - m.position.z), 0);
+  } else {
+    /* en la PC: en el centro de la mirada y de frente a ella (mirando hacia abajo, al atril, una placa vertical se veía en trapecio) */
+    m.position.copy(ojo).addScaledVector(mira, dist);
+    m.lookAt(ojo);
+  }
+  // Que nada quede entre el ojo y la placa (pedida desde el atril quedaba DETRÁS del atril: lo encontró el clic de verdad; junto
+  // al avión puede tocarle un ala). Sin rayos contra las mallas, que en el casco son un cuadro trabado: se mira EN PLANTA lo que
+  // el juego ya sabe para caminar (los muebles, la mesa, el avión por debajo de 1,9 m, las paredes), del ojo a quince lugares de
+  // la placa; si algo se cruza, la placa se acerca achicándose en la misma proporción: ocupa lo mismo en la vista y se lee igual
+  m.updateWorldMatrix(true, false);
+  const a = (panelResumen.ancho / 2) * 1.08;
+  const h = (panelResumen.alto / 2) * 1.08;
+  let s = 1;
+  for (const fx of [-1, -0.5, 0, 0.5, 1])
+    for (const fy of [-1, 0, 1]) {
+      m.localToWorld(lugarResumen.set(a * fx, h * fy, 0));
+      const dx = lugarResumen.x - ojo.x;
+      const dz = lugarResumen.z - ojo.z;
+      const largo = Math.hypot(dx, dz);
+      if (largo < 0.3) continue;
+      for (let t = 0.3 / largo; t < 1 + 0.05 / largo; t += 0.05 / largo)
+        if (lugarOcupado(ojo.x + dx * t, ojo.z + dz * t)) {
+          s = Math.min(s, t - 0.1 / largo);
+          break;
+        }
+    }
+  s = clamp(s, 0.45, 1);
+  if (s < 1) {
+    m.position.sub(ojo).multiplyScalar(s).add(ojo);
+    m.scale.setScalar(s);
+  }
+  return s;
+}
+function cerrarResumen() {
+  resumenAbierto = false;
+  resumenConfirmar = false;
+  panelResumen.malla.visible = false;
+}
+function pintarResumen(hover) {
+  if (!resumenAbierto) return;
+  const filas = filasCurso();
+  const hv = hover && hover.startsWith('res_') ? hover : '';
+  const f = `${JSON.stringify(filas)}|${hv}|${resumenConfirmar}`;
+  if (f === resumenFirma) return;
+  resumenFirma = f;
+  panelResumen.pintar({filas, hover: hv, confirmar: resumenConfirmar});
+}
+/** la primera vez que el curso queda completo, el resumen sale solo */
+function avisarCursoCompleto() {
+  if (cursoAvisado || !cursoCompleto()) return;
+  cursoAvisado = true;
+  abrirResumen();
+}
 let leccionFirma = '';
 // Los CAMPOS de un estado dicen cómo queda la pieza: un canal de sus partes móviles (en grados; si la parte anda sola, en grados
 // por segundo; o en la unidad que declare la pieza: «unidades: {canal: cuánto vale 1}»), «giro», «flujo» y la actitud («alabeo»,
@@ -1903,7 +2146,7 @@ function ponerEstadoLeccion(id, ya = false, cuenta = true) {
     const q = perillaEn(pl, e);
     if (q) leccion.palancas[pl.id] = q;
   }
-  if (e.partes) posePieza = ya ? 0 : 1.5; // para señalar las partes, la pieza vuelve a su presentación
+  if (e.partes === true) posePieza = ya ? 0 : 1.5; // para señalar las partes, la pieza vuelve a su presentación (no si el estado señala sólo algunas: la cabina)
   if (cuenta) avanceLeccion(leccion.clave).estados.add(id);
   return true;
 }
@@ -1916,7 +2159,7 @@ function ponerPalancaLeccion(u, id) {
   if (!pl) return false;
   // si se estaban mostrando las partes (la pieza quieta), primero vuelve a funcionar
   const actual = leccion.datos.estados.find((x) => x.id === leccion.estado);
-  if (actual && actual.partes) ponerEstadoLeccion(leccion.datos.inicial, false, false);
+  if (actual && actual.partes === true) ponerEstadoLeccion(leccion.datos.inicial, false, false);
   const uu = clamp(u ?? 0.5, 0, 1);
   const v = valoresPalanca(leccion.datos, pl, uu);
   leccion.palancas[pl.id] = {u: uu, activa: true};
@@ -1931,7 +2174,7 @@ function accionLeccion(id, u) {
   const rp = leccion.repaso;
   if (id.startsWith('lec_p_')) ponerPalancaLeccion(u, id.slice(6));
   else if (id.startsWith('lec_e_')) {
-    if (!rp) ponerEstadoLeccion(id.slice(6));
+    if (!rp && ponerEstadoLeccion(id.slice(6))) decirCurso(leccion.datos.estados.find((x) => x.id === leccion.estado).texto);
   } else if (id === 'lec_repaso') leccion.repaso = crearRepaso(leccion.datos.preguntas);
   else if (id === 'lec_volver') leccion.repaso = null;
   else if (id.startsWith('lec_r_') && rp) {
@@ -2055,8 +2298,11 @@ function seguirRotuloPieza(ojo, hover) {
       leccionFirma = f;
       rotuloLeccion.pintar({titulo: pt.titulo, nota: pt.holoNota || '', ayuda, leccion: leccion.datos, estado: leccion.estado, hover: hv, repaso: rp, vistos: av.estados, mejor: av.repaso, palancas: leccion.palancas});
     }
-    // los nombres de las partes: en el estado que los pide (PARTES), con la pieza ya quieta y fuera del repaso
-    const est = rp ? null : leccion.datos.estados.find((x) => x.id === leccion.estado);
+    // los nombres de las partes: en el estado que los pide (PARTES), con la pieza ya quieta y fuera del repaso. En el repaso, sólo
+    // después de contestar y si lo que se muestra SEÑALA una parte (la cabina: «mirá la pieza» y el cuadrante no se mueve: sin su
+    // nombre no había nada que mirar)
+    const estAhora = leccion.datos.estados.find((x) => x.id === leccion.estado);
+    const est = !rp ? estAhora : rp.estado.elegida !== null && !rp.estado.fin && estAhora && Array.isArray(estAhora.partes) ? estAhora : null;
     const quieta = Math.abs(piezaAbierta.giro) < 0.1 && piezaAbierta.quieta && piezaAbierta.actitud.equals(piezaAbierta.actitudObjetivo);
     if (est && est.partes && quieta) {
       // en la PC la columna de nombres no se sale de la pantalla aunque el alumno agrande la pieza (encontrado con la rueda del mouse)
@@ -2068,10 +2314,12 @@ function seguirRotuloPieza(ojo, hover) {
       // (en la PC, con la pieza más lejos de lo común, los nombres se agrandan lo mismo que el panel: se leen igual)
       const esc = escalaPanel / (enVR ? 1 : ESCALA_LECCION_PC);
       const lado = ancha ? 0.42 : Math.min(r, ext.der) + 0.06 + (rotulosPartes.ancho * esc) / 2;
-      const baja = ancha ? ext.abajo + 0.07 + (Math.min(leccion.datos.partes.length, 5) * (rotulosPartes.alto + 0.03) * esc) / 2 : 0;
+      // (un estado puede señalar sólo algunas partes, por su nombre: la cabina, un mando por botón)
+      const aMostrar = est.partes === true ? leccion.datos.partes : leccion.datos.partes.filter((p) => est.partes.includes(p.nombre));
+      const baja = ancha ? ext.abajo + 0.07 + (Math.min(aMostrar.length, 5) * (rotulosPartes.alto + 0.03) * esc) / 2 : 0;
       // (en los puntos donde la tarjeta va a la izquierda del disco porque a la derecha está el ala, los nombres también)
       const haciaDonde = pt.lado === -1 ? -1 : 1;
-      rotulosPartes.actualizar(leccion.datos.partes, {centro: g.position, radio: r, lado: haciaDonde * lado, baja, escala: esc, aMundo: (p, out) => piezaAbierta.aMundo(p, out), ladoMax}, ojo);
+      rotulosPartes.actualizar(aMostrar, {centro: g.position, radio: r, lado: haciaDonde * lado, baja, escala: esc, aMundo: (p, out) => piezaAbierta.aMundo(p, out), ladoMax}, ojo);
     }
     else rotulosPartes.actualizar(null);
     return;
@@ -2118,6 +2366,7 @@ function orientacionPieza(ojo, out) {
 function alternarPieza(clave) {
   const era = piezaAbierta && piezaAbierta.clave;
   cerrarPieza();
+  cerrarResumen();
   if (era === clave || !PIEZAS_HOLO[clave] || !avionAT) return;
   piezaAbierta = PIEZAS_HOLO[clave]();
   leccion = LECCIONES[clave] ? {clave, datos: LECCIONES[clave], estado: null, repaso: null, valores: {}, palancas: {}} : null;
@@ -2182,7 +2431,10 @@ function alternarPieza(clave) {
   }
   escena.add(g);
   piezaTocada = reloj - 4; // empieza a girar sola a los 2 s
-  if (leccion) ponerEstadoLeccion(leccion.datos.inicial, true); // la lección arranca con la pieza funcionando
+  if (leccion) {
+    ponerEstadoLeccion(leccion.datos.inicial, true); // la lección arranca con la pieza funcionando
+    decirCurso(leccion.datos.estados.find((x) => x.id === leccion.datos.inicial).texto);
+  }
 }
 // agarrar la pieza abierta (VR): una mano la lleva y la gira; dos manos la agrandan o la achican (de 0,3 a 3 veces)
 const agarrePieza = [];
@@ -2224,6 +2476,7 @@ function pasoSalto(dt) {
   salto.t += dt;
   if (!salto.movido && salto.t >= 0.25) {
     cerrarPieza(); // un salto a otro lugar cierra la pieza abierta (entre dos puntos vecinos quedaba abierta, con su panel, junto a la tarjeta nueva)
+    cerrarResumen();
     ponerEn(salto.d);
     salto.movido = true;
     if (salto.d === DESTINOS.mesa) aparicion = 0; // al llegar frente al motor, el holograma aparece de a poco (reserva de la T11)
@@ -2451,6 +2704,14 @@ function probarMandos() {
   pararRecorrido();
   cerrarPreguntas();
   if (panelVR.visible) panelVR.ocultar();
+  // estas pruebas son del motor sobre la mesa: con el alumno parado junto al avión el motor va dentro del capó y fallaban (no era
+  // un error del juego sino del lugar). El alumno va frente a la mesa, y al final vuelve a donde estaba
+  const lugarAntes = {pos: jugador.position.clone(), yaw, pitch};
+  cerrarPieza();
+  cerrarResumen();
+  ponerEn(DESTINOS.mesa);
+  avanzar(1 / 60);
+  avanzar(1 / 60);
   poseManual = false;
   for (const c of manos) {
     soltarGrip(c);
@@ -2723,6 +2984,10 @@ function probarMandos() {
   s = sAntes; // el motor, como estaba (parado si nadie lo arrancó)
   Object.assign(inp, inpAntes);
   restaurarCamino(caminoAntes);
+  jugador.position.copy(lugarAntes.pos);
+  yaw = lugarAntes.yaw;
+  pitch = lugarAntes.pitch;
+  avanzar(1 / 60);
   audio.vozOn = vozAntes;
   const fallaron = res.filter((r) => !r.ok);
   return {pruebas: res.length, fallaron: fallaron.length, detalle: res};
@@ -3064,7 +3329,9 @@ function probarRecorrido() {
   const res = [];
   const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
   if (!fam) return {pruebas: 0, fallaron: 0, detalle: [], nota: 'el avión no cargó'};
-  const antes = {pos: jugador.position.clone(), yaw, pitch, vistos: [...fam.vistos], sAntes: {...s}, inpAntes: {...inp}, camino: guardarCamino()};
+  const antes = {pos: jugador.position.clone(), yaw, pitch, vistos: [...fam.vistos], sAntes: {...s}, inpAntes: {...inp}, camino: guardarCamino(), avisado: cursoAvisado};
+  cursoAvisado = true; // (que el resumen del curso no se abra solo en medio de la prueba)
+  cerrarResumen();
   const vozAntes = audio.vozOn;
   audio.vozOn = false;
   const saltar = () => {
@@ -3072,8 +3339,37 @@ function probarRecorrido() {
     avanzar(0.4);
     avanzar(1 / 60);
   };
+  // ¿El avión de verdad le tapa algo a la pieza abierta? Rayos del ojo a sus vértices (unos sesenta por malla). El holograma no
+  // se dibuja detrás de lo sólido: a la cabina, con el alumno parado a 1,45 m del fuselaje, le faltaba más de la mitad del fondo
+  // (T17: 133 de 251 vértices tapados; se lo corrió a 2,1 m)
+  const mallasAvion = [];
+  avionAT.traverse((o) => o.isMesh && mallasAvion.push(o));
+  const tapadaPorElAvion = () => {
+    const g = piezaAbierta.grupo;
+    g.updateMatrixWorld(true);
+    camara.updateMatrixWorld(true);
+    const o = camara.getWorldPosition(new THREE.Vector3());
+    const r = new THREE.Raycaster();
+    const v = new THREE.Vector3();
+    let vertices = 0;
+    let tapados = 0;
+    for (const m of piezaAbierta.interior.children) {
+      if (!m.isMesh) continue;
+      const P = m.geometry.attributes.position;
+      for (let k = 0; k < P.count; k += Math.max(1, Math.floor(P.count / 60))) {
+        v.fromBufferAttribute(P, k).applyMatrix4(m.matrixWorld);
+        const d = v.distanceTo(o);
+        r.set(o, v.sub(o).normalize());
+        r.far = d - 0.01;
+        vertices++;
+        if (r.intersectObjects(mallasAvion, false).length) tapados++;
+      }
+    }
+    return {vertices, tapados};
+  };
   fam.reiniciar();
   cerrarPieza();
+  camino.lecciones = {}; // (con el curso en cero, el botón del curso lleva a la lección 1; al final se devuelve lo del alumno)
   accionar({tipo: 'panel', id: 'recorrer'});
   saltar();
   for (let i = 0; i < PUNTOS_AVION.length; i++) {
@@ -3115,6 +3411,8 @@ function probarRecorrido() {
       const distHelice = g ? Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z) : 0;
       // (la pieza con lección se aleja de a 5 cm, hasta 35, si lo de abajo le queda detrás de la leyenda fija)
       ok('hélice en holograma: se abre delante del alumno, entre las manos', !!g && distHelice > distAbre - 0.05 && distHelice < distAbre + (leccion ? 0.36 : 0.05) && piezaAbierta.radio < 0.6, g && {distancia: +Math.hypot(g.position.x - ojo.x, g.position.z - ojo.z).toFixed(2), radio: +piezaAbierta.radio.toFixed(2), triangulos: piezaAbierta.triangulos});
+      const tapaHelice = g ? tapadaPorElAvion() : null;
+      ok('hélice en holograma: el avión de verdad no le tapa nada', !!tapaHelice && tapaHelice.tapados === 0, tapaHelice);
       if (g) {
         const [m0] = manos;
         const p0 = g.position.clone();
@@ -3149,7 +3447,7 @@ function probarRecorrido() {
       // las otras piezas que ya salen del modelo: se abren desde su tarjeta, con su recorte, y se cierran
       accionar({tipo: 'panel', id: 'fam_holo'});
       const abierta = piezaAbierta && piezaAbierta.clave === pz;
-      const dato = piezaAbierta && {triangulos: piezaAbierta.triangulos};
+      const dato = piezaAbierta && {triangulos: piezaAbierta.triangulos, ...tapadaPorElAvion()};
       if (pz === 'compuerta' && piezaAbierta && !leccion) {
         // las HOJAS (T12): el botón de la pieza las abre girando sobre su bisagra y las vuelve a cerrar. Se aprieta con el rayo
         // y el gatillo simulados; abierta, el centro de cada hoja queda más abajo que cerrada
@@ -3174,7 +3472,7 @@ function probarRecorrido() {
       }
       if (abierta && leccion) probarLeccion(ok); // las piezas con lección (T14: la cola y el ala): la deja abierta
       accionar({tipo: 'panel', id: 'fam_holo'});
-      ok(PUNTOS_AVION[i].titulo + ' en holograma: se abre desde su tarjeta y se cierra', abierta && dato.triangulos > 500 && !piezaAbierta, dato);
+      ok(PUNTOS_AVION[i].titulo + ' en holograma: se abre desde su tarjeta, entera (el avión de verdad no le tapa nada), y se cierra', abierta && dato.triangulos > 500 && dato.tapados === 0 && !piezaAbierta, dato);
     }
     if (i < PUNTOS_AVION.length - 1) {
       accionar({tipo: 'panel', id: 'fam_sig'});
@@ -3184,7 +3482,7 @@ function probarRecorrido() {
   ok('todos los puntos del recorrido quedan vistos', fam.vistos.size === PUNTOS_AVION.length, [...fam.vistos]);
   {
     // un salto cierra la pieza abierta: del punto 1 con la hélice abierta al punto 2, que queda a menos de 4 m
-    accionar({tipo: 'panel', id: 'recorrer'});
+    saltarAPunto(0);
     saltar();
     accionar({tipo: 'panel', id: 'fam_holo'});
     avanzar(1 / 60);
@@ -3208,8 +3506,182 @@ function probarRecorrido() {
   s = antes.sAntes;
   Object.assign(inp, antes.inpAntes);
   restaurarCamino(antes.camino);
+  cursoAvisado = antes.avisado;
   avanzar(1 / 60);
   audio.vozOn = vozAntes;
+  return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res};
+}
+// ------------------------------------------------------------ las pruebas del CURSO (T17)
+// La tarjeta dice cómo va su lección (sin empezar, en curso, hecha); MI AVANCE abre el resumen con el gatillo simulado, delante del
+// alumno, a la vista y dentro de la pantalla; sus renglones dicen lo anotado y llevan a su lección; el botón del curso sigue por
+// la primera lección que falta; el avance se guarda y se vuelve a leer igual; EMPEZAR DE NUEVO pide confirmación y lo borra; y al
+// quedar completo el curso, el resumen sale solo, una vez. Usa otra clave de guardado: no toca lo del alumno. Deja todo como estaba.
+function probarCurso() {
+  const res = [];
+  const ok = (prueba, cond, dato) => res.push({prueba, ok: !!cond, dato});
+  if (!fam) return {pruebas: 0, fallaron: 0, detalle: [], nota: 'el avión no cargó'};
+  const antes = {pos: jugador.position.clone(), yaw, pitch, vistos: [...fam.vistos], camino: guardarCamino(), avisado: cursoAvisado, clave: claveCurso, guardado: cursoGuardado, voz: audio.vozOn};
+  audio.vozOn = false;
+  claveCurso = 'aurav_taller_curso_prueba';
+  cerrarPieza();
+  cerrarResumen();
+  pararRecorrido();
+  cerrarPreguntas();
+  reiniciarCurso();
+  const saltar = () => {
+    avanzar(0.3);
+    avanzar(0.4);
+    avanzar(1 / 60);
+  };
+  const lejos = new THREE.Vector3(0, -5, 0);
+  const gatillo = (panel, id) => {
+    const c = panel.centro(id);
+    if (!c) return false;
+    gatilloEn(manos[1], c, new THREE.Vector3(0, 0, 1).applyQuaternion(panel.malla.getWorldQuaternion(new THREE.Quaternion())));
+    ponerMano(manos[1], lejos);
+    avanzar(1 / 60);
+    return true;
+  };
+  const deLaTarjeta = (i) => textoAvance(avanceDePunto(i));
+  // 1) la tarjeta dice cómo va su lección
+  saltarAPunto(0);
+  saltar();
+  const sinEmpezar = deLaTarjeta(0);
+  avanceLeccion('helice').estados.add('fino');
+  const enCurso = deLaTarjeta(0);
+  for (const e of LECCIONES.helice.estados) if (e.boton) avanceLeccion('helice').estados.add(e.id);
+  avanceLeccion('helice').repaso = LECCIONES.helice.preguntas.length;
+  const hecha = deLaTarjeta(0);
+  avanzar(1 / 60);
+  ok('la tarjeta dice cómo va su lección: sin empezar, en curso y hecha', !sinEmpezar.empezada && /SIN EMPEZAR/.test(sinEmpezar.texto) && enCurso.empezada && !enCurso.hecha && /viste 1 de 5/.test(enCurso.texto) && /falta el repaso/.test(enCurso.texto) && hecha.hecha && /HECHA/.test(hecha.texto) && /3 de 3/.test(hecha.texto), [sinEmpezar.texto, enCurso.texto, hecha.texto]);
+  // 2) MI AVANCE: el gatillo en el botón de la tarjeta abre el resumen
+  const abrio = gatillo(fam.tarjeta, 'fam_avance');
+  avanzar(1 / 60);
+  camara.updateMatrixWorld(true);
+  const ojo = camara.getWorldPosition(new THREE.Vector3());
+  const m = panelResumen.malla;
+  m.updateWorldMatrix(true, false);
+  const a = panelResumen.ancho / 2 - 0.01;
+  const h = panelResumen.alto / 2 - 0.01;
+  const blancos = [
+    ['centro', m.localToWorld(new THREE.Vector3(0, 0, 0))],
+    ['arriba izq.', m.localToWorld(new THREE.Vector3(-a, h, 0))],
+    ['arriba der.', m.localToWorld(new THREE.Vector3(a, h, 0))],
+    ['abajo izq.', m.localToWorld(new THREE.Vector3(-a, -h, 0))],
+    ['abajo der.', m.localToWorld(new THREE.Vector3(a, -h, 0))],
+  ];
+  for (const b of panelResumen.botones) blancos.push([b.id, panelResumen.centro(b.id)]);
+  const tapados = blancos.filter(([, w]) => rayosDesdeElOjo(w, m, ojo).some((r) => r !== 'libre')).map(([k]) => k);
+  const afuera = blancos.slice(1, 5).filter(([, w]) => {
+    const p = w.clone().project(camara);
+    return Math.abs(p.x) > 1 || Math.abs(p.y) > 1;
+  }).map(([k]) => k);
+  const dist = m.position.distanceTo(ojo);
+  ok('MI AVANCE: el gatillo en el botón de la tarjeta abre el resumen delante del alumno, a la vista (rayos desde el ojo, cabeza ±8 cm) y dentro de la pantalla; la tarjeta se esconde', abrio && resumenAbierto && m.visible && !fam.tarjeta.malla.visible && dist > 1.1 && dist < 1.3 && !tapados.length && !afuera.length && panelResumen.botones.length === PUNTOS_AVION.length + 2, {dist: +dist.toFixed(2), tapados, afuera, botones: panelResumen.botones.length});
+  // 3) un renglón por lección, con lo anotado
+  const filas = filasCurso();
+  ok('el resumen trae un renglón por lección, con lo anotado (la hélice, hecha; las demás, sin empezar)', filas.length === PUNTOS_AVION.length && filas[0].hecha && filas[0].repaso === 3 && filas[0].visitada && filas.slice(1).every((f) => !f.hecha && !f.empezada), filas.map((f) => [f.titulo, f.hecha, f.empezada]));
+  // 4) un renglón lleva a su lección
+  gatillo(panelResumen, 'res_ir_4');
+  saltar();
+  ok('el gatillo en un renglón cierra el resumen y lleva a esa lección', !resumenAbierto && !m.visible && fam.activo === 4 && fam.tarjeta.malla.visible, {activo: fam.activo});
+  // 5) el botón del curso sigue por la primera lección que falta
+  accionar({tipo: 'panel', id: 'recorrer'});
+  saltar();
+  avanzar(0.2);
+  const delAtril = panelAtril ? panelAtril.botones.find((b) => b.id === 'recorrer') : null;
+  ok('el curso sigue por la primera lección que falta (la hélice ya está: va a la 2), y el atril lo dice', fam.activo === 1 && primerPendiente() === 1 && (!delAtril || (delAtril.t === 'SEGUIR EL CURSO' && delAtril.sub.includes(PUNTOS_AVION[1].titulo))), {activo: fam.activo, atril: delAtril && [delAtril.t, delAtril.sub]});
+  // 6) el avance se guarda y se vuelve a leer igual
+  const guardo = guardarCurso(estadoCurso(), claveCurso);
+  const filasAntes = JSON.stringify(filasCurso());
+  const vistosAntes = JSON.stringify([...fam.vistos].sort());
+  camino.estaciones.clear();
+  camino.fallas.clear();
+  Object.assign(camino, {arranco: false, preguntas: null, lecciones: {}});
+  fam.reiniciar();
+  const vacio = filasCurso().every((f) => !f.empezada && !f.visitada);
+  restaurarCurso(leerCurso(claveCurso));
+  ok('el avance se guarda en el aparato y se vuelve a leer igual (las lecciones y los puntos vistos)', guardo && vacio && JSON.stringify(filasCurso()) === filasAntes && JSON.stringify([...fam.vistos].sort()) === vistosAntes, {guardo, vacio, vistos: vistosAntes});
+  // 7) EMPEZAR DE NUEVO pide confirmación
+  accionar({tipo: 'panel', id: 'fam_avance'});
+  avanzar(1 / 60);
+  gatillo(panelResumen, 'res_borrar');
+  const pide = resumenConfirmar && !!panelResumen.centro('res_borrar_si') && filasCurso()[0].hecha;
+  gatillo(panelResumen, 'res_borrar_no');
+  const conNo = !resumenConfirmar && filasCurso()[0].hecha;
+  gatillo(panelResumen, 'res_borrar');
+  gatillo(panelResumen, 'res_borrar_si');
+  ok('EMPEZAR DE NUEVO pide confirmación: con NO no borra nada; con SÍ borra lo anotado y lo guardado', pide && conNo && filasCurso().every((f) => !f.empezada) && fam.vistos.size <= 1 && leerCurso(claveCurso) === null, {pide, conNo, guardado: leerCurso(claveCurso)});
+  // 8) con el curso completo, el resumen sale solo al cerrar la pieza, una sola vez
+  cerrarResumen();
+  for (const [k, l] of Object.entries(LECCIONES)) camino.lecciones[k] = {estados: new Set(l.estados.filter((e) => e.boton).map((e) => e.id)), repaso: l.preguntas.length};
+  for (const st of STATIONS) camino.estaciones.add(st.n);
+  camino.preguntas = QUIZ.length;
+  const completo = cursoCompleto() && filasCurso().every((f) => f.hecha);
+  saltarAPunto(0);
+  saltar();
+  accionar({tipo: 'panel', id: 'fam_holo'});
+  avanzar(1 / 60);
+  accionar({tipo: 'panel', id: 'pieza_cerrar'});
+  avanzar(0.2);
+  const salioSolo = resumenAbierto && cursoAvisado && !piezaAbierta;
+  cerrarResumen();
+  accionar({tipo: 'panel', id: 'fam_holo'});
+  avanzar(1 / 60);
+  accionar({tipo: 'panel', id: 'pieza_cerrar'});
+  avanzar(0.2);
+  ok('con el curso completo, al cerrar la pieza el resumen sale solo, una sola vez; y el atril dice CURSO COMPLETO', completo && salioSolo && !resumenAbierto && (!delAtril || delAtril.t === 'CURSO COMPLETO'), {completo, salioSolo, otraVez: resumenAbierto, atril: delAtril && delAtril.t});
+  // 9) pedido desde el atril (quedaba DETRÁS del atril: lo encontró el clic de verdad) y desde cada punto del recorrido, el resumen
+  // queda a la vista: rayos desde el ojo, con la cabeza corrida ±8 cm, al centro, a las esquinas y a sus dos botones de los bordes
+  cerrarPieza();
+  cerrarResumen();
+  const aLaVista = (nombre) => {
+    abrirResumen();
+    avanzar(1 / 60);
+    camara.updateMatrixWorld(true);
+    const o = camara.getWorldPosition(new THREE.Vector3());
+    const medir = () => {
+      m.updateWorldMatrix(true, false);
+      const lugares = [[0, 0], [-a, h], [a, h], [-a, -h], [a, -h]].map(([x, y]) => m.localToWorld(new THREE.Vector3(x, y, 0)));
+      lugares.push(panelResumen.centro('res_cerrar'), panelResumen.centro('res_borrar'));
+      return {lugares, tapados: lugares.filter((w) => rayosDesdeElOjo(w, m, o).some((r) => r !== 'libre')).length};
+    };
+    const pc = medir();
+    const fuera = pc.lugares.slice(1, 5).filter((w) => {
+      const p = w.clone().project(camara);
+      return Math.abs(p.x) > 1 || Math.abs(p.y) > 1;
+    }).length;
+    const dato = {desde: nombre, tapados: pc.tapados, fuera, escala: +m.scale.x.toFixed(2), dist: +m.position.distanceTo(o).toFixed(2)};
+    /* y como va en el casco: vertical, delante del alumno, a la altura de los ojos (la misma función, con el ojo de la PC) */
+    colocarResumen(o, camara.getWorldDirection(new THREE.Vector3()), true);
+    dato.casco = {tapados: medir().tapados, escala: +m.scale.x.toFixed(2), dist: +m.position.distanceTo(o).toFixed(2), centro: +m.position.y.toFixed(2)};
+    cerrarResumen();
+    return dato;
+  };
+  saltarA('partida');
+  saltar();
+  const desdeAtril = aLaVista('el atril');
+  const desdePuntos = PUNTOS_AVION.map((p, i) => {
+    saltarAPunto(i);
+    saltar();
+    return aLaVista(p.clave);
+  });
+  ok('MI AVANCE queda a la vista pedido desde el atril (se acerca: delante del atril, no detrás) y desde cada punto del recorrido, en la PC y como va en el casco', desdeAtril.tapados === 0 && desdeAtril.fuera === 0 && desdeAtril.escala < 1 && desdeAtril.casco.tapados === 0 && desdePuntos.every((d) => d.tapados === 0 && d.fuera === 0 && d.casco.tapados === 0), [desdeAtril, ...desdePuntos]);
+  // dejar todo como estaba
+  cerrarPieza();
+  cerrarResumen();
+  borrarCurso(claveCurso);
+  claveCurso = antes.clave;
+  fam.reiniciar();
+  fam.marcar(antes.vistos);
+  restaurarCamino(antes.camino);
+  cursoAvisado = antes.avisado;
+  cursoGuardado = antes.guardado;
+  jugador.position.copy(antes.pos);
+  yaw = antes.yaw;
+  pitch = antes.pitch;
+  avanzar(1 / 60);
+  audio.vozOn = antes.voz;
   return {pruebas: res.length, fallaron: res.filter((r) => !r.ok).length, detalle: res};
 }
 /**
@@ -3539,6 +4011,36 @@ function probarLeccion(ok) {
       {subePorSegundo: +subePorSegundo.toFixed(3), cargando, llena, alturaLlena: +alturaLlena.toFixed(3), topeEscala: +topeEscala.toFixed(3), seQueda, bajaPorSegundo: +bajaPorSegundo.toFixed(3), descargando, hojasBajanCm: cm(hojasBajan), vacia, triangulos: pz.triangulos},
     );
   }
+  if (clave === 'cabina') {
+    // la cabina: con el bastón a la derecha su punta va a la derecha (+z) y hacia atrás, hacia atrás (−x); con el pedal derecho
+    // adelante, el derecho va hacia la nariz (+x) y el izquierdo hacia atrás
+    const baston = pz.partes.find((p) => p.canal === 'bastonLado');
+    const pedales = pz.partes.filter((p) => p.canal === 'pedales');
+    /** cuánto se corrió la punta de arriba de una parte (su vértice más alto), en el marco de la pieza */
+    const punta = (p) => {
+      const P = p.malla.geometry.attributes.position;
+      const v = new THREE.Vector3();
+      let alta = null;
+      for (let i = 0; i < P.count; i++) {
+        v.fromBufferAttribute(P, i);
+        if (!alta || v.y > alta.y) alta = v.clone();
+      }
+      return alta.clone().applyMatrix4(p.malla.matrix).sub(alta);
+    };
+    ponerEstadoLeccion('bDer', true, false);
+    const aLaDerecha = baston ? punta(baston).z : 0;
+    ponerEstadoLeccion('baston', true, false);
+    const haciaAtras = baston ? -punta(baston).x : 0;
+    ponerEstadoLeccion('pDer', true, false);
+    const corridos = pedales.map((p) => [ladoDe(p), punta(p).x]);
+    const pedalDer = corridos.find(([lado]) => lado > 0);
+    const pedalIzq = corridos.find(([lado]) => lado < 0);
+    ok(
+      'lección de cabina: con el bastón a la derecha su punta va a la derecha y, hacia atrás, hacia atrás; con el pedal derecho, el derecho va hacia adelante y el izquierdo hacia atrás',
+      !!baston && pedales.length === 2 && aLaDerecha > 0.1 && haciaAtras > 0.05 && !!pedalDer && !!pedalIzq && pedalDer[1] > 0.04 && pedalIzq[1] < -0.04,
+      {bastonCm: cm([aLaDerecha, haciaAtras]), pedalesCm: pedalDer && pedalIzq ? cm([pedalDer[1], pedalIzq[1]]) : null, moviles: pz.partes.length},
+    );
+  }
   if (clave === 'compuerta') {
     // la compuerta: con más cobertura las hojas abren más (el centro de cada una baja más) y cae más agua (más cortinas, y más
     // rápido); cerrada, no cae nada; el agua cae hacia abajo
@@ -3561,7 +4063,7 @@ function probarLeccion(ok) {
   }
   // 6) los nombres de las partes: en el estado que los muestra, con la pieza quieta; cada rótulo a la vista desde el ojo, sin tapar
   // la pieza (a su derecha, o debajo de ella si es ancha), y su punto dentro de la pieza
-  const conPartes = datos.estados.find((e) => e.partes);
+  const conPartes = datos.estados.find((e) => e.partes === true);
   if (conPartes) {
     apretar(`lec_e_${conPartes.id}`);
     esperar(3);
@@ -3590,10 +4092,19 @@ function probarLeccion(ok) {
     });
     const quieta = Math.abs(pz.giro) < 0.05;
     ok(`${titulo}: en «${conPartes.boton}» la pieza se queda quieta y salen los nombres de sus partes, a la vista y sin taparla`, rotulosPartes.grupo.visible && lista.length === Math.min(datos.partes.length, 5) && quieta && !mal.length, {nombres: lista.map((it) => it.nombre), mal});
+    // (en la cabina todos los botones señalan algo: ahí se mira que al cambiar de botón cambien los nombres)
     const otro = conBoton.find((e) => !e.partes);
-    apretar(`lec_e_${otro.id}`);
-    esperar(1);
-    ok(`${titulo}: al volver a un estado que funciona, los nombres se van`, !rotulosPartes.grupo.visible && leccion.estado === otro.id);
+    if (otro) {
+      apretar(`lec_e_${otro.id}`);
+      esperar(1);
+      ok(`${titulo}: al volver a un estado que funciona, los nombres se van`, !rotulosPartes.grupo.visible && leccion.estado === otro.id);
+    } else {
+      const algunos = conBoton.find((e) => Array.isArray(e.partes));
+      apretar(`lec_e_${algunos.id}`);
+      esperar(3);
+      const nombres = rotulosPartes.estado.map((it) => it.nombre);
+      ok(`${titulo}: cada botón señala sólo lo suyo («${algunos.boton}»: ${algunos.partes.join(', ')})`, rotulosPartes.grupo.visible && nombres.length === algunos.partes.length && algunos.partes.every((n) => nombres.includes(n)) && leccion.estado === algunos.id, nombres);
+    }
   }
   // 7) el repaso: se responde cada pregunta con el gatillo (la correcta), la pieza muestra la respuesta, y queda el puntaje
   apretar('lec_repaso');
@@ -3733,8 +4244,8 @@ let hudT = 0;
 function pintarHUD() {
   // con una pieza abierta en holograma el HUD se esconde: su rótulo (o el panel de su lección) va arriba, justo donde está el
   // HUD, y lo que el HUD dice es del motor (encontrado el 21/11 con clics de verdad: el panel de la hélice quedaba tapado)
-  hud.style.visibility = piezaAbierta ? 'hidden' : '';
-  if (piezaAbierta) return;
+  hud.style.visibility = piezaAbierta || resumenAbierto ? 'hidden' : ''; // (y con el resumen del curso abierto: lo taparía)
+  if (piezaAbierta || resumenAbierto) return;
   const r = readout(s);
   const st = STATIONS.find((x) => x.n === estacion);
   const f = FAULTS[inp.fault];
@@ -3813,7 +4324,10 @@ function avanzar(dt) {
     acum -= PASO;
   }
   const alertaAhora = alertaVisible();
-  if (alertaAhora && !alertaAntes) audio.decir(FAULTS[inp.fault].alert);
+  if (alertaAhora && !alertaAntes) {
+    vozDelMotor = true;
+    audio.decir(FAULTS[inp.fault].alert);
+  }
   alertaAntes = alertaAhora;
   if (camino.enCurso && s.lit && s.ng >= 58) {
     camino.arranco = true;
@@ -3851,7 +4365,7 @@ function avanzar(dt) {
     motorGrupo.getWorldPosition(tmp2);
     const cerca = 1 - ss(4, 9, tmp.distanceTo(tmp2));
     audio.master.gain.setTargetAtTime(0.6 * cerca, audio.ctx.currentTime, 0.25);
-    if (audio.gVoz) audio.gVoz.gain.setTargetAtTime(1.6 * cerca, audio.ctx.currentTime, 0.25);
+    if (audio.gVoz) audio.gVoz.gain.setTargetAtTime(1.6 * (vozDelMotor ? cerca : 1), audio.ctx.currentTime, 0.25); // la voz del curso se oye en todo el hangar; la del motor, cerca de él
     audioCerca = cerca;
   }
   if (s.surge > 0.9 && !estampido) audio.golpe();
@@ -3863,13 +4377,22 @@ function avanzar(dt) {
   // paneles: el de instrumentos y fallas a 10 Hz; el cartel cuando cambia
   panelT -= dt;
   const hover = renderer.xr.isPresenting ? hoverVR : hoverPC;
-  if (fam) fam.actualizar(renderer.xr.isPresenting ? renderer.xr.getCamera() : camara, reloj, {hover, abierto: piezaAbierta ? piezaAbierta.clave : null});
+  if (fam) fam.actualizar(renderer.xr.isPresenting ? renderer.xr.getCamera() : camara, reloj, {hover, abierto: piezaAbierta ? piezaAbierta.clave : resumenAbierto ? '(resumen)' : null, avance: (i) => textoAvance(avanceDePunto(i))});
   seguirRotuloPieza((renderer.xr.isPresenting ? renderer.xr.getCamera() : camara).getWorldPosition(tmp), hover);
+  pintarResumen(hover);
+  if (fam && fam.activo !== puntoDicho) {
+    puntoDicho = fam.activo;
+    if (puntoDicho >= 0 && !piezaAbierta) decirCurso(PUNTOS_AVION[puntoDicho].texto); // la frase de la tarjeta, al llegar
+  }
   if (panelT <= 0) {
     panelT = 0.1;
     panelMotor.actualizar({r: readout(s), fault: inp.fault, hover});
     panelEstaciones.actualizar({estacion, corte, flujo: !!flujo, recorrido: recorrido.activo, hover, presentacion});
-    if (panelAtril) panelAtril.actualizar({hover});
+    if (panelAtril) {
+      const filas = filasCurso();
+      const hechas = filas.filter((f) => f.hecha).length;
+      panelAtril.actualizar({hover, curso: {hechas, total: filas.length, sigue: PUNTOS_AVION[primerPendiente()].titulo, empezado: filas.some((f) => f.empezada)}});
+    }
     if (preguntasAbiertas) preguntas.pasarPor(hover && hover.startsWith('q_') ? hover : null);
   }
   const st = STATIONS.find((x) => x.n === estacion);
@@ -3885,12 +4408,25 @@ function avanzar(dt) {
     pintarHUD();
   }
 }
+let cursoMirado = 0;
+/** guarda el avance del curso si cambió (lo llama el bucle de dibujo, una vez por segundo) */
+function guardarCursoSiCambio() {
+  if (!fam) return false;
+  const f = JSON.stringify(estadoCurso());
+  if (f === cursoGuardado) return false;
+  cursoGuardado = f;
+  return guardarCurso(JSON.parse(f), claveCurso);
+}
 renderer.setAnimationLoop(() => {
   const ahora = performance.now();
   const dt = Math.min(0.1, Math.max(0, (ahora - ultimo) / 1000));
   ultimo = ahora;
   avanzar(dt);
   renderer.render(escena, camara);
+  if (ahora - cursoMirado > 1000) {
+    cursoMirado = ahora;
+    guardarCursoSiCambio();
+  }
 });
 
 // ------------------------------------------------------------ ganchos de prueba: __taller, __ronda(n), __vista(...)
@@ -4108,6 +4644,16 @@ window.__taller = {
   },
   /** la prueba del recorrido del avión: todos los puntos, el motor en el capó, la hélice en holograma y VER EL MOTOR */
   probarRecorrido,
+  /** las pruebas del curso (T17): el avance en la tarjeta, MI AVANCE, el guardado, EMPEZAR DE NUEVO, el curso completo */
+  probarCurso,
+  /** el curso: un renglón por lección (lo que muestra el resumen) */
+  get curso() {
+    return filasCurso();
+  },
+  /** abre (o cierra) el resumen del curso, MI AVANCE */
+  resumen: () => (resumenAbierto ? cerrarResumen() : abrirResumen()),
+  /** guarda ya el avance del curso en el aparato, si cambió (el juego lo hace solo, una vez por segundo) */
+  guardarCurso: () => guardarCursoSiCambio(),
   /** la familiarización con el avión: sus puntos, el activo y los vistos */
   get fam() {
     return fam;
@@ -4145,6 +4691,8 @@ window.__taller = {
     return {estaciones: [...camino.estaciones], fallas: [...camino.fallas], arranco: camino.arranco, preguntas: camino.preguntas, lecciones, resumen: resumenCamino()};
   },
   panelAtril,
+  /** el panel del resumen del curso, MI AVANCE (para apuntarle en las pruebas: panelResumen.centro('res_ir_3')) */
+  panelResumen,
   choquesMuebles,
   /** avanza la simulación t segundos de golpe (para las capturas) */
   correr(t, cada = 1 / 60) {

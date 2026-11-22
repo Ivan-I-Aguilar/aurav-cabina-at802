@@ -7,7 +7,7 @@
 // Las mallas llevan userData {tag, prim, mat0, pieza} como las de engine.js: el holograma las junta con lo fijo y las aísla por estación.
 // Marco del motor de engine.js: milímetros, eje en z (la hélice hacia +z), y hacia arriba.
 import * as THREE from '../three.module.js';
-import {Z} from './engine.js?v=20261122c';
+import {Z} from './engine.js?v=20261122d';
 
 /** los puntos de llamada de las piezas agregadas (mm, marco del motor), como los de PARTS */
 export const PARTS_AGREGADAS = {
