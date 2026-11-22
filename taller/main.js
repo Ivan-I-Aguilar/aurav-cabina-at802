@@ -12,21 +12,21 @@ import {mergeGeometries} from '../BufferGeometryUtils.js';
 import {Controles} from '../controles.js?v=20261022e';
 import {Audio} from '../audio.js?v=20261112d';
 import {crearPanelVR} from '../panelvr.js?v=20261112d';
-import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261122b';
-import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261122b';
-import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261122b';
-import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261122b';
-import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261122b';
-import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261122b';
-import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261122b';
-import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261122b';
-import {crearPiezaHolo} from './piezaholo.js?v=20261122b';
-import {LECCIONES} from './lecciones.js?v=20261122b';
-import {crearPanelLeccion, crearRotulosPartes, crearRepaso} from './leccion.js?v=20261122b';
-import {crearLlamadas} from './llamadas.js?v=20261122b';
-import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261122b';
+import {buildEngine, STATIONS as CONJUNTOS} from './engine.js?v=20261122c';
+import {sumarAgregados, PARTS_AGREGADAS, LUGAR_PIEZA} from './agregados.js?v=20261122c';
+import {initState, step, readout, FAULTS, GAUGES, CL_NAMES, FEATHER} from './motor.js?v=20261122c';
+import {STATIONS, LEGEND, QUIZ, ORDER} from './content.js?v=20261122c';
+import {crearHolograma, crearProyector, envolverMotor} from './holograma.js?v=20261122c';
+import {crearPanel, crearPanelMotor, crearPanelEstaciones, crearPanelPreguntas, crearCartel, crearPlacaCuadrante, crearPanelAtril, crearPanelMecanico} from './paneles.js?v=20261122c';
+import {INSPECCION, TAREAS, AVISO_MECANICO} from './mecanico.js?v=20261122c';
+import {crearFamiliarizacion, PUNTOS as PUNTOS_AVION} from './familiarizacion.js?v=20261122c';
+import {crearPiezaHolo} from './piezaholo.js?v=20261122c';
+import {LECCIONES} from './lecciones.js?v=20261122c';
+import {crearPanelLeccion, crearRotulosPartes, crearRepaso} from './leccion.js?v=20261122c';
+import {crearLlamadas} from './llamadas.js?v=20261122c';
+import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261122c';
 
-export const VERSION = '20261122b';
+export const VERSION = '20261122c';
 const PARAM = new URLSearchParams(location.search);
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
@@ -1599,23 +1599,67 @@ const PIEZAS_HOLO = {
     // «piso» va en centímetros (los demás canales, en grados). No gira sola: adelante y atrás tienen que leerse
     return Object.assign(pieza, {frente: [0.6, 0, 0.8], sinGiroSolo: true, unidades: {piso: 0.01}});
   },
-  // La tolva y la compuerta (T12): lo que el avión trae (el tramo alto del fuselaje entre el cortafuegos y el parabrisas, con el
-  // lomo a 2,93 m de x 2 a −1,75; la panza roja que cuelga bajo la tolva, de x 0,1 a −2,4) más un modelo propio hecho con las
-  // fotos del avión real
-  // la TOLVA: el tramo alto del fuselaje, recortado del avión, más lo que lleva arriba (la tapa roja, el panel negro, la tapa
-  // levantada, la cúpula de venteo, la baranda, las trabas) y la escala de la mirilla, de un modelo propio hecho con las fotos
-  // (taller/tolva.glb, T12). El interior no está: no hay fotos. Va con el lomo bien inclinado hacia el alumno
+  // La TOLVA (T16: la lección «Tolva y boca de carga»): el sistema entero, de arriba abajo. Del avión, sólo el LOMO (de 2,30 m
+  // para arriba: el tramo entero, con sus dos costados, sumaba tanta luz que tapaba lo de arriba). Enteros, los dos modelos
+  // propios hechos con las fotos (T12): lo de arriba del lomo con la escala de la mirilla (taller/tolva.glb) y la compuerta, con
+  // sus dos hojas y la cañería de carga (taller/compuerta.glb). En el medio, el AGUA, en ESQUEMA: del interior no hay fotos, así
+  // que el recipiente es una pila de secciones rectangulares puesta entre la compuerta y el lomo [AGREGADO, VERIFICAR]; lleno
+  // llega a la marca de 800 galones de la escala (y 2,84). El nivel sube con lo que entra («carga») y baja con lo que sale
+  // («descarga»); las hojas («hojas») giran sobre su bisagra [la posición abierta es PROVISORIA]. Dos chorros, al paso de lo que
+  // de verdad entra y sale: el de la carga va por la boca izquierda, el caño transversal, la T y el caño que entra por la popa de
+  // la compuerta (medidos en herramientas/taller_compuerta.py); el de la descarga cae de la compuerta
   tolva: () => {
-    const propias = [];
-    if (modelosPiezas.tolva) modelosPiezas.tolva.traverse((o) => o.isMesh && propias.push(o));
-    // con el modelo propio se deja sólo el LOMO del fuselaje (de 2,30 m para arriba): el tramo entero, con sus dos costados, sumaba
-    // tanta luz que tapaba lo de arriba
-    const caja = new THREE.Box3(new THREE.Vector3(-1.95, propias.length ? 2.3 : 1.8, -0.85), new THREE.Vector3(1.0, 3.1, 0.85));
-    return Object.assign(crearPiezaHolo({clave: 'tolva', fuentes: [...mallasDe('exterior'), ...propias], marco: avionAT, caja, tam: 1.1}), {frente: propias.length ? [-0.45, 0, -1] : [0.25, 0, -1], inclinar: propias.length ? 0.95 : 0.35});
+    const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const enteras = [];
+    const hojas = [];
+    for (const modelo of [modelosPiezas.tolva, modelosPiezas.compuerta])
+      if (modelo)
+        modelo.traverse((o) => {
+          if (!o.isMesh || o.name === 'compuerta_panza') return; // la chapa de la panza es contexto para verla sólida: de canto encandila
+          if (o.userData.bisagra) {
+            const bis = JSON.parse(o.userData.bisagra);
+            hojas.push({fuentes: [o], a: V(...bis.a), b: V(...bis.b), angulo: bis.abre, canal: 'hojas', entera: true});
+          } else enteras.push(o);
+        });
+    const AGUA = '#2f7dff';
+    const pieza = crearPiezaHolo({
+      clave: 'tolva',
+      fuentes: mallasDe('exterior'),
+      marco: avionAT,
+      caja: new THREE.Box3(V(-1.95, 2.3, -0.85), V(0.9, 3.1, 0.85)), // del avión, sólo el lomo
+      enteras,
+      moviles: hojas,
+      tam: 1.3,
+      brillo: 0.7, // muchas capas, una dentro de otra: más tenue, para que el agua se lea
+      velocidad: 1.5,
+      liquido: {
+        // [altura, x de atrás, x de adelante, media anchura]: de la quilla de la compuerta a la marca de 800 de la escala
+        secciones: [[0.86, -1.84, -1.0, 0.08], [1.0, -1.84, -0.25, 0.2], [1.19, -1.84, -0.1, 0.29], [1.45, -1.8, 0.25, 0.42], [1.75, -1.79, 0.55, 0.46], [2.45, -1.79, 0.6, 0.46], [2.7, -1.79, 0.6, 0.44], [2.84, -1.79, 0.58, 0.4]],
+        color: AGUA,
+        entra: 'carga',
+        sale: 'descarga',
+        inicial: 0.25,
+        tenue: 0.2,
+        luzAgua: 0.13,
+        luz: 0.4,
+      },
+      flujo: {
+        cola: 0.12,
+        tam: 0.011,
+        chorros: [
+          {camino: [[-3.19, 0.79, -0.89], [-3.066, 0.881, -0.76], [-3.012, 0.92, -0.7], [-2.95, 0.967, -0.6], [-2.95, 0.967, -0.1], [-2.84, 0.97, 0], [-2.36, 0.982, 0], [-1.95, 1.03, 0], [-1.7, 1.25, 0]], radio: 0.03, n: 90, color: '#bfe1ff', cola: 0.2, lleva: {liquido: 'entra', factor: 9}}, // más claro que el agua: tiene que verse sobre el caño
+          {camino: [[-0.97, 0.98, 0], [-0.97, -0.3, 0]], ancho: 0.1, alto: 0.82, abre: 1.3, n: 120, color: AGUA, lleva: {liquido: 'sale', factor: 6}},
+        ],
+      },
+    });
+    // «hojas» va de 0 a 100 (lo que abren); «carga» y «descarga», en centésimas del recipiente por segundo. Desde atrás y a la
+    // izquierda (la escala mira hacia la cabina, y la boca de carga de ese lado queda a la vista); no gira sola
+    return Object.assign(pieza, {frente: [-0.78, 0, -0.62], inclinar: 0.22, sinGiroSolo: true, telon: 1.2, unidades: {hojas: 0.01, carga: 0.01, descarga: 0.01}});
   },
-  // la COMPUERTA con sus dos hojas, sus rieles, el venteo y la cañería de carga: modelo propio (taller/compuerta.glb, T12, hecho
-  // con las fotos del avión real). Las hojas son partes móviles: giran sobre su bisagra (userData.bisagra de cada una). Si el
-  // modelo no cargó, queda la panza recortada del avión, por fuera
+  // La COMPUERTA (T16: la lección «Compuerta de descarga»): el modelo propio (taller/compuerta.glb, T12, hecho con las fotos del
+  // avión real), con sus dos hojas, sus rieles, el venteo y la cañería de carga. Las hojas giran sobre su bisagra
+  // (userData.bisagra de cada una; «hojas», de 0 a 100) y de la boca cae el agua: tres cortinas, una más ancha que la otra, que
+  // se van sumando con el flujo (más cobertura, más agua). Si el modelo no cargó, queda la panza recortada del avión, por fuera
   compuerta: () => {
     const modelo = modelosPiezas.compuerta;
     if (!modelo) return recorte('compuerta', ['exterior'], [-2.55, 0.6, -0.72], [0.2, 1.22, 0.72], 0.9, [0.2, 0, 1], -0.75)();
@@ -1625,10 +1669,12 @@ const PIEZAS_HOLO = {
       if (!o.isMesh || o.name === 'compuerta_panza') return; // la chapa de la panza es contexto para verla sólida: de canto encandila
       if (o.userData.bisagra) {
         const bis = JSON.parse(o.userData.bisagra);
-        moviles.push({fuentes: [o], a: new THREE.Vector3(...bis.a), b: new THREE.Vector3(...bis.b), angulo: bis.abre});
+        moviles.push({fuentes: [o], a: new THREE.Vector3(...bis.a), b: new THREE.Vector3(...bis.b), angulo: bis.abre, canal: 'hojas'});
       } else fijas.push(o);
     });
-    return Object.assign(crearPiezaHolo({clave: 'compuerta', fuentes: fijas, moviles, marco: marcoAvion, tam: 1.2}), {frente: [0.3, 0, 1], inclinar: -0.8});
+    const cortina = (ancho, n, minimo) => ({camino: [[-0.97, 0.96, 0], [-0.97, -0.25, 0]], ancho, alto: 0.82, n, color: '#58b6ff', minimo});
+    const pieza = crearPiezaHolo({clave: 'compuerta', fuentes: fijas, moviles, marco: marcoAvion, tam: 1.2, velocidad: 1.5, flujo: {cola: 0.12, tam: 0.011, chorros: [cortina(0.03, 50, 0), cortina(0.12, 80, 1.2), cortina(0.24, 110, 2.2)]}});
+    return Object.assign(pieza, {frente: [0.3, 0, 1], inclinar: -0.45, sinGiroSolo: true, unidades: {hojas: 0.01}});
   },
   // La COLA, con sus timones, que se mueven (T14: la lección «Cola»): deriva, estabilizador, timón de dirección, timones de
   // profundidad y rueda de cola. Medido en el modelo (21/11): los dos timones de profundidad vienen sueltos (x −7,38 a −6,27, con
@@ -1782,7 +1828,7 @@ let leccionFirma = '';
 const CAMPOS_ACTITUD = ['alabeo', 'cabeceo', 'guinada'];
 /** cuánto vale, en el canal de la pieza abierta, una unidad del contenido de la lección (por omisión, un grado en radianes) */
 const unidadCanal = (c) => (piezaAbierta && piezaAbierta.unidades && piezaAbierta.unidades[c]) || THREE.MathUtils.DEG2RAD;
-const esCampo = (c) => c === 'giro' || c === 'flujo' || CAMPOS_ACTITUD.includes(c) || (!!piezaAbierta && piezaAbierta.canales.includes(c));
+const esCampo = (c) => c === 'giro' || c === 'flujo' || CAMPOS_ACTITUD.includes(c) || (!!piezaAbierta && (piezaAbierta.canales.includes(c) || (c === 'nivel' && piezaAbierta.tieneLiquido)));
 /** lleva a la pieza los valores de unos campos. modo: 'ir' (con arranque y llegada suaves: un botón), 'seguir' (una palanca que
  * se arrastra) o 'ya' (de una vez) */
 function aplicarCampos(valores, modo) {
@@ -1792,6 +1838,7 @@ function aplicarCampos(valores, modo) {
     leccion.valores[c] = v;
     if (c === 'giro') pz.ponerGiro(v, modo === 'ya');
     else if (c === 'flujo') pz.ponerFlujo(v);
+    else if (c === 'nivel') pz.ponerNivel(v / 100, modo === 'ya'); // con cuánto líquido arranca el estado (de 0 a 100); después cambia solo
     else if (!CAMPOS_ACTITUD.includes(c)) {
       if (modo === 'seguir') pz.seguir(v * unidadCanal(c), c);
       else pz.irA(v * unidadCanal(c), modo === 'ya', c);
@@ -1925,14 +1972,14 @@ const telonPieza = (() => {
   cv.width = cv.height = 128;
   const g = cv.getContext('2d');
   const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(3,10,18,0.72)');
-  grad.addColorStop(0.55, 'rgba(3,10,18,0.6)');
+  grad.addColorStop(0, 'rgba(3,10,18,0.9)'); // (con la opacidad de siempre, 0,8, queda en 0,72: una pieza puede pedir más con «telon»)
+  grad.addColorStop(0.55, 'rgba(3,10,18,0.75)');
   grad.addColorStop(1, 'rgba(3,10,18,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 128, 128);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({map: tex, transparent: true, depthWrite: false, toneMapped: false}));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({map: tex, transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false}));
   m.name = 'telon-pieza';
   m.renderOrder = 6.5;
   m.visible = false;
@@ -1946,6 +1993,7 @@ function seguirRotuloPieza(ojo, hover) {
   rotuloPieza.malla.visible = !!piezaAbierta && !conLeccion;
   rotuloLeccion.malla.visible = conLeccion;
   telonPieza.visible = !!piezaAbierta;
+  if (piezaAbierta) telonPieza.material.opacity = Math.min(1, 0.8 * (piezaAbierta.telon ?? 1)); // una pieza con muchas capas, delante del fuselaje blanco, pide el fondo más oscuro
   // el botón de acción (las hojas de la compuerta) es de las piezas SIN lección: con lección, los estados van en su panel
   const conAccion = !!piezaAbierta && !conLeccion && piezaAbierta.tieneMoviles;
   accionPieza.malla.visible = conAccion;
@@ -2021,7 +2069,9 @@ function seguirRotuloPieza(ojo, hover) {
       const esc = escalaPanel / (enVR ? 1 : ESCALA_LECCION_PC);
       const lado = ancha ? 0.42 : Math.min(r, ext.der) + 0.06 + (rotulosPartes.ancho * esc) / 2;
       const baja = ancha ? ext.abajo + 0.07 + (Math.min(leccion.datos.partes.length, 5) * (rotulosPartes.alto + 0.03) * esc) / 2 : 0;
-      rotulosPartes.actualizar(leccion.datos.partes, {centro: g.position, radio: r, lado, baja, escala: esc, aMundo: (p, out) => piezaAbierta.aMundo(p, out), ladoMax}, ojo);
+      // (en los puntos donde la tarjeta va a la izquierda del disco porque a la derecha está el ala, los nombres también)
+      const haciaDonde = pt.lado === -1 ? -1 : 1;
+      rotulosPartes.actualizar(leccion.datos.partes, {centro: g.position, radio: r, lado: haciaDonde * lado, baja, escala: esc, aMundo: (p, out) => piezaAbierta.aMundo(p, out), ladoMax}, ojo);
     }
     else rotulosPartes.actualizar(null);
     return;
@@ -2124,8 +2174,12 @@ function alternarPieza(clave) {
     }
   }
   // en el casco, con lección: el panel queda a la altura de los ojos y la pieza debajo, tan abajo como alta sea (entre 1,15 y
-  // 1,30 m: las dos alas, que son chatas, van más arriba que la hélice o la cola)
-  if (enVR && leccion) g.position.y = clamp(ojo.y - rotuloLeccion.alto / 2 - 0.05 - extensionPieza(ojo).arriba, 1.15, 1.3);
+  // 1,30 m: las dos alas, que son chatas, van más arriba que la hélice o la cola). Una pieza muy alta (la tolva entera, de
+  // arriba abajo) baja hasta 1,0 m: a 1,15 su panel quedaba de 1,71 a 2,10 m
+  if (enVR && leccion) {
+    const arriba = extensionPieza(ojo).arriba;
+    g.position.y = clamp(ojo.y - rotuloLeccion.alto / 2 - 0.05 - arriba, clamp(1.15 - (arriba - 0.38), 1.0, 1.15), 1.3);
+  }
   escena.add(g);
   piezaTocada = reloj - 4; // empieza a girar sola a los 2 s
   if (leccion) ponerEstadoLeccion(leccion.datos.inicial, true); // la lección arranca con la pieza funcionando
@@ -3096,7 +3150,7 @@ function probarRecorrido() {
       accionar({tipo: 'panel', id: 'fam_holo'});
       const abierta = piezaAbierta && piezaAbierta.clave === pz;
       const dato = piezaAbierta && {triangulos: piezaAbierta.triangulos};
-      if (pz === 'compuerta' && piezaAbierta) {
+      if (pz === 'compuerta' && piezaAbierta && !leccion) {
         // las HOJAS (T12): el botón de la pieza las abre girando sobre su bisagra y las vuelve a cerrar. Se aprieta con el rayo
         // y el gatillo simulados; abierta, el centro de cada hoja queda más abajo que cerrada
         avanzar(1 / 60);
@@ -3193,10 +3247,11 @@ function probarLeccion(ok) {
   const grados = THREE.MathUtils.radToDeg;
   // lo que la pieza muestra de un campo, en las unidades del contenido
   const leer = (c) => (c === 'giro' ? pz.giro : c === 'flujo' ? pz.flujo : c === 'alabeo' ? grados(pz.actitud.x) : c === 'guinada' ? -grados(pz.actitud.y) : c === 'cabeceo' ? grados(pz.actitud.z) : pz.valorDe(c) / unidadCanal(c));
-  // en qué difiere la pieza de lo que piden unos campos (los de un estado, o los de una palanca)
+  // en qué difiere la pieza de lo que piden unos campos (los de un estado, o los de una palanca). El «nivel» no cuenta: es con
+  // cuánto líquido arranca el estado, y después cambia solo
   const difiere = (valores, tol = 0.05) =>
     Object.entries(valores)
-      .filter(([c, v]) => typeof v === 'number' && esCampo(c) && Math.abs(leer(c) - v) > tol)
+      .filter(([c, v]) => typeof v === 'number' && c !== 'nivel' && esCampo(c) && Math.abs(leer(c) - v) > tol)
       .map(([c, v]) => `${c} ${leer(c).toFixed(2)} (pide ${+v.toFixed(2)})`);
   // cuántas partes móviles NO están donde piden sus canales: la matriz de cada una contra la de sus movimientos (un giro sobre
   // su eje o un corrimiento, y el que lleve encima; de lo que anda solo, lo que lleva acumulado)
@@ -3440,6 +3495,70 @@ function probarLeccion(ok) {
       {entra, daLaVuelta, salen, encendido, masRapido, apagado, largoAire: +aire.largo.toFixed(2), triangulos: pz.triangulos},
     );
   }
+  /** cuánto bajó el centro de una parte móvil (m), con ella como está ahora */
+  const bajoElCentro = (p) => {
+    p.malla.geometry.computeBoundingBox();
+    const c0 = p.malla.geometry.boundingBox.getCenter(new THREE.Vector3());
+    return c0.y - c0.clone().applyMatrix4(p.malla.matrix).y;
+  };
+  if (clave === 'tolva') {
+    // la tolva: cargando, el nivel sube, y llena deja de entrar agua (el chorro de la carga se para), con la superficie en la
+    // marca de 800 de la escala; con todo cerrado, el nivel se queda; descargando, las hojas abren, el nivel baja, y vacía deja de
+    // caer (el chorro de la descarga se para)
+    const aMarco = new THREE.Matrix4().copy(avionAT.matrixWorld).invert();
+    const escala = modelosPiezas.tolva && modelosPiezas.tolva.getObjectByName('tolva_escala');
+    const topeEscala = escala ? new THREE.Box3().setFromObject(escala).applyMatrix4(aMarco).max.y : NaN;
+    const hojas = pz.partes.filter((p) => p.canal === 'hojas');
+    ponerEstadoLeccion('cargando', true, false);
+    const n0 = pz.nivel;
+    avanzar(0.5);
+    avanzar(0.5);
+    const subePorSegundo = pz.nivel - n0;
+    const cargando = pz.caudales.entra > 0 && pz.chorros[0].velocidad > 0 && pz.chorros[1].velocidad === 0;
+    esperar(9);
+    avanzar(0.5);
+    const llena = pz.nivel === 1 && pz.caudales.entra === 0 && pz.chorros[0].velocidad === 0;
+    const alturaLlena = pz.alturaNivel;
+    ponerEstadoLeccion('cerrada', true, false);
+    esperar(2);
+    const seQueda = pz.nivel === 1 && pz.chorros.every((ch) => ch.velocidad === 0);
+    ponerEstadoLeccion('descargando', true, false);
+    avanzar(0.5);
+    avanzar(0.5);
+    const bajaPorSegundo = 1 - pz.nivel;
+    const cae = pz.chorros[1];
+    const descargando = pz.caudales.sale > 0 && cae.velocidad > 0 && cae.hasta.y < cae.desde.y - 0.5 && pz.chorros[0].velocidad === 0;
+    const hojasBajan = hojas.map(bajoElCentro);
+    esperar(5);
+    avanzar(0.5);
+    const vacia = pz.nivel === 0 && pz.caudales.sale === 0 && pz.chorros[1].velocidad === 0;
+    const boca = pz.chorros[0];
+    ok(
+      'lección de tolva: cargando, el nivel sube y llena deja de entrar (la superficie, en la marca de 800 de la escala); cerrada, se queda; descargando, las hojas abren y el nivel baja, y vacía deja de caer; el agua entra por la boca de carga, atrás y abajo',
+      pz.tieneLiquido && hojas.length === 2 && Math.abs(subePorSegundo - est('cargando').carga / 100) < 0.01 && cargando && llena && Math.abs(alturaLlena - topeEscala) < 0.02 && seQueda && Math.abs(bajaPorSegundo - est('descargando').descarga / 100) < 0.01 && descargando && hojasBajan.every((d) => d > 0.03) && vacia && boca.desde.x < -3 && boca.desde.y < 1 && boca.hasta.x > -2 && boca.hasta.y > boca.desde.y,
+      {subePorSegundo: +subePorSegundo.toFixed(3), cargando, llena, alturaLlena: +alturaLlena.toFixed(3), topeEscala: +topeEscala.toFixed(3), seQueda, bajaPorSegundo: +bajaPorSegundo.toFixed(3), descargando, hojasBajanCm: cm(hojasBajan), vacia, triangulos: pz.triangulos},
+    );
+  }
+  if (clave === 'compuerta') {
+    // la compuerta: con más cobertura las hojas abren más (el centro de cada una baja más) y cae más agua (más cortinas, y más
+    // rápido); cerrada, no cae nada; el agua cae hacia abajo
+    const hojas = pz.partes.filter((p) => p.canal === 'hojas');
+    const medir = (id) => {
+      ponerEstadoLeccion(id, true, false);
+      esperar(2);
+      return {baja: Math.min(...hojas.map(bajoElCentro)), cortinas: pz.chorros.filter((ch) => ch.velocidad > 0).length, velocidad: pz.chorros[0].velocidad};
+    };
+    const cerrada = medir('cerrada');
+    const baja = medir('baja');
+    const alta = medir('alta');
+    const todo = medir('salvo');
+    const haciaAbajo = pz.chorros.every((ch) => ch.hasta.y < ch.desde.y - 0.5);
+    ok(
+      'lección de compuerta: con más cobertura las hojas abren más y cae más agua (una, dos y tres cortinas, cada vez más rápido); cerrada, no cae nada; el agua cae hacia abajo',
+      hojas.length === 2 && Math.abs(cerrada.baja) < 1e-4 && cerrada.cortinas === 0 && baja.baja > 0.003 && alta.baja > baja.baja * 2 && todo.baja > alta.baja && todo.baja > 0.05 && baja.cortinas === 1 && alta.cortinas === 2 && todo.cortinas === 3 && alta.velocidad > baja.velocidad && todo.velocidad > alta.velocidad && haciaAbajo,
+      {bajaCm: cm([cerrada.baja, baja.baja, alta.baja, todo.baja]), cortinas: [cerrada.cortinas, baja.cortinas, alta.cortinas, todo.cortinas], velocidad: [baja.velocidad, alta.velocidad, todo.velocidad], haciaAbajo},
+    );
+  }
   // 6) los nombres de las partes: en el estado que los muestra, con la pieza quieta; cada rótulo a la vista desde el ojo, sin tapar
   // la pieza (a su derecha, o debajo de ella si es ancha), y su punto dentro de la pieza
   const conPartes = datos.estados.find((e) => e.partes);
@@ -3458,13 +3577,13 @@ function probarLeccion(ok) {
     const altoRot = rotulosPartes.alto * escRot;
     lista.forEach((it, i) => {
       if (it.punto.distanceTo(g.position) > radio + 0.01) mal.push(`${it.nombre}: su punto está fuera de la pieza`);
-      const aLaDerecha = it.rotulo.clone().sub(g.position).dot(der);
-      const alCostado = aLaDerecha - anchoRot / 2 > Math.min(radio, ext.der) - 0.01;
+      const alLado = it.rotulo.clone().sub(g.position).dot(der); // (+ a la derecha de la pieza; − a su izquierda)
+      const alCostado = Math.abs(alLado) - anchoRot / 2 > Math.min(radio, ext.der) - 0.01;
       const debajo = it.rotulo.y + altoRot / 2 < g.position.y - ext.abajo;
-      if (aLaDerecha < 0.2 || !(alCostado || debajo)) mal.push(`${it.nombre}: el rótulo tapa la pieza`);
+      if (Math.abs(alLado) < 0.2 || !(alCostado || debajo)) mal.push(`${it.nombre}: el rótulo tapa la pieza`);
       const malla = rotulosPartes.grupo.getObjectByName(`rotulo-parte-${i}`);
       if (rayosDesdeElOjo(it.rotulo.clone(), malla, ojo).some((r) => r !== 'libre')) mal.push(`${it.nombre}: el rótulo está tapado`);
-      for (const esquina of [it.rotulo.clone().addScaledVector(der, anchoRot / 2), it.rotulo.clone().add(new THREE.Vector3(0, -altoRot / 2, 0))]) {
+      for (const esquina of [it.rotulo.clone().addScaledVector(der, (Math.sign(alLado) * anchoRot) / 2), it.rotulo.clone().add(new THREE.Vector3(0, -altoRot / 2, 0))]) {
         const p = esquina.project(camara);
         if (Math.abs(p.x) > 1 || Math.abs(p.y) > 1) mal.push(`${it.nombre}: el rótulo se sale de la pantalla`);
       }

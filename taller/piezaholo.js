@@ -18,17 +18,24 @@
 // el canal es una velocidad y la parte acumula el giro: la rueda que rueda); las partes con la misma «junta» van en una sola malla;
 // una isla se puede QUITAR (las palas, en la nariz); y el flujo pasa a ser uno o más CHORROS que siguen un camino con curvas, cada
 // uno de su color (el aire que entra por la toma, da la vuelta, atraviesa el motor y sale por los escapes).
+// T16 (la tolva y la compuerta): unas mallas pueden entrar ENTERAS, sin pasar por la caja de recorte (los modelos propios: la
+// compuerta, bajo un lomo recortado del avión); la pieza puede llevar un LÍQUIDO: un recipiente dibujado en esquema que se llena
+// hasta un nivel según lo que entra y lo que sale (el agua de la tolva); y un chorro puede ir al paso de lo que entra o de lo que
+// sale de ese líquido (si la tolva está vacía, no cae nada), o encenderse recién desde cierto caudal (más cobertura, más agua).
 import * as THREE from '../three.module.js';
 
 const VERT = /* glsl */ `
 attribute float aLuz;
+attribute float aEntera;
 varying vec3 vN;
 varying vec3 vV;
 varying vec3 vP;
 varying float vLuz;
+varying float vEntera;
 void main() {
   vP = position;
   vLuz = aLuz;
+  vEntera = aEntera;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   vN = normalize(normalMatrix * normal);
   vV = normalize(-mv.xyz);
@@ -44,20 +51,36 @@ uniform vec3 uMax;
 uniform vec3 uMin2;
 uniform vec3 uMax2;
 uniform float uPaso;
+uniform float uLiquido;
+uniform float uTope;
+uniform vec3 uAgua;
+uniform float uTenue;
+uniform float uAguaLuz;
 varying vec3 vN;
 varying vec3 vV;
 varying vec3 vP;
 varying float vLuz;
+varying float vEntera;
 void main() {
   // el recorte: fuera de la caja (o de las dos cajas) no se dibuja. vP es la posición en reposo: una parte que se mueve no se
-  // recorta por salirse de la caja
+  // recorta por salirse de la caja. Lo que entró entero (un modelo propio, lo dibujado) no se recorta
   bool fuera1 = any(lessThan(vP, uMin)) || any(greaterThan(vP, uMax));
   bool fuera2 = uCaja < 1.5 || any(lessThan(vP, uMin2)) || any(greaterThan(vP, uMax2));
-  if (uCaja > 0.5 && fuera1 && fuera2) discard;
+  if (uCaja > 0.5 && vEntera < 0.5 && fuera1 && fuera2) discard;
   float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.4);
   float barrido = 0.8 + 0.2 * sin(vP.y * uPaso - uTiempo * 2.4);
   float i = ((0.07 + 0.6 * f) * barrido + vLuz) * uBrillo; // vLuz: la luz propia de lo que tiene que leerse de frente (una escala)
-  gl_FragColor = vec4(uColor * i, 1.0);
+  vec3 tono = uColor;
+  if (uLiquido > 0.5) {
+    // las paredes de un recipiente: por encima del nivel, tenues; por debajo, del color del líquido y con algo de luz propia (tiene
+    // que verse lleno aunque la pared se mire de frente)
+    if (vP.y > uTope) i *= uTenue;
+    else {
+      tono = uAgua;
+      i += uAguaLuz;
+    }
+  }
+  gl_FragColor = vec4(tono * i, 1.0);
   #include <colorspace_fragment>
 }`;
 
@@ -132,8 +155,9 @@ function islasDe(pos) {
 /**
  * clave: el nombre de la pieza; fuentes: las mallas de donde sale; marco: el objeto en cuyo marco local queda la pieza (por
  * omisión, la primera fuente); caja: un Box3 en ese marco para recortar, o dos ([Box3, Box3]: lo que cae en cualquiera de las dos),
- * o null (la malla entera); tam: cuánto mide su lado más largo (m); gira: {eje: 'x' | 'y' | 'z', vel: rad/s} si la pieza gira
- * sobre un eje de su marco (la hélice).
+ * o null (la malla entera); enteras: mallas que entran ENTERAS, sin pasar por la caja (un modelo propio junto a algo recortado
+ * del avión; una parte móvil entra entera con «entera: true»); tam: cuánto mide su lado más largo (m); gira: {eje: 'x' | 'y' |
+ * 'z', vel: rad/s} si la pieza gira sobre un eje de su marco (la hélice).
  * PARTES QUE SE MUEVEN, de dos maneras (todo en el marco, ángulos en radianes):
  *  - moviles: [{fuentes, …movimiento, luz, junta}]: mallas enteras;
  *  - elegir(isla): para las islas de «fuentes» ({n, min, max, centro}); devuelve null (queda fija), false (la isla se QUITA: no
@@ -156,16 +180,22 @@ function islasDe(pos) {
  * color2 y cambia: [u0, u1] (cambia de color entre esas dos fracciones del camino: el aire que se calienta), cola (el largo de la
  * estela a velocidad 1), vel (cuánto más rápido que los demás), funde (la fracción de cada punta en que la estela aparece y se
  * apaga), sigue: [{canal, mueve}] (el chorro se corre con un canal: el piso que sube), lleva: {canal, factor} (no va a la
- * velocidad del flujo sino a la de ese canal por «factor»: el piso pasa a la velocidad del borde de la rueda)}. flujo = un
- * chorro, una lista, o
+ * velocidad del flujo sino a la de ese canal por «factor»: el piso pasa a la velocidad del borde de la rueda; o {liquido: 'entra'
+ * | 'sale', factor}: al paso de lo que de verdad entra o sale del líquido), minimo (el chorro corre recién cuando el flujo llega
+ * a ese valor: más cobertura, más agua)}. flujo = un chorro, una lista, o
  * {chorros: […], n, cola, color, tam} (lo común). La forma de antes sigue valiendo: {n, desde, hasta, cola, tam, color} y radio
  * (alrededor del eje x del marco) o caja ([[y0, z0], [y1, z1]]) = un chorro derecho a lo largo de x.
+ * LÍQUIDO: {secciones: [[y, x0, x1, mediaAnchura], …] (el recipiente, en esquema: una pila de rectángulos, de abajo hacia arriba),
+ * color, entra y sale (los canales que dicen qué fracción del recipiente entra y sale por segundo), inicial (el nivel con que
+ * abre, de 0 a 1), tenue (cuánto brillan las paredes por encima del nivel), luz (la de la superficie)}. El nivel sube y baja
+ * solo, entre vacío y lleno: lleno, sólo entra lo que sale; vacío, sólo sale lo que entra. ponerNivel(v, ya) lo lleva a un valor.
  * Devuelve {clave, grupo, interior, radio, mitad, centro, triangulos, tieneMoviles, partes, canales, abierta, abertura, valor,
  * objetivo, valorDe, objetivoDe, faseDe, quieta, irA, seguir, abrir, ponerGiro, giro, ponerActitud, actitud, ponerFlujo, flujo,
- * chorros, aMundo, actualizar(dt, t), liberar()}: el grupo se pone, se gira y se escala desde afuera; «interior» es lo que gira
- * solo; «mitad» es la media caja de lo que se ve, en reposo; aMundo(p) lleva un punto del marco al mundo.
+ * chorros, tieneLiquido, nivel, alturaNivel, caudales, ponerNivel, aMundo, actualizar(dt, t), liberar()}: el grupo se pone, se
+ * gira y se escala desde afuera; «interior» es lo que gira solo; «mitad» es la media caja de lo que se ve, en reposo; aMundo(p)
+ * lleva un punto del marco al mundo.
  */
-export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam = 0.8, color = '#62d8ff', gira = null, brillo = 1, moviles = [], elegir = null, velocidad = 1 / 1.2, flujo = null, luzMoviles = 0}) {
+export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, enteras = [], tam = 0.8, color = '#62d8ff', gira = null, brillo = 1, moviles = [], elegir = null, velocidad = 1 / 1.2, flujo = null, luzMoviles = 0, liquido = null}) {
   const ref = marco || fuentes[0];
   ref.updateWorldMatrix(true, false);
   const inv = new THREE.Matrix4().copy(ref.matrixWorld).invert();
@@ -178,11 +208,13 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   const cubre = new THREE.Box3();
   const cajas = !caja ? [] : Array.isArray(caja) ? caja.slice(0, 2) : [caja];
   const enCajas = (p) => cajas.some((q) => q.containsPoint(p));
-  /** los triángulos de unas mallas, en el marco de la pieza (y dentro de las cajas, si hay): {pos, nor, luz} */
-  const extraer = (mallas, mas = 0) => {
+  /** los triángulos de unas mallas, en el marco de la pieza (y dentro de las cajas, si hay y si no entran enteras): {pos, nor,
+   * luz, ent} (ent: 1 por vértice si entró entero: el sombreador no lo recorta) */
+  const extraer = (mallas, mas = 0, entera = false) => {
     const pos = [];
     const nor = [];
     const luz = [];
+    const ent = [];
     for (const m of mallas) {
       const propia = (+m.userData.luz || 0) + mas; // la luz propia de esa malla (userData.luz del modelo: la escala de la mirilla)
       m.updateWorldMatrix(true, false);
@@ -196,7 +228,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
         b.fromBufferAttribute(P, i + 1).applyMatrix4(m4);
         c.fromBufferAttribute(P, i + 2).applyMatrix4(m4);
         // con caja: se quedan los triángulos que la tocan (el borde lo corta el sombreador)
-        if (cajas.length && !enCajas(a) && !enCajas(b) && !enCajas(c)) continue;
+        if (cajas.length && !entera && !enCajas(a) && !enCajas(b) && !enCajas(c)) continue;
         for (const [v, k] of [
           [a, i],
           [b, i + 1],
@@ -206,20 +238,26 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
           na.fromBufferAttribute(N, k).applyMatrix3(n3).normalize();
           nor.push(na.x, na.y, na.z);
           luz.push(propia);
+          ent.push(entera ? 1 : 0);
         }
       }
       if (g !== m.geometry) g.dispose();
     }
-    return {pos, nor, luz};
+    return {pos, nor, luz, ent};
   };
+  const CAMPOS = ['pos', 'nor', 'luz', 'ent'];
   let fijo = extraer(fuentes);
-  let sueltas = moviles.map((mv) => ({...mv, datos: extraer(mv.fuentes, mv.luz ?? luzMoviles)}));
+  if (enteras.length) {
+    const mas = extraer(enteras, 0, true);
+    for (const k of CAMPOS) for (const v of mas[k]) fijo[k].push(v);
+  }
+  let sueltas = moviles.map((mv) => ({...mv, datos: extraer(mv.fuentes, mv.luz ?? luzMoviles, !!mv.entera)}));
   // las islas de lo fijo que el que llama quiere mover (las palas, los flaps): salen de lo fijo y pasan a ser partes móviles
   if (elegir) {
-    const quedan = {pos: [], nor: [], luz: []};
+    const quedan = {pos: [], nor: [], luz: [], ent: []};
     const pasar = (hacia, t, mas = 0) => {
       for (let j = 0; j < 9; j++) hacia.pos.push(fijo.pos[t * 9 + j]), hacia.nor.push(fijo.nor[t * 9 + j]);
-      for (let j = 0; j < 3; j++) hacia.luz.push(fijo.luz[t * 3 + j] + mas);
+      for (let j = 0; j < 3; j++) hacia.luz.push(fijo.luz[t * 3 + j] + mas), hacia.ent.push(fijo.ent[t * 3 + j]);
     };
     for (const isla of islasDe(fijo.pos)) {
       const mv = elegir({n: isla.n, min: isla.min, max: isla.max, centro: isla.centro});
@@ -228,7 +266,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
         for (const t of isla.triangulos) pasar(quedan, t);
         continue;
       }
-      const suyos = {pos: [], nor: [], luz: []};
+      const suyos = {pos: [], nor: [], luz: [], ent: []};
       const mas = mv.luz ?? luzMoviles;
       for (const t of isla.triangulos) {
         // con «dentro» la isla se parte por el centro de cada triángulo
@@ -246,7 +284,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     for (const mv of sueltas) {
       const primera = mv.junta ? porJunta.get(mv.junta) : null;
       if (primera) {
-        for (const k of ['pos', 'nor', 'luz']) for (const v of mv.datos[k]) primera.datos[k].push(v);
+        for (const k of CAMPOS) for (const v of mv.datos[k]) primera.datos[k].push(v);
       } else {
         unidas.push(mv);
         if (mv.junta) porJunta.set(mv.junta, mv);
@@ -254,9 +292,15 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     }
     sueltas = unidas;
   }
-  // lo que cubre la pieza: lo que quedó (fijo y móvil), en reposo
-  for (const d of [fijo, ...sueltas.map((mv) => mv.datos)]) for (let i = 0; i < d.pos.length; i += 3) cubre.expandByPoint(a.set(d.pos[i], d.pos[i + 1], d.pos[i + 2]));
-  if (cajas.length) cubre.intersect(cajas.reduce((u, q) => u.union(q), cajas[0].clone()));
+  // lo que cubre la pieza: lo que quedó (fijo y móvil), en reposo. Lo recortado, hasta donde llegan las cajas; lo que entró
+  // entero y el recipiente del líquido, todo
+  const cubreEnteras = new THREE.Box3();
+  for (const d of [fijo, ...sueltas.map((mv) => mv.datos)]) for (let i = 0; i < d.pos.length; i += 3) (d.ent[i / 3] ? cubreEnteras : cubre).expandByPoint(a.set(d.pos[i], d.pos[i + 1], d.pos[i + 2]));
+  if (cajas.length && !cubre.isEmpty()) cubre.intersect(cajas.reduce((u, q) => u.union(q), cajas[0].clone()));
+  // el recipiente del líquido, en esquema: secciones rectangulares, de abajo hacia arriba
+  const secciones = liquido ? liquido.secciones.map(([y, x0, x1, hw]) => ({y, x0, x1, hw})).sort((p, q) => p.y - q.y) : null;
+  if (secciones) for (const s of secciones) cubreEnteras.expandByPoint(a.set(s.x0, s.y, -s.hw)).expandByPoint(a.set(s.x1, s.y, s.hw));
+  if (!cubreEnteras.isEmpty()) cubre.union(cubreEnteras);
   const centro = cubre.getCenter(new THREE.Vector3());
   const lado = cubre.getSize(new THREE.Vector3());
   const k = tam / Math.max(lado.x, lado.y, lado.z, 1e-6);
@@ -271,14 +315,22 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     uMin2: {value: cajas[1] ? cajas[1].min.clone().sub(centro) : cero.clone()},
     uMax2: {value: cajas[1] ? cajas[1].max.clone().sub(centro) : cero.clone()},
     uPaso: {value: 60 * k}, // el barrido, igual de fino cualquiera sea el tamaño de la pieza
+    uLiquido: {value: 0}, // (los del líquido: sólo los usa el material de las paredes de su recipiente)
+    uTope: {value: 0},
+    uAgua: {value: new THREE.Color('#3b9bff')},
+    uTenue: {value: 1},
+    uAguaLuz: {value: 0},
   };
-  const material = new THREE.ShaderMaterial({uniforms: U, vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false});
+  const OPCIONES_MATERIAL = {vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false};
+  const material = new THREE.ShaderMaterial({uniforms: U, ...OPCIONES_MATERIAL});
+  const materiales = [material];
   const geos = [];
-  const armar = ({pos, nor, luz}, nombre) => {
+  const armar = ({pos, nor, luz, ent}, nombre) => {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
     geo.setAttribute('aLuz', new THREE.Float32BufferAttribute(luz, 1));
+    geo.setAttribute('aEntera', new THREE.Float32BufferAttribute(ent, 1));
     geo.translate(-centro.x, -centro.y, -centro.z);
     geo.computeBoundingSphere();
     geos.push(geo);
@@ -311,6 +363,64 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   grupo.name = `pieza-${clave}`;
   grupo.add(interior);
   grupo.scale.setScalar(k);
+
+  // El LÍQUIDO: las paredes de su recipiente (una malla, con un material que las pinta del color del líquido por debajo del
+  // nivel y las deja tenues por encima) y la superficie (un rectángulo con luz propia, a la altura del nivel). El nivel va de 0
+  // (la sección de abajo) a 1 (la de arriba) y cambia solo con lo que entra y lo que sale
+  let liq = null;
+  if (secciones) {
+    const pos = [];
+    const nor = [];
+    const cara = (p0, p1, p2, p3) => {
+      b.subVectors(p1, p0);
+      c.subVectors(p3, p0);
+      na.crossVectors(b, c).normalize();
+      for (const p of [p0, p1, p2, p0, p2, p3]) pos.push(p.x, p.y, p.z), nor.push(na.x, na.y, na.z);
+    };
+    const esquinas = (s) => [new THREE.Vector3(s.x0, s.y, -s.hw), new THREE.Vector3(s.x1, s.y, -s.hw), new THREE.Vector3(s.x1, s.y, s.hw), new THREE.Vector3(s.x0, s.y, s.hw)];
+    for (let i = 0; i + 1 < secciones.length; i++) {
+      const A = esquinas(secciones[i]);
+      const B = esquinas(secciones[i + 1]);
+      for (let j = 0; j < 4; j++) cara(A[j], A[(j + 1) % 4], B[(j + 1) % 4], B[j]);
+    }
+    const fondo = esquinas(secciones[0]);
+    cara(fondo[0], fondo[3], fondo[2], fondo[1]);
+    const agua = new THREE.Color(liquido.color || '#3b9bff');
+    const matPared = new THREE.ShaderMaterial({uniforms: {...U, uLiquido: {value: 1}, uTope: {value: 0}, uAgua: {value: agua}, uTenue: {value: liquido.tenue ?? 0.3}, uAguaLuz: {value: liquido.luzAgua ?? 0.09}}, ...OPCIONES_MATERIAL});
+    const matSuperficie = new THREE.ShaderMaterial({uniforms: {...U, uColor: {value: agua}, uBrillo: {value: 1}}, ...OPCIONES_MATERIAL});
+    materiales.push(matPared, matSuperficie);
+    const unos = (n, v) => new Array(n).fill(v);
+    const pared = armar({pos, nor, luz: unos(pos.length / 3, 0), ent: unos(pos.length / 3, 1)}, `pieza-holo-${clave}-recipiente`);
+    pared.material = matPared;
+    pared.renderOrder = 6.9; // antes que la pieza: el agua queda detrás de la luz de lo que la rodea
+    const superficie = armar({pos: unos(18, 0), nor: [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0], luz: unos(6, liquido.luz ?? 0.3), ent: unos(6, 1)}, `pieza-holo-${clave}-nivel`);
+    superficie.geometry.translate(centro.x, centro.y, centro.z); // (armar la centró: sus vértices se escriben ya centrados)
+    superficie.geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
+    superficie.material = matSuperficie;
+    superficie.frustumCulled = false;
+    interior.add(pared, superficie);
+    liq = {secciones, pared, superficie, matPared, entra: liquido.entra || null, sale: liquido.sale || null, nivel: Math.min(1, Math.max(0, liquido.inicial ?? 0)), objetivo: null, dibujado: -1, efEntra: 0, efSale: 0, altura: 0};
+  }
+  /** pone la superficie y el tope del líquido donde dice su nivel: la sección del recipiente a esa altura, entre las dos que la rodean */
+  const ponerSuperficie = () => {
+    const S = liq.secciones;
+    const y = S[0].y + (S[S.length - 1].y - S[0].y) * liq.nivel;
+    let i = 0;
+    while (i < S.length - 2 && y > S[i + 1].y) i++;
+    const t = Math.min(1, Math.max(0, (y - S[i].y) / Math.max(1e-6, S[i + 1].y - S[i].y)));
+    const x0 = S[i].x0 + (S[i + 1].x0 - S[i].x0) * t - centro.x;
+    const x1 = S[i].x1 + (S[i + 1].x1 - S[i].x1) * t - centro.x;
+    const hw = S[i].hw + (S[i + 1].hw - S[i].hw) * t;
+    const yy = y - 0.004 - centro.y;
+    liq.altura = y;
+    liq.matPared.uniforms.uTope.value = y - centro.y;
+    const at = liq.superficie.geometry.attributes.position;
+    at.array.set([x0, yy, -hw - centro.z, x1, yy, -hw - centro.z, x1, yy, hw - centro.z, x0, yy, -hw - centro.z, x1, yy, hw - centro.z, x0, yy, hw - centro.z]);
+    at.needsUpdate = true;
+    liq.superficie.visible = liq.nivel > 0.004;
+    liq.dibujado = liq.nivel;
+  };
+  if (liq) ponerSuperficie();
 
   // El FLUJO: estelas de luz que corren por uno o más CHORROS (no giran con la pieza: cuelgan del grupo). Cada estela es un
   // segmento con la cabeza encendida y la cola apagada (con la luz sumada, la cola se pierde), más un punto redondo en la cabeza:
@@ -380,7 +490,8 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
         c2: f.color2 ? new THREE.Color(f.color2) : null,
         cambia: f.cambia || [0.4, 0.6],
         sigue: [].concat(f.sigue || []).map((q) => ({canal: q.canal, mueve: new THREE.Vector3(q.mueve[0], q.mueve[1], q.mueve[2])})),
-        lleva: f.lleva ? {canal: f.lleva.canal, factor: f.lleva.factor ?? 1} : null,
+        lleva: f.lleva ? {canal: f.lleva.canal, liquido: f.lleva.liquido, factor: f.lleva.factor ?? 1} : null,
+        minimo: f.minimo ?? 0, // corre recién cuando el flujo llega a este valor
         v: 0, // a qué velocidad va ahora
         ultima: 0, // la última distinta de cero: al apagarse, las estelas conservan su largo
         op: 0, // cuánta luz tiene (se enciende y se apaga de a poco)
@@ -420,6 +531,8 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
       if (mv.continuo) cn.continuo = true;
       if (cn.velocidad === null && mv.velocidad) cn.velocidad = mv.velocidad;
     }
+  // (lo que entra y lo que sale del líquido también son canales, aunque no muevan ninguna parte)
+  if (liq) for (const nombre of [liq.entra, liq.sale]) if (nombre && !canales.has(nombre)) canales.set(nombre, canalNuevo());
   const primero = canales.keys().next().value ?? CANAL;
   if (!canales.size) canales.set(primero, canalNuevo());
   for (const cn of canales.values()) cn.velocidad ??= velocidad;
@@ -583,6 +696,31 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     get chorros() {
       return chorros.map((ch) => ({desde: ch.pts[0].clone(), hasta: ch.pts[ch.N].clone(), largo: ch.L, velocidad: ch.v, luz: ch.op}));
     },
+    /** la pieza lleva un líquido */
+    tieneLiquido: !!liq,
+    /** el nivel del líquido, de 0 (vacío) a 1 (lleno) */
+    get nivel() {
+      return liq ? liq.nivel : 0;
+    },
+    /** a qué altura está la superficie del líquido, en el marco de la pieza */
+    get alturaNivel() {
+      return liq ? liq.altura : 0;
+    },
+    /** lo que de verdad entra y sale del líquido ahora, en fracciones del recipiente por segundo (lleno, sólo entra lo que sale;
+     * vacío, sólo sale lo que entra) */
+    get caudales() {
+      return liq ? {entra: liq.efEntra, sale: liq.efSale} : {entra: 0, sale: 0};
+    },
+    /** lleva el nivel del líquido a v (de 0 a 1): rápido, pero no de golpe; con «ya», de una vez */
+    ponerNivel(v, ya = false) {
+      if (!liq) return;
+      const blanco = Math.min(1, Math.max(0, v));
+      if (ya) {
+        liq.nivel = blanco;
+        liq.objetivo = null;
+        ponerSuperficie();
+      } else liq.objetivo = blanco;
+    },
     /** un punto del marco (en reposo) llevado al mundo; conGiro: acompaña al giro propio de la pieza */
     aMundo(p, out = new THREE.Vector3(), conGiro = true) {
       grupo.updateWorldMatrix(true, true);
@@ -614,14 +752,45 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
         }
       }
       if (movio) mover();
+      if (liq) {
+        const cnE = liq.entra ? canales.get(liq.entra) : null;
+        const cnS = liq.sale ? canales.get(liq.sale) : null;
+        const entra = Math.max(0, cnE ? cnE.valor : 0);
+        const sale = Math.max(0, cnS ? cnS.valor : 0);
+        liq.efEntra = entra;
+        liq.efSale = sale;
+        if (liq.objetivo !== null) {
+          // un nivel pedido de afuera (el estado de una lección): llega rápido, pero no de golpe
+          const falta = liq.objetivo - liq.nivel;
+          const paso = dt * 2.5;
+          if (Math.abs(falta) <= paso) {
+            liq.nivel = liq.objetivo;
+            liq.objetivo = null;
+          } else liq.nivel += Math.sign(falta) * paso;
+        } else {
+          let n = liq.nivel + (entra - sale) * dt;
+          if (n >= 1) {
+            n = 1;
+            if (entra > sale) liq.efEntra = sale; // lleno: sólo entra lo que sale
+          }
+          if (n <= 0) {
+            n = 0;
+            if (sale > entra) liq.efSale = entra; // vacío: sólo sale lo que entra
+          }
+          liq.nivel = n;
+        }
+        if (liq.nivel !== liq.dibujado) ponerSuperficie();
+      }
       if (estelas) {
         const {lineas, cabezas} = estelas.userData;
         // cada chorro va a la velocidad del flujo, o a la de un canal (el piso, a la del borde de la rueda), y se enciende y se
         // apaga de a poco
         let alguno = false;
         for (const ch of chorros) {
-          const cn = ch.lleva ? canales.get(ch.lleva.canal) : null;
-          ch.v = ch.lleva ? (cn ? cn.valor * ch.lleva.factor : 0) : velFlujo * ch.vel;
+          const cn = ch.lleva && ch.lleva.canal ? canales.get(ch.lleva.canal) : null;
+          if (ch.lleva && ch.lleva.liquido) ch.v = liq ? (ch.lleva.liquido === 'entra' ? liq.efEntra : liq.efSale) * ch.lleva.factor : 0; // al paso de lo que de verdad entra o sale
+          else if (ch.lleva) ch.v = cn ? cn.valor * ch.lleva.factor : 0;
+          else ch.v = Math.abs(velFlujo) >= ch.minimo ? velFlujo * ch.vel : 0;
           if (ch.v) ch.ultima = ch.v;
           ch.op += ((ch.v ? 1 : 0) - ch.op) * Math.min(1, dt * 3);
           if (ch.op > 0.02) alguno = true;
@@ -680,7 +849,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     liberar() {
       grupo.removeFromParent();
       for (const g of geos) g.dispose();
-      material.dispose();
+      for (const m of materiales) m.dispose();
       if (estelas) for (const o of estelas.children) o.material.dispose();
     },
   };

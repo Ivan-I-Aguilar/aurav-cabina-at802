@@ -7,7 +7,7 @@
 // Y los RÓTULOS DE LAS PARTES: hasta cinco nombres al costado de la pieza, cada uno con su línea al punto que señala (el mismo
 // aspecto que las llamadas del motor).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261122b';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261122c';
 
 const AZUL = '#082440';
 const LIMA = '#c8e63a';
@@ -365,7 +365,8 @@ export function crearRotulosPartes({escena, max = 5, ancho = 0.24, alto = 0.07} 
      * partes: [{nombre, sub, punto: [x, y, z], repite}] en el marco de la pieza (o null para esconderlos). «repite: n» = la parte
      * está n veces alrededor del eje x de la pieza (las palas): se señala la que apunta hacia arriba.
      * pieza: {centro: Vector3 (mundo), radio (m), aMundo(Vector3) → Vector3 (mundo), lado, baja, ladoMax, escala}; ojo: dónde está
-     * el alumno (mundo). lado (opcional): a cuánto del centro de la pieza va la columna (por omisión, pegada a su radio); baja
+     * el alumno (mundo). lado (opcional): a cuánto del centro de la pieza va la columna (por omisión, pegada a su radio; negativo:
+     * a la IZQUIERDA de la pieza, donde a la derecha hay algo del avión que la taparía); baja
      * (opcional): cuánto más abajo que el centro (las piezas anchas y chatas la llevan debajo). escala (opcional): cuánto más
      * grandes van los rótulos (en la PC, cuando la pieza abre más lejos).
      * ladoMax (opcional): lo más lejos del centro de la pieza que puede ir la columna (en la PC, para que no se salga de la pantalla
@@ -401,11 +402,13 @@ export function crearRotulosPartes({escena, max = 5, ancho = 0.24, alto = 0.07} 
         const e = etiquetas[i];
         pintar(e, it.nombre, it.sub);
         e.malla.scale.setScalar(esc);
-        e.malla.position.copy(centro).addScaledVector(der, Math.min(pieza.lado ?? radio + 0.06 + (ancho * esc) / 2, pieza.ladoMax ?? Infinity));
+        const lado = pieza.lado ?? radio + 0.06 + (ancho * esc) / 2;
+        const haciaDonde = lado < 0 ? -1 : 1; // a la derecha de la pieza, o a su izquierda
+        e.malla.position.copy(centro).addScaledVector(der, haciaDonde * Math.min(Math.abs(lado), pieza.ladoMax ?? Infinity));
         e.malla.position.y = centro.y - (pieza.baja || 0) + ((lista.length - 1) / 2 - i) * paso;
         e.malla.rotation.set(0, Math.atan2(ojo.x - e.malla.position.x, ojo.z - e.malla.position.z), 0);
         e.malla.visible = true;
-        const borde = p0.copy(e.malla.position).addScaledVector(der, (-ancho * esc) / 2);
+        const borde = p0.copy(e.malla.position).addScaledVector(der, (-haciaDonde * ancho * esc) / 2); // el borde que mira a la pieza
         L.set([borde.x, borde.y, borde.z, it.mundo.x, it.mundo.y, it.mundo.z], i * 6);
         P.set([it.mundo.x, it.mundo.y, it.mundo.z], i * 3);
         estado.push({nombre: it.nombre, rotulo: e.malla.position.clone(), punto: it.mundo});

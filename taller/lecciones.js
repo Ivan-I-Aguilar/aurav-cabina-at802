@@ -1,4 +1,4 @@
-// El CONTENIDO de las lecciones del curso de familiarización con el AT-802 (T13 a T15, 21 y 22/11/2026; PLAN_TALLER.md §16). Va aparte
+// El CONTENIDO de las lecciones del curso de familiarización con el AT-802 (T13 a T16, 21 y 22/11/2026; PLAN_TALLER.md §16). Va aparte
 // del código para que lo corrija y lo valide quien corresponda (Iván, AAXOD) sin tocar nada más.
 // [AGREGADO] Sale de conocimiento general y de las notas del manual de entrenamiento (herramientas/mapa_cabina.md). Todo es
 // [VERIFICAR]: no reemplaza el manual del fabricante, el procedimiento de la empresa ni la instrucción. No trae límites ni
@@ -13,6 +13,8 @@
 //        «profundidad», «direccion»; «ballesta» en el tren). Si lo que se mueve anda solo, el canal es su velocidad, en grados
 //        por segundo («rueda»); y la pieza puede declarar otra unidad para un canal («piso», en centímetros);
 //      · «giro» = a qué velocidad gira la pieza (rad/s) · «flujo» = hacia dónde y qué tan rápido va el aire (con signo; 0 = nada);
+//      · «nivel» = con cuánto líquido arranca ese estado, de 0 a 100 (la tolva). No se sostiene: después sube o baja solo, con
+//        lo que entra y lo que sale («carga» y «descarga», en centésimas del recipiente por segundo);
 //      · «alabeo», «cabeceo», «guinada» = cuánto se inclina la pieza entera, en grados (lo que le pasa al avión; + = ala derecha
 //        abajo, nariz arriba, nariz a la derecha).
 //    «partes: true» = en ese estado se ven los nombres de las partes. «palancas: {id: u}» = dónde queda una palanca en un estado
@@ -177,6 +179,70 @@ export const LECCIONES = {
       {q: '¿Por dónde entra el aire al motor?', a: ['Por la toma, debajo de la hélice', 'Por los dos caños de los costados', 'Por la cabina'], muestra: 'marcha'},
       {q: '¿Por dónde salen los gases?', a: ['Por los dos escapes, adelante y a los costados', 'Por la cola del avión', 'Por la toma de abajo'], muestra: 'potencia'},
       {q: 'Dentro del motor, ¿hacia dónde va el aire?', a: ['De atrás hacia adelante', 'De adelante hacia atrás', 'De arriba hacia abajo'], muestra: 'marcha'},
+    ],
+  },
+
+  // TOLVA Y BOCA DE CARGA (T16). Marco: el del avión. El sistema entero, de arriba abajo: el lomo con sus tapas y la escala de la
+  // mirilla (modelo hecho con las fotos), la compuerta con sus dos hojas y la cañería de carga (ídem) y, en el medio, el AGUA EN
+  // ESQUEMA: no hay fotos del interior, así que el recipiente es un dibujo [AGREGADO]; lleno llega a la marca de 800 galones de
+  // la escala (unos 3.000 litros) [VERIFICAR]. «carga» y «descarga» = cuánto entra y cuánto sale, en centésimas del recipiente
+  // por segundo (ILUSTRATIVO: se eligió para que se vea); «hojas» = cuánto abren las hojas, de 0 a 100 (la posición abierta no
+  // tiene foto: PROVISORIA); «nivel» = con cuánta agua arranca cada estado. La tolva no se pasa de llena ni de vacía: llena, deja
+  // de entrar; vacía, deja de caer. No trae procedimientos de carga ni de descarga.
+  tolva: {
+    mando: 'En tierra se carga por la boca de carga; en vuelo se descarga desde la cabina.',
+    inicial: 'cargando',
+    palancas: [
+      {id: 'carga', rotulo: 'VÁLVULA DE CARGA', atras: 'CERRAR', adelante: 'ABRIR', campos: ['carga'], puntos: [[0, 'cerrada', 'CERRADA'], [1, 'cargando', 'ABIERTA']]},
+      {id: 'descarga', rotulo: 'COMPUERTA', atras: 'CERRAR', adelante: 'ABRIR', campos: ['descarga', 'hojas'], puntos: [[0, 'cerrada', 'CERRADA'], [1, 'descargando', 'ABIERTA']]},
+    ],
+    estados: [
+      {id: 'partes', boton: 'PARTES', carga: 0, descarga: 0, hojas: 0, nivel: 70, partes: true, palancas: {carga: 0, descarga: 0}, texto: 'La tolva va entre el motor y la cabina. Arriba, sus tapas; atrás, la escala del nivel; abajo, la compuerta y las bocas de carga.'},
+      {id: 'cargando', boton: 'CARGAR', carga: 14, descarga: 0, hojas: 0, nivel: 10, texto: 'Se carga desde el piso: el agua entra por la boca de carga, atrás y abajo, y la tolva se llena de abajo hacia arriba.'},
+      {id: 'llena', boton: 'NIVEL', carga: 0, descarga: 0, hojas: 0, nivel: 100, texto: 'El nivel se lee en la escala de la pared de atrás, que el piloto ve por la mirilla de la cabina. Llena: unos 800 galones (3.000 litros).'},
+      {id: 'descargando', boton: 'DESCARGAR', carga: 0, descarga: 30, hojas: 70, nivel: 100, texto: 'La compuerta se abre y la carga cae por su propio peso: el nivel baja por la escala hasta que la tolva queda vacía.'},
+      // sin botón: donde arrancan las dos palancas (no cambia el nivel: lo deja como está)
+      {id: 'cerrada', carga: 0, descarga: 0, hojas: 0, texto: 'Con la válvula de carga y la compuerta cerradas, la carga queda en la tolva y el nivel no cambia. Probá las dos palancas.'},
+    ],
+    partes: [
+      {nombre: 'Tapas', sub: 'arriba, en el lomo', punto: [-0.6, 2.98, 0]},
+      {nombre: 'Escala del nivel', sub: 'se lee por la mirilla', punto: [-1.8, 2.66, 0.14]},
+      {nombre: 'Compuerta', sub: 'por donde sale la carga', punto: [-1.0, 0.97, 0.15]},
+      {nombre: 'Boca de carga', sub: 'una de cada lado', punto: [-3.07, 0.88, -0.76]},
+    ],
+    preguntas: [
+      {q: '¿Por dónde se carga la tolva?', a: ['Por la boca de carga, desde el piso', 'Por la hélice', 'Por la cabina'], muestra: 'cargando'},
+      {q: '¿Dónde se lee cuánta carga hay?', a: ['En la escala del nivel, por la mirilla', 'En el velocímetro', 'En la rueda de cola'], muestra: 'llena'},
+      {q: '¿Por dónde sale la carga?', a: ['Por la compuerta, debajo de la tolva', 'Por los escapes', 'Por las tapas de arriba'], muestra: 'descargando'},
+    ],
+  },
+
+  // COMPUERTA DE DESCARGA (T16). Marco: el del avión. El modelo hecho con las fotos: las dos hojas, que giran sobre su bisagra
+  // de afuera, y detrás la cañería de carga. «hojas» = cuánto abren, de 0 a 100 (la posición abierta no tiene foto: PROVISORIA).
+  // «flujo» = qué tan rápido cae el agua del dibujo; con más cobertura caen más chorros. Que la cobertura es cuánto abren las
+  // hojas, que se larga con el gatillo del bastón y que la descarga de emergencia larga todo salen de las notas del manual de
+  // entrenamiento [VERIFICAR]. No trae procedimientos ni límites.
+  compuerta: {
+    mando: 'En la cabina: el sistema de descarga. Se elige la cobertura y se larga con el gatillo del bastón.',
+    inicial: 'baja',
+    palancas: [{id: 'cobertura', rotulo: 'COBERTURA', atras: 'MENOS', adelante: 'MÁS', campos: ['hojas', 'flujo'], puntos: [[0, 'cerrada', 'CERRADA'], [0.35, 'baja', 'BAJA'], [0.7, 'alta', 'ALTA'], [1, 'salvo', 'TODO']]}],
+    estados: [
+      {id: 'partes', boton: 'PARTES', hojas: 0, flujo: 0, partes: true, palancas: {cobertura: 0}, texto: 'Dos hojas largas cierran por debajo la boca de la tolva. Detrás va la cañería de carga, con una boca de cada lado.'},
+      {id: 'cerrada', boton: 'CERRADA', hojas: 0, flujo: 0, texto: 'Cerrada: las dos hojas se juntan en la quilla y la carga queda adentro.'},
+      {id: 'baja', boton: 'COBERTURA BAJA', hojas: 18, flujo: 0.9, texto: 'Cobertura baja: las hojas abren poco y la carga sale de a poco. Queda una franja larga y fina sobre el terreno.'},
+      {id: 'alta', boton: 'COBERTURA ALTA', hojas: 50, flujo: 1.6, texto: 'Cobertura alta: las hojas abren más y sale más carga por segundo. Queda una franja más corta y más cargada.'},
+      {id: 'salvo', boton: 'TODO JUNTO', hojas: 100, flujo: 2.6, texto: 'Todo junto: las hojas abren del todo y la tolva se vacía en pocos segundos. Así larga también la descarga de emergencia.'},
+    ],
+    partes: [
+      {nombre: 'Hoja', sub: 'una de cada lado', punto: [-1.0, 0.97, 0.15]},
+      {nombre: 'Bisagra', sub: 'a lo largo de cada hoja', punto: [-1.0, 1.06, 0.29]},
+      {nombre: 'Válvula de carga', sub: 'con su palanca', punto: [-2.95, 0.967, 0.5]},
+      {nombre: 'Boca de carga', sub: 'con acople rápido', punto: [-3.07, 0.88, 0.76]},
+    ],
+    preguntas: [
+      {q: '¿Qué cambia con la cobertura?', a: ['Cuánto abren las hojas y cuánta carga sale por segundo', 'La velocidad del avión', 'El tamaño de la tolva'], muestra: 'alta'},
+      {q: 'Para largar toda la carga de una vez, ¿cómo quedan las hojas?', a: ['Abiertas del todo', 'Cerradas', 'Apenas abiertas'], muestra: 'salvo'},
+      {q: '¿Desde dónde se maneja la compuerta?', a: ['Desde la cabina', 'Desde el piso, con una palanca', 'No se maneja: abre sola'], muestra: 'baja'},
     ],
   },
 };
