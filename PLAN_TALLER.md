@@ -1033,6 +1033,11 @@ unidades de los canales, cómo entra en la pantalla una pieza alta y lo nuevo qu
 **Al día con la T16 (22/11):** las mallas que entran enteras, el LÍQUIDO (un recipiente en esquema que se llena hasta un nivel
 con lo que entra y lo que sale), los chorros al paso del líquido o por escalones, el campo «nivel», los nombres a la izquierda
 de la pieza y lo nuevo que salió mal; el paquete se rehízo.
+**Al día con la T17 (22/11):** el CURSO (el avance de cada lección, el resumen, el guardado en el aparato, el botón que sigue
+por la primera que falta), los estados que señalan sólo algunas partes, lo que se dibuja en grueso cuando la parte que se
+mueve es muy fina, la regla de que el holograma no puede quedar metido en algo sólido (con su prueba), cómo se coloca una
+placa que se abre «delante del alumno», la voz de las lecciones y lo nuevo que salió mal; `holo/` suma `curso.js`; el paquete
+se rehízo.
 
 ### 16.3 Qué funciona en cada lección, y con qué se cuenta (medido en el modelo el 21/11)
 Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cortar nada.
@@ -1056,7 +1061,7 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 | T14 | **HECHA el 22/11.** Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
 | T15 | **HECHA el 22/11.** Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
 | T16 | **HECHA el 22/11.** Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
-| T17 | El curso entero: orden, avance, repaso por lección, resumen final, voz; la cabina | se recorre de punta a punta y da el resumen |
+| T17 | **HECHA el 22/11.** El curso entero: orden, avance, repaso por lección, resumen final, voz; la cabina | se recorre de punta a punta y da el resumen |
 
 Cada bloque cierra como los otros: pruebas, capturas revisadas, plan y `CLAUDE.md` al día, commit local, y lo que no se pudo probar.
 
@@ -1258,6 +1263,70 @@ carga, el nivel y la descarga.
   si el agua se lee como agua, si la tolva entera queda cómoda tan abajo, si la escala se alcanza a ver, y si las cortinas de
   la compuerta molestan al caer hacia los pies.
 
+**T17 HECHA el 22/11 (v=20261122d, sin publicar; de 16:27 a 17:24).** El curso entero —el orden, el avance, el resumen, la voz— y
+la cabina como lección. Es el último bloque del plan: el curso ya tiene sus nueve lecciones.
+- **Qué quedó.** *El curso* (`taller/curso.js`, nuevo): cada tarjeta es una lección («LECCIÓN n DE 9») y dice cómo va: sin
+  empezar · en curso (viste n de N, falta el repaso) · hecha (repaso x de y). Una lección queda HECHA cuando el alumno puso
+  todos sus estados con botón e hizo el repaso (el motor: sus 8 estaciones y sus preguntas). MI AVANCE: una placa con las nueve
+  lecciones —lo visto, el repaso, cómo va— que se abre desde cualquier tarjeta y desde el atril; tocando un renglón se va a esa
+  lección; sale sola, una sola vez, cuando el curso queda completo. El botón del atril sigue por la primera lección que falta:
+  EMPEZAR EL CURSO · SEGUIR EL CURSO («Llevás n de 9 lecciones. Sigue: …») · CURSO COMPLETO. El avance queda GUARDADO en el
+  aparato (`localStorage`, clave `aurav_taller_curso`) y se borra con EMPEZAR DE NUEVO, que pide confirmación. *La cabina*
+  (punto 4), octava lección de pieza: se mueven el bastón (a los costados y adelante–atrás) y los pedales, con las palancas
+  BASTÓN y PEDALES; botones PARTES · BASTÓN · PEDALES · PALANCAS · TOLVA (los dos últimos señalan el cuadrante, y la mirilla y
+  el tablero); cinco nombres y tres preguntas. Se la mira desde atrás y un poco de arriba, como la ve el piloto: la derecha
+  queda a la derecha. *La voz*: la frase de cada tarjeta al llegar y la de cada estado al apretar su botón; en la PC las dice
+  la voz del navegador. **Los WAV para el casco NO se grabaron** (lo prometido a Iván: preguntarle antes; los textos son un
+  borrador): `herramientas/voces.py --curso` junta las 55 frases cuando él los apruebe. Hasta entonces, en el Quest esas frases
+  son mudas (el casco no tiene voz propia); las del motor siguen sonando.
+- **Lo nuevo en el mecanismo.** `curso.js`: el avance de una lección y su renglón (`avanceDeLeccion`, `textoAvance`), guardar,
+  leer y borrar, y la placa del resumen. `main.js`: `avanceDePunto`, `filasCurso`, `primerPendiente`, `abrirResumen` y
+  `colocarResumen` (la placa BUSCA LUGAR LIBRE: mira en planta lo que el juego ya sabe para caminar —muebles, mesa, avión por
+  debajo de 1,9 m, paredes: `lugarOcupado`— del ojo a quince lugares de la placa y, si algo se cruza, se acerca achicándose en
+  la misma proporción, así ocupa lo mismo en la vista y se lee igual; sin rayos contra las mallas, que en el casco serían un
+  cuadro trabado; en la PC va de frente a la mirada), `guardarCursoSiCambio` (una vez por segundo) y `decirCurso`.
+  `lecciones.js`: un estado puede señalar SÓLO ALGUNAS partes (`partes: ['Bastón']`): la pieza no se detiene ni vuelve a su
+  pose y, en el repaso, ese nombre sale después de contestar. `piezaholo.js` no cambió: el bastón es un giro sobre otro
+  (`sobre`), lo dibujado entra como mallas de paso (`userData.luz` les da luz propia a las que no se mueven) y cada pedal
+  junta su almohadilla y su placa en una malla (`junta`).
+- **Medido en el modelo.** El caño del bastón, de (−2,17 · 2,04) a (−2,24 · 2,80), de 2 cm de diámetro, con el pivote en
+  y 2,03; los pedales, dos almohadillas en x −1,65 · y 2,12 · z ±0,2; el cuadrante, en (−2,54 · 2,46 · −0,45); la mirilla, en
+  x −1,71 · y 2,63 a 2,80; la cabina de adentro va de x −3,59 a −1,57. Los recorridos son ILUSTRATIVOS: el bastón, ±16° a los
+  costados y 10° hacia atrás; los pedales, ±10 cm.
+- **Pruebas** (con la página recién cargada). `probarRecorrido()` 129 de 129: 12 de la cabina (cada estado y cada palanca con
+  el gatillo simulado; la punta del bastón va 21 cm a la derecha y 13 hacia atrás; un pedal va adelante y el otro atrás; los
+  nombres; el repaso) y una nueva para cada pieza: abierta, el avión de verdad no le tapa nada (rayos del ojo a sus vértices).
+  `probarCurso()`, nueva, 9 de 9: la tarjeta dice cómo va; MI AVANCE se abre con el gatillo, a la vista y dentro de la
+  pantalla; trae un renglón por lección; un renglón lleva a su lección; el curso sigue por la primera que falta; el avance se
+  guarda y se vuelve a leer igual; EMPEZAR DE NUEVO pide confirmación; con el curso completo el resumen sale solo, una vez; y
+  MI AVANCE queda a la vista pedido desde el atril y desde los nueve puntos, en la PC y como va en el casco (rayos de verdad,
+  cabeza ±8 cm). Usa otra clave de guardado: no toca lo del alumno. Mandos 29 (ya no dependen de dónde esté parado el alumno),
+  piloto 15, mecánico 5, identificar 6; prevuelo bien. Con la lección de la cabina abierta: 30 llamadas y 133 mil triángulos
+  (34 con los cinco nombres); con MI AVANCE abierto, hasta 44 y 124 mil (tope: 75 y 200 mil). Con clics de verdad del mouse,
+  como lo ve Iván: el atril (el botón del curso con sus tres textos, MI AVANCE), la tarjeta con su renglón de avance, MI AVANCE
+  (los renglones, ir a una lección, EMPEZAR DE NUEVO con NO y con SÍ, CERRAR) y la lección de la cabina entera (los cinco
+  botones, las dos palancas arrastrando, los nombres, el repaso con una respuesta equivocada, VOLVER y CERRAR).
+- **Encontrado con los clics de verdad** (las pruebas por consola pasaban todas): MI AVANCE pedido desde el atril quedaba
+  DETRÁS del atril (de ahí lo de buscar lugar libre) y, mirando hacia abajo, se veía en trapecio; la letra de sus renglones daba
+  1,3 cm por metro (pasó a 30 px con la placa a 1,2 m: 1,56); el bastón no se veía moverse: de costado se iba hacia el fondo, y
+  el caño mide 2 cm (ahora se la mira desde atrás y lo que se mueve va DIBUJADO en grueso: el bastón con una bola en la
+  empuñadura, una placa sobre cada pedal y una cruz de guía quieta; el panel lo dice); **la cabina en holograma estaba medio
+  metida en el fuselaje de verdad, que le tapaba el fondo (133 de 251 vértices): venía así desde la T11** (el alumno se para
+  ahora a 2,1 m del costado, antes a 1,45, y hay una prueba para las ocho piezas); el recorte de la cabina llegaba al carenado
+  de atrás, que achicaba un 18 % todo lo de adentro (termina en el mamparo); en el repaso, «mirá la pieza» no mostraba nada
+  para el cuadrante (ahora sale su nombre).
+- **Lo provisorio y lo que falta:** todos los textos del curso (tarjetas, estados, preguntas) son un borrador [AGREGADO ·
+  VERIFICAR]; lo dibujado en la cabina (bastón, pedales, cruz) y sus recorridos; el cuadrante, el tablero y la mirilla sólo se
+  señalan (las palancas del motor se manejan en la lección del motor); la voz del curso no está grabada (falta el ok de Iván a
+  los textos); el avance es por APARATO, no por alumno (en un casco compartido, cada alumno arranca con EMPEZAR DE NUEVO); no
+  hay constancia ni envío al aula (fuera de alcance); sin sonidos propios de cada pieza. Lámina:
+  `Documents/aurav-cabina/capturas_taller/T17_curso_y_cabina.jpg`.
+- **Lo que no se pudo probar:** el casco. Medido con el casco simulado (ojos a 1,65 m): a ninguna de las ocho piezas le tapa
+  nada el avión; la cabina se abre a 95 cm, de 0,66 a 1,36 m de alto, con su panel de 1,58 a 1,97 m. MI AVANCE queda a 1,2 m,
+  de 1,21 a 1,90 m de alto; pedido desde el atril se acerca a 54 cm y se achica al 45 % (de 1,45 a 1,76 m): hay que ver si
+  tan cerca resulta cómodo. Hay que ver también si su letra se lee, si el bastón y los pedales se distinguen dentro de la
+  cabina, y cómo se siente el curso sin la voz grabada.
+
 ### 16.5 Lo que tiene que decir Iván (de a una)
 1. **El nombre de la skill.** Elegido el 21/11: «Despiece».
 2. Si cada pieza lleva también su página de escritorio, como `turbohelice.html`, o va directo al taller (más rápido).
@@ -1267,8 +1336,10 @@ carga, el nivel y la descarga.
 3. Por qué pieza se empieza (propuesta: la hélice, que se maneja con una palanca que ya está). **Hecho el 21/11: se empezó por
    la hélice (T13).** Falta que Iván la mire y diga si las demás lecciones van con esa forma.
 4. De dónde salen los contenidos de cada lección y quién los valida (el manual de entrenamiento, Bruno, AAXOD).
-5. Si el curso lleva repaso con puntaje y resumen final. (La lección de la hélice ya trae un repaso de tres preguntas y guarda
-   el mejor puntaje; el resumen final del curso es de la T17.)
+5. Si el curso lleva repaso con puntaje y resumen final. (Hecho en la T17, 22/11: cada lección tiene su repaso y guarda el
+   mejor puntaje, y MI AVANCE es el resumen del curso. Falta que Iván lo mire.)
+6. **La voz del curso (T17):** si se graban ya las 55 frases con los textos como están (`herramientas/voces.py --curso` y
+   `voces.ps1`), o se espera a que alguien los valide. Sin grabar, en el Quest el curso es mudo.
 - **Lo que no se puede probar acá:** el casco.
 
 ## Fuera de alcance (por ahora)

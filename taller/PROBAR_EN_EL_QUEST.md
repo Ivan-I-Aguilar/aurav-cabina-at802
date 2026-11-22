@@ -47,7 +47,7 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 
 ## 3. Qué mirar en el casco
 - **La dinámica nueva (16/11), que es lo que más depende del casco:**
-  - *El recorrido del avión:* atril → RECORRER EL AVIÓN → los nueve puntos. ¿Se leen los discos y las tarjetas? ¿Los saltos de
+  - *El recorrido del avión:* atril → EMPEZAR EL CURSO → los nueve puntos. ¿Se leen los discos y las tarjetas? ¿Los saltos de
     SIGUIENTE marean? ¿Se llega bien tocando un disco o una marca del piso con el rayo?
   - *El motor dentro del capó:* junto al avión se ve como una radiografía azul. ¿Se entiende dónde va y qué tamaño tiene?
   - *VER EL MOTOR:* la primera impresión a escala real, a 3,2 m. ¿Impacta? ¿Entra entero en la vista? ¿Se ve nítido o empastado?
@@ -79,8 +79,17 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
     pared de atrás? Las dos palancas (VÁLVULA DE CARGA y COMPUERTA), ¿se aciertan con el rayo? En la compuerta: ¿se nota que
     con más cobertura las hojas abren más y cae más agua? ¿Molestan las cortinas al caer hacia los pies? En PARTES los nombres
     van a la IZQUIERDA de la pieza (a la derecha está el ala): ¿quedan a la vista?
+  - *El curso y la lección de la cabina (T17, 22/11):* cada tarjeta dice «LECCIÓN n DE 9» y cómo va (sin empezar · en curso ·
+    hecha), y trae el botón MI AVANCE, que también está en el atril: abre una placa con las nueve lecciones a 1,2 m (de 1,2 a
+    1,9 m de alto). ¿Se lee su letra? ¿Se le acierta con el rayo a un renglón (te lleva a esa lección) y a CERRAR? Pedida desde
+    el atril se acerca a medio metro y se achica: ¿queda cómoda tan cerca? El avance queda guardado en el casco: al volver a
+    entrar, el atril tiene que decir SEGUIR EL CURSO. EMPEZAR DE NUEVO lo borra (pide confirmación): es lo que tiene que hacer
+    cada alumno si el casco se comparte. La cabina (punto 4 → VER CÓMO FUNCIONA) se ve desde atrás, como el piloto, de 0,7 a
+    1,4 m de alto: ¿se distinguen el bastón (va dibujado en grueso, con una bola en la empuñadura) y los pedales? ¿Se nota para
+    dónde va el bastón contra la cruz de guía? **La voz del curso todavía no está grabada:** en el casco, las frases de las
+    tarjetas y de las lecciones van a ser mudas (las del motor sí suenan).
 - **Fluidez:** que no tironee en ningún lugar (frente al motor, mirando la nave entera desde el portón, junto al AT-802). En la PC, la
-  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (con una lección abierta: hélice 56 y 127 k, ala 50 y 92 k, cola 36 y 83 k, tren 41 y 124 k, nariz 39 y 129 k, tolva 41 y 133 k, compuerta 38 y 124 k; tope del plan: 75 y 200 k); el número que manda es el
+  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (con una lección abierta: hélice 56 y 127 k, ala 50 y 92 k, cola 36 y 83 k, tren 41 y 124 k, nariz 39 y 129 k, tolva 41 y 133 k, compuerta 38 y 124 k, cabina 34 y 133 k; con MI AVANCE abierto, 44 y 124 k; tope del plan: 75 y 200 k); el número que manda es el
   del casco.
 - **Mareo:** caminar con el joystick izquierdo, girar de a 30° con el derecho, y los saltos con fundido del atril y de la pausa.
 - **Legibilidad:** el atril, los paneles de la mesa (instrumentos, estaciones), el cartel de arriba del holograma, las preguntas, el
@@ -90,11 +99,13 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 - **El gatillo con el rayo:** botones de los paneles, ARRANCAR y A RALENTÍ de la mesa, el atril.
 - **La pausa:** B o Y abre el menú (Seguir · Motor a ralentí · ir a la mesa, la partida, el AT-802, el Cessna, los bancos · Salir de
   VR); sacarse el casco tiene que pausar solo.
-- **La voz:** la frase de cada estación y el aviso de cada falla (el audio arranca con el primer gesto).
+- **La voz:** la frase de cada estación y el aviso de cada falla (el audio arranca con el primer gesto). Las frases del curso
+  (tarjetas y lecciones) no están grabadas: en el casco no suenan todavía.
 - **Modo mecánico (borrador, sin validar):** sólo con `?mecanico=1`: `http://localhost:8766/taller.html?mecanico=1` → atril → MODO
   MECÁNICO. Agarrar las piezas del banco (son de tamaño real: chicas), llevarlas al holograma, señalar con el rayo.
 
 ## 4. Lo que no se pudo probar desde la PC
 Todo lo de arriba que dice «grip», «gatillo», «joystick», «B o Y», «sacarse el casco» y la fluidez real: en la PC se probó con los
 mandos simulados por código (`__taller.probarMandos()`, 29 pruebas), el piloto de prueba (`__taller.probarPiloto()`, 15) y el
-recorrido del avión (`__taller.probarRecorrido()`, 115, con rayos desde el ojo a cada tarjeta y al panel de cada lección), pero eso no reemplaza ponerse el casco.
+recorrido del avión (`__taller.probarRecorrido()`, 129, con rayos desde el ojo a cada tarjeta y al panel de cada lección) y el
+curso (`__taller.probarCurso()`, 9), pero eso no reemplaza ponerse el casco.
