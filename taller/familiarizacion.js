@@ -16,8 +16,8 @@
 // Todo en 3 llamadas de dibujo: las marcas (un disco y una marca de piso por punto) en una malla con un atlas, las líneas, y la
 // tarjeta. Sumar un punto es agregar su entrada en PUNTOS (y, si tiene pieza en holograma, su recorte en PIEZAS_HOLO de main.js).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261122a';
-import {LECCIONES} from './lecciones.js?v=20261122a';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261122b';
+import {LECCIONES} from './lecciones.js?v=20261122b';
 
 export const PUNTOS = [
   {
@@ -37,6 +37,7 @@ export const PUNTOS = [
     marca: [2.3, 2.0, -1.15],
     pie: [3.0, -2.5],
     holo: 'escapes',
+    holoNota: 'celeste: el aire · naranja: los gases',
   },
   {
     clave: 'tolva',
@@ -96,6 +97,7 @@ export const PUNTOS = [
     marca: [0.3, 1.2, 2.15],
     pie: [1.0, 3.6],
     holo: 'tren',
+    holoNota: 'marcas y piso dibujados · recorridos ilustrativos',
   },
   {
     clave: 'motor',
@@ -328,7 +330,8 @@ export function crearFamiliarizacion({avion, leyenda}) {
       let cerca = -1;
       let dMin = CERCA;
       P.forEach((p, i) => {
-        const r = RADIO_MARCA * (i === activo ? 1.15 + 0.12 * Math.sin(tiempo * 5) : 1);
+        // (con la pieza de ese punto abierta su disco se esconde, como su tarjeta: quedaba detrás de la pieza, encendido)
+        const r = p.clave === abierto ? 0 : RADIO_MARCA * (i === activo ? 1.15 + 0.12 * Math.sin(tiempo * 5) : 1);
         rc.copy(der).multiplyScalar(r);
         ac.copy(arr).multiplyScalar(r);
         const c = p.marcaM;

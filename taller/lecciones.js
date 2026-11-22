@@ -1,4 +1,4 @@
-// El CONTENIDO de las lecciones del curso de familiarización con el AT-802 (T13 y T14, 21/11/2026; PLAN_TALLER.md §16). Va aparte
+// El CONTENIDO de las lecciones del curso de familiarización con el AT-802 (T13 a T15, 21 y 22/11/2026; PLAN_TALLER.md §16). Va aparte
 // del código para que lo corrija y lo valide quien corresponda (Iván, AAXOD) sin tocar nada más.
 // [AGREGADO] Sale de conocimiento general y de las notas del manual de entrenamiento (herramientas/mapa_cabina.md). Todo es
 // [VERIFICAR]: no reemplaza el manual del fabricante, el procedimiento de la empresa ni la instrucción. No trae límites ni
@@ -10,7 +10,8 @@
 //  - «estados»: lo que la pieza hace. Cada uno: «id», «texto» (lo que se lee), «boton» (si lleva botón en el panel; sin él, el
 //    estado sólo es una marca de una palanca) y sus CAMPOS, que dicen cómo queda la pieza:
 //      · un canal de partes móviles de la pieza, en grados desde como está el modelo («paso» en la hélice; «flap», «aleron»,
-//        «profundidad», «direccion»);
+//        «profundidad», «direccion»; «ballesta» en el tren). Si lo que se mueve anda solo, el canal es su velocidad, en grados
+//        por segundo («rueda»); y la pieza puede declarar otra unidad para un canal («piso», en centímetros);
 //      · «giro» = a qué velocidad gira la pieza (rad/s) · «flujo» = hacia dónde y qué tan rápido va el aire (con signo; 0 = nada);
 //      · «alabeo», «cabeceo», «guinada» = cuánto se inclina la pieza entera, en grados (lo que le pasa al avión; + = ala derecha
 //        abajo, nariz arriba, nariz a la derecha).
@@ -115,6 +116,67 @@ export const LECCIONES = {
       {q: 'Con el bastón atrás, ¿qué hace la nariz del avión?', a: ['Sube', 'Baja', 'Gira a un costado'], muestra: 'atras'},
       {q: '¿Con qué se mueve el timón de dirección?', a: ['Con los pedales', 'Con el bastón', 'Con la llave de flaps'], muestra: 'pedalDer'},
       {q: 'Con el pedal izquierdo, ¿hacia dónde gira la nariz?', a: ['A la izquierda', 'A la derecha', 'Hacia arriba'], muestra: 'pedalIzq'},
+    ],
+  },
+
+  // TREN DE ATERRIZAJE (T15). Marco: el del avión. El tren principal derecho. Medido en el modelo: la rueda, de 0,46 m de radio,
+  // con el eje a 0,46 m del piso y de 1,34 a 1,60 m del eje del avión; la pata sale de la panza a 1,40 m de alto y 0,43 m del eje.
+  // «ballesta» = cuánto cede la pata sobre su encastre, en grados (+ = la rueda sube y se abre): los recorridos son ILUSTRATIVOS
+  // (una ballesta de verdad se curva en todo su largo) [VERIFICAR]. «piso» = cuánto se despega el piso de la rueda, en centímetros
+  // (negativo = el avión en el aire). «rueda» = a qué velocidad rueda, en grados por segundo (300 = unos 2,4 m/s). Las marcas de
+  // la rueda y el piso están dibujados para que se vea el movimiento: no son del avión. Los frenos, con la punta de los pedales,
+  // uno por rueda [VERIFICAR con el manual].
+  tren: {
+    mando: 'En la cabina: el tren es fijo, no tiene mando. Los frenos, con la punta de cada pedal.',
+    inicial: 'rodando',
+    palancas: [
+      {id: 'peso', rotulo: 'PESO', atras: 'MENOS', adelante: 'MÁS', campos: ['ballesta', 'piso'], puntos: [[0, 'vuelo', 'EN VUELO'], [0.5, 'rodando', 'APOYADO'], [1, 'golpe', 'GOLPE']]},
+      {id: 'freno', rotulo: 'FRENO', atras: 'SOLTAR', adelante: 'APRETAR', campos: ['rueda'], puntos: [[0, 'rodando', 'SUELTO'], [1, 'frenando', 'A FONDO']]},
+    ],
+    estados: [
+      {id: 'partes', boton: 'PARTES', ballesta: 0, piso: 0, rueda: 0, partes: true, palancas: {peso: 0.5, freno: 0}, texto: 'El tren principal: de cada lado, una pata de ballesta (una hoja de acero que hace de resorte), la rueda y su freno.'},
+      {id: 'vuelo', boton: 'EN VUELO', ballesta: -3, piso: -30, rueda: 0, palancas: {freno: 0}, texto: 'Tren fijo: no se guarda. En vuelo la pata queda sin carga y la rueda, colgando, deja de girar.'},
+      {id: 'rodando', boton: 'RODANDO', ballesta: 0, piso: 0, rueda: 300, texto: 'En tierra la pata carga el peso del avión, y la rueda gira con el piso que pasa por debajo.'},
+      {id: 'golpe', boton: 'ATERRIZAJE', ballesta: 6, piso: 0, rueda: 300, texto: 'Al tocar el piso la ballesta cede como un resorte: la pata se abre, la rueda sube y el golpe no llega entero al avión.'},
+      {id: 'frenando', boton: 'FRENANDO', ballesta: 0, piso: 0, rueda: 0, texto: 'El freno aprieta la rueda hasta detenerla. Cada rueda tiene el suyo: frenando una sola, el avión dobla hacia ese lado.'},
+    ],
+    partes: [
+      {nombre: 'Pata de ballesta', sub: 'hace de resorte', punto: [-0.08, 0.98, 1.0]},
+      {nombre: 'Rueda', sub: 'una de cada lado', punto: [0.0, 0.8, 1.6]},
+      {nombre: 'Freno', sub: 'del lado de adentro', punto: [0.12, 0.48, 1.31]},
+    ],
+    preguntas: [
+      {q: '¿Qué hace la pata de ballesta cuando el avión toca el piso?', a: ['Cede como un resorte y absorbe el golpe', 'Se guarda dentro del ala', 'Frena la rueda'], muestra: 'golpe'},
+      {q: 'El tren del AT-802, ¿se guarda en vuelo?', a: ['No: es fijo', 'Sí, dentro del ala', 'Sí, dentro del fuselaje'], muestra: 'vuelo'},
+      {q: 'Si se frena una sola rueda, ¿qué hace el avión en tierra?', a: ['Dobla hacia el lado de esa rueda', 'Sigue derecho', 'Dobla hacia el otro lado'], muestra: 'frenando'},
+    ],
+  },
+
+  // ESCAPES Y TOMA DE AIRE (T15). Marco: el del avión. La nariz: el capó, los dos escapes y el cono de la hélice. No tiene partes
+  // que se muevan: lo que se ve es el CAMINO DEL AIRE [AGREGADO, VERIFICAR]: entra por la toma, debajo del cono; va por abajo
+  // hasta el fondo del capó, da la vuelta y cruza el motor de atrás hacia adelante (en celeste, el aire; en naranja, los gases); y
+  // sale por los dos escapes. Medido en el modelo: el eje de la hélice a 2,54 m de alto; los escapes salen a 1,8 m de la rueda
+  // principal hacia adelante, a 0,4 m del eje, y terminan a 0,8 m. «flujo» = qué tan rápido van las estelas (m/s del dibujo, no
+  // del aire de verdad).
+  escapes: {
+    mando: 'En la cabina: no tiene mando propio. Cuánto aire pasa lo decide la palanca de potencia.',
+    inicial: 'marcha',
+    palancas: [{id: 'potencia', rotulo: 'POTENCIA', atras: 'ATRÁS', adelante: 'ADELANTE', campos: ['flujo'], puntos: [[0, 'marcha', 'RALENTÍ'], [1, 'potencia', 'MÁXIMA']]}],
+    estados: [
+      {id: 'partes', boton: 'PARTES', flujo: 0, partes: true, palancas: {potencia: 0}, texto: 'La nariz: el capó cubre el motor; debajo del cono de la hélice está la toma de aire y, a cada costado, un escape.'},
+      {id: 'parado', boton: 'PARADO', flujo: 0, palancas: {potencia: 0}, texto: 'Motor parado: no entra aire ni salen gases.'},
+      {id: 'marcha', boton: 'EN MARCHA', flujo: 0.8, texto: 'El aire entra por la toma, va por abajo hasta el fondo y da la vuelta: cruza el motor de atrás hacia adelante y sale por los escapes.'},
+      {id: 'potencia', boton: 'MÁS POTENCIA', flujo: 2.0, texto: 'Con más potencia pasa más aire y los gases salen con más fuerza, hacia los costados y hacia atrás.'},
+    ],
+    partes: [
+      {nombre: 'Toma de aire', sub: 'debajo de la hélice', punto: [2.22, 2.12, 0]},
+      {nombre: 'Escape', sub: 'uno de cada lado', punto: [1.69, 2.49, 0.8]},
+      {nombre: 'Capó', sub: 'cubre el motor', punto: [1.3, 2.86, 0.2]},
+    ],
+    preguntas: [
+      {q: '¿Por dónde entra el aire al motor?', a: ['Por la toma, debajo de la hélice', 'Por los dos caños de los costados', 'Por la cabina'], muestra: 'marcha'},
+      {q: '¿Por dónde salen los gases?', a: ['Por los dos escapes, adelante y a los costados', 'Por la cola del avión', 'Por la toma de abajo'], muestra: 'potencia'},
+      {q: 'Dentro del motor, ¿hacia dónde va el aire?', a: ['De atrás hacia adelante', 'De adelante hacia atrás', 'De arriba hacia abajo'], muestra: 'marcha'},
     ],
   },
 };

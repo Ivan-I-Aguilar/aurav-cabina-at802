@@ -7,7 +7,7 @@
 // Y los RÓTULOS DE LAS PARTES: hasta cinco nombres al costado de la pieza, cada uno con su línea al punto que señala (el mismo
 // aspecto que las llamadas del motor).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261122a';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261122b';
 
 const AZUL = '#082440';
 const LIMA = '#c8e63a';
@@ -364,9 +364,10 @@ export function crearRotulosPartes({escena, max = 5, ancho = 0.24, alto = 0.07} 
     /**
      * partes: [{nombre, sub, punto: [x, y, z], repite}] en el marco de la pieza (o null para esconderlos). «repite: n» = la parte
      * está n veces alrededor del eje x de la pieza (las palas): se señala la que apunta hacia arriba.
-     * pieza: {centro: Vector3 (mundo), radio (m), aMundo(Vector3) → Vector3 (mundo), lado, baja, ladoMax}; ojo: dónde está el
-     * alumno (mundo). lado (opcional): a cuánto del centro de la pieza va la columna (por omisión, pegada a su radio); baja
-     * (opcional): cuánto más abajo que el centro (las piezas anchas y chatas la llevan debajo).
+     * pieza: {centro: Vector3 (mundo), radio (m), aMundo(Vector3) → Vector3 (mundo), lado, baja, ladoMax, escala}; ojo: dónde está
+     * el alumno (mundo). lado (opcional): a cuánto del centro de la pieza va la columna (por omisión, pegada a su radio); baja
+     * (opcional): cuánto más abajo que el centro (las piezas anchas y chatas la llevan debajo). escala (opcional): cuánto más
+     * grandes van los rótulos (en la PC, cuando la pieza abre más lejos).
      * ladoMax (opcional): lo más lejos del centro de la pieza que puede ir la columna (en la PC, para que no se salga de la pantalla
      * cuando el alumno agranda la pieza).
      */
@@ -394,15 +395,17 @@ export function crearRotulosPartes({escena, max = 5, ancho = 0.24, alto = 0.07} 
       lista.sort((a, b) => b.mundo.y - a.mundo.y); // de arriba abajo, como los puntos que señalan: las líneas no se cruzan
       const L = lg.attributes.position.array;
       const P = pg.attributes.position.array;
-      const paso = alto + 0.03;
+      const esc = pieza.escala ?? 1;
+      const paso = (alto + 0.03) * esc;
       lista.forEach((it, i) => {
         const e = etiquetas[i];
         pintar(e, it.nombre, it.sub);
-        e.malla.position.copy(centro).addScaledVector(der, Math.min(pieza.lado ?? radio + 0.06 + ancho / 2, pieza.ladoMax ?? Infinity));
+        e.malla.scale.setScalar(esc);
+        e.malla.position.copy(centro).addScaledVector(der, Math.min(pieza.lado ?? radio + 0.06 + (ancho * esc) / 2, pieza.ladoMax ?? Infinity));
         e.malla.position.y = centro.y - (pieza.baja || 0) + ((lista.length - 1) / 2 - i) * paso;
         e.malla.rotation.set(0, Math.atan2(ojo.x - e.malla.position.x, ojo.z - e.malla.position.z), 0);
         e.malla.visible = true;
-        const borde = p0.copy(e.malla.position).addScaledVector(der, -ancho / 2);
+        const borde = p0.copy(e.malla.position).addScaledVector(der, (-ancho * esc) / 2);
         L.set([borde.x, borde.y, borde.z, it.mundo.x, it.mundo.y, it.mundo.z], i * 6);
         P.set([it.mundo.x, it.mundo.y, it.mundo.z], i * 3);
         estado.push({nombre: it.nombre, rotulo: e.malla.position.clone(), punto: it.mundo});
