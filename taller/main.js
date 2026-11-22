@@ -1649,7 +1649,7 @@ const PIEZAS_HOLO = {
     const pieza = crearPiezaHolo({clave: 'cola', fuentes: mallasDe('exterior'), marco: avionAT, caja: new THREE.Box3(V(-8.0, 0, -3.1), V(-5.4, 4.3, 3.1)), tam: 0.95, elegir, velocidad: 0.6, luzMoviles: 0.07, flujo: {n: 70, caja: [[1.0, -3], [3.4, 3]], desde: -5.5, hasta: -8.3, tam: 0.011}});
     return Object.assign(pieza, {frente: [-0.75, 0, 0.65], sinGiroSolo: true}); // no gira sola: izquierda y derecha tienen que leerse
   },
-  // La NARIZ (T15: la lección «Escapes y toma de aire»): el capó entero (de x 0,33 al frente), los dos escapes y el cono de la
+  // La NARIZ (T15: la lección «Escapes y toma de aire»): el capó (de x 0,55 al frente), los dos escapes y el cono de la
   // hélice (de la hélice se quitan las palas: lo que se aleja más de medio metro del eje). No trae partes que se muevan: lo que
   // se ve es el CAMINO DEL AIRE, tres chorros [AGREGADO, VERIFICAR]: el aire entra por la toma, debajo del cono; va por abajo
   // hasta el fondo del capó, da la vuelta y cruza el motor de atrás hacia adelante (ahí pasa de celeste a naranja); y los gases
@@ -1671,7 +1671,7 @@ const PIEZAS_HOLO = {
       clave: 'escapes',
       fuentes: [...mallasDe('exterior'), ...mallasDe('helice')],
       marco: avionAT,
-      caja: new THREE.Box3(V(0.3, 1.6, -0.95), V(2.8, 3.0, 0.95)),
+      caja: new THREE.Box3(V(0.55, 1.9, -0.95), V(2.8, 3.0, 0.95)), // desde el fondo del capó (la vuelta del aire está en x 0,76) y sin la panza: los costados planos del fuselaje, de canto, eran una chapa encendida
       tam: 1.0,
       brillo: 0.6, // el capó, tenue: lo que tiene que leerse son los chorros
       elegir,
