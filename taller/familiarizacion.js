@@ -330,8 +330,9 @@ export function crearFamiliarizacion({avion, leyenda}) {
       let cerca = -1;
       let dMin = CERCA;
       P.forEach((p, i) => {
-        // (con la pieza de ese punto abierta su disco se esconde, como su tarjeta: quedaba detrás de la pieza, encendido)
-        const r = p.clave === abierto ? 0 : RADIO_MARCA * (i === activo ? 1.15 + 0.12 * Math.sin(tiempo * 5) : 1);
+        // (con una pieza abierta los discos se esconden, como la tarjeta: el de su punto quedaba encendido detrás de la pieza, y
+        // los de los puntos vecinos se veían a través de ella: un «8» dentro del agua de la tolva)
+        const r = abierto ? 0 : RADIO_MARCA * (i === activo ? 1.15 + 0.12 * Math.sin(tiempo * 5) : 1);
         rc.copy(der).multiplyScalar(r);
         ac.copy(arr).multiplyScalar(r);
         const c = p.marcaM;

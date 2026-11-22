@@ -1030,6 +1030,9 @@ cómo se saca una bisagra de los herrajes del modelo y lo nuevo que salió mal; 
 partes juntadas en una malla, las islas que se quitan, los CHORROS del flujo (el camino con curvas, los colores, el piso que
 pasa a la velocidad de la rueda), lo que se dibuja para que el movimiento se vea (las marcas de la rueda, el piso), las
 unidades de los canales, cómo entra en la pantalla una pieza alta y lo nuevo que salió mal; el paquete se rehízo.
+**Al día con la T16 (22/11):** las mallas que entran enteras, el LÍQUIDO (un recipiente en esquema que se llena hasta un nivel
+con lo que entra y lo que sale), los chorros al paso del líquido o por escalones, el campo «nivel», los nombres a la izquierda
+de la pieza y lo nuevo que salió mal; el paquete se rehízo.
 
 ### 16.3 Qué funciona en cada lección, y con qué se cuenta (medido en el modelo el 21/11)
 Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cortar nada.
@@ -1052,7 +1055,7 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 | T13 | **HECHA el 21/11.** **La primera lección completa, de muestra: la HÉLICE**, hecha con la skill «Despiece» por el camino de «sólo el holograma» (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso); de ahí sale el módulo de «lección» que sirve para cualquier pieza, y lo que la skill tenga que corregir | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corrió de punta a punta sobre ella |
 | T14 | **HECHA el 22/11.** Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
 | T15 | **HECHA el 22/11.** Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
-| T16 | Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
+| T16 | **HECHA el 22/11.** Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
 | T17 | El curso entero: orden, avance, repaso por lección, resumen final, voz; la cabina | se recorre de punta a punta y da el resumen |
 
 Cada bloque cierra como los otros: pruebas, capturas revisadas, plan y `CLAUDE.md` al día, commit local, y lo que no se pudo probar.
@@ -1200,6 +1203,60 @@ quinta lección.
   1,52 m de alto, con su panel de 1,58 a 1,97 m; la nariz, de 0,90 a 1,40 m, con su panel de 1,44 a 1,84 m. Hay que ver si la
   rueda y las estelas del piso se entienden, si el piso a 80 cm del suelo queda cómodo, si los chorros de la nariz se leen
   (celeste y naranja) y si dan ganas de girarla para ver la vuelta del aire.
+
+**T16 HECHA el 22/11 (v=20261122c, sin publicar; de 15:59 a 16:30).** La tolva y la compuerta son la sexta y la séptima lección: la
+carga, el nivel y la descarga.
+- **Qué quedó.** *Tolva y boca de carga* (punto 3): el sistema entero, de arriba abajo: el lomo con sus tapas y la escala de la
+  mirilla, la compuerta con sus dos hojas y la cañería de carga (los dos modelos hechos con las fotos en la T12) y, en el
+  medio, el AGUA EN ESQUEMA (del interior no hay fotos: lo dice el panel). El nivel sube con lo que entra y baja con lo que
+  sale, solo: llena —la superficie llega a la marca de 800 galones de la escala— deja de entrar; vacía, deja de caer. Botones
+  PARTES · CARGAR · NIVEL · DESCARGAR (cada uno arranca con el agua que le conviene: CARGAR, casi vacía; DESCARGAR, llena) y
+  dos palancas que se suman, VÁLVULA DE CARGA y COMPUERTA: con las dos abiertas, lo que entra por la boca cae por la compuerta.
+  Cuatro nombres: tapas, escala del nivel, compuerta y boca de carga. *Compuerta de descarga* (punto 6): las dos hojas abren
+  más o menos según la cobertura, y de la boca cae el agua en una, dos o tres cortinas. Botones PARTES · CERRADA · COBERTURA
+  BAJA · COBERTURA ALTA · TODO JUNTO y la palanca COBERTURA. Cuatro nombres: hoja, bisagra, válvula de carga y boca de carga.
+  Reemplaza al botón ABRIR LAS HOJAS de la T12. Las dos tienen su repaso de tres preguntas.
+- **Lo nuevo en el mecanismo (sirve para las lecciones que siguen).** `piezaholo.js`: mallas que entran ENTERAS, sin pasar por
+  la caja de recorte (`enteras`, y `entera: true` en una parte móvil: los modelos propios, bajo un lomo recortado del avión);
+  un LÍQUIDO (`liquido`): un recipiente dibujado en esquema (una pila de secciones rectangulares), con sus paredes pintadas
+  del color del líquido por debajo del nivel y tenues por encima, su superficie, y dos canales que dicen qué fracción del
+  recipiente entra y sale por segundo; el nivel se integra solo y no se pasa de lleno ni de vacío (`nivel`, `alturaNivel`,
+  `caudales`, `ponerNivel`); un chorro puede ir al paso de lo que de verdad entra o sale del líquido (`lleva: {liquido}`) o
+  encenderse recién desde cierto flujo (`minimo`: una cortina más por cada escalón de cobertura). `lecciones.js`: el campo
+  `nivel` = con cuánta agua arranca un estado (no se sostiene: después cambia solo). `main.js`: los nombres de las partes van
+  a la izquierda de la pieza en los puntos donde la tarjeta va a la izquierda del disco; el fondo oscuro puede ser más fuerte
+  por pieza (`telon`); con una pieza abierta se esconden todos los discos; en el casco, una pieza muy alta baja hasta 1,0 m.
+- **Medido, y de dónde sale.** La escala va de y 2,47 (650 galones) a 2,84 (800) sobre la pared de atrás (x −1,8); la
+  compuerta, de x −0,1 a −1,85, con la quilla de 1,02 a 0,77 m y las bisagras a ±0,29 m del eje; la cañería de carga: las
+  bocas en (−3,07 · 0,88 · ±0,76), el caño transversal y la T en x −2,95 · y 0,97, y el caño que entra por la popa en x −2,36
+  (todo de `herramientas/taller_compuerta.py` y `taller_tolva.py`, T12). El recipiente del agua es un DIBUJO: ocho secciones
+  entre la quilla (y 0,86) y la marca de 800 (y 2,84), de 2,4 m de largo y hasta 0,92 m de ancho [AGREGADO: del interior no
+  hay fotos]. Los caudales (14 centésimas del recipiente por segundo al cargar y 30 al descargar) se eligieron para que se
+  vea. De las notas del manual de entrenamiento, sin copiar procedimientos ni límites: que la cobertura se elige en el sistema
+  de descarga, que se larga con el gatillo del bastón y que la descarga de emergencia larga todo [VERIFICAR].
+- **Pruebas.** `probarRecorrido()` 115 de 115 (11 de cada lección nueva). En la tolva: que el nivel suba 0,14 por segundo, que
+  llena deje de entrar y la superficie quede en la marca de 800 (2,84 m contra 2,836 de la escala), que cerrada no cambie, que
+  descargando baje 0,30 por segundo con las hojas abiertas (el centro de cada una baja 9,1 cm) y que vacía deje de caer. En la
+  compuerta: que con cada cobertura las hojas bajen 0 · 3,4 · 7,8 · 8,8 cm y caigan 0 · 1 · 2 · 3 cortinas. Mandos 29, piloto
+  15, mecánico 5, identificar 6; prevuelo bien. Con una pieza abierta y sus nombres a la vista: tolva 41 llamadas y 133 mil
+  triángulos, compuerta 38 y 124 mil (la peor sigue siendo la hélice, con 56; tope: 75 y 200 mil). Con clics de verdad del
+  mouse: las dos tarjetas, todos los botones, las tres palancas con un clic y arrastrando (las dos de la tolva abiertas a la
+  vez), los nombres, los dos repasos y CERRAR.
+- **Encontrado al mirarlo:** la tolva entera se veía lavada sobre el fuselaje blanco (el agua pasó a un azul más fuerte, las
+  paredes vacías van más tenues, la pieza menos brillante y el fondo más oscuro); los nombres de las partes quedaban detrás
+  del ala de verdad (van a la izquierda, como la tarjeta de ese punto); el disco de otro punto se veía a través de la pieza,
+  un «8» dentro del agua (con una pieza abierta se esconden todos); el botón NIVEL quedaba marcado, con su frase de «llena»,
+  mientras se movían las palancas (ahora las palancas arrancan de un estado sin botón: todo cerrado); con el casco simulado
+  el panel de la tolva quedaba de 1,71 a 2,10 m (la pieza baja hasta 1,0 m).
+- **Lo provisorio y lo que falta:** el interior de la tolva y la forma del agua son un esquema; la posición abierta de las
+  hojas sigue sin foto; la escala sólo marca de 650 a 800 galones y a esta distancia sus números no se leen (se la ve con sus
+  rayas); los textos y las preguntas, un borrador [AGREGADO · VERIFICAR]; no están la espuma, los galones a largar, el armado
+  ni la presión del sistema (son de procedimiento: con la validación de la empresa); sin voz ni sonido (T17). Lámina:
+  `Documents/aurav-cabina/capturas_taller/T16_tolva_y_compuerta.jpg`.
+- **Lo que no se pudo probar:** el casco. Medido con el casco simulado (ojos a 1,65 m): la tolva se abre a 95 cm, de 0,51 a
+  1,53 m de alto, con su panel de 1,58 a 1,97 m; la compuerta, de 0,84 a 1,46 m, con su panel de 1,51 a 1,90 m. Hay que ver
+  si el agua se lee como agua, si la tolva entera queda cómoda tan abajo, si la escala se alcanza a ver, y si las cortinas de
+  la compuerta molestan al caer hacia los pies.
 
 ### 16.5 Lo que tiene que decir Iván (de a una)
 1. **El nombre de la skill.** Elegido el 21/11: «Despiece».

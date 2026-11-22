@@ -73,8 +73,14 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
     ¿se entiende que la pata cede y la rueda se abre? ¿El piso a 80 cm del suelo queda cómodo de mirar? La nariz trae el camino
     del aire: ¿se distinguen el celeste (el aire) y el naranja (los gases)? ¿Se sigue la vuelta que da el aire en el fondo del
     capó, o hay que girar la pieza para verla? ¿El capó, que va tenue, deja ver los chorros?
+  - *Las lecciones de la tolva y de la compuerta (T16, 22/11):* puntos 3 y 6 → VER CÓMO FUNCIONA. La tolva va entera, de
+    arriba abajo (de 0,5 a 1,5 m de alto), con el agua dibujada en azul: ¿se lee como agua? ¿Se ve subir y bajar el nivel, y
+    que al llenarse deja de entrar y al vaciarse deja de caer? ¿Queda cómoda tan abajo? ¿Se alcanza a ver la escala, en la
+    pared de atrás? Las dos palancas (VÁLVULA DE CARGA y COMPUERTA), ¿se aciertan con el rayo? En la compuerta: ¿se nota que
+    con más cobertura las hojas abren más y cae más agua? ¿Molestan las cortinas al caer hacia los pies? En PARTES los nombres
+    van a la IZQUIERDA de la pieza (a la derecha está el ala): ¿quedan a la vista?
 - **Fluidez:** que no tironee en ningún lugar (frente al motor, mirando la nave entera desde el portón, junto al AT-802). En la PC, la
-  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (con una lección abierta: hélice 56 y 127 k, ala 50 y 92 k, cola 36 y 83 k, tren 41 y 124 k, nariz 39 y 129 k; tope del plan: 75 y 200 k); el número que manda es el
+  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (con una lección abierta: hélice 56 y 127 k, ala 50 y 92 k, cola 36 y 83 k, tren 41 y 124 k, nariz 39 y 129 k, tolva 41 y 133 k, compuerta 38 y 124 k; tope del plan: 75 y 200 k); el número que manda es el
   del casco.
 - **Mareo:** caminar con el joystick izquierdo, girar de a 30° con el derecho, y los saltos con fundido del atril y de la pausa.
 - **Legibilidad:** el atril, los paneles de la mesa (instrumentos, estaciones), el cartel de arriba del holograma, las preguntas, el
@@ -91,4 +97,4 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 ## 4. Lo que no se pudo probar desde la PC
 Todo lo de arriba que dice «grip», «gatillo», «joystick», «B o Y», «sacarse el casco» y la fluidez real: en la PC se probó con los
 mandos simulados por código (`__taller.probarMandos()`, 29 pruebas), el piloto de prueba (`__taller.probarPiloto()`, 15) y el
-recorrido del avión (`__taller.probarRecorrido()`, 93, con rayos desde el ojo a cada tarjeta y al panel de cada lección), pero eso no reemplaza ponerse el casco.
+recorrido del avión (`__taller.probarRecorrido()`, 115, con rayos desde el ojo a cada tarjeta y al panel de cada lección), pero eso no reemplaza ponerse el casco.
