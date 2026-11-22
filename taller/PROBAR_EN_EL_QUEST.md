@@ -63,8 +63,13 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
     HÉLICE (con el gatillo apretado tiene que seguir al rayo)? ¿Se ve que las palas cambian de ángulo? ¿Las estelas del aire se
     entienden o molestan? En PARTES, ¿los tres nombres quedan a la vista, a la derecha de la pieza? El REPASO: tres preguntas
     con el gatillo; al responder, la pieza tiene que mostrar la respuesta.
+  - *Las lecciones del ala y de la cola (T14, 22/11):* puntos 7 y 5 → VER CÓMO FUNCIONA. El ala son las DOS alas vistas desde
+    atrás (1,5 m de punta a punta, a 95 cm): ¿resulta cómoda de mirar o conviene achicarla? ¿Se ve que los flaps bajan juntos y
+    los alerones van opuestos? ¿Se entiende que la pieza se inclina, cabecea o gira como el avión? Cada panel trae DOS palancas
+    lado a lado (FLAPS y BASTÓN; BASTÓN y PEDALES), de 34 cm cada pista: ¿se les acierta con el rayo y siguen al gatillo
+    apretado? En PARTES, los nombres del ala van debajo de ella (de 0,87 a 1,07 m de alto): ¿se leen mirando hacia abajo?
 - **Fluidez:** que no tironee en ningún lugar (frente al motor, mirando la nave entera desde el portón, junto al AT-802). En la PC, la
-  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (56 y 127 k con la lección de la hélice abierta; tope del plan: 75 y 200 k); el número que manda es el
+  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (con una lección abierta: hélice 56 y 127 k, ala 50 y 92 k, cola 36 y 83 k; tope del plan: 75 y 200 k); el número que manda es el
   del casco.
 - **Mareo:** caminar con el joystick izquierdo, girar de a 30° con el derecho, y los saltos con fundido del atril y de la pausa.
 - **Legibilidad:** el atril, los paneles de la mesa (instrumentos, estaciones), el cartel de arriba del holograma, las preguntas, el
@@ -81,4 +86,4 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 ## 4. Lo que no se pudo probar desde la PC
 Todo lo de arriba que dice «grip», «gatillo», «joystick», «B o Y», «sacarse el casco» y la fluidez real: en la PC se probó con los
 mandos simulados por código (`__taller.probarMandos()`, 29 pruebas), el piloto de prueba (`__taller.probarPiloto()`, 15) y el
-recorrido del avión (`__taller.probarRecorrido()`, 44, con rayos desde el ojo a cada tarjeta y al panel de la lección de la hélice), pero eso no reemplaza ponerse el casco.
+recorrido del avión (`__taller.probarRecorrido()`, 70, con rayos desde el ojo a cada tarjeta y al panel de cada lección), pero eso no reemplaza ponerse el casco.

@@ -1024,6 +1024,8 @@ se saca el eje y se comprueba el sentido), el contrato completo de una máquina 
 está el material y las palabras de la casa; `holo/` trae el código al día (más `lecciones.js`, `leccion.js` y `engine.js`); y
 `scripts/` trae el armador de mosaicos de fotos y el de láminas. Validada y empaquetada:
 `Documents/aurav-cabina/skills/despiece.skill` (1 MB), para que Iván la suba a su cuenta de claude.ai si quiere.
+**Al día con la T14 (22/11):** el esquema del contenido con varias palancas y campos, los canales y la actitud de la pieza,
+cómo se saca una bisagra de los herrajes del modelo y lo nuevo que salió mal; el paquete se rehízo.
 
 ### 16.3 Qué funciona en cada lección, y con qué se cuenta (medido en el modelo el 21/11)
 Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cortar nada.
@@ -1044,7 +1046,7 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 | Bloque | Qué se hace | Listo cuando |
 |---|---|---|
 | T13 | **HECHA el 21/11.** **La primera lección completa, de muestra: la HÉLICE**, hecha con la skill «Despiece» por el camino de «sólo el holograma» (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso); de ahí sale el módulo de «lección» que sirve para cualquier pieza, y lo que la skill tenga que corregir | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corrió de punta a punta sobre ella |
-| T14 | Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
+| T14 | **HECHA el 22/11.** Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
 | T15 | Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
 | T16 | Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
 | T17 | El curso entero: orden, avance, repaso por lección, resumen final, voz; la cabina | se recorre de punta a punta y da el resumen |
@@ -1094,6 +1096,47 @@ con la skill «Despiece» por el camino de «sólo el holograma» (etapas 0, 1, 
 - **Lo que no se pudo probar:** el casco. Ahí la pieza con lección se abre a 0,95 m, a 1,15 m de alto, y su panel queda de 1,57
   a 1,97 m (medido con el casco simulado): hay que ver si el panel se lee, si se le acierta con el rayo a los botones y a la
   palanca, y si los nombres de las partes quedan a la vista.
+
+**T14 HECHA el 22/11 (v=20261122a, sin publicar; empezada el 21/11 a las 20:11 y cerrada el 22/11 a las 14:23, con un corte en el
+medio).** El ala y la cola son la segunda y la tercera lección: las superficies de mando se mueven con sus mandos.
+- **Qué quedó.** *Ala y flaps* (punto 7): las DOS alas, vistas desde atrás (la derecha de la pieza es la del alumno). Los flaps
+  bajan los dos juntos, de 0° a 30°; los alerones van opuestos y, con el bastón a un costado, la pieza entera se inclina hacia
+  ese lado. Dos palancas en el panel, FLAPS y BASTÓN, que se suman (flaps a medio bajar y bastón a la derecha, a la vez).
+  *Cola* (punto 5): los dos timones de profundidad suben o bajan con el BASTÓN (adelante y atrás) y la pieza levanta o baja la
+  nariz; el timón de dirección va a un lado con los PEDALES y la nariz gira. Cinco nombres de partes: deriva, timón de
+  dirección, estabilizador, timón de profundidad y rueda de cola. Las dos abren «volando» (con aire) y tienen su repaso.
+- **Lo nuevo en el mecanismo (sirve para las lecciones que siguen).** `piezaholo.js`: CANALES (las partes móviles se mueven por
+  separado: flap y alerón; profundidad y dirección), partir una isla con `dentro` (el timón de dirección viene pegado a la
+  deriva y al fuselaje: es lo que queda detrás del codaste), luz propia en lo que se mueve (`luzMoviles`), ACTITUD de la pieza
+  (`ponerActitud`: alabeo, cabeceo, guiñada), recorte en dos cajas (las dos alas sin el fuselaje) y flujo dentro de una caja.
+  `lecciones.js`: un solo esquema para todas: cada estado nombra sus CAMPOS (un canal en grados, `giro`, `flujo`, `alabeo`,
+  `cabeceo`, `guinada`), lleva botón o es sólo una marca de una palanca, y las palancas (una o dos) mueven sólo sus campos; la
+  hélice pasó a ese esquema. `leccion.js`: dos palancas lado a lado y hasta cinco rótulos. `main.js`: las piezas anchas y chatas
+  llevan los nombres debajo y más adentro; el fondo oscuro toma la forma de la pieza; el ala y la cola no giran solas; en el
+  casco la altura de la pieza sale de su alto, para que el panel quede a la altura de los ojos.
+- **Medido en el modelo (21 y 22/11).** En cada ala, el flap es la isla de 1,08 a 5,01 m del eje del avión (más sus dos
+  herrajes) y el alerón la de 5,03 a 8,06 m. Las bisagras salen de los herrajes fijos que cuelgan del ala: la del flap pasa
+  27 cm POR DEBAJO de él (al bajar también se corre hacia atrás, como en el avión); la del alerón, por dentro de su nariz. Los
+  timones de profundidad vienen sueltos y giran sobre x −6,92 · y 1,53; el de dirección ocupa de 0,9 a 3,4 m de alto detrás de
+  x −6,94. Recorridos: flaps de 0° a 30° con marcas cada 10° (notas del manual) [VERIFICAR]; alerones ±18°, timón de
+  profundidad +22° / −18°, de dirección ±22° y lo que se inclina la pieza: ILUSTRATIVOS.
+- **Pruebas.** `probarRecorrido()` 70 de 70: las 13 pruebas de la lección corren solas para la hélice, la cola y el ala, y
+  miden que cada superficie vaya para el lado que dice el texto (con FLAPS ABAJO el borde de fuga de cada flap baja 28,7 cm;
+  con el bastón a la derecha el alerón derecho sube 12,6 cm y el izquierdo baja 11,6 cm; con el bastón atrás los timones de
+  profundidad suben 17,7 cm; con el pedal derecho el de dirección va 32,1 cm a la derecha). Mandos 29, piloto 15, mecánico 5;
+  prevuelo bien. Con la lección abierta: 50 llamadas y 92 mil triángulos (ala), 36 y 83 mil (cola). Con clics de verdad del
+  mouse: las dos tarjetas, los botones, las cuatro palancas con un clic y arrastrando, los nombres, el repaso y CERRAR.
+- **Encontrado al mirarlo:** las superficies móviles con mucha luz propia quedaban como bloques blancos (se bajó); el giro
+  automático de la pieza desorientaba cuando importan la izquierda y la derecha (el ala y la cola no giran solas); con las dos
+  alas, la columna de nombres quedaba a 45° de la mirada o tapaba lo que nombra (va debajo); el fondo oscuro redondo detrás de
+  una pieza chata era una mancha enorme (toma su forma).
+- **Lo provisorio y lo que falta:** los textos y las preguntas, un borrador [AGREGADO · VERIFICAR]; los recorridos, salvo el
+  de los flaps, ilustrativos; el compensador (trim) y la traba de la rueda de cola no están; la rueda de cola no gira; sin voz
+  ni sonido (T17). Lámina: `Documents/aurav-cabina/capturas_taller/T14_ala_y_cola.jpg`.
+- **Lo que no se pudo probar:** el casco. Medido con el casco simulado (ojos a 1,65 m): el ala se abre a 1,30 m de alto, con
+  su panel de 1,45 a 1,85 m y los nombres debajo, de 0,87 a 1,07 m; la cola a 1,15 m, con su panel de 1,48 a 1,87 m y los
+  nombres a 67 cm a su derecha. Hay que ver si las dos palancas se aciertan con el rayo (cada pista mide 34 cm), si el ala
+  entera (1,5 m de punta a punta) resulta cómoda a 95 cm o conviene achicarla, y si los nombres de abajo del ala se leen.
 
 ### 16.5 Lo que tiene que decir Iván (de a una)
 1. **El nombre de la skill.** Elegido el 21/11: «Despiece».
