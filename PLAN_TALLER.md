@@ -1026,6 +1026,10 @@ está el material y las palabras de la casa; `holo/` trae el código al día (m�
 `Documents/aurav-cabina/skills/despiece.skill` (1 MB), para que Iván la suba a su cuenta de claude.ai si quiere.
 **Al día con la T14 (22/11):** el esquema del contenido con varias palancas y campos, los canales y la actitud de la pieza,
 cómo se saca una bisagra de los herrajes del modelo y lo nuevo que salió mal; el paquete se rehízo.
+**Al día con la T15 (22/11):** los movimientos de una parte (giro o corrimiento, uno encima de otro, lo que anda solo), las
+partes juntadas en una malla, las islas que se quitan, los CHORROS del flujo (el camino con curvas, los colores, el piso que
+pasa a la velocidad de la rueda), lo que se dibuja para que el movimiento se vea (las marcas de la rueda, el piso), las
+unidades de los canales, cómo entra en la pantalla una pieza alta y lo nuevo que salió mal; el paquete se rehízo.
 
 ### 16.3 Qué funciona en cada lección, y con qué se cuenta (medido en el modelo el 21/11)
 Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cortar nada.
@@ -1047,7 +1051,7 @@ Las partes «sueltas» son islas de la malla del avión: se pueden mover sin cor
 |---|---|---|
 | T13 | **HECHA el 21/11.** **La primera lección completa, de muestra: la HÉLICE**, hecha con la skill «Despiece» por el camino de «sólo el holograma» (paso y bandera con la palanca HÉLICE, nombres de sus partes, corte, repaso); de ahí sale el módulo de «lección» que sirve para cualquier pieza, y lo que la skill tenga que corregir | la hélice cambia de paso con la palanca, en la PC y con los mandos simulados; la skill corrió de punta a punta sobre ella |
 | T14 | **HECHA el 22/11.** Ala y flaps, y la cola (las superficies de mando) | flaps, alerones y timones se mueven con sus mandos |
-| T15 | Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
+| T15 | **HECHA el 22/11.** Tren, y escapes y toma de aire | la ballesta cede y la rueda gira; el flujo se ve |
 | T16 | Tolva y compuerta: carga, nivel, descarga | el nivel baja por la escala mientras la compuerta larga |
 | T17 | El curso entero: orden, avance, repaso por lección, resumen final, voz; la cabina | se recorre de punta a punta y da el resumen |
 
@@ -1137,6 +1141,65 @@ medio).** El ala y la cola son la segunda y la tercera lección: las superficies
   su panel de 1,45 a 1,85 m y los nombres debajo, de 0,87 a 1,07 m; la cola a 1,15 m, con su panel de 1,48 a 1,87 m y los
   nombres a 67 cm a su derecha. Hay que ver si las dos palancas se aciertan con el rayo (cada pista mide 34 cm), si el ala
   entera (1,5 m de punta a punta) resulta cómoda a 95 cm o conviene achicarla, y si los nombres de abajo del ala se leen.
+
+**T15 HECHA el 22/11 (v=20261122b, sin publicar; de 15:06 a 16:00).** El tren, y los escapes y la toma de aire, son la cuarta y la
+quinta lección.
+- **Qué quedó.** *Tren de aterrizaje* (punto 8): el tren principal derecho. La pata de ballesta cede sobre su encastre (la rueda
+  sube y se abre), la rueda gira y por el piso pasan estelas a la velocidad de su borde (se ve que rueda sin patinar); en vuelo
+  queda despegada 30 cm y deja de girar; frenando, se detiene. Botones PARTES · EN VUELO · RODANDO · ATERRIZAJE · FRENANDO y dos
+  palancas que se suman: PESO (en vuelo → apoyado → golpe) y FRENO (suelto → a fondo). Tres nombres: pata de ballesta, rueda y
+  freno. *Escapes y toma de aire* (punto 2): la nariz (el capó, los dos escapes y el cono de la hélice, sin las palas) y el
+  CAMINO DEL AIRE: entra por la toma, debajo del cono; va por abajo hasta el fondo del capó, da la vuelta y cruza el motor de
+  atrás hacia adelante (de celeste pasa a naranja); y sale por los dos escapes, hacia los costados y hacia atrás. Botones PARTES
+  · PARADO · EN MARCHA · MÁS POTENCIA y la palanca POTENCIA (de ralentí a máxima: las estelas van más rápido). Tres nombres:
+  toma de aire, escape y capó. Las dos tienen su repaso de tres preguntas.
+- **Lo nuevo en el mecanismo (sirve para las lecciones que siguen).** `piezaholo.js`: un MOVIMIENTO es un giro o un corrimiento
+  (`mueve`: el piso); una parte puede llevar otro encima (`sobre`: la rueda gira sobre su eje y, con la pata, sobre el
+  encastre) y andar sola (`continuo`: el canal es una velocidad y la parte acumula el giro); las partes con la misma `junta`
+  van en una sola malla (el tren entero son 3 partes: 6 llamadas de dibujo); cada canal puede tener su velocidad; una isla se
+  puede quitar (`elegir` devuelve `false`: las palas, en la nariz). El flujo pasa a ser uno o más CHORROS: cada uno sigue un
+  camino con curvas (una curva suave por sus puntos), tiene su color y puede cambiarlo en el camino, se abre al final
+  (`radio2`), se corre con un canal (`sigue`: el piso sube con la pata) o va a la velocidad de un canal (`lleva`: el piso, a la
+  del borde de la rueda), y sus estelas aparecen y se apagan de a poco en las puntas (también en la hélice, el ala y la cola).
+  `lecciones.js`: un canal que anda solo va en grados por segundo, y la pieza puede declarar otra unidad para un canal
+  (`unidades`: «piso», en centímetros). `main.js`: en la PC la pieza con lección sube hasta donde el panel deja y, si no
+  alcanza, se aleja (hasta 35 cm) para entrar en la pantalla, y el panel y los nombres de las partes se agrandan con la
+  distancia; los nombres van debajo sólo si la pieza es ancha y chata. `familiarizacion.js`: con la pieza de un punto abierta,
+  su disco se esconde.
+- **Medido en el modelo (22/11).** La rueda es de revolución sobre su eje (y 0,46 · z 1,34 a 1,60; 0,46 m de radio): cubierta,
+  dos flancos, dos discos y maza; no trae nada que deje ver el giro: por eso lleva tres marcas dibujadas. La pata sale
+  horizontal de la panza (y 1,40 · z 0,43), dobla a 0,9 m del eje del avión y baja casi a plomo hasta el eje de la rueda; las
+  dos mordazas del freno van del lado de adentro. Con la pata girada 6° sobre el encastre la rueda sube 11,5 cm y se abre
+  13 cm (ILUSTRATIVO: una ballesta de verdad se curva en todo su largo). En la nariz: el eje de la hélice a y 2,54; el piso del
+  capó a y 2,0; cada escape sale de (1,80 · 2,46 · ±0,42) y termina en (1,69 · 2,49 · ±0,80); el modelo no trae abierta la boca
+  de la toma (el mentón está cerrado): el chorro entra por debajo del cono. Fotos del avión real que se miraron (no van al
+  repo): 5, 7, 8, 9, 11 y 14 (tren) y 26, 28, 30, 31, 51 y 66 (nariz).
+- **Pruebas.** `probarRecorrido()` 93 de 93: las pruebas de la lección corren solas para las cinco piezas con lección (13 el
+  tren y 10 la nariz) y miden lo propio de cada una. En el tren: que con el golpe la rueda suba (11,6 cm) y se abra (13,4 cm),
+  que quede apoyada en el piso (a 2 mm) y en vuelo despegada (30,8 cm), que ruede hacia adelante con el piso pasando a la
+  velocidad de su borde (2,41 m/s), y que frenando se detengan los dos. En la nariz: que el aire entre por delante y por debajo
+  de la hélice, dé la vuelta y termine yendo hacia adelante; que los gases salgan por los dos costados, hacia atrás; que con más
+  potencia vaya más rápido y que parado se apague. Mandos 29, piloto 15, mecánico 5, identificar 6; prevuelo bien. Con una
+  pieza abierta junto al avión, y los nombres de sus partes a la vista: de 24 a 56 llamadas y hasta 131 mil triángulos (tren 41
+  y 124 mil; nariz 39 y 129 mil; tope: 75 y 200 mil). Con clics de verdad del mouse: las dos tarjetas, todos los botones, las tres palancas con un clic y arrastrando,
+  girar la pieza, los nombres, los dos repasos (uno con una respuesta mal a propósito) y CERRAR.
+- **Encontrado al mirarlo:** el tren, con su piso, no entraba en la pantalla: su esquina de abajo quedaba detrás de la leyenda
+  fija (ahora la pieza sube o se aleja lo que hace falta: el tren abre a 1,4 m; la hélice, que tenía una punta de pala detrás
+  de la leyenda, sube 10 cm); el disco del punto quedaba encendido detrás de la pata (se esconde); a 1,4 m los nombres de las
+  partes eran muy chicos (se agrandan); en la nariz, lo que cuelga de los costados del fuselaje y los costados planos por
+  detrás y por debajo del capó eran chapas encendidas más grandes que la nariz (se quitaron o se recortaron), el capó tapaba
+  los chorros (va más tenue) y los nombres iban debajo, fuera de la pantalla (van al costado). Las pruebas de mandos fallan si
+  se las corre con el alumno parado junto al avión (el motor está en el capó): se corren con la página recién cargada, o
+  detrás de `probarRecorrido()`.
+- **Lo provisorio y lo que falta:** los textos y las preguntas, un borrador [AGREGADO · VERIFICAR] (que los frenos van con la
+  punta de los pedales y el camino del aire salen de conocimiento general); los recorridos de la pata, ilustrativos; las marcas
+  de la rueda y el piso están dibujados (lo dice el panel); el freno no se mueve (la rueda se detiene); el otro tren y la rueda
+  de cola no están en esta pieza; en la nariz no está el motor (sólo el capó: el motor se ve en su punto) ni la boca de la
+  toma; sin voz ni sonido (T17). Lámina: `Documents/aurav-cabina/capturas_taller/T15_tren_y_escapes.jpg`.
+- **Lo que no se pudo probar:** el casco. Medido con el casco simulado (ojos a 1,65 m): el tren se abre a 95 cm, de 0,79 a
+  1,52 m de alto, con su panel de 1,58 a 1,97 m; la nariz, de 0,90 a 1,40 m, con su panel de 1,44 a 1,84 m. Hay que ver si la
+  rueda y las estelas del piso se entienden, si el piso a 80 cm del suelo queda cómodo, si los chorros de la nariz se leen
+  (celeste y naranja) y si dan ganas de girarla para ver la vuelta del aire.
 
 ### 16.5 Lo que tiene que decir Iván (de a una)
 1. **El nombre de la skill.** Elegido el 21/11: «Despiece».

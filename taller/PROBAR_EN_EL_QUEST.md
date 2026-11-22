@@ -68,8 +68,13 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
     los alerones van opuestos? ¿Se entiende que la pieza se inclina, cabecea o gira como el avión? Cada panel trae DOS palancas
     lado a lado (FLAPS y BASTÓN; BASTÓN y PEDALES), de 34 cm cada pista: ¿se les acierta con el rayo y siguen al gatillo
     apretado? En PARTES, los nombres del ala van debajo de ella (de 0,87 a 1,07 m de alto): ¿se leen mirando hacia abajo?
+  - *Las lecciones del tren y de la nariz (T15, 22/11):* puntos 8 y 2 → VER CÓMO FUNCIONA. El tren va de 0,8 a 1,5 m de alto,
+    con un piso dibujado debajo: ¿se ve que la rueda gira (lleva tres marcas) y que el piso pasa a su paso? Con la palanca PESO,
+    ¿se entiende que la pata cede y la rueda se abre? ¿El piso a 80 cm del suelo queda cómodo de mirar? La nariz trae el camino
+    del aire: ¿se distinguen el celeste (el aire) y el naranja (los gases)? ¿Se sigue la vuelta que da el aire en el fondo del
+    capó, o hay que girar la pieza para verla? ¿El capó, que va tenue, deja ver los chorros?
 - **Fluidez:** que no tironee en ningún lugar (frente al motor, mirando la nave entera desde el portón, junto al AT-802). En la PC, la
-  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (con una lección abierta: hélice 56 y 127 k, ala 50 y 92 k, cola 36 y 83 k; tope del plan: 75 y 200 k); el número que manda es el
+  peor vista da 61 llamadas y 56 k triángulos, y junto al avión 46 y 128 k (con una lección abierta: hélice 56 y 127 k, ala 50 y 92 k, cola 36 y 83 k, tren 41 y 124 k, nariz 39 y 129 k; tope del plan: 75 y 200 k); el número que manda es el
   del casco.
 - **Mareo:** caminar con el joystick izquierdo, girar de a 30° con el derecho, y los saltos con fundido del atril y de la pausa.
 - **Legibilidad:** el atril, los paneles de la mesa (instrumentos, estaciones), el cartel de arriba del holograma, las preguntas, el
@@ -86,4 +91,4 @@ Si ninguno de los dos anda, la otra vía es publicarlo (sólo con tu ok): queda 
 ## 4. Lo que no se pudo probar desde la PC
 Todo lo de arriba que dice «grip», «gatillo», «joystick», «B o Y», «sacarse el casco» y la fluidez real: en la PC se probó con los
 mandos simulados por código (`__taller.probarMandos()`, 29 pruebas), el piloto de prueba (`__taller.probarPiloto()`, 15) y el
-recorrido del avión (`__taller.probarRecorrido()`, 70, con rayos desde el ojo a cada tarjeta y al panel de cada lección), pero eso no reemplaza ponerse el casco.
+recorrido del avión (`__taller.probarRecorrido()`, 93, con rayos desde el ojo a cada tarjeta y al panel de cada lección), pero eso no reemplaza ponerse el casco.
