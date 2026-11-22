@@ -27,8 +27,11 @@ import {crearPanelLeccion, crearRotulosPartes, crearRepaso} from './leccion.js?v
 import {crearLlamadas} from './llamadas.js?v=20261122d';
 import {DURATION, FAULT_T, RESET_T, inpAt, stationAt, poseHolograma, POSE_BASE} from './recorrido.js?v=20261122d';
 
-export const VERSION = '20261122d';
+export const VERSION = '20261122e';
 const PARAM = new URLSearchParams(location.search);
+// el modo mecánico se abre sólo en local (la PC o la red de la casa), nunca en la página publicada, hasta la validación de AAXOD (3b)
+const EN_LOCAL = /^(localhost|127(\.\d+){3}|\[::1\]|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2})$/.test(location.hostname) || location.hostname.endsWith('.local');
+const MECANICO = PARAM.get('mecanico') === '1' && EN_LOCAL;
 const HOLO = PARAM.get('holo') !== '0';
 const PASO = 1 / 120;
 const ALTURA_OJOS = 1.6;
@@ -870,7 +873,7 @@ const paneles = [panelMotor, panelEstaciones, preguntas];
 // el panel del atril de partida (T5): sobre la cabeza inclinada del atril de muebles.glb
 let panelAtril = null;
 if (datosAtril) {
-  panelAtril = crearPanelAtril({leyenda: LEGEND, mecanico: PARAM.get('mecanico') === '1'});
+  panelAtril = crearPanelAtril({leyenda: LEGEND, mecanico: MECANICO});
   const [x, y, z] = datosAtril.centro;
   const inc = THREE.MathUtils.degToRad(datosAtril.inclinacion_grados);
   panelAtril.malla.rotation.x = -(Math.PI / 2 - inc); // la normal queda (0, cos inc, sin inc): hacia el que llega por el portón
@@ -1131,8 +1134,8 @@ function accionar(a) {
     if (piezaAbierta && piezaAbierta.tieneMoviles) piezaAbierta.abrir(!piezaAbierta.abierta);
   }
   else if (a.id === 'modo_mecanico') {
-    // sin publicar hasta la validación de AAXOD (decisión 3b): sólo con ?mecanico=1; si no, el botón se ve apagado
-    if (PARAM.get('mecanico') === '1') {
+    // sin publicar hasta la validación de AAXOD (decisión 3b): sólo con ?mecanico=1 y en local (MECANICO); si no, el botón se ve apagado
+    if (MECANICO) {
       iniciarMecanico();
       saltarA('mesa');
     }
@@ -1509,7 +1512,7 @@ renderer.xr.addEventListener('sessionstart', () => {
 function abrirPausa() {
   const botones = [{id: 'seguir', texto: 'Seguir'}, {id: 'ralenti', texto: 'Motor a ralentí'}, {id: 'ir_mesa', texto: 'A la mesa'}, {id: 'ir_partida', texto: 'A la partida'}];
   if (hangar) botones.push({id: 'ir_at802', texto: 'Al AT-802'}, {id: 'ir_cessna', texto: 'Al Cessna'}, {id: 'ir_bancos', texto: 'A los bancos'});
-  botones.push({id: 'salir', texto: 'Salir de VR'});
+  botones.push({id: 'cabina', texto: 'Volver a la cabina'}, {id: 'salir', texto: 'Salir de VR'});
   panelVR.mostrar(
     {titulo: 'TALLER DE MOTORES · PAUSA', texto: `${LEGEND}\n\nEl motor sigue en el estado en que lo dejaste.\n${resumenCamino()}`, botones},
     (id) => {
@@ -1517,6 +1520,7 @@ function abrirPausa() {
       if (id === 'ralenti') aRalenti();
       else if (id === 'ir_at802') saltarAPunto(0);
       else if (id.startsWith('ir_')) saltarA(id.slice(3));
+      else if (id === 'cabina') { const s = renderer.xr.getSession(); if (s) s.end().finally(() => { location.href = './'; }); else location.href = './'; }
       else if (id === 'salir') renderer.xr.getSession()?.end();
     },
     renderer.xr.isPresenting ? renderer.xr.getCamera() : camara,
@@ -2804,7 +2808,8 @@ function probarMandos() {
   panelVR.malla.updateWorldMatrix(true, false);
   {
     // el botón 1 («Motor a ralentí») con la misma grilla que dibuja panelvr.js (1024 × 680 px; 4 columnas si hay más de 4 botones)
-    const n = hangar ? 8 : 5;
+    // tantos botones como arma abrirPausa(): Seguir, Motor a ralentí, A la mesa, A la partida, [Al AT-802, Al Cessna, A los bancos], Volver a la cabina, Salir de VR
+    const n = hangar ? 9 : 6;
     const cols = n > 4 ? 4 : n;
     const bw = (1024 - 80 - (cols - 1) * 14) / cols;
     const bh = n > 4 ? 56 : 80;

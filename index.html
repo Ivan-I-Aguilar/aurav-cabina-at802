@@ -55,10 +55,10 @@
 <div id="inicio" hidden><div class="caja"><h2 id="inicio-titulo"></h2><p class="chico" id="inicio-texto"></p><label>Nombre y apellido del alumno<input id="inicio-nombre" autocomplete="name" placeholder="Nombre y apellido"></label><p class="chico" id="inicio-semilla"></p><p class="chico no" id="inicio-nota" hidden></p><div class="botones"><button id="inicio-vr" hidden>Empezar en VR</button><button id="inicio-empezar">Empezar</button></div></div></div>
 <div id="debrief" hidden></div>
 <script>/* si el navegador guardó un index viejo, recargar con la versión publicada (GitHub Pages cachea 10 min) */
-const VERSION_PAGINA = '20261112e'; document.getElementById('version-vista').textContent = 'v' + VERSION_PAGINA;
+const VERSION_PAGINA = '20261122e'; document.getElementById('version-vista').textContent = 'v' + VERSION_PAGINA;
 const chequearVersion = () => fetch('./version.txt?' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => { v = v.trim(); if (v && v !== VERSION_PAGINA && !sessionStorage.getItem('recargado-' + v)) { sessionStorage.setItem('recargado-' + v, '1'); const q = new URLSearchParams(location.search); q.set('v', v); location.replace(location.pathname + '?' + q); } }).catch(() => {});   /* conserva ?cabina=nueva y demás (7/11) */
 chequearVersion(); setInterval(chequearVersion, 10000);   /* periódico (1/11): la pestaña abierta se recarga SOLA al publicar una build; antes chequeaba una única vez al cargar y una pestaña vieja nunca se enteraba */
 </script>
-<script type="module" src="./main.js?v=20261112e"></script>
+<script type="module" src="./main.js?v=20261122e"></script>
 </body>
 </html>
