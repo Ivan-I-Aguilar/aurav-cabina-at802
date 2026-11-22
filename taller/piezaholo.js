@@ -8,6 +8,11 @@
 // pueden salir de las ISLAS de una malla (elegir: las palas de la hélice vienen sueltas dentro de una sola malla), el giro propio
 // cambia de velocidad (ponerGiro) y la pieza puede llevar un FLUJO de estelas de luz a lo largo de un eje (ponerFlujo: el aire que
 // mueve la hélice).
+// T14 (las superficies de mando): las partes móviles se reparten en CANALES que se mueven por separado (los flaps por un lado y los
+// alerones por otro; el timón de profundidad y el de dirección), una isla se puede PARTIR (el timón de dirección viene pegado a la
+// deriva), las partes móviles pueden llevar LUZ propia para que se vea qué es lo que se mueve, la pieza toma una ACTITUD (se inclina,
+// cabecea o guiña: lo que le pasa al avión cuando se mueve esa superficie), el recorte acepta DOS cajas (las dos alas, sin el
+// fuselaje del medio) y el flujo puede llenar una caja (el aire sobre toda el ala).
 import * as THREE from '../three.module.js';
 
 const VERT = /* glsl */ `
@@ -31,13 +36,19 @@ uniform float uBrillo;
 uniform float uCaja;
 uniform vec3 uMin;
 uniform vec3 uMax;
+uniform vec3 uMin2;
+uniform vec3 uMax2;
 uniform float uPaso;
 varying vec3 vN;
 varying vec3 vV;
 varying vec3 vP;
 varying float vLuz;
 void main() {
-  if (uCaja > 0.5 && (any(lessThan(vP, uMin)) || any(greaterThan(vP, uMax)))) discard;
+  // el recorte: fuera de la caja (o de las dos cajas) no se dibuja. vP es la posición en reposo: una parte que se mueve no se
+  // recorta por salirse de la caja
+  bool fuera1 = any(lessThan(vP, uMin)) || any(greaterThan(vP, uMax));
+  bool fuera2 = uCaja < 1.5 || any(lessThan(vP, uMin2)) || any(greaterThan(vP, uMax2));
+  if (uCaja > 0.5 && fuera1 && fuera2) discard;
   float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.4);
   float barrido = 0.8 + 0.2 * sin(vP.y * uPaso - uTiempo * 2.4);
   float i = ((0.07 + 0.6 * f) * barrido + vLuz) * uBrillo; // vLuz: la luz propia de lo que tiene que leerse de frente (una escala)
@@ -46,6 +57,8 @@ void main() {
 }`;
 
 const suave = (x) => x * x * (3 - 2 * x);
+/** el canal de las partes móviles que no dicen cuál es el suyo (las hojas de la compuerta, las palas) */
+export const CANAL = 'paso';
 
 // la cabeza redonda de las estelas del flujo: un punto de luz difuso (una sola textura para todas las piezas)
 let texPunto = null;
@@ -113,20 +126,28 @@ function islasDe(pos) {
 
 /**
  * clave: el nombre de la pieza; fuentes: las mallas de donde sale; marco: el objeto en cuyo marco local queda la pieza (por
- * omisión, la primera fuente); caja: Box3 en ese marco para recortar (o null: la malla entera); tam: cuánto mide su lado más largo
- * (m); gira: {eje: 'x' | 'y' | 'z', vel: rad/s} si la pieza gira sobre un eje de su marco (la hélice).
- * Partes que se mueven, de dos maneras (todo en el marco, ángulos en radianes):
- *  - moviles: [{fuentes, a, b, angulo}]: mallas enteras que giran sobre el eje que va de a hasta b (Vector3);
- *  - elegir(isla): para las islas de «fuentes» ({n, min, max, centro}); devuelve null (queda fija) o {a, b, angulo}.
- * Con las partes en la posición v, cada una está girada angulo · v: irA(v) las lleva (abrir(true | false) = irA(1 | 0)).
- * velocidad: cuánto cambia v por segundo. flujo: {n, radio, desde, hasta, cola, tam, color} = estelas de luz a lo largo del eje x
- * del marco, dentro de ese radio, entre esas dos x (cola: su largo a velocidad 1); ponerFlujo(v) las mueve a v unidades del marco
- * por segundo (con signo; 0 las apaga).
- * Devuelve {clave, grupo, interior, radio, mitad, centro, triangulos, tieneMoviles, abierta, abertura, valor, objetivo, irA, seguir,
- * abrir, ponerGiro, giro, ponerFlujo, flujo, aMundo, actualizar(dt, t), liberar()}: el grupo se pone, se gira y se escala desde afuera; «interior» es
- * lo que gira solo; «mitad» es la media caja de lo que se ve, en reposo; aMundo(p) lleva un punto del marco al mundo.
+ * omisión, la primera fuente); caja: un Box3 en ese marco para recortar, o dos ([Box3, Box3]: lo que cae en cualquiera de las dos),
+ * o null (la malla entera); tam: cuánto mide su lado más largo (m); gira: {eje: 'x' | 'y' | 'z', vel: rad/s} si la pieza gira
+ * sobre un eje de su marco (la hélice).
+ * PARTES QUE SE MUEVEN, de dos maneras (todo en el marco, ángulos en radianes):
+ *  - moviles: [{fuentes, a, b, angulo, canal, luz}]: mallas enteras que giran sobre el eje que va de a hasta b (Vector3);
+ *  - elegir(isla): para las islas de «fuentes» ({n, min, max, centro}); devuelve null (queda fija) o {a, b, angulo, canal, luz,
+ *    dentro}. Con «dentro» (una función del centro de cada triángulo, Vector3 → bool) la isla se PARTE: sólo esos triángulos pasan a
+ *    ser la parte móvil y el resto queda fijo (el timón de dirección, que viene pegado a la deriva).
+ * Cada parte pertenece a un CANAL (por omisión, 'paso'). Con el canal en la posición v, cada una de sus partes está girada
+ * angulo · v: irA(v, ya, canal) las lleva con arranque y llegada suaves; seguir(v, canal), sin ellos (un mando que se arrastra);
+ * abrir(true | false) = irA(1 | 0) en el canal por omisión. velocidad: cuánto cambia v por segundo. luz: luz propia de la parte
+ * (se le suma a la de su malla); luzMoviles: la de las partes que no dicen la suya.
+ * ACTITUD: ponerActitud(x, y, z) inclina la pieza entera (lo que gira solo) sobre los ejes de su marco, de a poco.
+ * FLUJO: {n, desde, hasta, cola, tam, color} y dónde: radio (alrededor del eje x del marco) o caja ([[y0, z0], [y1, z1]], en el
+ * marco) = estelas de luz a lo largo del eje x, entre esas dos x (cola: su largo a velocidad 1); ponerFlujo(v) las mueve a v
+ * unidades del marco por segundo (con signo; 0 las apaga).
+ * Devuelve {clave, grupo, interior, radio, mitad, centro, triangulos, tieneMoviles, partes, canales, abierta, abertura, valor,
+ * objetivo, valorDe, objetivoDe, quieta, irA, seguir, abrir, ponerGiro, giro, ponerActitud, actitud, ponerFlujo, flujo, aMundo,
+ * actualizar(dt, t), liberar()}: el grupo se pone, se gira y se escala desde afuera; «interior» es lo que gira solo; «mitad» es la
+ * media caja de lo que se ve, en reposo; aMundo(p) lleva un punto del marco al mundo.
  */
-export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam = 0.8, color = '#62d8ff', gira = null, brillo = 1, moviles = [], elegir = null, velocidad = 1 / 1.2, flujo = null}) {
+export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam = 0.8, color = '#62d8ff', gira = null, brillo = 1, moviles = [], elegir = null, velocidad = 1 / 1.2, flujo = null, luzMoviles = 0}) {
   const ref = marco || fuentes[0];
   ref.updateWorldMatrix(true, false);
   const inv = new THREE.Matrix4().copy(ref.matrixWorld).invert();
@@ -137,13 +158,15 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   const c = new THREE.Vector3();
   const na = new THREE.Vector3();
   const cubre = new THREE.Box3();
-  /** los triángulos de unas mallas, en el marco de la pieza (y dentro de la caja, si hay): {pos, nor, luz} */
-  const extraer = (mallas) => {
+  const cajas = !caja ? [] : Array.isArray(caja) ? caja.slice(0, 2) : [caja];
+  const enCajas = (p) => cajas.some((q) => q.containsPoint(p));
+  /** los triángulos de unas mallas, en el marco de la pieza (y dentro de las cajas, si hay): {pos, nor, luz} */
+  const extraer = (mallas, mas = 0) => {
     const pos = [];
     const nor = [];
     const luz = [];
     for (const m of mallas) {
-      const propia = +m.userData.luz || 0; // la luz propia de esa malla (userData.luz del modelo: la escala de la mirilla)
+      const propia = (+m.userData.luz || 0) + mas; // la luz propia de esa malla (userData.luz del modelo: la escala de la mirilla)
       m.updateWorldMatrix(true, false);
       m4.multiplyMatrices(inv, m.matrixWorld);
       n3.getNormalMatrix(m4);
@@ -155,7 +178,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
         b.fromBufferAttribute(P, i + 1).applyMatrix4(m4);
         c.fromBufferAttribute(P, i + 2).applyMatrix4(m4);
         // con caja: se quedan los triángulos que la tocan (el borde lo corta el sombreador)
-        if (caja && !caja.containsPoint(a) && !caja.containsPoint(b) && !caja.containsPoint(c)) continue;
+        if (cajas.length && !enCajas(a) && !enCajas(b) && !enCajas(c)) continue;
         for (const [v, k] of [
           [a, i],
           [b, i + 1],
@@ -173,33 +196,45 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     return {pos, nor, luz};
   };
   let fijo = extraer(fuentes);
-  const sueltas = moviles.map((mv) => ({...mv, datos: extraer(mv.fuentes)}));
-  // las islas de lo fijo que el que llama quiere mover (las palas): salen de lo fijo y pasan a ser partes móviles
+  const sueltas = moviles.map((mv) => ({...mv, datos: extraer(mv.fuentes, mv.luz ?? luzMoviles)}));
+  // las islas de lo fijo que el que llama quiere mover (las palas, los flaps): salen de lo fijo y pasan a ser partes móviles
   if (elegir) {
     const quedan = {pos: [], nor: [], luz: []};
-    const pasar = (hacia, t) => {
+    const pasar = (hacia, t, mas = 0) => {
       for (let j = 0; j < 9; j++) hacia.pos.push(fijo.pos[t * 9 + j]), hacia.nor.push(fijo.nor[t * 9 + j]);
-      for (let j = 0; j < 3; j++) hacia.luz.push(fijo.luz[t * 3 + j]);
+      for (let j = 0; j < 3; j++) hacia.luz.push(fijo.luz[t * 3 + j] + mas);
     };
     for (const isla of islasDe(fijo.pos)) {
       const mv = elegir({n: isla.n, min: isla.min, max: isla.max, centro: isla.centro});
-      const hacia = mv ? {pos: [], nor: [], luz: []} : quedan;
-      for (const t of isla.triangulos) pasar(hacia, t);
-      if (mv) sueltas.push({...mv, datos: hacia});
+      if (!mv) {
+        for (const t of isla.triangulos) pasar(quedan, t);
+        continue;
+      }
+      const suyos = {pos: [], nor: [], luz: []};
+      const mas = mv.luz ?? luzMoviles;
+      for (const t of isla.triangulos) {
+        // con «dentro» la isla se parte por el centro de cada triángulo
+        if (mv.dentro && !mv.dentro(c.set((fijo.pos[t * 9] + fijo.pos[t * 9 + 3] + fijo.pos[t * 9 + 6]) / 3, (fijo.pos[t * 9 + 1] + fijo.pos[t * 9 + 4] + fijo.pos[t * 9 + 7]) / 3, (fijo.pos[t * 9 + 2] + fijo.pos[t * 9 + 5] + fijo.pos[t * 9 + 8]) / 3))) pasar(quedan, t);
+        else pasar(suyos, t, mas);
+      }
+      if (suyos.pos.length) sueltas.push({...mv, datos: suyos});
     }
     fijo = quedan;
   }
-  if (caja) cubre.intersect(caja);
+  if (cajas.length) cubre.intersect(cajas.reduce((u, q) => u.union(q), cajas[0].clone()));
   const centro = cubre.getCenter(new THREE.Vector3());
   const lado = cubre.getSize(new THREE.Vector3());
   const k = tam / Math.max(lado.x, lado.y, lado.z, 1e-6);
+  const cero = new THREE.Vector3();
   const U = {
     uColor: {value: new THREE.Color(color)},
     uTiempo: {value: 0},
     uBrillo: {value: brillo}, // menos en las piezas con muchas capas (la cabina), que sumadas dan un bloque blanco
-    uCaja: {value: caja ? 1 : 0},
-    uMin: {value: caja ? caja.min.clone().sub(centro) : new THREE.Vector3()},
-    uMax: {value: caja ? caja.max.clone().sub(centro) : new THREE.Vector3()},
+    uCaja: {value: cajas.length},
+    uMin: {value: cajas[0] ? cajas[0].min.clone().sub(centro) : cero.clone()},
+    uMax: {value: cajas[0] ? cajas[0].max.clone().sub(centro) : cero.clone()},
+    uMin2: {value: cajas[1] ? cajas[1].min.clone().sub(centro) : cero.clone()},
+    uMax2: {value: cajas[1] ? cajas[1].max.clone().sub(centro) : cero.clone()},
     uPaso: {value: 60 * k}, // el barrido, igual de fino cualquiera sea el tamaño de la pieza
   };
   const material = new THREE.ShaderMaterial({uniforms: U, vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false});
@@ -227,7 +262,7 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     m.frustumCulled = false; // girada se sale de su esfera
     interior.add(m);
     const p = mv.a.clone().sub(centro);
-    return {malla: m, p, eje: mv.b.clone().sub(mv.a).normalize(), angulo: mv.angulo};
+    return {malla: m, p, eje: mv.b.clone().sub(mv.a).normalize(), angulo: mv.angulo, canal: mv.canal || CANAL};
   });
   const grupo = new THREE.Group();
   grupo.name = `pieza-${clave}`;
@@ -247,9 +282,21 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     let s = 12345;
     const azar = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
     for (let i = 0; i < n; i++) {
-      const r = flujo.radio * Math.sqrt(0.06 + 0.94 * azar());
-      const ang = azar() * Math.PI * 2;
-      base.set([flujo.hasta + (flujo.desde - flujo.hasta) * azar() - centro.x, r * Math.cos(ang) - centro.y, r * Math.sin(ang) - centro.z], i * 3);
+      const x = flujo.hasta + (flujo.desde - flujo.hasta) * azar();
+      let y;
+      let z;
+      if (flujo.caja) {
+        // una caja en y, z (el aire sobre toda el ala)
+        y = flujo.caja[0][0] + (flujo.caja[1][0] - flujo.caja[0][0]) * azar();
+        z = flujo.caja[0][1] + (flujo.caja[1][1] - flujo.caja[0][1]) * azar();
+      } else {
+        // un tubo alrededor del eje x del marco (el aire que pasa por el disco de la hélice)
+        const r = flujo.radio * Math.sqrt(0.06 + 0.94 * azar());
+        const ang = azar() * Math.PI * 2;
+        y = r * Math.cos(ang);
+        z = r * Math.sin(ang);
+      }
+      base.set([x - centro.x, y - centro.y, z - centro.z], i * 3);
     }
     const tono = new THREE.Color(flujo.color || '#bff1ff');
     const lg = new THREE.BufferGeometry();
@@ -274,20 +321,20 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     geos.push(lg, pg);
   }
 
-  // la posición de las partes móviles: va de «desde» a «hacia» con arranque y llegada suaves
-  let valor = 0;
-  let desde = 0;
-  let hacia = 0;
-  let avance = 1;
-  let duracion = 1;
-  let persigue = false; // seguir(v): persigue un blanco que se mueve
+  // Los CANALES: cada uno lleva la posición de sus partes, que va de «desde» a «hacia» con arranque y llegada suaves (irA) o
+  // persiguiendo un blanco que se mueve (seguir)
+  const canales = new Map();
+  for (const q of partes) if (!canales.has(q.canal)) canales.set(q.canal, {valor: 0, desde: 0, hacia: 0, avance: 1, duracion: 1, persigue: false});
+  const primero = canales.keys().next().value ?? CANAL;
+  if (!canales.size) canales.set(primero, {valor: 0, desde: 0, hacia: 0, avance: 1, duracion: 1, persigue: false});
+  const canalDe = (nombre) => canales.get(nombre ?? primero);
   const ida = new THREE.Matrix4();
   const giro = new THREE.Matrix4();
   const vuelta = new THREE.Matrix4();
   const mover = () => {
     for (const q of partes) {
       ida.makeTranslation(q.p.x, q.p.y, q.p.z);
-      giro.makeRotationAxis(q.eje, q.angulo * valor);
+      giro.makeRotationAxis(q.eje, q.angulo * canales.get(q.canal).valor);
       vuelta.makeTranslation(-q.p.x, -q.p.y, -q.p.z);
       q.malla.matrix.copy(ida).multiply(giro).multiply(vuelta);
       q.malla.matrixWorldNeedsUpdate = true;
@@ -295,6 +342,9 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
   };
   let velGiro = gira ? gira.vel : 0;
   let giroObjetivo = velGiro;
+  // la actitud: cuánto está inclinado «interior» sobre cada eje del marco (el eje del giro propio no se toca)
+  const actitud = new THREE.Vector3();
+  const actitudObjetivo = new THREE.Vector3();
   const triangulos = (fijo.pos.length + sueltas.reduce((s, mv) => s + mv.datos.pos.length, 0)) / 9;
   const esfera = geos.reduce((r, g) => (g.boundingSphere ? Math.max(r, g.boundingSphere.center.length() + g.boundingSphere.radius) : r), 0);
   return {
@@ -304,51 +354,71 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     escala0: k,
     // el radio de lo que SE VE: con caja, el de la caja recortada (los triángulos grandes que la cruzan inflaban la esfera: la
     // cabina, de 0,9 m, daba 1,03 m de radio)
-    radio: (caja ? Math.min(esfera, lado.length() / 2) : esfera) * k,
+    radio: (cajas.length ? Math.min(esfera, lado.length() / 2) : esfera) * k,
     triangulos,
     mitad: lado.clone().multiplyScalar(0.5), // la mitad de lo que mide lo que se ve, en el marco de la pieza (sin escalar)
     centro, // el centro de la pieza, en el marco
     tieneMoviles: partes.length > 0,
-    /** las partes móviles (para las pruebas): {malla, eje, angulo} */
+    /** las partes móviles (para las pruebas): {malla, p, eje, angulo, canal} */
     partes,
+    /** los nombres de los canales de las partes móviles */
+    canales: [...canales.keys()],
     get abierta() {
-      return hacia === 1;
+      return canalDe().hacia === 1;
     },
-    /** la posición actual de las partes móviles (0 en reposo; 1 = abiertas) */
+    /** la posición actual de las partes móviles del canal por omisión (0 en reposo; 1 = abiertas) */
     get abertura() {
-      return valor;
+      return canalDe().valor;
     },
     get valor() {
-      return valor;
+      return canalDe().valor;
     },
     get objetivo() {
-      return hacia;
+      return canalDe().hacia;
     },
-    /** lleva las partes móviles a la posición v (cada una gira angulo · v); con «ya», sin animar (para las pruebas) */
-    irA(v, ya = false) {
+    /** la posición actual y el blanco de un canal (0 si la pieza no lo tiene) */
+    valorDe(canal) {
+      const q = canales.get(canal);
+      return q ? q.valor : 0;
+    },
+    objetivoDe(canal) {
+      const q = canales.get(canal);
+      return q ? q.hacia : 0;
+    },
+    /** todas las partes móviles llegaron a su blanco */
+    get quieta() {
+      for (const q of canales.values()) if (q.avance < 1 || q.valor !== q.hacia) return false;
+      return true;
+    },
+    /** lleva las partes móviles de un canal a la posición v (cada una gira angulo · v); con «ya», sin animar (para las pruebas) */
+    irA(v, ya = false, canal = undefined) {
+      const q = canalDe(canal);
+      if (!q) return;
       if (ya) {
-        valor = desde = hacia = v;
-        avance = 1;
-        persigue = false;
+        q.valor = q.desde = q.hacia = v;
+        q.avance = 1;
+        q.persigue = false;
         mover();
         return;
       }
-      const perseguia = persigue;
-      persigue = false;
-      if (v === hacia && !(perseguia && valor !== hacia)) return;
-      desde = valor;
-      hacia = v;
-      avance = 0;
-      duracion = Math.max(0.35, Math.abs(hacia - desde) / velocidad);
+      const perseguia = q.persigue;
+      q.persigue = false;
+      if (v === q.hacia && !(perseguia && q.valor !== q.hacia)) return;
+      q.desde = q.valor;
+      q.hacia = v;
+      q.avance = 0;
+      q.duracion = Math.max(0.35, Math.abs(q.hacia - q.desde) / velocidad);
     },
-    /** las partes móviles persiguen la posición v, que puede cambiar en cada cuadro (un mando continuo que el alumno arrastra):
-     * sin el arranque suave de irA, que con un blanco que se mueve las dejaba siempre atrás */
-    seguir(v) {
-      hacia = v;
-      persigue = true;
-      avance = 1;
+    /** las partes móviles de un canal persiguen la posición v, que puede cambiar en cada cuadro (un mando continuo que el alumno
+     * arrastra): sin el arranque suave de irA, que con un blanco que se mueve las dejaba siempre atrás */
+    seguir(v, canal = undefined) {
+      const q = canalDe(canal);
+      if (!q) return;
+      q.hacia = v;
+      q.persigue = true;
+      q.avance = 1;
     },
-    /** abre (true) o cierra (false) las partes móviles */
+    /** abre (true) o cierra (false) las partes móviles del canal por omisión */
     abrir(si, ya = false) {
       this.irA(si ? 1 : 0, ya);
     },
@@ -361,6 +431,14 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
     get giro() {
       return velGiro;
     },
+    /** la actitud de la pieza: cuánto se inclina sobre los ejes x, y, z de su marco (rad); llega de a poco (con «ya», de una vez) */
+    ponerActitud(x = 0, y = 0, z = 0, ya = false) {
+      actitudObjetivo.set(x, y, z);
+      if (ya) actitud.copy(actitudObjetivo);
+    },
+    /** la actitud de ahora y su blanco (Vector3, rad) */
+    actitud,
+    actitudObjetivo,
     /** la velocidad del flujo ahora (con signo; 0 = apagado) */
     get flujo() {
       return velFlujo;
@@ -378,15 +456,24 @@ export function crearPiezaHolo({clave, fuentes, marco = null, caja = null, tam =
       U.uTiempo.value = t;
       velGiro += (giroObjetivo - velGiro) * Math.min(1, dt * 2.5);
       if (gira) interior.rotation[gira.eje] += velGiro * dt;
-      if (avance < 1) {
-        avance = Math.min(1, avance + dt / duracion);
-        valor = avance >= 1 ? hacia : desde + (hacia - desde) * suave(avance);
-        mover();
-      } else if (persigue && valor !== hacia) {
-        valor += (hacia - valor) * Math.min(1, dt * 9);
-        if (Math.abs(hacia - valor) < 2e-4) valor = hacia;
-        mover();
+      if (!actitud.equals(actitudObjetivo)) {
+        actitud.lerp(actitudObjetivo, Math.min(1, dt * 3.5));
+        if (actitud.distanceToSquared(actitudObjetivo) < 1e-8) actitud.copy(actitudObjetivo);
       }
+      for (const eje of ['x', 'y', 'z']) if (!gira || gira.eje !== eje) interior.rotation[eje] = actitud[eje];
+      let movio = false;
+      for (const q of canales.values()) {
+        if (q.avance < 1) {
+          q.avance = Math.min(1, q.avance + dt / q.duracion);
+          q.valor = q.avance >= 1 ? q.hacia : q.desde + (q.hacia - q.desde) * suave(q.avance);
+          movio = true;
+        } else if (q.persigue && q.valor !== q.hacia) {
+          q.valor += (q.hacia - q.valor) * Math.min(1, dt * 9);
+          if (Math.abs(q.hacia - q.valor) < 2e-4) q.valor = q.hacia;
+          movio = true;
+        }
+      }
+      if (movio) mover();
       if (estelas) {
         const {lineas, cabezas, base, n, cola} = estelas.userData;
         opFlujo += ((velFlujo ? 0.9 : 0) - opFlujo) * Math.min(1, dt * 3);

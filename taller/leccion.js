@@ -1,13 +1,13 @@
 // El PANEL DE LA LECCIÓN de una pieza (T13, 21/11/2026; PLAN_TALLER.md §16): lo que convierte la pieza en holograma en una lección
 // «como el motor». Es el rótulo de la pieza (su nombre y CERRAR) con dos caras:
 //  - FUNCIONAMIENTO: un botón por cada cosa que la pieza hace (los «estados» de lecciones.js), la frase del estado elegido, con
-//    qué se maneja de verdad, la PALANCA de la lección si la tiene (un mando continuo: la pieza va a cualquier punto entre dos
+//    qué se maneja de verdad, las PALANCAS de la lección (una o dos mandos continuos: la pieza va a cualquier punto entre dos
 //    estados), y abajo cómo se mueve la pieza y el botón REPASO;
 //  - REPASO: las preguntas de la lección, de a una, con tres opciones; al final, el puntaje.
-// Y los RÓTULOS DE LAS PARTES: hasta tres nombres al costado de la pieza, cada uno con su línea al punto que señala (el mismo
+// Y los RÓTULOS DE LAS PARTES: hasta cinco nombres al costado de la pieza, cada uno con su línea al punto que señala (el mismo
 // aspecto que las llamadas del motor).
 import * as THREE from '../three.module.js';
-import {crearPanel, pieLeyenda} from './paneles.js?v=20261121c';
+import {crearPanel, pieLeyenda} from './paneles.js?v=20261122a';
 
 const AZUL = '#082440';
 const LIMA = '#c8e63a';
@@ -60,11 +60,11 @@ export function crearRepaso(preguntas) {
 }
 
 /**
- * el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso, vistos, mejor, palanca}); vistos = los
- * estados que el alumno ya puso (llevan una tilde), mejor = su mejor puntaje en el repaso (o null) y palanca = {u, activa} = dónde
- * está la perilla de la palanca de la lección (si la lección tiene «palanca»). «alto» es el de lo que cambia; con
- * «leyenda» (la leyenda fija del taller) se le suma abajo una franja con ella: mientras la pieza está abierta la tarjeta de su
- * punto, que es la que la lleva, está escondida, y en el casco la leyenda tiene que seguir a la vista
+ * el panel: un crearPanel con pintar({titulo, nota, ayuda, leccion, estado, hover, repaso, vistos, mejor, palancas}); vistos = los
+ * estados que el alumno ya puso (llevan una tilde), mejor = su mejor puntaje en el repaso (o null) y palancas = {id: {u, activa}} =
+ * dónde está la perilla de cada palanca de la lección. «alto» es el de lo que cambia; con «leyenda» (la leyenda fija del taller)
+ * se le suma abajo una franja con ella: mientras la pieza está abierta la tarjeta de su punto, que es la que la lleva, está
+ * escondida, y en el casco la leyenda tiene que seguir a la vista
  */
 export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}) {
   const PX = 1216;
@@ -91,25 +91,26 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
     g.textAlign = alinear;
     g.fillText(texto, alinear === 'center' ? x + w / 2 : x + 22, y + h / 2 + 2, w - 28);
   };
-  // La PALANCA de la lección: una pista con su perilla, que el alumno toca o arrastra (el botón 'lec_palanca': el lugar donde cae
-  // el rayo dice a dónde va). Arriba, los estados que recorre; en rojo, la zona de la traba; abajo, hacia dónde es atrás y adelante
-  const dibujarPalanca = (leccion, {u, activa}, sobre) => {
-    const pl = leccion.palanca;
+  // Las PALANCAS de la lección (una o dos): cada una, una pista con su perilla, que el alumno toca o arrastra (el botón
+  // 'lec_p_<id>': el lugar donde cae el rayo dice a dónde va). Arriba, los estados que recorre y sus marcas; en rojo, la zona de
+  // la traba; abajo, cómo se llaman sus extremos. Con una sola, su nombre va a la izquierda de la pista; con dos, van lado a lado
+  // y el nombre de cada una va abajo, entre los de sus extremos
+  const dibujarPalanca = (leccion, pl, {u, activa}, sobre, x0, x1, sola) => {
     const y = 380;
-    const x0 = M + 262;
-    const x1 = W - M - 16;
     const largo = x1 - x0;
     const yt = y + 30; // la pista
     const ht = 30;
-    p.botones.push({id: 'lec_palanca', x: x0, y: y + 4, w: largo, h: 76});
+    p.botones.push({id: `lec_p_${pl.id}`, x: x0, y: y + 4, w: largo, h: 76});
     g.textBaseline = 'middle';
-    g.textAlign = 'left';
-    g.fillStyle = LIMA;
-    g.font = 'bold 25px Arial';
-    g.fillText(pl.rotulo, M, yt + 2, 250);
-    g.fillStyle = '#8fa3b8';
-    g.font = 'bold 20px Arial';
-    g.fillText('TOCALA O ARRASTRALA', M, yt + 34, 250);
+    if (sola) {
+      g.textAlign = 'left';
+      g.fillStyle = LIMA;
+      g.font = 'bold 25px Arial';
+      g.fillText(pl.rotulo, M, yt + 2, 250);
+      g.fillStyle = '#8fa3b8';
+      g.font = 'bold 20px Arial';
+      g.fillText('TOCALA O ARRASTRALA', M, yt + 34, 250);
+    }
     g.beginPath();
     g.roundRect(x0, yt, largo, ht, 15);
     g.fillStyle = sobre ? '#17467a' : '#0f335a';
@@ -129,21 +130,33 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
     g.roundRect(x0, yt, largo, ht, 15);
     g.stroke();
     g.font = 'bold 20px Arial';
+    g.fillStyle = '#9fe3ff';
     const ultimo = pl.puntos.length - 1;
-    pl.puntos.forEach(([up, id], i) => {
+    pl.puntos.forEach(([up, id, corto], i) => {
       const e = leccion.estados.find((x) => x.id === id);
       const x = x0 + up * largo;
-      g.fillStyle = '#9fe3ff';
       g.textAlign = i === 0 ? 'left' : i === ultimo ? 'right' : 'center';
-      g.fillText(e ? e.boton : id, i === 0 ? x0 + 4 : i === ultimo ? x1 - 4 : x, y + 14);
+      g.fillText(corto || (e && e.boton) || id, i === 0 ? x0 + 4 : i === ultimo ? x1 - 4 : x, y + 14);
       if (i > 0 && i < ultimo) g.fillRect(x - 1.5, yt - 5, 3, ht + 10);
     });
+    g.textAlign = 'center';
+    for (const [um, rot] of pl.marcas || []) {
+      const x = x0 + um * largo;
+      g.fillText(rot, x, y + 14);
+      g.fillRect(x - 1, yt - 4, 2, ht + 8);
+    }
     g.fillStyle = '#8fa3b8';
     g.font = 'bold 19px Arial';
     g.textAlign = 'left';
     g.fillText(`← ${pl.atras}`, x0 + 4, yt + ht + 17);
     g.textAlign = 'right';
     g.fillText(`${pl.adelante} →`, x1 - 4, yt + ht + 17);
+    if (!sola) {
+      g.textAlign = 'center';
+      g.fillStyle = LIMA;
+      g.font = 'bold 22px Arial';
+      g.fillText(pl.rotulo, (x0 + x1) / 2, yt + ht + 17);
+    }
     const xk = x0 + Math.min(1, Math.max(0, u)) * largo;
     g.beginPath();
     g.roundRect(xk - 15, yt - 12, 30, ht + 24, 10);
@@ -157,7 +170,7 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
     ...p,
     ancho,
     alto: altoTotal,
-    pintar({titulo, nota = '', ayuda = '', leccion, estado, hover = null, repaso = null, vistos = null, mejor = null, palanca = null}) {
+    pintar({titulo, nota = '', ayuda = '', leccion, estado, hover = null, repaso = null, vistos = null, mejor = null, palancas = {}}) {
       p.botones.length = 0;
       g.clearRect(0, 0, W, p.H);
       g.save();
@@ -179,10 +192,11 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
       g.fillText(nota ? nota.toUpperCase() : 'MATERIAL DE REFERENCIA · A VERIFICAR', M, 100, W - 2 * M - 260);
       boton('pieza_cerrar', W - 236 - 20, 20, 236, 100, 'CERRAR', {lleno: true, color: ROJO, sobre: hover === 'pieza_cerrar', tam: 40});
       if (!repaso) {
-        // FUNCIONAMIENTO: un botón por estado, la frase del elegido, el mando de verdad
-        const n = leccion.estados.length;
+        // FUNCIONAMIENTO: un botón por cada estado que lo lleva, la frase del elegido, el mando de verdad y las palancas
+        const conBoton = leccion.estados.filter((e) => e.boton);
+        const n = conBoton.length;
         const bw = (W - 2 * M - (n - 1) * 12) / n;
-        leccion.estados.forEach((e, i) => {
+        conBoton.forEach((e, i) => {
           const x = M + i * (bw + 12);
           boton(`lec_e_${e.id}`, x, 142, bw, 92, e.boton, {lleno: e.id === estado, sobre: hover === `lec_e_${e.id}`, tam: 29});
           if (vistos && vistos.has(e.id)) {
@@ -194,8 +208,9 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
             g.fillText('✓', x + bw - 9, 148);
           }
         });
-        const e = leccion.estados.find((x) => x.id === estado) || leccion.estados[0];
-        const pl = leccion.palanca; // con palanca: dos renglones para la frase y uno para el mando; sin ella, tres y dos
+        const e = leccion.estados.find((x) => x.id === estado) || conBoton[0];
+        const pls = (leccion.palancas || []).slice(0, 2);
+        const pl = pls.length > 0; // con palanca: dos renglones para la frase y uno para el mando; sin ella, tres y dos
         g.textAlign = 'left';
         g.textBaseline = 'middle';
         g.fillStyle = '#ffffff';
@@ -210,7 +225,12 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
           envolver(g, leccion.mando, W - 2 * M)
             .slice(0, 2)
             .forEach((l, k) => g.fillText(l, M, 406 + k * 31));
-        if (pl) dibujarPalanca(leccion, palanca || {u: 1, activa: false}, hover === 'lec_palanca');
+        if (pls.length === 1) dibujarPalanca(leccion, pls[0], palancas[pls[0].id] || {u: 1, activa: false}, hover === `lec_p_${pls[0].id}`, M + 262, W - M - 16, true);
+        else if (pls.length === 2) {
+          const hueco = 48;
+          const cada = (W - 2 * M - 16 - hueco) / 2;
+          pls.forEach((q, i) => dibujarPalanca(leccion, q, palancas[q.id] || {u: 0.5, activa: false}, hover === `lec_p_${q.id}`, M + 8 + i * (cada + hueco), M + 8 + i * (cada + hueco) + cada, false));
+        }
         g.textAlign = 'left';
         g.textBaseline = 'middle';
         g.fillStyle = '#8fa3b8';
@@ -278,7 +298,7 @@ export function crearPanelLeccion({ancho = 0.76, alto = 0.34, leyenda = ''} = {}
  * y su punto. La columna se ubica con la recta que va del ojo a la pieza (no con la cabeza: en el casco no tiene que moverse
  * cuando el alumno mira para otro lado).
  */
-export function crearRotulosPartes({escena, max = 3, ancho = 0.24, alto = 0.07} = {}) {
+export function crearRotulosPartes({escena, max = 5, ancho = 0.24, alto = 0.07} = {}) {
   const grupo = new THREE.Group();
   grupo.name = 'rotulos-partes';
   grupo.visible = false;
@@ -344,7 +364,9 @@ export function crearRotulosPartes({escena, max = 3, ancho = 0.24, alto = 0.07} 
     /**
      * partes: [{nombre, sub, punto: [x, y, z], repite}] en el marco de la pieza (o null para esconderlos). «repite: n» = la parte
      * está n veces alrededor del eje x de la pieza (las palas): se señala la que apunta hacia arriba.
-     * pieza: {centro: Vector3 (mundo), radio (m), aMundo(Vector3) → Vector3 (mundo), ladoMax}; ojo: dónde está el alumno (mundo).
+     * pieza: {centro: Vector3 (mundo), radio (m), aMundo(Vector3) → Vector3 (mundo), lado, baja, ladoMax}; ojo: dónde está el
+     * alumno (mundo). lado (opcional): a cuánto del centro de la pieza va la columna (por omisión, pegada a su radio); baja
+     * (opcional): cuánto más abajo que el centro (las piezas anchas y chatas la llevan debajo).
      * ladoMax (opcional): lo más lejos del centro de la pieza que puede ir la columna (en la PC, para que no se salga de la pantalla
      * cuando el alumno agranda la pieza).
      */
@@ -376,8 +398,8 @@ export function crearRotulosPartes({escena, max = 3, ancho = 0.24, alto = 0.07} 
       lista.forEach((it, i) => {
         const e = etiquetas[i];
         pintar(e, it.nombre, it.sub);
-        e.malla.position.copy(centro).addScaledVector(der, Math.min(radio + 0.06 + ancho / 2, pieza.ladoMax ?? Infinity));
-        e.malla.position.y = centro.y + ((lista.length - 1) / 2 - i) * paso;
+        e.malla.position.copy(centro).addScaledVector(der, Math.min(pieza.lado ?? radio + 0.06 + ancho / 2, pieza.ladoMax ?? Infinity));
+        e.malla.position.y = centro.y - (pieza.baja || 0) + ((lista.length - 1) / 2 - i) * paso;
         e.malla.rotation.set(0, Math.atan2(ojo.x - e.malla.position.x, ojo.z - e.malla.position.z), 0);
         e.malla.visible = true;
         const borde = p0.copy(e.malla.position).addScaledVector(der, -ancho / 2);
