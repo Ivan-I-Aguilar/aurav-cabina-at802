@@ -1,6 +1,9 @@
-# Taller de motores · Cómo probarlo en el Quest (sin publicar)
+# Taller de motores · Cómo probarlo en el Quest
 
-Guía para Iván (T10 del `PLAN_TALLER.md`, escrita el 15/11/2026). El taller **no está publicado**: se prueba desde la PC.
+Guía para Iván (T10 del `PLAN_TALLER.md`, escrita el 15/11/2026). **Desde el 22/11 el taller está publicado** (v=20261122e): en
+el navegador del Quest, `https://ivan-i-aguilar.github.io/aurav-cabina-at802/taller.html`, o desde la cabina: Menú → «Taller de
+motores»; después, «Entrar en VR» arriba a la derecha. Es el camino más simple. Lo de abajo (servirlo desde la PC) queda para probar
+cambios antes de publicarlos. El modo mecánico sólo se abre desde la PC (`?mecanico=1` en local), no en la página publicada.
 
 ## 1. Servirlo desde la PC
 En la carpeta del repo:

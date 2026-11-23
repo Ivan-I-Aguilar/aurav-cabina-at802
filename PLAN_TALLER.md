@@ -602,6 +602,13 @@ en el Quest no se probó nada).** Lo que quedó, todo detrás de `?mecanico=1` (
 - **La ronda fija de §10 con un comando:** `await __rondaFija(n)` (n = 1..11; la 7, el Cessna, falta). Lámina:
   `Documents/aurav-cabina/capturas_taller/ronda_fija_15_11.jpg`.
 - Falta, todo de Iván: probar en el Quest, el ok para publicar (y entonces el botón del juego y la versión de la página).
+- **PUBLICADO el 22/11 (v=20261122e, push 6f2f444, con el ok de Iván: «publica todo»):** el taller entero (T1 a T17), con el botón
+  «Taller de motores» en el menú de la cabina (`mision.js`) y «Volver a la cabina» (enlace en la PC y botón en la pausa de VR). El modo
+  mecánico sólo se abre en local (`EN_LOCAL` en `taller/main.js`: localhost o la red de la casa, con `?mecanico=1`), no en Pages, hasta
+  la validación de AAXOD (3b). Antes de subir: `probarMandos` 29 de 29 (la prueba de la pausa ahora cuenta 9 botones), `probarMecanico`
+  5 de 5, `prevuelo_pages.py` TODO BIEN, y los dos botones probados con clics de verdad. Verificado en la página publicada: la raíz,
+  los tres niveles y el taller, sin errores ni 404; los dos botones con clics de verdad; `?mecanico=1` no abre el modo en Pages; las
+  piezas (`taller/*.glb`, `juegos/*.glb`) y las voces responden 200. En el Quest no se probó nada.
 
 ## 10. Verificación (en cada etapa)
 **Automática, antes de mirar:** presupuesto (`renderer.info` y el informe de cada GLB); carga sin errores ni 404
